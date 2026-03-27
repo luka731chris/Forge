@@ -1780,60 +1780,66 @@ select option { background: var(--card2); color: var(--text2); }
 <script>
 
 // ═══════════════════════════════════════════════
-// FORGE IGNITION — onboarding flow
+// FORGE IGNITION — bulletproof boot
 // ═══════════════════════════════════════════════
 let ignitionComplete = false;
 
-function beginForging() {
-  ignitionComplete = true;
+function dismissIgnition() {
   const el = document.getElementById('forge-ignition');
-  el.classList.add('ignition-exit');
+  if (!el) return;
+  el.style.transition = 'opacity 0.5s';
+  el.style.opacity = '0';
+  el.style.pointerEvents = 'none';
+  setTimeout(() => { el.style.display = 'none'; }, 550);
+}
+
+function beginForging() {
+  if (ignitionComplete) return;
+  ignitionComplete = true;
+  dismissIgnition();
   setTimeout(() => {
-    el.style.display = 'none';
-    // Show main app with dramatic number count-up on dashboard
     if (loadData()) {
       initApp();
       animateNumbers();
+    } else {
+      showPage('upload');
     }
   }, 600);
 }
 
 function animateNumbers() {
-  // Count up all card values on first load
   setTimeout(() => {
     document.querySelectorAll('.card-val').forEach(el => {
-      const text = el.textContent;
-      if (text.includes('$')) {
-        el.style.opacity = '0';
-        setTimeout(() => {
-          el.style.transition = 'opacity 0.4s';
-          el.style.opacity = '1';
-        }, Math.random() * 400);
-      }
+      el.style.opacity = '0';
+      setTimeout(() => { el.style.transition = 'opacity 0.4s'; el.style.opacity = '1'; }, Math.random() * 400);
     });
-  }, 100);
+  }, 200);
 }
 
-// Skip ignition if data already loaded and user has been here
 window.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
   const hasData = loadData();
   const hasSeenIgnition = sessionStorage.getItem('forge_ignited');
-  
-  if (hasSeenIgnition && hasData) {
-    // Skip intro on same-session refreshes
-    document.getElementById('forge-ignition').style.display = 'none';
-    initApp();
-  } else if (!hasData) {
-    // Show ignition, then go to upload after CTA
-    // CTA handled by beginForging() - after CTA, show upload
-  } else {
-    // Has data, show brief ignition
+
+  if (hasSeenIgnition) {
+    // Any return visit in same session — skip ignition entirely
+    dismissIgnition();
+    if (hasData) { initApp(); } else { showPage('upload'); }
+  } else if (hasData) {
+    // First visit with data — brief intro then auto-launch
     setTimeout(() => {
-      document.querySelector('.ignition-manifesto').style.display = 'none';
-      document.querySelector('.ignition-cta').style.display = 'none';
+      const m = document.querySelector('.ignition-manifesto');
+      const c = document.querySelector('.ignition-cta');
+      if (m) m.style.display = 'none';
+      if (c) c.style.display = 'none';
     }, 100);
-    setTimeout(beginForging, 2200);
+    setTimeout(beginForging, 2500);
+    setTimeout(() => { if (!ignitionComplete) beginForging(); }, 6000);
+  } else {
+    // First visit, no data — show full ignition, CTA fires beginForging()
+    setTimeout(() => { if (!ignitionComplete) beginForging(); }, 12000);
   }
+
   sessionStorage.setItem('forge_ignited', '1');
 });
 
