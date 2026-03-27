@@ -2166,6 +2166,7 @@ function impulseBadge(sc){
 // INIT APP
 // ════════════════════════════════════════════════════
 function initApp() {
+  loadSettings();
   if (!txns.length && !amzItems.length) { showPage('upload'); return; }
   buildSidebar();
   populateFilters();
@@ -2174,9 +2175,11 @@ function initApp() {
   const dates=txns.map(t=>t.date).sort();
   const amzPart=amzItems.length?` · 📦 ${amzItems.length.toLocaleString()} amz`:'';
   document.getElementById('hdrInfo').textContent=`${txns.length.toLocaleString()} txns${amzPart}`;
+  const dashSub=document.getElementById('dashSub');
+  if(dashSub&&settings.user1) dashSub.textContent=`${settings.user1}'s financial picture · The Gauge`;
   showPage('dashboard');
-  // Pre-run intelligence so badge shows
   runIntelligence();
+  applySettingsLive();
 }
 
 function buildSidebar() {
@@ -2209,7 +2212,14 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const pg=document.getElementById('page-'+name); if(pg)pg.classList.add('active');
   const nv=document.getElementById('nav-'+name); if(nv)nv.classList.add('active');
-  if(name==='family'){showConfluenceEntry();renderFamily();}
+  if(name==='family'){
+    loadSettings();
+    if(settings.confluenceAnim) showConfluenceEntry();
+    renderFamily();
+    const fbrMonth=document.getElementById('fbrMonthTitle');
+    if(fbrMonth){const now=new Date();fbrMonth.textContent=`${MONTHS[now.getMonth()]} ${now.getFullYear()} · ${settings.familyName||'Luka'} Family Confluence`;}
+  }
+  if(name==='settings') renderSettingsPage();
   if(name==='dashboard'&&txns.length)renderDashboard();
   if(name==='intelligence'&&txns.length)renderIntelligence();
   if(name==='cashflow'&&txns.length)renderCF();
@@ -2295,10 +2305,14 @@ function runIntelligence() {
   detectBudgetDrift();
   detectAnomalies();
   detectSeasonal();
+  // Add life-stage high priority alerts to badge count
+  const lsRecs=buildLifeStageRecommendations();
+  const lsHigh=lsRecs.filter(r=>r.priority==='High').length;
   const badge=document.getElementById('intelBadge');
-  if(intelAlerts.length>0){badge.style.display='inline-block';badge.textContent=intelAlerts.length;}
+  const total=intelAlerts.length+lsHigh;
+  if(total>0){badge.style.display='inline-block';badge.textContent=total;}
   else badge.style.display='none';
-  document.getElementById('alertCount').textContent=intelAlerts.length;
+  document.getElementById('alertCount').textContent=total;
 }
 
 function setIntelRange(r,btn){
@@ -2603,6 +2617,17 @@ function renderActions() {
       </div>
     </div>`).join('')}
   </div>`;
+
+  // Life-stage recommendations
+  const lsRecs=buildLifeStageRecommendations();
+  if(lsRecs.length){
+    const panel=document.getElementById('actionsPanel');
+    if(panel){
+      const priColor={High:'intel-danger',Medium:'intel-alert',Low:'intel-info'};
+      const lsHtml=`<div style="margin-top:22px;"><div style="font-family:var(--font-m);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);margin-bottom:14px;">⚡ Life-Stage Intelligence</div><div class="intel-grid">${lsRecs.map(r=>`<div class="intel-card ${priColor[r.priority]||'intel-info'}"><div class="intel-hdr">${r.icon} ${r.title}</div><div style="font-size:10px;font-family:var(--font-m);color:var(--ink4);margin-bottom:6px;">${r.category} · ${r.priority} Priority</div><div class="intel-body">${r.body}</div><div class="intel-action">→ ${r.action}</div></div>`).join('')}</div></div>`;
+      panel.insertAdjacentHTML('beforeend',lsHtml);
+    }
+  }
 }
 
 // ════════════════════════════════════════════════════
@@ -3628,11 +3653,11 @@ function renderSettingsPage() {
   setChecked('s-kids-in-alerts', settings.kidsInAlerts);
   setChecked('s-confluence-anim', settings.confluenceAnim);
   // Targets
-  setRange('s-savings-target', settings.savingsTarget);
+  setFieldRange('s-savings-target', settings.savingsTarget);
   document.getElementById('s-savings-val').textContent = settings.savingsTarget + '%';
   setVal('s-emergency-target', settings.emergencyTarget);
   setVal('s-large-purchase', settings.largePurchaseThreshold);
-  setRange('s-amz-sensitivity', settings.amzSensitivity);
+  setFieldRange('s-amz-sensitivity', settings.amzSensitivity);
   document.getElementById('s-amz-val').textContent = settings.amzSensitivity;
   // Confluence
   setVal('s-meeting-day', settings.meetingDay);
@@ -3654,7 +3679,7 @@ function renderSettingsPage() {
 
 function setVal(id, val) { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; }
 function setChecked(id, val) { const el = document.getElementById(id); if (el) el.checked = !!val; }
-function setRange(id, val) { const el = document.getElementById(id); if (el) el.value = val; }
+function setFieldRange(id, val) { const el = document.getElementById(id); if (el) el.value = val; }
 
 function updateSliderDisplay(sliderId, valId, suffix) {
   const sl = document.getElementById(sliderId);
@@ -3996,50 +4021,6 @@ function updateAgeBadge(dobId, badgeId, isParent = false) {
 }
 
 // ── LIFE-STAGE RECS IN FURNACE ──
-// Appended to existing renderActions
-const _origRenderActions = typeof renderActions === 'function' ? renderActions : null;
-function renderActions() {
-  if (_origRenderActions) _origRenderActions();
-  // Append life-stage recommendations
-  const lsRecs = buildLifeStageRecommendations();
-  if (!lsRecs.length) return;
-  const panel = document.getElementById('actionsPanel');
-  if (!panel) return;
-  const priColor = { High:'intel-danger', Medium:'intel-alert', Low:'intel-info' };
-  const lsHtml = `
-    <div style="margin-top:20px;">
-      <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:12px;">
-        ⚡ Life-Stage Intelligence · Dynamic Recommendations
-      </div>
-      <div class="intel-grid">
-        ${lsRecs.map(r => `
-          <div class="intel-card ${priColor[r.priority]||'intel-info'}">
-            <div class="intel-hdr">${r.icon} ${r.title}</div>
-            <div style="font-size:10px;font-family:var(--font-mono);color:var(--dim);margin-bottom:6px;letter-spacing:.5px;">${r.category} · ${r.priority} Priority</div>
-            <div class="intel-body">${r.body}</div>
-            <div class="intel-action">→ ${r.action}</div>
-          </div>`).join('')}
-      </div>
-    </div>`;
-  panel.insertAdjacentHTML('beforeend', lsHtml);
-}
-
-// Also surface life-stage recs in The Furnace alert feed
-const _origRunIntelligence = typeof runIntelligence === 'function' ? runIntelligence : null;
-function runIntelligence() {
-  if (_origRunIntelligence) _origRunIntelligence();
-  // Inject life-stage alerts into the main alert count
-  const lsRecs = buildLifeStageRecommendations();
-  const highPri = lsRecs.filter(r => r.priority === 'High').length;
-  if (highPri > 0) {
-    const badge = document.getElementById('intelBadge');
-    if (badge) {
-      const current = parseInt(badge.textContent) || 0;
-      badge.textContent = current + highPri;
-      badge.style.display = 'inline-block';
-    }
-  }
-}
 
 
 function buildSidSystemPrompt(mode='auto') {
@@ -4083,18 +4064,6 @@ ALWAYS: Use specific numbers from the data. End with one clear, actionable recom
 NEVER: Say "I cannot" or "I apologize." Never be condescending. Never be vague when data is available. Sid doesn't make excuses — he finds the play.`;
 }
 
-// ── APPLY SETTINGS TO FAMILY PAGE ──
-const _origRenderFamily = typeof renderFamily === 'function' ? renderFamily : null;
-function renderFamilyPersonalized() {
-  loadSettings();
-  if (_origRenderFamily) _origRenderFamily();
-  // Override the month title with family name
-  const fbrMonth = document.getElementById('fbrMonthTitle');
-  if (fbrMonth) {
-    const now = new Date();
-    fbrMonth.textContent = `${MONTHS[now.getMonth()]} ${now.getFullYear()} · ${settings.familyName} Family Confluence`;
-  }
-}
 
 // ── APPLY SETTINGS TO INTELLIGENCE ALERTS ──
 // Override large purchase threshold
@@ -4134,44 +4103,7 @@ function getFamilyReportSubtitle() {
   return settings.reportSubtitle || 'Monthly Financial Review';
 }
 
-// ── HOOK INTO showPage ──
-const _origShowPage = showPage;
-function showPage(name) {
-  _origShowPage(name);
-  if (name === 'settings') {
-    renderSettingsPage();
-  }
-  if (name === 'family') {
-    loadSettings();
-    // Apply Confluence animation toggle
-    if (settings.confluenceAnim) {
-      showConfluenceEntry();
-    }
-    // Personalize month title
-    const fbrMonth = document.getElementById('fbrMonthTitle');
-    if (fbrMonth) {
-      const now = new Date();
-      fbrMonth.textContent = `${MONTHS[now.getMonth()]} ${now.getFullYear()} · ${settings.familyName} Family Confluence`;
-    }
-  }
-}
 
-// ── APPLY SETTINGS EVERYWHERE ON LOAD ──
-const _origInitApp = initApp;
-function initApp() {
-  loadSettings();
-  _origInitApp();
-  applySettingsLive();
-  // Update savings rate target display in dashboard sub
-  const dashSub = document.getElementById('dashSub');
-  if (dashSub && settings.user1) {
-    dashSub.textContent = `${settings.user1}'s financial picture · The Gauge`;
-  }
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  loadSettings();
-});
 
 
 
