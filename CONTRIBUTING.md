@@ -1,201 +1,114 @@
 # Contributing & Development Guide
 
-How the codebase is organized, how to make changes, and how to test them.
-
 ---
 
 ## Development Setup
 
-No build tools required. The entire application is vanilla HTML, CSS, and JavaScript.
+No build tools required.
 
 ```bash
 git clone https://github.com/luka731chris/Forge.git
 cd Forge
-open index.html        # macOS
-start index.html       # Windows
+open index.html   # macOS · or double-click in any OS
 ```
 
-For live reload during development, use any static server:
-
-```bash
-# Python (built-in, no install)
-python3 -m http.server 8080
-
-# Node (if installed)
-npx serve .
-
-# VS Code — install the "Live Server" extension and click "Go Live"
-```
-
-Then open `http://localhost:8080` in your browser.
-
----
-
-## File Structure
-
-```
-Forge/
-├── index.html           # Forge Desktop — DO NOT RENAME (GitHub Pages root)
-├── forge-pulse.html     # Forge Pulse mobile PWA
-├── forge_worker.js      # Cloudflare Worker (Sid proxy)
-├── wrangler.jsonc       # Cloudflare Worker config
-├── README.md
-├── CHANGELOG.md
-├── IMPORT-GUIDE.md
-├── SID-SETUP.md
-├── TECHNICAL.md
-└── CONTRIBUTING.md      # This file
-```
-
-> `index.html` must remain named `index.html` — GitHub Pages serves it as the root URL.
+For live reload: `python3 -m http.server 8080` then open `http://localhost:8080`.
 
 ---
 
 ## Code Organization (index.html)
 
-The JavaScript is organized in functional sections, each separated by a `// ════` comment header:
+Functions are grouped under `// ════` comment headers:
 
 ```
-CONSTANTS & STATE        — DB_KEY, SETTINGS_KEY, FBR_KEY, CAT_COLORS, etc.
-DEMO DATA GENERATOR      — generateDemoData(), loadDemo()
-PERSISTENCE              — saveData(), loadData(), saveSettings(), loadSettings()
-FILE HANDLING            — handleFiles(), renderFileList(), processAll(), showImportResults()
-PARSERS                  — parseCSV(), parseQIF(), parseOFX(), parseAmazon(), parseDate(), splitCSV()
-HELPERS                  — fmt(), fmtK(), fmtPct(), getRange(), inRange(), getMonthlyData()
-INIT APP                 — initApp(), buildSidebar(), populateFilters()
-NAVIGATION               — showPage(), switchTab(), setRange()
-DASHBOARD                — renderDashboard()
-INTELLIGENCE ENGINE      — runIntelligence(), detectTrendAlerts(), detectBudgetDrift(), ...
-CASH FLOW                — renderCF()
-CATEGORIES               — renderCats()
-MERCHANTS                — renderMch()
-AMAZON                   — renderAmazon(), renderAmzItems(), renderAmzPage()
-TRANSACTIONS             — renderTxns(), renderTxnPage()
-DRAG + DROP              — event listeners on dz1, dz2
-TOAST                    — showToast()
-FAMILY REVIEW            — renderFamily(), buildStep1–6(), exportPDF(), ...
-SETTINGS                 — renderSettingsPage(), saveSettings(), loadSettings(), ...
-SID / INTELLIGENCE       — buildSidSystemPrompt(), buildContext(), buildSidPrompt() (in forge-pulse.html)
+CONSTANTS & STATE          — DB_KEY, SETTINGS_KEY, DEFAULT_SETTINGS, IMPULSE_CATS, etc.
+DEMO DATA GENERATOR        — generateDemoData(), loadDemo()
+PERSISTENCE                — saveData(), loadData(), saveSettings(), loadSettings()
+FILE HANDLING              — handleFiles(), renderFileList(), processAll(), showImportResults()
+QUICKEN PARSERS            — parseCSV(), parseQIF(), parseOFX(), parseDate(), splitCSV()
+DETAIL PARSERS             — parseAmazon(), parseAppleCard(), parseGenericDetail(), parseDetailFile()
+PURCHASER INTELLIGENCE     — personSummary(), detectPersonTrends(), predictMonthlyDetail(),
+                             inferTxnOwner(), getPersonSpend()
+HELPERS                    — fmt(), fmtK(), fmtPct(), getRange(), inRange(), getMonthlyData()
+INIT APP                   — initApp(), buildSidebar(), populateFilters()
+NAVIGATION                 — showPage(), switchTab(), setRange()
+DASHBOARD                  — renderDashboard()
+INTELLIGENCE ENGINE        — runIntelligence(), detectTrendAlerts(), detectBudgetDrift(),
+                             detectAnomalies(), detectSeasonal()
+INTELLIGENCE RENDERERS     — renderAlerts(), renderTrends(), renderBudgetDrift(), etc.
+CASH FLOW                  — renderCF()
+CATEGORIES                 — renderCats()
+MERCHANTS                  — renderMch()
+DETAIL LENS                — renderAmazon(), renderPurchaserTab(), renderAmzItems(), renderAmzPage()
+TRANSACTIONS               — renderTxns(), renderTxnPage()
+DRAG + DROP                — event listeners on dz1, dz2
+TOAST                      — showToast()
+FAMILY REVIEW              — renderFamily(), buildStep1–6(), exportPDF()
+SETTINGS                   — renderSettingsPage(), saveSettings(), renderAccountOwnerSection(),
+                             renderKidsList(), renderAccountOwnerSection()
+LIFE-STAGE                 — buildLifeStageRecommendations()
 ```
 
 ---
 
-## Making Changes
+## Adding a New Detail File Format
 
-### Changing a color
+1. Write a parser function following `parseAppleCard()` as a template:
+   - Arguments: `(text, fname, purchaser)`
+   - Returns: `amzItem[]` — each item must have `date`, `title`, `category`, `price`, `qty`, `total`, `orderId`, `asin`, `source`, `purchaser`
+   - `orderId` can be synthetic: `GD-${date}-${title.slice(0,8)}`
+   - `purchaser` comes from the argument (set by `processAll` via filename inference)
 
-All colors are defined as CSS custom properties in the `:root` block near the top of the `<style>` section. Change the value there and it propagates throughout the UI automatically.
+2. Add detection logic to `sniffFile()` first, then `parseDetailFile()`:
+   ```javascript
+   // In sniffFile(): add detection signal
+   if (firstLine.includes('your-unique-column') || fn.includes('yourservice')) return 'detail';
+   
+   // In parseDetailFile(): add routing
+   if (fname.toLowerCase().includes('yourservice')) return parseYourService(text, fname, purchaser);
+   ```
 
-```css
-:root {
-  --gold: #F5A800;    /* ← change this */
-  --positive: #2DD4BF;
-  /* ... */
-}
+3. Add a test case to `forge_tests.js`
+
+---
+
+## Adding a New Purchaser Feature
+
+The purchaser data model is simple. Every `amzItem` has:
+```javascript
+{ ..., source: 'Amazon', purchaser: 'Chris' }
 ```
 
-### Adding a navigation page
+And `settings.accountOwners` maps account names to person names:
+```javascript
+{ "Chase Sapphire (CC)": "Chris", "Apple Card (CC)": "Kira" }
+```
 
-1. Add a nav item in the sidebar HTML: `<div class="nav-item" id="nav-mypage" onclick="showPage('mypage')">...</div>`
-2. Add a page div in the main content area: `<div id="page-mypage" class="page">...</div>`
-3. Add a render call in `showPage()`: `if(name==='mypage') renderMyPage();`
-4. Write the `renderMyPage()` function
-
-### Adding an import file format
-
-1. Add the extension to `validExts` in `processAll()`
-2. Add parser routing in the `if (ext==='qif')...else if...` chain
-3. Write the parser function following the pattern of `parseCSV()` — return an array of transaction objects
-4. Add the extension to the `accept` attribute of the `<input type="file" id="fi1">` element
-5. Add a test case to the test suite (see Testing below)
-
-### Changing Sid's system prompt
-
-The system prompt is built in `buildSidSystemPrompt()` in `forge-pulse.html`. The prompt has three sections:
-- A persona definition (who Sid is, his communication principles)
-- A mode section (data-first, story-first, or Confluence — selected dynamically)
-- A financial context section (injected from `buildContext()`)
-
-Edit the persona definition or mode sections directly in that function. The financial context is auto-generated from real data and should not be hardcoded.
-
-### Updating the demo data
-
-`generateDemoData()` is in `index.html`. Key parameters:
-
-- `acctDefs` — the 11 account definitions
-- `expTemplates` — transaction templates: `[payee, category, account, baseAmt, freqPerMonth, stdDev]`
-- `startDate` / `now` — the date range for generated data
-- `seasonMult` — seasonal multipliers by month (index 0 = January)
-- `yoyDrift` — year-over-year spending drift per year
+To add a new per-person analytic:
+1. Filter `amzItems` by `purchaser` using `personSummary()` or direct filter
+2. For Quicken transactions, use `inferTxnOwner(txn)` which checks `accountOwners`
+3. Surface in the Bullpen via `intelAlerts.push(...)` in `detectTrendAlerts()`
+4. Surface in the Recommended Actions via `buildLifeStageRecommendations()`
 
 ---
 
 ## Testing
 
-The test suite runs outside the browser using Node.js. It extracts the parsers and utility functions from `index.html` at runtime and tests them in isolation.
-
-### Running Tests
-
 ```bash
-# Run all parser and logic tests (149 tests)
-node forge_tests.js
-
-# Run all Sid AI layer tests (96 tests)
-node forge_sid_tests.js
+node forge_tests.js      # 149 tests — parsers, logic, dedup, life-stage
+node forge_sid_tests.js  # 96 tests  — $id AI layer, context, error handling
 ```
 
-Both should produce `✅ Passed: N/N — 100%`. If any test fails, do not commit.
+Both must pass at 100% before any commit. The test harness extracts functions from `index.html` at runtime — no separate test build needed.
 
-### Test Coverage
-
-**forge_tests.js (149 tests, 14 suites):**
-
-| Suite | Coverage |
-|-------|---------|
-| parseDate | 18 date format variants including edge cases |
-| splitCSV | 6 cases including quoted fields and embedded commas |
-| parseCSV happy path | 13 cases: standard Quicken formats, tab-delimited, multi-account |
-| parseCSV train wrecks | 14 cases: empty files, missing columns, malformed amounts, binary content |
-| parseQIF | 11 cases: standard records, multi-account, missing fields, empty input |
-| parseAmazon | 12 cases: new format, legacy format, edge cases |
-| parseOFX | 9 cases: standard OFX, QFX, malformed, empty |
-| Age & Life Stage | 16 cases: boundary ages, life stage transitions |
-| scoreImpulse | 6 cases: category scoring, price thresholds, null safety |
-| guessType | 7 account type detection cases |
-| Formatters | 9 cases: fmt, fmtK, fmtPct |
-| Settings & Family Config | 10 cases: DEFAULT_SETTINGS structure |
-| Deduplication | 4 cases: duplicate prevention logic |
-| Real-world edge cases | 14 cases: actual Quicken export formats, real-world messy data |
-
-**forge_sid_tests.js (96 tests, 14 suites):**
-
-| Suite | Coverage |
-|-------|---------|
-| getSidSetupMessage | Content and structure validation |
-| callSid proxy guard | WORKER_URL_HERE detection |
-| callSid HTTP error handling | 401, 429, 500 responses |
-| callSid timeout & network | Timeout and network failure |
-| sendChat error routing | All 5 error paths |
-| buildSidPrompt mode detection | data-first, story-first, Confluence detection |
-| buildContext empty state | Empty transaction arrays |
-| buildContext with transaction data | KPI calculations, category breakdown |
-| buildContext financial accuracy | Savings rate, net calculations |
-| getKidsContext | Age display, countdown logic |
-| Conversation history management | 16-message cap, history trimming |
-| callSid API request body contract | Model, max_tokens, system prompt structure |
-| buildSidSystemPrompt | Persona, mode, context sections |
-| Edge cases & regression | Null safety, boundary conditions |
-
-### Adding a Test
-
-Tests are written using a simple assertion framework in the test files. Add a new test case inside the relevant suite:
-
+**Adding a test:**
 ```javascript
-t.test('my new case', () => {
-  const result = parseCSV('Date,Payee,Amount\n2024-01-01,Test,-50.00', 'test.csv');
-  t.equal(result.length, 1, 'should parse one transaction');
-  t.equal(result[0].payee, 'Test', 'payee should be Test');
-  t.equal(result[0].amount, -50.00, 'amount should be -50');
+t.test('parseAppleCard: handles payment rows', () => {
+  const result = parseAppleCard(
+    'Transaction Date,Description,Category,Amount (USD)\n2024-01-15,Autopay,Payment,-89.00',
+    'test.csv', 'Chris'
+  );
+  t.equal(result.length, 0, 'payment rows should be filtered out');
 });
 ```
 
@@ -203,68 +116,24 @@ t.test('my new case', () => {
 
 ## Deployment
 
-### GitHub Pages (automatic)
+**GitHub Pages** — any push to `main` deploys automatically. Live URL: `luka731chris.github.io/Forge`. Deployment takes 30–90 seconds.
 
-Any push to the `main` branch automatically deploys via GitHub Pages. The live URL is `luka731chris.github.io/Forge`. Deployment takes 30–90 seconds.
-
-Files GitHub Pages serves:
-- `index.html` → the root URL
-- `forge-pulse.html` → `/forge-pulse.html`
-
-### Cloudflare Worker (manual)
-
-When `forge_worker.js` changes, the Worker is not automatically redeployed (unless CI is configured). To redeploy manually:
-
-**Option A — GitHub push (if GitHub is connected to Cloudflare):**
-Push `forge_worker.js` to `main`. Cloudflare detects the change and redeploys automatically (may take 30–60 seconds).
-
-**Option B — Cloudflare dashboard:**
-Go to dash.cloudflare.com → Workers & Pages → forge-sid → Edit Code → paste updated code → Deploy.
-
-**Option C — Wrangler CLI:**
-```bash
-npm install -g wrangler
-wrangler login
-wrangler deploy
-```
-
----
-
-## Environment Variables
-
-The only environment variable used in production is `ANTHROPIC_API_KEY`, stored as a Cloudflare Worker Secret. It is never committed to the repository.
-
-To check whether the secret is set: Cloudflare Dashboard → forge-sid → Settings → Variables and Secrets. A secret appears as `ANTHROPIC_API_KEY: ***` if set.
+**Cloudflare Worker** — not auto-deployed. After changing `forge_worker.js`:
+- Dashboard: dash.cloudflare.com → forge-sid → Edit Code → paste → Deploy
+- CLI: `npm install -g wrangler && wrangler login && wrangler deploy`
 
 ---
 
 ## Common Mistakes
 
-### "The Worker shows 'Variables cannot be added to a Worker that only has static assets'"
+**"Variables cannot be added to a Worker with static assets"**
+The `wrangler.jsonc` has an `"assets"` block. Remove it. The `assets` key makes Cloudflare treat the Worker as a static site host, disabling secrets and the `fetch` handler.
 
-The `wrangler.jsonc` file has an `"assets"` block. Remove it. The `"assets"` key tells Cloudflare to treat the Worker as a static file host (like GitHub Pages), which disables `fetch` handlers and environment variable access. The correct `wrangler.jsonc` contains only `name`, `main`, `compatibility_date`, and `compatibility_flags`.
+**"Purchaser not attributed even with correct filename"**
+Check that the family member's first name is in Settings → The Family. Forge compares the filename against `settings.user1`, `settings.user2`, and each `settings.kids[n].name`. If the settings haven't been saved, the name list is empty.
 
-### "The drop zone works with click-to-browse but drag-and-drop doesn't change color"
+**"New detail format doesn't parse"**
+`parseDetailFile()` detects formats by column headers in the first line. If your file's headers don't contain the expected keywords, it falls through to `parseGenericDetail()`. Log `firstLine` in the console and add your column names to the detection logic.
 
-The `dragover` event is being fired but the CSS class is being added and immediately removed. This is the child-element `dragleave` bug — dragging over any text or icon inside the zone fires `dragleave` on the parent. The fix is a depth counter on `dragenter`/`dragleave`. See `TECHNICAL.md → Drag-and-Drop Implementation`.
-
-### "Forge shows no data after clearing browser storage"
-
-`localStorage` is the only data store. Clearing it removes all transaction data. Re-import from Quicken using the full-history export workflow.
-
-### "showToast does nothing"
-
-The `showToast` function looks for `id="toast"`. If the HTML element has a different ID (e.g. `id="forge-toast"`), the function returns immediately after finding `null`. Search for `getElementById` in `showToast` and verify it matches the actual element ID in the HTML.
-
----
-
-## Branching Convention
-
-| Branch | Purpose |
-|--------|---------|
-| `main` | Production — what GitHub Pages deploys |
-| `feature/description` | New feature development |
-| `fix/description` | Bug fixes |
-| `cloudflare/description` | Worker-only changes |
-
-Merge to `main` only when tests pass and the change has been manually verified in a browser.
+**"Forge shows no data after clearing browser storage"**
+`localStorage` is the only data store. Re-import from Quicken using the full-history export workflow. Detail files must be re-imported separately.

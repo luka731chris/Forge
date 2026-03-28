@@ -1,166 +1,152 @@
 # Changelog
 
-All notable changes to Forge are documented here.
+---
 
-Format: `[version] — YYYY-MM-DD`
+## [3.1] — 2026-03-28
+
+### Changed — Unified Import Zone
+
+- **Single drop zone** replaces the previous two-zone layout (Quicken left, Amazon right). All file types — Quicken CSV/QIF/QFX, Amazon order history, Apple Card statement, any itemized CSV — now go into one zone and Forge auto-detects each file's format from its column headers.
+- **`sniffFile(text, fname)`** added: content-based format detector that inspects the first CSV line for signal columns (`asin`, `product name`, `order id`, `clearing date`, `amount (usd)`, Quicken-signature columns) and returns `'amazon' | 'applecard' | 'detail' | 'quicken'`.
+- **`fileTypeLabel(type)`** added: maps detected type to display label and badge CSS class for the file queue.
+- **`processAll()`** updated: uses `sniffFile()` instead of trusting `source` field; `source='auto'` is now the default for all dropped files.
+- **`handleFiles()`** updated: sets `source='auto'` for all files; uses only `dz1` for the drop-success flash.
+- **Drag listeners** updated: only `dz1` monitored; `dz2` and `fi2` removed.
+- **`clearUploadPage()`** updated: only resets `fi1` and `dz1`.
+- **File queue cards** now show detected type badge (💳 Quicken · 📦 Amazon · 🍎 Apple Card · 🔍 Detail) based on filename heuristics with content sniff in processAll.
+- **Type reference grid** added below the drop zone showing what each file type does in three compact cards.
+- **Purchaser tip banner** added below the drop zone explaining filename tagging convention.
+- Removed: two-zone HTML, `dz2`, `fi2`, `id="fi2"`, the entire Amazon-specific instruction card with 6-step walkthrough moved to IMPORT-GUIDE.md.
+
+---
+
+## [3.0] — 2026-03-28
+
+### Added — Purchaser Attribution System
+
+The most significant addition since launch. Forge can now identify *who* in a family made a purchase and surface individual spending patterns, alerts, and predictions.
+
+**Purchaser tagging via filename**
+- Drop a detail file named with a family member's first name (e.g. `amazon_chris.csv`, `applecard_kira.csv`) and Forge attributes every item in that file to that person
+- Purchaser name matched case-insensitively against Settings → The Family member list
+- Purchaser is part of the deduplication key so the same item can exist for different people without collision
+
+**Account Owners — Settings**
+- New Settings section: maps each Quicken account to a family member
+- Once mapped, Forge attributes all transactions in that account to that person at render time
+- Retroactive — changing ownership updates all historical analytics without re-importing
+
+**Per-person Detail Analytics — By Purchaser tab**
+- New tab in Detail Lens with individual spending cards per attributed person
+- Each card: total spend, monthly average, impulse rate, average order, top categories
+- Projected end-of-month spend vs. historical average
+- Per-person acceleration warning (category-level, flagged if >40% up vs. prior quarter)
+
+**Per-person Bullpen Alerts**
+- Quicken account trends now break down by person when accountOwners is configured
+- Detail file trends now surface per-person acceleration with the individual named
+- New alert type `purchaser` with `👤` icon for visual distinction
+
+**Per-person Recommended Actions**
+- "Chris is on pace for record detail spend this month — 43% above average with 8 days left"
+- "Kira's impulse rate is 51% — worth discussing at Confluence"
+- Predictive: detail imports as % of monthly spending flagged when >15%
+
+**Per-person $id context**
+- `buildContext()` now includes purchaser breakdown from detail files and Quicken account owners
+- $id can answer "How much is Kira spending on Beauty?" or "Whose Amazon spending is accelerating?"
+- Pulse `buildAlerts()` generates per-person impulse alerts and end-of-month projections
+
+### Added — Detail Lens (formerly Amazon Watchlist)
+
+**Multi-format detail file support**
+- `parseDetailFile()` — auto-router that detects format and routes to the right parser
+- `parseAppleCard()` — Apple Card monthly statement CSV (exported from Wallet app); detects by `clearing date`/`amount (usd)` columns or `apple`/`applecard` in filename
+- `parseGenericDetail()` — catches any CSV with date + description + amount; sets `source` from filename; handles PayPal, Venmo, Costco, store loyalty exports
+- `parseAmazon()` — unchanged but now wrapped by `parseDetailFile` which stamps `source` and `purchaser`
+
+**Source tracking**
+- Every detail item has a `source` field: `"Amazon"`, `"Apple Card"`, or filename-derived
+- Source badge shown on every item row (purple badge for non-Amazon sources)
+- Source filter dropdown in All Items tab
+- Source breakdown in $id context string
+
+**UI updates**
+- Page renamed: **Amazon Watchlist → Detail Lens** (nav, page header, Pulse tab)
+- Page logo: 📦 → 🔍
+- No-data state explains filename tagging convention
+- Drop zone label updated to list Amazon, Apple Card, and generic CSVs
+- Pour ③ section: instructions expanded to cover all supported formats and purchaser tagging
+- Person and Source filter dropdowns added to All Items tab
+
+**Person filter in All Items**
+- Filter dropdown populated from all distinct `purchaser` values in `amzItems`
+- Works in combination with Category, Source, and Flag filters
+
+### Fixed
+
+- Demo date now uses real current date (`new Date()`) instead of hardcoded `2026-03-26` — demo data always runs through today
+- Upload page div structure fully balanced (0 difference between open and close divs)
+- File card badge updated: `📦 Amazon` → `🔍 Detail`
+- `showImportResults()` toast now says "detail items" instead of "Amazon items"
+- `amzItems` dedup key updated to include `purchaser` field
+
+### Changed
+
+- `DEFAULT_SETTINGS` gains `accountOwners: {}` and `detailSensitivity: 3`
+- `amzItem` schema gains `source` and `purchaser` fields (backward compatible — both default to null/empty)
+- Settings sidebar renders Account Owners section dynamically after accounts are imported
+- Pulse `DEFAULT_FAMILY` gains `accountOwners: {}`
+
+---
+
+## [2.1] — 2026-03-28
+
+### Changed
+- Quicken export instructions rewritten across all surfaces. Previous instructions described `File → Export → Transactions to QIF` which does not reliably export all accounts in all Quicken versions. New instructions split by platform:
+  - **Mac:** All Transactions sidebar → File → Export → Register Transactions to CSV File
+  - **Windows:** Reports → Banking → Transaction → Export icon → CSV
 
 ---
 
 ## [2.0] — 2026-03-28
 
 ### Added
-- **Drop zone visual feedback** — zones turn gold on hover, scale on dragover, flash green with animated ✓ on successful drop
-- **Depth-counter drag-and-drop** — eliminates false `dragleave` events when dragging over child elements inside the zone (classic child-element bug)
-- **File input z-index fix** — file `<input>` now has `z-index: 10` and child elements have `pointer-events: none`, making the entire zone area clickable to open the system file picker
-- **Onclick fallback** — explicit `onclick` handler on each zone as belt-and-suspenders guarantee for click-to-browse
-- **Rich file cards** — queued files now show icon, filename, size, source badge (Quicken / Amazon), and ✕ remove button
-- **Clear upload page** button — resets the entire upload page to blank slate (clears queue, result panel, file input state)
-- **Clear all** button — removes all queued files at once
-- **Per-file progress bar** — shows which file is being processed and progress percentage
-- **Already-queued toast** — shows a warning instead of silently ignoring duplicate file drops
-- **Import button state** — button shows "Processing…" and disables during import, re-enables after
-- **Comprehensive upload instructions** — The Pour now has three distinct sections: First-time full history export, Monthly refresh, and Amazon history — each with step-by-step numbered instructions
-- **`.qxf` specific error message** — when a Quicken Transfer Format file is dropped, Forge explains exactly what it is and what to do instead
-- **British spelling corrections** — `recognised` → `recognized`, `analyse` → `analyze` throughout all files
+- Drop zone visual feedback: gold on hover, scale on dragover, green ✓ flash on successful drop
+- Depth-counter drag-and-drop fix: eliminates false `dragleave` from child elements
+- File input z-index fix: entire zone area clickable to open file picker
+- Rich file cards with purchaser/source badges, ✕ remove, Clear All
+- Clear Upload Page button
+- Per-file progress bar during import
+- Already-queued toast warning
+- Try/catch on cfChart initialization
+- Pittsburgh-themed loading toast: "⚾ $kenes takes the mound — Pittsburgh demo loaded"
+- Demo data uses real current date
 
 ### Fixed
-- **`showToast` ID mismatch** — function was looking for `id="forge-toast"` but HTML element has `id="toast"`. Every toast call silently failed. This was the root cause of all import feedback being invisible.
-- **CSS cascade order** — `.furnace-zone:hover` was defined after `.furnace-zone.dragover`, causing hover styles to override dragover styles during drag operations
-- **`.qxf` removed from valid extensions** — `.qxf` (Quicken Transfer Format, encrypted binary) is fundamentally different from `.qfx` (Quicken Financial Exchange, OFX text format). Removed from `validExts` and parser routing; now shows a specific, accurate error message
-
-### Changed
-- Upload page hero section now shows **↺ Clear upload page** button alongside the demo button
-- Import actions section now shows progress bar above the Begin Forging button
+- `showToast()` ID mismatch: was looking for `id="forge-toast"`, element has `id="toast"` — all toasts were silently failing
+- CSS cascade order: `.furnace-zone:hover` defined after `.dragover` was overriding dragover styles during drag operations
+- `.qxf` removed from valid file extensions with specific error message
+- British spellings: `recognised` → `recognized`, `analyse` → `analyze`
+- `furnace-zone-inner` div properly closed in both DZ1 and DZ2 (malformed HTML fixed)
 
 ---
 
 ## [1.9] — 2026-03-25
 
 ### Added
-- **Comprehensive plain-English error messages** — all import errors now explain what went wrong, why, and give an exact next step. No technical jargon (no `<STMTTRN>`, no `D/T/P/^` record structure references).
-- **Format-aware error messages** — QFX/QXF errors, QIF errors, and CSV errors each get specific actionable advice
-- **Null guards on `parseQIF` and `parseOFX`** — functions return `[]` immediately if called with null/empty text rather than crashing
-- **Sid setup guide** — full 5-step plain-English setup guide as Sid's voice in `getSidSetupMessage()`
-- **Sid error routing** — all API errors (401, 429, timeout, network failure) produce plain-English messages with specific resolution steps
-- **`parseCSV` column detection** — extended to match `narrative`, `details`, `net amount` column names
+- Comprehensive plain-English import error messages
+- Sid/`$id` setup guide rendered in chat when Worker not configured
+- `parseCSV` extended: `narrative`, `details`, `net amount` column names
+- Null guards on `parseQIF`, `parseOFX`
 
 ### Fixed
-- **`processAll` async bug** — `readFile()` returns a Promise; processAll was missing `async` keyword, causing files to import as `[object Promise]`
-- **`scoreImpulse` crash** — `item.title.toLowerCase()` crashed when `item` was null or `title` was undefined. Added defensive null checks.
-- **`getParentLifeStage` boundaries** — age 32 was returning wrong life stage. Fixed boundaries: `<37=early_career`, `<47=peak_earning`, `<58=pre_retirement`, `<67=late_career`
-- **`parseOFX` payee fallback** — added `g('n')` between `NAME` and `MEMO` as intermediate fallback
-- **`parseCSV` amount parsing** — parenthetical amounts like `(1,234.56)` now correctly parse as negative
+- `processAll` async bug: `readFile()` returns a Promise; function was missing `async`
+- `scoreImpulse` null crash on empty item
+- `getParentLifeStage` boundaries corrected
 
 ---
 
-## [1.8] — 2026-03-20
+## [1.0 – 1.8] — 2026-02-05 to 2026-03-20
 
-### Added
-- **Forge Pulse (Mobile PWA)** — `forge-pulse.html` with four tabs: The Gauge, Furnace, Watchlist, Ask Sid
-- **Sid AI chat** — Claude-powered financial intelligence via Cloudflare Worker proxy
-- **`forge_worker.js`** — Cloudflare Worker for secure API key proxying
-- **`buildSidPrompt` / `buildContext`** — automatic financial context injection for every Sid query
-- **Three Sid communication modes** — data-first (default), story-first (partner's name detected), Confluence mode (meeting context detected)
-- **Life-stage intelligence** — 5 life stages with prioritized financial recommendations based on family ages
-- **Impulse scoring** — Amazon items scored 0–100 for impulse-buy likelihood based on category, price, and quantity
-- **PWA manifest** — Forge Pulse installable as home screen app on iOS and Android
-
----
-
-## [1.7] — 2026-03-15
-
-### Added
-- **The Confluence** — structured 6-step monthly family financial review meeting
-- **Goal tracker** — with progress bars, shown in both desktop and Pulse
-- **Decision log** — typed decisions (Cut, Invest, Defer, Watch, Win) with date stamps
-- **Planned purchases tracker** — upcoming expense planning
-- **PDF Blueprint export** — printable monthly summary packet via `window.print()`
-- **Confluence entry animation** — animated Pittsburgh rivers intro
-- **Per-step notes** — auto-saved text areas for each agenda step
-- **Meeting progress bar** — tracks steps marked done
-
-### Changed
-- Navigation expanded with Monthly Review (The Confluence) as a top-level page
-
----
-
-## [1.6] — 2026-03-10
-
-### Added
-- **Amazon Watchlist** — full order history analysis with 4 tabs (Overview, By Category, All Items, vs. Total Spend)
-- **`parseAmazon`** — supports both 2023+ Privacy Central format and legacy Order History Reports format
-- **Impulse flag system** — High/Medium/Low impulse badges on Amazon items
-- **Repeat purchase detection** — surfaces items ordered 3+ times
-
----
-
-## [1.5] — 2026-03-05
-
-### Added
-- **The Furnace (Intelligence Engine)** — 5 detection algorithms: trend alerts, budget drift, anomaly detection, seasonal patterns, recommended actions
-- **`detectTrendAlerts`** — 3M vs. prior 3M comparison by category
-- **`detectBudgetDrift`** — end-of-month projection vs. historical average
-- **`detectAnomalies`** — statistical outlier detection (>2σ)
-- **`detectSeasonal`** — multi-year monthly heatmap and pattern analysis
-- **`buildLifeStageRecommendations`** — age-based financial guidance
-- **Anomaly histogram** — transaction size distribution chart
-- **Budget drift table** — projected EOMonth vs. average with color-coded status
-
----
-
-## [1.4] — 2026-02-28
-
-### Added
-- **4-year demo data generator** — `generateDemoData()` produces realistic synthetic household data
-- **Demo mode banner** — clearly indicates when viewing demo vs. real data
-- **`parseQIF` support** — full QIF record parsing
-- **`parseOFX` support** — OFX/QFX format parsing with `<STMTTRN>` block extraction
-- **`guessType`** — automatic account type inference from account name keywords
-
----
-
-## [1.3] — 2026-02-20
-
-### Added
-- **Categories page** — full breakdown with YoY comparison, donut and bar charts
-- **Merchants page** — top 50 payees ranked by spend
-- **Cash Flow page** — monthly income vs. expenses, net savings trend
-- **Ledger Room** — full transaction history, paginated (100/page), with search and filters
-- **Account sidebar** — color-coded account chips with balance totals
-- **`filterToAccount`** — click any account to jump to filtered Ledger Room view
-
----
-
-## [1.2] — 2026-02-15
-
-### Added
-- **Settings page** — family profile, financial targets, category budgets, Confluence preferences
-- **`DEFAULT_SETTINGS`** — full settings schema with sensible defaults
-- **Age badges** — real-time age display as date-of-birth is typed
-- **Kids list** — dynamic add/remove with name and DOB per child
-- **Category budget table** — editable monthly targets with 3-month average reference
-- **Sid live preview** — settings page shows how Sid will speak based on current configuration
-
----
-
-## [1.1] — 2026-02-10
-
-### Added
-- **The Gauge (Dashboard)** — KPI cards, cash flow chart, category donut, top merchants, top categories
-- **`parseDate`** — comprehensive date parser handling 8 common formats
-- **`splitCSV`** — correct RFC 4180 CSV field splitter (handles quoted fields with embedded commas)
-- **`parseCSV`** — flexible column detection with 30+ accepted column name variants
-- **Deduplication** — composite key `date|payee|amount|account` prevents duplicate imports
-- **Chart.js integration** — 16 chart instances across the application
-- **Dark theme design system** — full CSS custom property token set
-
----
-
-## [1.0] — 2026-02-05
-
-### Initial Release
-- **The Pour** — drag-and-drop file import with CSV support
-- **Basic dashboard** — transaction count, total spend, account list
-- **localStorage persistence** — `ledger_v3` data schema
-- **Pittsburgh design language** — void/steel dark theme, Forge gold (#F5A800), Cormorant Garamond display font
-- **GitHub Pages deployment** — static hosting at luka731chris.github.io/Forge
+Initial release through Forge Pulse launch. See git history for details.

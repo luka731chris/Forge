@@ -1187,17 +1187,16 @@ select option { background: var(--float); color: var(--ink2); }
 
 <!-- ══ UPLOAD ══ -->
 <div id="page-upload" class="page active">
-  <div style="max-width:700px;margin:0 auto;padding:16px 0 64px;">
+  <div style="max-width:720px;margin:0 auto;padding:16px 0 64px;">
 
     <!-- ── HERO ── -->
-    <div style="margin-bottom:40px;">
-      <!-- Pittsburgh identity mark -->
+    <div style="margin-bottom:36px;">
       <div style="font-family:var(--font-m);font-size:9px;letter-spacing:.18em;color:var(--gold);opacity:.7;margin-bottom:14px;text-transform:uppercase;">⚾ <strong style="letter-spacing:.04em;">$kenes</strong> #30 reads the scouting report &nbsp;·&nbsp; 🏒 <strong style="letter-spacing:.04em;">$id</strong> #87 reads the play</div>
       <div style="font-family:var(--font-d);font-size:40px;font-weight:600;color:var(--ink);line-height:1.12;margin-bottom:12px;">
         Build what lasts.<br><em style="color:var(--gold);">Start with your data.</em>
       </div>
       <div style="font-size:14px;color:var(--ink3);line-height:1.85;margin-bottom:22px;max-width:560px;">
-        Forge reads directly from Quicken — no bank logins, no shared credentials, nothing leaving your browser. Import your history once, refresh in two minutes every month.
+        Drop any financial file — Quicken, Amazon, Apple Card, or any itemized CSV. Forge reads the content, figures out the format, and builds your intelligence layer automatically.
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
         <button class="btn btn-forge" onclick="loadDemo()" style="font-size:13px;padding:10px 24px;">⚾&nbsp;&nbsp;Load Pittsburgh demo</button>
@@ -1205,229 +1204,185 @@ select option { background: var(--float); color: var(--ink2); }
       </div>
     </div>
 
-    <!-- ── FIRST-TIME SETUP ─────────────────────────────────── -->
-    <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:28px;overflow:hidden;">
+    <!-- ── UNIFIED DROP ZONE ────────────────────────────────────── -->
+    <div style="margin-bottom:24px;">
 
-      <div style="padding:20px 26px 0;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-          <div style="width:26px;height:26px;background:var(--gold);color:#000;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">①</div>
-          <div style="font-size:18px;font-weight:700;color:var(--ink);">First time? Start with a full history export</div>
-        </div>
-        <div style="font-size:13px;color:var(--ink3);line-height:1.75;margin-bottom:20px;padding-left:36px;">
-          The more history you give Forge, the smarter its alerts and trends become. For first-time setup, export <strong style="color:var(--ink);">all of your accounts going back as far as Quicken will allow</strong> — ideally 2–5 years. You only do this once.
-        </div>
-      </div>
-
-      <!-- Step-by-step inside the card -->
-      <div style="padding:0 26px 24px;">
-        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-md);padding:20px 22px;">
-
-          <div style="font-family:var(--font-m);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">How to export from Quicken — full history, all accounts</div>
-          <div style="font-size:12px;color:var(--ink4);margin-bottom:18px;line-height:1.6;">Quicken's menus differ by version. Use whichever path works on your computer — they all produce the same result.</div>
-
-          <!-- Mac path -->
-          <div style="margin-bottom:18px;padding:14px 16px;background:rgba(245,168,0,.05);border:1px solid rgba(245,168,0,.15);border-radius:var(--r-sm);">
-            <div style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.06em;margin-bottom:10px;">QUICKEN FOR MAC — recommended path</div>
-            <div style="display:flex;flex-direction:column;gap:10px;">
-              <div style="display:flex;gap:12px;">
-                <div style="min-width:20px;height:20px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">1</div>
-                <div style="font-size:13px;color:var(--ink2);line-height:1.6;">In the left sidebar, click <strong style="color:var(--ink);">All Transactions</strong> — this shows every account at once</div>
-              </div>
-              <div style="display:flex;gap:12px;">
-                <div style="min-width:20px;height:20px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">2</div>
-                <div style="font-size:13px;color:var(--ink2);line-height:1.6;">Clear any date filters — you want to see the full history</div>
-              </div>
-              <div style="display:flex;gap:12px;">
-                <div style="min-width:20px;height:20px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">3</div>
-                <div style="font-size:13px;color:var(--ink2);line-height:1.6;">Menu bar: <strong style="color:var(--ink);">File → Export → Register Transactions to CSV File</strong></div>
-              </div>
-              <div style="display:flex;gap:12px;">
-                <div style="min-width:20px;height:20px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">4</div>
-                <div style="font-size:13px;color:var(--ink2);line-height:1.6;">Choose <strong style="color:var(--ink);">All visible transactions</strong>, uncheck Scheduled Transactions → Save</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Windows path -->
-          <div style="margin-bottom:18px;padding:14px 16px;background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15);border-radius:var(--r-sm);">
-            <div style="font-size:11px;font-weight:700;color:var(--river);letter-spacing:.06em;margin-bottom:10px;">QUICKEN FOR WINDOWS — recommended path</div>
-            <div style="display:flex;flex-direction:column;gap:10px;">
-              <div style="display:flex;gap:12px;">
-                <div style="min-width:20px;height:20px;border-radius:50%;background:var(--river);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">1</div>
-                <div style="font-size:13px;color:var(--ink2);line-height:1.6;">Go to <strong style="color:var(--ink);">Reports → Banking → Transaction</strong></div>
-              </div>
-              <div style="display:flex;gap:12px;">
-                <div style="min-width:20px;height:20px;border-radius:50%;background:var(--river);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">2</div>
-                <div style="font-size:13px;color:var(--ink2);line-height:1.6;">Set <strong style="color:var(--ink);">Accounts: All Accounts</strong> and date range to your earliest date through today</div>
-              </div>
-              <div style="display:flex;gap:12px;">
-                <div style="min-width:20px;height:20px;border-radius:50%;background:var(--river);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">3</div>
-                <div style="font-size:13px;color:var(--ink2);line-height:1.6;">Run the report, then click the <strong style="color:var(--ink);">Export icon</strong> (green arrow, top of the report) → <strong style="color:var(--ink);">Export to CSV File</strong></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Fallback -->
-          <div style="padding:12px 14px;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);font-size:12px;color:var(--ink3);line-height:1.7;margin-bottom:14px;">
-            <strong style="color:var(--ink2);">If neither path works:</strong> Export each account individually — go into each account's register → gear/actions icon → <strong style="color:var(--ink);">Export to Excel workbook</strong>. Drop all the files into Forge at once. Forge accepts multiple files and merges them automatically.
-          </div>
-
-          <!-- qxf warning -->
-          <div style="padding:12px 14px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);border-radius:var(--r-sm);font-size:12px;color:var(--ink3);line-height:1.7;">
-            <strong style="color:var(--negative);">⚠ Do not use</strong> <strong style="color:var(--ink2);">File → Export → Quicken Transfer Format (.qxf)</strong> — that file moves Quicken between computers and cannot be imported here.
-          </div>
-
-        </div>
-      </div>
-    <!-- ── MONTHLY REFRESH ───────────────────────────────────── -->
-    <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:28px;overflow:hidden;">
-
-      <div style="padding:20px 26px 0;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-          <div style="width:26px;height:26px;background:var(--float);border:1px solid var(--line2);color:var(--ink2);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">②</div>
-          <div style="font-size:18px;font-weight:700;color:var(--ink);">Every month — keep Forge current</div>
-        </div>
-        <div style="font-size:13px;color:var(--ink3);line-height:1.75;margin-bottom:20px;padding-left:36px;">
-          Once your history is loaded, monthly updates take about 2 minutes. Forge deduplicates automatically — it's always safe to re-import a file you've imported before.
-        </div>
-      </div>
-
-      <div style="padding:0 26px 24px;">
-        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-md);padding:20px 22px;">
-
-          <div style="font-family:var(--font-m);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink4);margin-bottom:18px;">Monthly routine — do this on the 1st of each month</div>
-
-          <div style="display:flex;flex-direction:column;gap:12px;">
-
-            <div style="display:flex;gap:14px;">
-              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">1</div>
-              <div style="font-size:13px;color:var(--ink2);line-height:1.65;">
-                Open Quicken → use the same export path as your initial setup:<br>
-                <span style="color:var(--ink4);font-size:12px;">Mac: File → Export → Register Transactions to CSV File &nbsp;·&nbsp; Windows: Reports → Banking → Transaction → Export</span>
-              </div>
-            </div>
-
-            <div style="display:flex;gap:14px;">
-              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">2</div>
-              <div style="font-size:13px;color:var(--ink2);line-height:1.65;">
-                Set date range to <strong style="color:var(--ink);">Last 30–60 days</strong> · <strong style="color:var(--ink);">All Accounts</strong> · Save as CSV
-              </div>
-            </div>
-
-            <div style="display:flex;gap:14px;">
-              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">3</div>
-              <div style="font-size:13px;color:var(--ink2);line-height:1.65;">
-                Drop the file below → click <strong style="color:var(--ink);">Begin Forging</strong> → done
-              </div>
-            </div>
-
-          </div>
-
-          <div style="margin-top:14px;padding:10px 14px;background:rgba(47,168,122,.07);border:1px solid rgba(47,168,122,.2);border-radius:var(--r-sm);font-size:12px;color:var(--ink3);line-height:1.7;">
-            <strong style="color:var(--positive);">✓ Safe to re-import</strong> — Forge automatically skips any transactions already in the ledger. Importing the same file twice will not create duplicates.
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- ── QUICKEN DROP ZONE ─────────────────────────────────── -->
-    <div style="margin-bottom:28px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-        <div style="font-size:17px;font-weight:700;color:var(--ink);">Drop your Quicken file here</div>
-        <div style="display:flex;gap:6px;">
+      <!-- Zone header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <div style="font-size:16px;font-weight:700;color:var(--ink);">Drop any file — Forge figures out the rest</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;">
           <span class="pill csv">CSV</span>
           <span class="pill qif">QIF</span>
-          <span class="pill qfx">QFX / OFX</span>
+          <span class="pill qfx">QFX · OFX</span>
+          <span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:12px;font-size:9.5px;font-weight:700;font-family:var(--font-m);background:rgba(167,139,250,.15);color:var(--purple);border:1px solid rgba(167,139,250,.3);">APPLE CARD</span>
+          <span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:12px;font-size:9.5px;font-weight:700;font-family:var(--font-m);background:rgba(245,168,0,.12);color:var(--gold);border:1px solid rgba(245,168,0,.25);">AMAZON</span>
         </div>
       </div>
-      <div class="furnace-zone" id="dz1" onclick="if(!event.target.matches('input')){document.getElementById('fi1').click()}" style="padding:36px 28px;">
-        <input type="file" id="fi1" accept=".csv,.qif,.qfx,.ofx" multiple onchange="handleFiles(this.files,'quicken')">
+
+      <!-- The drop zone itself -->
+      <div class="furnace-zone" id="dz1" onclick="if(!event.target.matches('input')){document.getElementById('fi1').click()}" style="padding:44px 28px;">
+        <input type="file" id="fi1" accept=".csv,.qif,.qfx,.ofx" multiple onchange="handleFiles(this.files,'auto')">
         <div class="furnace-zone-inner">
-          <div style="font-size:40px;margin-bottom:12px;pointer-events:none;">📂</div>
-          <div style="font-size:17px;font-weight:600;color:var(--ink);margin-bottom:5px;pointer-events:none;">Drop Quicken export here</div>
-          <div style="font-size:13px;color:var(--ink3);margin-bottom:8px;pointer-events:none;">or click anywhere in this box to browse for a file</div>
-          <div style="display:flex;gap:7px;justify-content:center;flex-wrap:wrap;pointer-events:none;">
-            <span class="pill csv">CSV</span><span class="pill qif">QIF</span><span class="pill qfx">QFX / OFX</span>
+          <div style="font-size:48px;margin-bottom:16px;pointer-events:none;">📂</div>
+          <div style="font-size:19px;font-weight:600;color:var(--ink);margin-bottom:8px;pointer-events:none;">Drop files here or click to browse</div>
+          <div style="font-size:13px;color:var(--ink3);margin-bottom:6px;pointer-events:none;max-width:460px;line-height:1.7;text-align:center;">
+            Quicken exports · Amazon order history · Apple Card statements · any itemized CSV
+          </div>
+          <div style="font-size:11px;color:var(--ink4);pointer-events:none;font-family:var(--font-m);">
+            auto-detects format · multiple files at once · deduplicates automatically
           </div>
         </div>
+      </div>
+
+      <!-- What Forge accepts — 3-column reference -->
+      <div style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+        <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 13px;">
+          <div style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.08em;margin-bottom:4px;">💳 QUICKEN</div>
+          <div style="font-size:11px;color:var(--ink3);line-height:1.55;">CSV · QIF · QFX · OFX<br>Full transaction history, all accounts</div>
+        </div>
+        <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 13px;">
+          <div style="font-size:10px;font-weight:700;color:var(--purple);letter-spacing:.08em;margin-bottom:4px;">🍎 APPLE CARD &amp; 📦 AMAZON</div>
+          <div style="font-size:11px;color:var(--ink3);line-height:1.55;">Monthly CSV · Order history<br>Line-item detail · purchaser tracking</div>
+        </div>
+        <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 13px;">
+          <div style="font-size:10px;font-weight:700;color:var(--river);letter-spacing:.08em;margin-bottom:4px;">🔍 ANY ITEMIZED CSV</div>
+          <div style="font-size:11px;color:var(--ink3);line-height:1.55;">PayPal · Venmo · Costco<br>Date + Description + Amount</div>
+        </div>
+      </div>
+
+      <!-- Purchaser tagging tip -->
+      <div style="margin-top:10px;padding:10px 14px;background:rgba(245,168,0,.05);border:1px solid rgba(245,168,0,.15);border-radius:var(--r-sm);font-size:12px;color:var(--ink3);line-height:1.7;">
+        💡 <strong style="color:var(--ink2);">Purchaser tagging:</strong> Include a family member's first name in the filename before dropping — e.g. <span style="font-family:var(--font-m);color:var(--gold);font-size:11px;">amazon_chris.csv</span> or <span style="font-family:var(--font-m);color:var(--gold);font-size:11px;">applecard_kira.csv</span>. Forge attributes every item in that file to that person. Works for any file type.
       </div>
     </div>
 
-    <!-- ── AMAZON ─────────────────────────────────────────────── -->
-    <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:28px;overflow:hidden;">
-
-      <div style="padding:20px 26px 0;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-          <div style="width:26px;height:26px;background:var(--float);border:1px solid var(--line2);color:var(--ink2);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">③</div>
-          <div style="font-size:18px;font-weight:700;color:var(--ink);">Detail files — line-item enrichment &nbsp;<span style="font-size:12px;font-weight:400;color:var(--ink4);background:var(--lift);padding:2px 9px;border-radius:20px;border:1px solid var(--line2);">optional</span></div>
-        </div>
-        <div style="font-size:13px;color:var(--ink3);line-height:1.75;margin-bottom:20px;padding-left:36px;">
-          Detail files unmask lump-sum charges into line-item intelligence. Supported: Amazon order history, Apple Card monthly statements, or any CSV with Date, Description, and Amount columns. <strong style="color:var(--ink2);">Name the file with a family member's first name</strong> (e.g. <span style="font-family:var(--font-m);color:var(--gold);font-size:12px;">amazon_chris.csv</span>) to enable per-person analytics.
+    <!-- ── HOW TO GET YOUR FILES ─────────────────────────────────── -->
+    <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:24px;overflow:hidden;">
+      <div style="padding:18px 24px 0;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <div style="width:26px;height:26px;background:var(--gold);color:#000;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">①</div>
+          <div style="font-size:17px;font-weight:700;color:var(--ink);">How to get your files</div>
         </div>
       </div>
+      <div style="padding:0 24px 22px;display:flex;flex-direction:column;gap:12px;">
 
-      <div style="padding:0 26px 24px;">
-        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-md);padding:20px 22px;">
-
-          <div style="font-family:var(--font-m);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;">How to get detail files — Amazon, Apple Card, and others</div>
-
-          <div style="display:flex;flex-direction:column;gap:14px;">
-
-            <div style="display:flex;gap:14px;">
-              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">1</div>
-              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">On a <strong style="color:var(--ink);">desktop browser</strong>, go to <strong style="color:var(--ink);">amazon.com</strong> and sign in</div>
-            </div>
-
-            <div style="display:flex;gap:14px;">
-              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">2</div>
-              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">Click <strong style="color:var(--ink);">Account &amp; Lists → Account</strong> → scroll to <strong style="color:var(--ink);">Manage your data</strong> → click <strong style="color:var(--ink);">Request your data</strong></div>
-            </div>
-
-            <div style="display:flex;gap:14px;">
-              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">3</div>
-              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">Select <strong style="color:var(--ink);">Your Orders</strong> and submit the request</div>
-            </div>
-
-            <div style="display:flex;gap:14px;">
-              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">4</div>
-              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">Amazon sends a <strong style="color:var(--ink);">confirmation email</strong> — click the link in it to confirm your request</div>
-            </div>
-
-            <div style="display:flex;gap:14px;">
-              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">5</div>
-              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">Wait for a <strong style="color:var(--ink);">second email with your download link</strong><br><span style="font-size:12px;color:var(--ink4);">Usually a few hours. Can be up to 24 hours.</span></div>
-            </div>
-
-            <div style="display:flex;gap:14px;">
-              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">6</div>
-              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">
-                Download and <strong style="color:var(--ink);">unzip</strong> the file → open the <strong style="color:var(--ink);">Your Orders</strong> folder → find the file named <strong style="color:var(--gold);font-family:var(--font-m);font-size:13px;">Retail.OrderHistory.1.csv</strong> and drop it in the Amazon zone below
+        <!-- Quicken -->
+        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-md);overflow:hidden;">
+          <div style="padding:10px 16px;background:rgba(245,168,0,.06);border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:8px;">
+            <span style="font-size:14px;">💳</span>
+            <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:.04em;">QUICKEN — full transaction history</div>
+          </div>
+          <div style="padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.06em;margin-bottom:8px;">MAC</div>
+              <div style="font-size:12px;color:var(--ink2);line-height:1.7;">
+                1. Sidebar → <strong>All Transactions</strong><br>
+                2. Clear date filters<br>
+                3. <strong>File → Export → Register Transactions to CSV File</strong><br>
+                4. All visible transactions → Save
               </div>
             </div>
-
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.06em;margin-bottom:8px;">WINDOWS</div>
+              <div style="font-size:12px;color:var(--ink2);line-height:1.7;">
+                1. <strong>Reports → Banking → Transaction</strong><br>
+                2. All Accounts · full date range<br>
+                3. <strong>Export icon → Export to CSV File</strong>
+              </div>
+            </div>
           </div>
-
-          <div style="margin-top:16px;padding:10px 14px;background:rgba(245,168,0,.07);border:1px solid rgba(245,168,0,.2);border-radius:var(--r-sm);font-size:12px;color:var(--ink3);line-height:1.7;">
-            <strong style="color:var(--ink2);">Monthly refresh:</strong> Repeat step 3 onward each month. Always safe to re-import — Forge skips orders it has already seen.
-          </div>
-
-        </div>
-      </div>
-
-      <!-- Amazon drop zone -->
-      <div style="padding:0 26px 26px;">
-        <div class="furnace-zone" id="dz2" onclick="if(!event.target.matches('input')){document.getElementById('fi2').click()}" style="padding:36px 28px;">
-          <input type="file" id="fi2" accept=".csv" multiple onchange="handleFiles(this.files,'amazon')">
-          <div class="furnace-zone-inner">
-            <div style="font-size:40px;margin-bottom:12px;pointer-events:none;">📦</div>
-            <div style="font-size:16px;font-weight:600;color:var(--ink);margin-bottom:5px;pointer-events:none;">Drop <span style="color:var(--gold);font-family:var(--font-m);font-size:14px;">Retail.OrderHistory.1.csv</span> here</div>
-            <div style="font-size:13px;color:var(--ink3);margin-bottom:4px;pointer-events:none;">or click anywhere in this box to browse</div>
-            <div style="font-size:12px;color:var(--ink4);pointer-events:none;">from the "Your Orders" folder in Amazon's ZIP file</div>
+          <div style="padding:0 16px 12px;">
+            <div style="padding:8px 12px;background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-sm);font-size:11px;color:var(--ink3);">
+              ⚠ <strong style="color:var(--negative);">Do not use</strong> File → Export → Quicken Transfer Format (.qxf) — that file cannot be imported here.
+            </div>
           </div>
         </div>
-      </div>
 
+        <!-- Amazon -->
+        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-md);overflow:hidden;">
+          <div style="padding:10px 16px;background:rgba(245,168,0,.06);border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:8px;">
+            <span style="font-size:14px;">📦</span>
+            <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:.04em;">AMAZON — order history (request required)</div>
+          </div>
+          <div style="padding:14px 16px;font-size:12px;color:var(--ink2);line-height:1.75;">
+            1. amazon.com (desktop browser) → <strong>Account &amp; Lists → Account → Manage your data → Request your data</strong><br>
+            2. Select <strong>Your Orders</strong> → submit · confirm the email Amazon sends immediately<br>
+            3. Wait for a second email with download link (a few hours, up to 24)<br>
+            4. Unzip → open <strong>Your Orders</strong> folder → use <span style="font-family:var(--font-m);color:var(--gold);">Retail.OrderHistory.1.csv</span><br>
+            5. Rename with purchaser's name if known: <span style="font-family:var(--font-m);color:var(--gold);">amazon_chris.csv</span>
+          </div>
+        </div>
+
+        <!-- Apple Card -->
+        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-md);overflow:hidden;">
+          <div style="padding:10px 16px;background:rgba(167,139,250,.06);border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:8px;">
+            <span style="font-size:14px;">🍎</span>
+            <div style="font-size:12px;font-weight:700;color:var(--purple);letter-spacing:.04em;">APPLE CARD — monthly statement</div>
+          </div>
+          <div style="padding:14px 16px;font-size:12px;color:var(--ink2);line-height:1.75;">
+            Wallet app → Apple Card → tap any month → <strong>Export Transactions</strong> → save CSV to your computer.<br>
+            Rename with purchaser's name: <span style="font-family:var(--font-m);color:var(--purple);">applecard_kira.csv</span>
+          </div>
+        </div>
+
+        <!-- Other -->
+        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-md);overflow:hidden;">
+          <div style="padding:10px 16px;background:rgba(96,165,250,.05);border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:8px;">
+            <span style="font-size:14px;">🔍</span>
+            <div style="font-size:12px;font-weight:700;color:var(--river);letter-spacing:.04em;">ANY OTHER CSV — PayPal · Venmo · Costco · store exports</div>
+          </div>
+          <div style="padding:14px 16px;font-size:12px;color:var(--ink2);line-height:1.75;">
+            Any CSV with <strong>Date</strong>, <strong>Description</strong> (or Merchant / Payee), and <strong>Amount</strong> columns. Export from the service, drop it in, Forge reads it. If the columns don't match, the result panel explains exactly what was missing.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── MONTHLY ROUTINE ───────────────────────────────────── -->
+    <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:24px;overflow:hidden;">
+      <div style="padding:18px 24px 0;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+          <div style="width:26px;height:26px;background:var(--float);border:1px solid var(--line2);color:var(--ink2);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">②</div>
+          <div style="font-size:17px;font-weight:700;color:var(--ink);">Monthly routine — 2–3 minutes on the 1st</div>
+        </div>
+        <div style="font-size:13px;color:var(--ink3);line-height:1.75;margin-bottom:18px;padding-left:36px;">
+          Gather everything in one folder, drop it all at once, click Begin Forging. Forge processes every file type in a single pass and skips anything already in the ledger.
+        </div>
+      </div>
+      <div style="padding:0 24px 22px;">
+        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-md);padding:18px 20px;">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">1</div>
+              <div style="font-size:13px;color:var(--ink2);line-height:1.65;">
+                <strong style="color:var(--ink);">Quicken:</strong> Export last 30–60 days, All Accounts (same path as initial setup)
+              </div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;">2</div>
+              <div style="font-size:13px;color:var(--ink2);line-height:1.65;">
+                <strong style="color:var(--ink);">Amazon:</strong> Request updated order history if you want this month's detail (or skip — Quicken already has the charge amount)
+              </div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;">3</div>
+              <div style="font-size:13px;color:var(--ink2);line-height:1.65;">
+                <strong style="color:var(--ink);">Apple Card:</strong> Export this month's statement from Wallet app (optional but adds line-item detail)
+              </div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">4</div>
+              <div style="font-size:13px;color:var(--ink2);line-height:1.65;">
+                <strong style="color:var(--ink);">Drop everything at once</strong> → Begin Forging → done
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:14px;padding:10px 14px;background:rgba(47,168,122,.07);border:1px solid rgba(47,168,122,.2);border-radius:var(--r-sm);font-size:12px;color:var(--ink3);line-height:1.7;">
+            <strong style="color:var(--positive);">✓ Always safe to re-import</strong> — Forge skips anything already in the ledger. Same file twice = no duplicates.
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ── FILE LIST + IMPORT BUTTON ─────────────────────────── -->
@@ -1447,6 +1402,7 @@ select option { background: var(--float); color: var(--ink2); }
 
   <div id="importResultPanel" style="display:none;padding:0 0 28px;"></div>
 </div>
+
 
 <!-- ══ DASHBOARD ══ -->
 <div id="page-dashboard" class="page">
@@ -2350,40 +2306,85 @@ function clearUploadPage() {
   renderFileList();
   const rp = document.getElementById('importResultPanel');
   if (rp) { rp.style.display = 'none'; rp.innerHTML = ''; }
-  // Reset both file inputs so same file can be re-selected
-  ['fi1','fi2'].forEach(id => {
-    const inp = document.getElementById(id);
-    if (inp) inp.value = '';
-  });
-  // Remove any drop-success state from zones
-  ['dz1','dz2'].forEach(id => {
-    const z = document.getElementById(id);
-    if (z) z.classList.remove('drop-success','dragover');
-  });
+  // Reset file input so same file can be re-selected
+  const fi1 = document.getElementById('fi1');
+  if (fi1) fi1.value = '';
+  // Remove drop-success state from zone
+  const dz1 = document.getElementById('dz1');
+  if (dz1) dz1.classList.remove('drop-success','dragover');
   showToast('Upload page cleared');
 }
 
 // ════════════════════════════════════════════════════
 // FILE HANDLING
 // ════════════════════════════════════════════════════
+
+// ── FILE FORMAT SNIFFER ──────────────────────────────────────
+// Inspects the first line of a CSV to determine what kind of file it is.
+// Returns: 'amazon' | 'applecard' | 'detail' | 'quicken'
+function sniffFile(text, fname) {
+  if (!text || !text.trim()) return 'quicken';
+  const fl = text.split('\n')[0].toLowerCase().replace(/"/g, '');
+  const fn = fname.toLowerCase();
+
+  // Amazon: has ASIN column or product name + order id
+  if (fl.includes('asin') || fl.includes('product name') ||
+      (fl.includes('order id') && fl.includes('quantity')) ||
+      fn.includes('retail.orderhistory') || fn.includes('orderhistory')) {
+    return 'amazon';
+  }
+  // Apple Card: clearing date + amount (usd), or filename signal
+  if (fl.includes('clearing date') || fl.includes('amount (usd)') ||
+      fn.includes('applecard') || fn.includes('apple_card') ||
+      (fn.includes('apple') && fn.includes('card'))) {
+    return 'applecard';
+  }
+  // Other detail formats: has "order date" but not Quicken-like payee/account structure
+  if ((fl.includes('order date') || fl.includes('order id') || fl.includes('product') ||
+       fl.includes('merchant') && !fl.includes('payee') && !fl.includes('account')) &&
+      !fl.includes('qif') && !fl.includes('ofx')) {
+    // Could be detail if it lacks the Quicken signature columns
+    const hasQuickenCols = fl.includes('payee') || fl.includes('account');
+    if (!hasQuickenCols) return 'detail';
+  }
+  // Quicken QIF/QFX/OFX are always Quicken format
+  const ext = fname.split('.').pop().toLowerCase();
+  if (['qif','qfx','ofx'].includes(ext)) return 'quicken';
+
+  // For CSV: if it has ASIN/product signal it's detail, otherwise Quicken
+  return 'quicken';
+}
+
+// Label + icon for display in file queue
+function fileTypeLabel(fileType) {
+  const map = {
+    quicken:   { label:'💳 Quicken',    cls:'badge-grn' },
+    amazon:    { label:'📦 Amazon',      cls:'badge-org' },
+    applecard: { label:'🍎 Apple Card',  cls:'badge-pu'  },
+    detail:    { label:'🔍 Detail',      cls:'badge-blu' },
+  };
+  return map[fileType] || { label:'📄 File', cls:'badge-grn' };
+}
+
 function handleFiles(files, source) {
   if (!files || files.length === 0) return;
   let added = 0;
   const skipped = [];
   for (const f of files) {
-    if (pendingFiles.find(p => p.file.name === f.name && p.source === source)) {
+    // Auto-detect type from file content (async not available here — use filename heuristic first)
+    const detectedSource = source || 'auto';
+    if (pendingFiles.find(p => p.file.name === f.name)) {
       skipped.push(f.name);
     } else {
-      pendingFiles.push({ file: f, source });
+      pendingFiles.push({ file: f, source: detectedSource });
       added++;
     }
   }
-  // Green checkmark flash on the zone
-  const zoneId = source === 'amazon' ? 'dz2' : 'dz1';
-  const zone = document.getElementById(zoneId);
+  // Green checkmark flash on the unified zone
+  const zone = document.getElementById('dz1');
   if (zone) {
     zone.classList.remove('drop-success');
-    void zone.offsetWidth; // force reflow so animation replays
+    void zone.offsetWidth;
     if (added > 0) {
       zone.classList.add('drop-success');
       setTimeout(() => zone.classList.remove('drop-success'), 2200);
@@ -2420,14 +2421,20 @@ function renderFileList() {
         const ext = pf.file.name.split('.').pop().toLowerCase();
         const kb = (pf.file.size / 1024).toFixed(0);
         const mb = pf.file.size > 1024*1024 ? (pf.file.size/1024/1024).toFixed(1)+' MB' : kb+' KB';
-        const isAmz = pf.source === 'amazon';
+        // Detect file type from filename for display (full sniff happens in processAll)
+        const fnLow = pf.file.name.toLowerCase();
+        const detType = fnLow.includes('retail.order') || fnLow.includes('orderhistory') ? 'amazon' :
+                        fnLow.includes('apple') && (fnLow.includes('card') || fnLow.includes('pay')) ? 'applecard' :
+                        pf.source === 'amazon' ? 'amazon' :
+                        ext === 'qif' || ext === 'qfx' || ext === 'ofx' ? 'quicken' : 'quicken';
+        const { label: typeLabel, cls: typeCls } = fileTypeLabel(detType);
         return `
         <div class="file-item-v2" id="fi-card-${i}">
           <div class="fi-icon">${ext_icon(ext)}</div>
           <div class="fi-info">
             <div class="fi-name">${pf.file.name}</div>
             <div class="fi-meta">
-              <span class="badge ${isAmz?'badge-org':'badge-grn'}">${isAmz?'🔍 Detail':'💳 Quicken'}</span>
+              <span class="badge ${typeCls}">${typeLabel}</span>
               <span style="color:var(--ink4);font-size:11px;margin-left:6px;">${mb} · .${ext.toUpperCase()}</span>
             </div>
           </div>
@@ -2477,27 +2484,31 @@ async function processAll() {
     try {
       const text = await readFile(f);
 
-      if (source==='amazon') {
-        // Infer purchaser from filename tags like "amazon_chris.csv" or "applecard_kira.csv"
-        const fnLower = f.name.toLowerCase();
-        let purchaser = null;
-        const allPeople = [settings.user1, settings.user2, ...settings.kids.map(k=>k.name)].filter(Boolean);
-        allPeople.forEach(p => { if (fnLower.includes(p.toLowerCase())) purchaser = p; });
+      // ── UNIFIED AUTO-DETECTION ─────────────────────────────────
+      // Sniff file content to decide: detail enrichment or Quicken ledger?
+      const detectedType = sniffFile(text, f.name);
+      const fnLower = f.name.toLowerCase();
 
+      // Infer purchaser from filename for any file type
+      let purchaser = null;
+      const allPeople = [settings.user1, settings.user2, ...settings.kids.map(k=>k.name)].filter(Boolean);
+      allPeople.forEach(p => { if (fnLower.includes(p.toLowerCase())) purchaser = p; });
+
+      if (detectedType === 'amazon' || detectedType === 'applecard' || detectedType === 'detail') {
         const detailParsed = parseDetailFile(text, f.name, purchaser);
         newAmz.push(...detailParsed);
-
-        // Detect what format was parsed for the result label
-        const fl = text.split('\n')[0].toLowerCase();
-        const srcLabel = fl.includes('asin') || fnLower.includes('retail.order') ? 'Amazon' :
-                         fl.includes('clearing date') || fnLower.includes('apple') ? 'Apple Card' : 'Detail';
+        const srcLabel = detectedType === 'amazon' ? 'Amazon' :
+                         detectedType === 'applecard' ? 'Apple Card' : 'Detail';
         const pLabel = purchaser ? ` · ${purchaser}` : '';
         fileResults.push({name:f.name, count:detailParsed.length, type:srcLabel, ok:detailParsed.length>0,
           reason: detailParsed.length===0 ?
-            'Forge couldn\'t read line-item detail from this file. Supported: Amazon order history (Retail.OrderHistory.1.csv), Apple Card monthly CSV, or any CSV with Date, Description, and Amount columns. To tag a file to a specific person, include their first name in the filename (e.g. amazon_chris.csv).' : null});
+            `Forge detected this as a ${srcLabel} file but couldn\'t read line-item data. ` +
+            'Expected columns: Date, Description/Product Name, and Amount. ' +
+            'To tag a file to a specific person, include their first name in the filename (e.g. amazon_chris.csv).' : null});
         console.log(`Detail ${f.name} (${srcLabel}${pLabel}): ${detailParsed.length} items`);
         continue;
       }
+      // Falls through to Quicken parsing below
 
       const ext = f.name.split('.').pop().toLowerCase();
       if (!validExts.includes(ext)) {
@@ -3861,7 +3872,10 @@ function renderTxnPage(){
 // ── DRAG + DROP ──────────────────────────────────────────────
 // Uses dragenter/dragleave depth counter to prevent false dragleave
 // events when dragging over child elements inside the zone.
-['dz1','dz2'].forEach((id, zoneIdx) => {
+// ── SINGLE UNIFIED DROP ZONE ─────────────────────────────────
+// All file types (Quicken, Amazon, Apple Card, any CSV) go to dz1.
+// Format is auto-detected from file content in processAll().
+['dz1'].forEach(id => {
   const el = document.getElementById(id);
   if (!el) return;
   let depth = 0;
@@ -3887,8 +3901,7 @@ function renderTxnPage(){
     el.classList.remove('dragover');
     const files = e.dataTransfer.files;
     if (!files || files.length === 0) return;
-    const source = zoneIdx === 0 ? 'quicken' : 'amazon';
-    handleFiles(files, source);
+    handleFiles(files, 'auto'); // type auto-detected from content
   });
 });
 
@@ -5226,7 +5239,4 @@ function getFamilyReportSubtitle() {
 
 </script>
 </body>
-</html
-        </div>
-          </div>
-        >
+</html>

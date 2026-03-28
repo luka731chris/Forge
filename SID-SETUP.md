@@ -1,14 +1,14 @@
-# Sid Setup Guide
+# $id Setup Guide
 
-How to activate the Ask Sid AI chat feature in Forge Pulse.
+How to activate the Ask $id AI chat feature in Forge Pulse.
 
-> **All other Forge features work without this setup.** The Gauge, Furnace, Watchlist, and the full desktop experience require no API key, no Cloudflare account, and no setup at all. This guide only applies to the **Ask Sid** chat tab in Forge Pulse.
+> **All other Forge features work without this setup.** The Gauge, Furnace, Detail Lens, and the full desktop experience require no API key, no Cloudflare account, and no setup at all. This guide only applies to the **Ask $id** chat tab in Forge Pulse.
 
 ---
 
 ## Overview
 
-Sid is powered by Claude (Anthropic's AI) and needs an API key to function. Because Forge Pulse is a static HTML file hosted on GitHub Pages, it cannot safely store an API key in public code. The solution is a free Cloudflare Worker that acts as a secure relay:
+$id is powered by Claude (Anthropic's AI) and needs an API key to function. Because Forge Pulse is a static HTML file hosted on GitHub Pages, it cannot safely store an API key in public code. The solution is a free Cloudflare Worker that acts as a secure relay:
 
 ```
 Forge Pulse → Cloudflare Worker → Anthropic API
@@ -36,7 +36,7 @@ Your API key never appears in any file in your GitHub repository.
 1. Go to [console.anthropic.com](https://console.anthropic.com) and sign in (or create a free account)
 2. In the left navigation, click **API Keys**
 3. Click **+ Create Key**
-4. Give it a name — e.g. `Forge Sid`
+4. Give it a name — e.g. `Forge $id`
 5. Click **Add**
 6. **Copy the key immediately** — it starts with `sk-ant-api03-...`
 
@@ -48,7 +48,7 @@ The API will not respond without credits — having a key is not enough.
 
 1. Still on [console.anthropic.com](https://console.anthropic.com), click **Billing** in the left navigation
 2. Click **Add credits**
-3. Add **$5** — this is the minimum and will last for months of typical Sid usage
+3. Add **$5** — this is the minimum and will last for months of typical $id usage
 4. Complete payment
 
 ---
@@ -113,11 +113,11 @@ The key is now stored encrypted inside Cloudflare. It will not appear in any das
 
 ---
 
-## Testing Sid
+## Testing $id
 
 1. Open Forge Pulse on your phone or in a browser
-2. Tap the **Ask Sid** tab (bottom right)
-3. If you have imported data, Sid will greet you with a monthly snapshot
+2. Tap the **Ask $id** tab (bottom right)
+3. If you have imported data, $id will greet you with a monthly snapshot
 4. Try asking: *"What is my savings rate this month?"*
 
 ---
@@ -126,7 +126,7 @@ The key is now stored encrypted inside Cloudflare. It will not appear in any das
 
 | What you see | What it means | What to do |
 |---|---|---|
-| Sid's setup instructions appear | `SID_PROXY_URL` was not updated | Repeat Step 5 — make sure you saved the file and re-uploaded it to GitHub |
+| $id's setup instructions appear | `SID_PROXY_URL` was not updated | Repeat Step 5 — make sure you saved the file and re-uploaded it to GitHub |
 | "API key issue..." | The `ANTHROPIC_API_KEY` secret is wrong or missing | Go to Cloudflare → forge-sid Worker → Settings → Variables and Secrets → verify or re-add the key |
 | "Can't reach the server..." | The Worker URL in `SID_PROXY_URL` is wrong | Check the URL starts with `https://` and ends with `.workers.dev` |
 | "That took too long..." | Anthropic's servers were slow | Wait a few seconds and try again. Shorter questions respond faster. |
@@ -137,7 +137,7 @@ The key is now stored encrypted inside Cloudflare. It will not appear in any das
 
 ## Architecture Details
 
-The Worker (`forge_worker.js`) does the following on every Sid request:
+The Worker (`forge_worker.js`) does the following on every $id request:
 
 1. Receives a POST request from Forge Pulse containing the conversation messages and financial context
 2. Validates the request (rejects non-POST, invalid JSON)
@@ -170,4 +170,4 @@ No changes to `forge-pulse.html` are needed when rotating the key.
 | GitHub Pages | Unlimited (public repos) | $0 |
 | Anthropic API | $5 prepaid credits | ~$0.50–$2.00/month for typical household use |
 
-Claude claude-sonnet-4-20250514 pricing (as of early 2026): $3/million input tokens, $15/million output tokens. A typical Sid conversation uses ~2,000–4,000 tokens total. At that rate, $5 in credits covers hundreds of conversations.
+Claude claude-sonnet-4-20250514 pricing (as of early 2026): $3/million input tokens, $15/million output tokens. A typical $id conversation uses ~2,000–4,000 tokens total. At that rate, $5 in credits covers hundreds of conversations.
