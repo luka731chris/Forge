@@ -1044,6 +1044,37 @@ select option { background: var(--float); color: var(--ink2); }
 }
 
 
+
+/* ── $KENES · $ID — Pittsburgh Identity ──────────────────────── */
+/* $ sign in brand names: same font-size, gold, slightly tighter */
+.dollar-brand {
+  color: var(--gold);
+  font-style: normal;
+  font-weight: inherit;
+  letter-spacing: -.01em;
+}
+/* Mound silhouette watermark on The Bullpen page */
+#page-intelligence::before {
+  content: '';
+  position: fixed;
+  right: -20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 180px;
+  height: 260px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 260'%3E%3C!-- Mound --%3E%3Cellipse cx='90' cy='240' rx='80' ry='22' fill='%23F5A800' opacity='.04'/%3E%3C!-- Pitcher silhouette: imposing 6ft6 figure --%3E%3C!-- legs --%3E%3Crect x='76' y='175' width='14' height='60' rx='6' fill='%23F5A800' opacity='.06'/%3E%3Crect x='94' y='180' width='12' height='55' rx='6' fill='%23F5A800' opacity='.06'/%3E%3C!-- body --%3E%3Crect x='68' y='115' width='44' height='65' rx='10' fill='%23F5A800' opacity='.07'/%3E%3C!-- pitching arm extended --%3E%3Cpath d='M68 130 Q30 110 15 95' stroke='%23F5A800' stroke-width='12' stroke-linecap='round' fill='none' opacity='.07'/%3E%3C!-- glove arm --%3E%3Cpath d='M112 135 Q140 128 152 130' stroke='%23F5A800' stroke-width='10' stroke-linecap='round' fill='none' opacity='.06'/%3E%3C!-- head --%3E%3Cellipse cx='90' cy='100' rx='22' ry='18' fill='%23F5A800' opacity='.07'/%3E%3C!-- cap brim --%3E%3Cpath d='M68 95 Q90 88 112 95' stroke='%23F5A800' stroke-width='8' stroke-linecap='round' fill='none' opacity='.07'/%3E%3C!-- mustache hint --%3E%3Cpath d='M82 108 Q90 113 98 108' stroke='%23F5A800' stroke-width='3' stroke-linecap='round' fill='none' opacity='.15'/%3E%3C!-- #30 jersey number --%3E%3Ctext x='85' y='152' font-family='monospace' font-size='11' fill='%23F5A800' opacity='.12' text-anchor='middle'%3E30%3C/text%3E%3C/svg%3E") center/contain no-repeat;
+  pointer-events: none;
+  z-index: 0;
+}
+#page-intelligence > * { position: relative; z-index: 1; }
+/* #87 / #30 micro-badge */
+.jersey-badge {
+  font-family: var(--font-m);
+  font-size: 9px;
+  color: var(--gold);
+  opacity: .55;
+  letter-spacing: .08em;
+}
 </style>
 </head>
 <body>
@@ -1060,7 +1091,7 @@ select option { background: var(--float); color: var(--ink2); }
     </svg>
     <div class="forge-logotype">
       <div class="forge-name">F<span class="f-gold">O</span>RGE</div>
-      <div class="forge-location">Pittsburgh · Est. 2025</div>
+      <div class="forge-location">Pittsburgh · Est. 2025 · <span style="font-family:var(--font-m);color:var(--gold);opacity:.7;font-size:9px;letter-spacing:.08em;">#30 · #87</span></div>
     </div>
   </div>
   <div class="header-right">
@@ -1082,7 +1113,7 @@ select option { background: var(--float); color: var(--ink2); }
     </div>
     <div class="nav-item" onclick="showPage('intelligence')" id="nav-intelligence">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 8v4l3 3"/></svg>
-      Alerts &amp; Intelligence
+      The Bullpen
       <span class="badge-nav" id="intelBadge" style="display:none;">0</span>
     </div>
   </div>
@@ -1146,6 +1177,7 @@ select option { background: var(--float); color: var(--ink2); }
       <path d="M45 8 Q90 1 135 8" stroke="#FFB612" stroke-width=".8" fill="none"/>
     </svg>
     <div class="nav-tagline">Pittsburgh · Built to last</div>
+    <div class="nav-tagline" style="font-size:8.5px;opacity:.45;margin-top:2px;letter-spacing:.12em;">$KENES · $ID · BLACK &amp; GOLD</div>
     <div class="nav-stripe"></div>
   </div>
 </nav>
@@ -1188,52 +1220,59 @@ select option { background: var(--float); color: var(--ink2); }
       <div style="padding:0 26px 24px;">
         <div style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-md);padding:20px 22px;">
 
-          <div style="font-family:var(--font-m);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;">How to export from Quicken — full history</div>
+          <div style="font-family:var(--font-m);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">How to export from Quicken — full history, all accounts</div>
+          <div style="font-size:12px;color:var(--ink4);margin-bottom:18px;line-height:1.6;">Quicken's menus differ by version. Use whichever path works on your computer — they all produce the same result.</div>
 
-          <div style="display:flex;flex-direction:column;gap:14px;">
-
-            <div style="display:flex;gap:14px;">
-              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">1</div>
-              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">Open Quicken on your computer and sign in</div>
-            </div>
-
-            <div style="display:flex;gap:14px;">
-              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</div>
-              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">
-                In the menu bar, click <strong style="color:var(--ink);">File → Export → Transactions to QIF</strong><br>
-                <span style="font-size:12px;color:var(--ink4);">If you don't see "Transactions to QIF", look for "File → Export → Transactions" — either works.</span>
+          <!-- Mac path -->
+          <div style="margin-bottom:18px;padding:14px 16px;background:rgba(245,168,0,.05);border:1px solid rgba(245,168,0,.15);border-radius:var(--r-sm);">
+            <div style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.06em;margin-bottom:10px;">QUICKEN FOR MAC — recommended path</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;gap:12px;">
+                <div style="min-width:20px;height:20px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">1</div>
+                <div style="font-size:13px;color:var(--ink2);line-height:1.6;">In the left sidebar, click <strong style="color:var(--ink);">All Transactions</strong> — this shows every account at once</div>
+              </div>
+              <div style="display:flex;gap:12px;">
+                <div style="min-width:20px;height:20px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">2</div>
+                <div style="font-size:13px;color:var(--ink2);line-height:1.6;">Clear any date filters — you want to see the full history</div>
+              </div>
+              <div style="display:flex;gap:12px;">
+                <div style="min-width:20px;height:20px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">3</div>
+                <div style="font-size:13px;color:var(--ink2);line-height:1.6;">Menu bar: <strong style="color:var(--ink);">File → Export → Register Transactions to CSV File</strong></div>
+              </div>
+              <div style="display:flex;gap:12px;">
+                <div style="min-width:20px;height:20px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">4</div>
+                <div style="font-size:13px;color:var(--ink2);line-height:1.6;">Choose <strong style="color:var(--ink);">All visible transactions</strong>, uncheck Scheduled Transactions → Save</div>
               </div>
             </div>
-
-            <div style="display:flex;gap:14px;">
-              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</div>
-              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">
-                In the export dialog:<br>
-                &nbsp;• <strong style="color:var(--ink);">Accounts:</strong> Select <strong style="color:var(--ink);">All Accounts</strong> (not just one)<br>
-                &nbsp;• <strong style="color:var(--ink);">Date range:</strong> Set the start date as far back as possible — at least 2017 if available<br>
-                &nbsp;• <strong style="color:var(--ink);">File type:</strong> Save as <strong style="color:var(--ink);">CSV</strong> or <strong style="color:var(--ink);">QIF</strong> — both work
-              </div>
-            </div>
-
-            <div style="display:flex;gap:14px;">
-              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">4</div>
-              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">
-                Click <strong style="color:var(--ink);">Save</strong> — Quicken creates the file on your computer
-              </div>
-            </div>
-
-            <div style="display:flex;gap:14px;">
-              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">5</div>
-              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">
-                Drag that file into the drop zone below, then click <strong style="color:var(--ink);">Begin Forging</strong>
-              </div>
-            </div>
-
           </div>
 
-          <!-- Warning box about .qxf -->
-          <div style="margin-top:18px;padding:12px 14px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);border-radius:var(--r-sm);font-size:12px;color:var(--ink3);line-height:1.7;">
-            <strong style="color:var(--negative);">⚠ Do not use</strong> <strong style="color:var(--ink2);">File → Export → Quicken Transfer Format (.qxf)</strong> — that file is for moving Quicken to a new computer and cannot be imported here. You want <strong style="color:var(--ink2);">File → Export → Transactions</strong> instead.
+          <!-- Windows path -->
+          <div style="margin-bottom:18px;padding:14px 16px;background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15);border-radius:var(--r-sm);">
+            <div style="font-size:11px;font-weight:700;color:var(--river);letter-spacing:.06em;margin-bottom:10px;">QUICKEN FOR WINDOWS — recommended path</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;gap:12px;">
+                <div style="min-width:20px;height:20px;border-radius:50%;background:var(--river);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">1</div>
+                <div style="font-size:13px;color:var(--ink2);line-height:1.6;">Go to <strong style="color:var(--ink);">Reports → Banking → Transaction</strong></div>
+              </div>
+              <div style="display:flex;gap:12px;">
+                <div style="min-width:20px;height:20px;border-radius:50%;background:var(--river);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">2</div>
+                <div style="font-size:13px;color:var(--ink2);line-height:1.6;">Set <strong style="color:var(--ink);">Accounts: All Accounts</strong> and date range to your earliest date through today</div>
+              </div>
+              <div style="display:flex;gap:12px;">
+                <div style="min-width:20px;height:20px;border-radius:50%;background:var(--river);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">3</div>
+                <div style="font-size:13px;color:var(--ink2);line-height:1.6;">Run the report, then click the <strong style="color:var(--ink);">Export icon</strong> (green arrow, top of the report) → <strong style="color:var(--ink);">Export to CSV File</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fallback -->
+          <div style="padding:12px 14px;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);font-size:12px;color:var(--ink3);line-height:1.7;margin-bottom:14px;">
+            <strong style="color:var(--ink2);">If neither path works:</strong> Export each account individually — go into each account's register → gear/actions icon → <strong style="color:var(--ink);">Export to Excel workbook</strong>. Drop all the files into Forge at once. Forge accepts multiple files and merges them automatically.
+          </div>
+
+          <!-- qxf warning -->
+          <div style="padding:12px 14px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);border-radius:var(--r-sm);font-size:12px;color:var(--ink3);line-height:1.7;">
+            <strong style="color:var(--negative);">⚠ Do not use</strong> <strong style="color:var(--ink2);">File → Export → Quicken Transfer Format (.qxf)</strong> — that file moves Quicken between computers and cannot be imported here.
           </div>
 
         </div>
@@ -1263,14 +1302,15 @@ select option { background: var(--float); color: var(--ink2); }
             <div style="display:flex;gap:14px;">
               <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">1</div>
               <div style="font-size:13px;color:var(--ink2);line-height:1.65;">
-                Open Quicken → <strong style="color:var(--ink);">File → Export → Transactions</strong>
+                Open Quicken → use the same export path as your initial setup:<br>
+                <span style="color:var(--ink4);font-size:12px;">Mac: File → Export → Register Transactions to CSV File &nbsp;·&nbsp; Windows: Reports → Banking → Transaction → Export</span>
               </div>
             </div>
 
             <div style="display:flex;gap:14px;">
               <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">2</div>
               <div style="font-size:13px;color:var(--ink2);line-height:1.65;">
-                Set date range to <strong style="color:var(--ink);">Last 30–60 days</strong> · All Accounts · Save as CSV
+                Set date range to <strong style="color:var(--ink);">Last 30–60 days</strong> · <strong style="color:var(--ink);">All Accounts</strong> · Save as CSV
               </div>
             </div>
 
@@ -1407,7 +1447,7 @@ select option { background: var(--float); color: var(--ink2); }
 <!-- ══ DASHBOARD ══ -->
 <div id="page-dashboard" class="page">
   <div id="demoBanner" class="demo-banner" style="display:none;">
-    <span>🎯 <strong>Demo Mode</strong> — Viewing 4 years of synthetic household data across 11 accounts. Import your real files to replace this.</span>
+    <span>🎯 <strong>Demo Mode</strong> — 4 years of synthetic data across 11 accounts · 87 months of history. Import your real files to replace this.</span>
     <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);" onclick="showPage('upload')">Import Real Data</button>
   </div>
   <div class="page-hdr">
@@ -1432,7 +1472,7 @@ select option { background: var(--float); color: var(--ink2); }
 
 <!-- ══ INTELLIGENCE ══ -->
 <div id="page-intelligence" class="page">
-  <div class="page-hdr"><div><div class="page-title">The Furnace</div><div class="page-sub">Proactive alerts, trends, and recommendations</div></div>
+  <div class="page-hdr"><div><div class="page-title">The Bullpen</div><div class="page-sub">Proactive alerts, trends, and recommendations &nbsp;·&nbsp; <span style="font-family:var(--font-m);font-size:10px;color:var(--gold);opacity:.6;">#30</span></div></div>
     <div class="range-tabs" id="intelRange">
       <button class="rtab" onclick="setIntelRange('3m',this)">3M</button>
       <button class="rtab active" onclick="setIntelRange('6m',this)">6M</button>
@@ -1558,6 +1598,7 @@ select option { background: var(--float); color: var(--ink2); }
     <div style="position:relative;z-index:1;">
       <div class="fbr-month" id="fbrMonthTitle">Monthly The Confluence</div>
       <div class="fbr-tagline">A structured conversation about where we are, where we're going, and what matters.</div>
+      <div style="margin-top:8px;font-family:var(--font-m);font-size:9px;color:rgba(245,168,0,.45);letter-spacing:.14em;">$KENES READS THE SCOUTING REPORT · $ID READS THE PLAY</div>
       <div class="fbr-chips" id="fbrChips"></div>
     </div>
     <div style="position:relative;z-index:1;text-align:right;flex-shrink:0;margin-left:24px;">
@@ -1705,7 +1746,7 @@ select option { background: var(--float); color: var(--ink2); }
   <div class="page-hdr">
     <div>
       <div class="page-title">Forge Settings</div>
-      <div class="page-sub">Personalize your experience · Calibrate Sid · Set your family's targets</div>
+      <div class="page-sub">Personalize your experience · Calibrate $id · Set your family's targets</div>
     </div>
     <button class="btn btn-forge" onclick="saveSettings()">Save Changes</button>
   </div>
@@ -1762,8 +1803,8 @@ select option { background: var(--float); color: var(--ink2); }
       <div class="settings-hdr">
         <div class="settings-hdr-icon">⚡</div>
         <div>
-          <div class="settings-hdr-title">Sid's Voice</div>
-          <div class="settings-hdr-sub">How Sid reads the room and adapts his communication style</div>
+          <div class="settings-hdr-title">$id's Voice</div>
+          <div class="settings-hdr-sub">How $id reads the room and adapts his communication style</div>
         </div>
       </div>
       <div class="settings-body">
@@ -2026,13 +2067,13 @@ const DB_KEY = 'ledger_v3';
 // always sees the play before it happens.
 // ═══════════════════════════════════════════════
 const SID_PERSONA = {
-  name: 'Sid',
-  fullName: 'Sid — Forge Intelligence',
-  tagline: 'Precise. Decisive. Always sees the play first.',
+  name: '$id',
+  fullName: '$id — Forge Intelligence',
+  tagline: 'Precise. Decisive. Always sees the play first. #87',
   icon: '⚡',
   greeting: (month, net, rate) => {
     const mood = rate >= 20 ? 'strong' : rate >= 10 ? 'decent' : 'worth a closer look';
-    return `${month} — Sid here. Net ${net >= 0 ? '+' : ''}${net} saved so far. Savings rate at ${rate.toFixed(0)}% — ${mood}. Here's what I'm watching.`;
+    return `${month} — $id here. Net ${net >= 0 ? '+' : ''}${net} saved so far. Savings rate at ${rate.toFixed(0)}% — ${mood}. Here's what I'm watching.`;
   }
 };
 
@@ -2071,7 +2112,7 @@ function loadDemo() {
   generateDemoData();
   saveData();
   initApp();
-  showToast('🔥 Forge ignited — demo data loaded');
+  showToast('⚾ $kenes takes the mound — demo data loaded');
 }
 
 function generateDemoData() {
@@ -3222,8 +3263,8 @@ function renderActions() {
   const totalInc=incomeTxns.reduce((s,t)=>s+t.amount,0)/(([...new Set(incomeTxns.map(t=>t.date.slice(0,7)))].length)||1);
   const totalExp=Math.abs(expenseTxns.reduce((s,t)=>s+t.amount,0))/(([...new Set(expenseTxns.map(t=>t.date.slice(0,7)))].length)||1);
   const savRate=totalInc>0?((totalInc-totalExp)/totalInc)*100:0;
-  if(savRate<15)actions.push({icon:'💰',priority:'High',title:'Savings rate is below 15% — target a gap',body:`Your current savings rate of ${savRate.toFixed(1)}% is below the recommended 15-20%. Identify 1-2 discretionary categories to cut by 10%.`,effort:'1 hour',impact:'Very High'});
-  actions.push({icon:'📅',priority:'Low',title:'Automate your monthly data refresh',body:'Set a recurring calendar reminder on the 1st of each month: export Quicken last-30-days + Amazon Items CSV → drop into Forge. Takes 5 minutes.',effort:'5 min setup',impact:'Ongoing'});
+  if(savRate<15)actions.push({icon:'💰',priority:'High',title:'Savings rate is below 15% — find the gap',body:`Your current savings rate of ${savRate.toFixed(1)}% is below the recommended 15-20%. #87 didn't win three Cups by leaving points on the board. Identify 1-2 categories to cut by 10%.`,effort:'1 hour',impact:'Very High'});
+  actions.push({icon:'📅',priority:'Low',title:'Automate your monthly data refresh',body:'Set a recurring calendar reminder on the 1st of each month: export Quicken (All Accounts, last 30–60 days) → drop into Forge. Five minutes. Consistent reps — that is how #30 built a sub-2.00 ERA.',effort:'5 min setup',impact:'Ongoing'});
   actions.push({icon:'📊',priority:'Medium',title:'Build a forward-looking spending forecast',body:'Use your seasonal pattern data to project next 3 months of expenses. This is especially valuable heading into Q4.',effort:'1 hour',impact:'Medium'});
 
   const priColor={High:'intel-danger',Medium:'intel-alert',Low:'intel-info'};
@@ -3793,10 +3834,11 @@ function buildStep6() {
     </div>
     <div class="story-card story-info"><div class="story-icon">📅</div><div class="story-headline">Before Next Month's Review</div>
     <div class="story-body"><ul style="margin:6px 0 0 16px;line-height:2;font-size:13px;">
-      <li>Export Quicken last-30-days CSV + Amazon Items CSV on the 1st</li>
-      <li>Drag both into Ledger to refresh the data</li>
+      <li>Export Quicken last-30-days CSV on the 1st (All Accounts)</li>
+      <li>Drag into Forge to refresh the data</li>
       <li>Open this view and run through the agenda again</li>
       <li>Check whether any decisions from this meeting took effect</li>
+      <li style="font-size:12px;color:var(--ink4);">⚾ #30 reads the scouting report &nbsp;·&nbsp; 🏒 #87 reads the play</li>
     </ul></div></div>`;
 
   document.getElementById('fbrStep6Content').innerHTML = html;

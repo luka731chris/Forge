@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Forge Pulse">
 <meta name="theme-color" content="#0D0D0D">
-<title>Forge Pulse · Pittsburgh</title>
+<title>Forge Pulse · $id · Pittsburgh</title>
 <style>
 /* ═══════════════════════════════════════════════════════════════
    FORGE PULSE — Mobile Design System v2.0
@@ -269,11 +269,11 @@ body {
   <div class="page" id="pg-chat">
     <div class="chat-wrap" style="height:100%;">
       <div class="chat-head">
-        <div class="chat-title">Ask Sid</div>
+        <div class="chat-title">Ask $id</div>
         <div class="chat-sub">Forge Intelligence · Pittsburgh</div>
         <div class="chat-status">
           <div class="status-dot"></div>
-          <div class="status-txt" id="chatStatus">Sid is ready</div>
+          <div class="status-txt" id="chatStatus">$id · #87</div>
         </div>
       </div>
       <div class="chat-msgs" id="chatMsgs"></div>
@@ -662,7 +662,7 @@ function buildAlerts() {
 
 function renderAlerts() {
   const alerts = buildAlerts();
-  document.getElementById('alerts-sub').textContent = `${alerts.length} active flag${alerts.length!==1?'s':''} · updated on import`;
+  document.getElementById('alerts-sub').textContent = `${alerts.length} active flag${alerts.length!==1?'s':''} · updated on import · <span style='font-family:monospace;font-size:9px;opacity:.4;'>#87</span>`;
   const dot = document.getElementById('alertDot');
   dot.className = 'tab-dot' + (alerts.some(a=>a.sev==='danger') ? ' show' : '');
   const el = document.getElementById('alerts-out');
@@ -804,7 +804,7 @@ function buildSidPrompt(msg) {
     mode = `DATA-FIRST MODE (${u1}): Numbers lead. Give the key figure in the first sentence. Analysis follows. ${u1} is a healthcare strategy director — analytically sophisticated, wants precision. "Savings rate 17%. Dining is the gap — up 22%." Direct and specific.`;
   }
 
-  return `You are Sid — named after Sidney Crosby, the greatest of his generation: precise, decisive, always sees the play before it develops. You are the AI financial intelligence engine inside Forge, a Pittsburgh-born personal finance platform.
+  return `You are $id — named after Sidney Crosby, the greatest of his generation: precise, decisive, always sees the play before it develops. You are the AI financial intelligence engine inside Forge, a Pittsburgh-born personal finance platform.
 
 FAMILY: The ${family.familyName} family. ${u1}${chrisAge?` (${chrisAge}, ${ps?.label||''})`:''} and ${u2}. Kids: ${family.kids.filter(k=>k.name).map(k=>k.name).join(', ')||'none configured'}.
 
@@ -870,7 +870,7 @@ async function callSid(msg) {
 
 function getSidSetupMessage() {
   const u = family.user1 || 'there';
-  return `Hey ${u} — Sid here. Almost ready, but one quick setup is needed before the chat works.
+  return `Hey ${u} — $id here. Almost ready, but one quick setup is needed before the chat works.
 
 To turn on the Ask Sid feature, you need to connect a free Cloudflare Worker that keeps your API key secure. It takes about 10 minutes and costs nothing.
 
@@ -897,7 +897,7 @@ function addBubble(text, role) {
   const div=document.createElement('div');
   div.className='bubble '+(role==='user'?'bubble-u':'bubble-a');
   if(role==='assistant') {
-    div.innerHTML=`<div class="sid-lbl"><div class="sid-icon"></div>Sid · Forge Intelligence</div>${text.replace(/\n/g,'<br>')}`;
+    div.innerHTML=`<div class="sid-lbl"><div class="sid-icon"></div>$id · Forge Intelligence · #87</div>${text.replace(/\n/g,'<br>')}`;
   } else { div.textContent=text; }
   msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight;
 }
@@ -907,7 +907,7 @@ function rmTyping()  { const t=document.getElementById('typ'); if(t)t.remove(); 
 
 function sendWelcome() {
   if (!txns.length) {
-    addBubble(`Hey — Sid here.\n\nNo financial data yet. To get started, open Forge on your laptop or desktop, go to The Pour (the + button), and import your Quicken file. Once that's done, come back here and I'll have everything I need.\n\nThe first time you use the chat feature, you'll also need to complete a one-time setup. Just send me any message and I'll walk you through it — takes about 10 minutes.`, 'assistant');
+    addBubble(`Hey — $id here.\n\nNo financial data yet. To get started, open Forge on your laptop or desktop, go to The Pour (the + button), and import your Quicken file. Once that's done, come back here and I'll have everything I need.\n\nThe first time you use the chat feature, you'll also need to complete a one-time setup. Just send me any message and I'll walk you through it — takes about 10 minutes.`, 'assistant');
     return;
   }
   const n=new Date(), cm=nowMo();
@@ -917,7 +917,7 @@ function sendWelcome() {
   const target=family.savingsTarget||20;
   const kids=getKidsContext().filter(k=>k.name);
   const kidContext = kids.length ? ` Tracking ${kids.map(k=>`${k.name} (${k.age||'?'})`).join(', ')}.` : '';
-  addBubble(`Hey ${family.user1} — Sid here.${kidContext}\n\n${MONTHS[n.getMonth()]} so far: ${fmt(net>=0?net:Math.abs(net))} ${net>=0?'ahead':'behind'}. Savings rate ${sr.toFixed(0)}% — ${sr>=target?'above':'below'} your ${target}% target.\n\nWhat do you want to look at?`, 'assistant');
+  addBubble(`Hey ${family.user1} — $id here.${kidContext}\n\n${MONTHS[n.getMonth()]} so far: ${fmt(net>=0?net:Math.abs(net))} ${net>=0?'ahead':'behind'}. Savings rate ${sr.toFixed(0)}% — ${sr>=target?'above':'below'} your ${target}% target.\n\nWhat do you want to look at?`, 'assistant');
 }
 
 async function sendChat() {
@@ -927,7 +927,7 @@ async function sendChat() {
   addBubble(msg,'user');
   history.push({role:'user',content:msg});
   addTyping();
-  document.getElementById('chatStatus').textContent='Sid is thinking…';
+  document.getElementById('chatStatus').textContent='$id is reading the play…';
   try {
     const rep=await callSid(msg);
     rmTyping(); addBubble(rep,'assistant');
@@ -938,19 +938,19 @@ async function sendChat() {
     const errMsg = e.message || '';
     let userMsg;
     if (errMsg.includes('timed out')) {
-      userMsg = "Sid took too long to respond — the servers may be busy. Wait a few seconds and try again. Shorter questions tend to come back faster.";
+      userMsg = "$id took too long to respond — the servers may be busy. Wait a few seconds and try again. Shorter questions tend to come back faster.";
     } else if (errMsg.includes('401')) {
-      userMsg = "Sid cannot connect — the API key is not working. Open your Cloudflare Worker, go to Settings → Variables and Secrets, and make sure ANTHROPIC_API_KEY is set correctly with your key from console.anthropic.com.";
+      userMsg = "$id cannot connect — the API key is not working. Open your Cloudflare Worker, go to Settings → Variables and Secrets, and make sure ANTHROPIC_API_KEY is set correctly with your key from console.anthropic.com.";
     } else if (errMsg.includes('429')) {
-      userMsg = "Sid is getting too many requests right now. Wait about 30 seconds and try again.";
+      userMsg = "$id is getting too many requests right now. Wait about 30 seconds and try again.";
     } else if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError')) {
-      userMsg = "Sid cannot reach the server. This usually means the Worker URL was not set up correctly. Open the Forge Sid Setup Guide and check Step 4 — the URL should start with https:// and end with .workers.dev";
+      userMsg = "$id cannot reach the server. This usually means the Worker URL was not set up correctly. Open the Forge Sid Setup Guide and check Step 4 — the URL should start with https:// and end with .workers.dev";
     } else {
       userMsg = `Something went wrong — Sid could not respond. If this keeps happening, check that your Cloudflare Worker is deployed and your API key is set correctly.`;
     }
     addBubble(userMsg,'assistant');
   }
-  document.getElementById('chatStatus').textContent='Sid is ready';
+  document.getElementById('chatStatus').textContent='$id · #87';
 }
 
 function sendQ(el) { document.getElementById('chatInput').value=el.textContent; sendChat(); }
