@@ -2063,7 +2063,7 @@ async function processAll() {
       const ext = f.name.split('.').pop().toLowerCase();
       if (!validExts.includes(ext)) {
         fileResults.push({name:f.name, count:0, type:ext.toUpperCase(), ok:false,
-          reason:`Unsupported format ".${ext}" — Quicken should export CSV, QIF, or QFX`});
+          reason:`"${ext.toUpperCase()}" is not a recognised file type. Open Quicken, go to File → Export → Transactions, and save the file as CSV. Then drop it here.`});
         continue;
       }
 
@@ -2135,7 +2135,7 @@ function showImportResults(fileResults, txnCount, amzCount) {
     const parts=[];
     if (txnCount>0) parts.push(`${txnCount.toLocaleString()} transactions`);
     if (amzCount>0) parts.push(`${amzCount} Amazon items`);
-    showToast(parts.length ? `✓ Imported ${parts.join(' + ')}` : '✓ Files processed — all already imported');
+    showToast(parts.length ? `✓ Imported ${parts.join(' + ')}` : '✓ All done — these transactions are already saved in Forge.');
   }
 
   // Inline result panel on upload page
@@ -3108,7 +3108,7 @@ function renderTxnPage(){
 // ════════════════════════════════════════════════════
 function showToast(msg, type, duration) {
   type = type || 'success'; duration = duration || 3500;
-  var t = document.getElementById('forge-toast');
+  var t = document.getElementById('toast');
   if (!t) return;
   t.textContent = msg;
   t.className = 'toast show';
