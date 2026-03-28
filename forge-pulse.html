@@ -288,7 +288,7 @@ body {
         <div class="s-pill" onclick="sendQ(this)">What should we talk about at Confluence?</div>
       </div>
       <div class="chat-input-wrap">
-        <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask Sid anything about your finances…" onkeydown="handleKey(event)" oninput="autoSize(this)"></textarea>
+        <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask $id anything about your finances…" onkeydown="handleKey(event)" oninput="autoSize(this)"></textarea>
         <button class="chat-send" onclick="sendChat()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
@@ -311,11 +311,11 @@ body {
   </button>
   <button class="tab-btn" id="tab-amazon" onclick="go('amazon')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-    Watchlist
+    Detail Lens
   </button>
   <button class="tab-btn" id="tab-chat" onclick="go('chat')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="8" cy="10" r="1" fill="currentColor"/><circle cx="12" cy="10" r="1" fill="currentColor"/><circle cx="16" cy="10" r="1" fill="currentColor"/></svg>
-    Ask Sid
+    Ask $id
   </button>
 </div>
 <div class="toast" id="toast"></div>
@@ -350,6 +350,8 @@ const DEFAULT_FAMILY = {
   largePurchaseThreshold: 150,
   amzSensitivity: 3,
   confluenceMode: true,
+  accountOwners: {},
+
 };
 
 let family = { ...DEFAULT_FAMILY };
@@ -505,9 +507,9 @@ function renderSnapshot() {
 
   el.innerHTML = `
     <div class="snap-hero">
-      <div class="hero-eyebrow">${family.familyName} Family · ${mo}</div>
+      <div class="hero-eyebrow">${family.familyName} Family · ${mo} <span style="font-family:monospace;font-size:8px;opacity:.35;">#87</span></div>
       <div class="hero-net${net<0?' neg':''}">${net>=0?'+':''}${fmtK(net)}</div>
-      <div class="hero-sub">net saved this month</div>
+      <div class="hero-sub">net saved this month <span style="font-size:10px;opacity:.45;">· $id reads the play</span></div>
       <div class="hero-chips">
         <div class="chip chip-gold">💰 ${fmtK(cmI)} in</div>
         <div class="chip ${cmE>cmI?'chip-red':'chip-grn'}">📤 ${fmtK(cmE)} out</div>
@@ -624,7 +626,28 @@ function buildAlerts() {
   if(amzItems.length){
     const rec=amzItems.filter(i=>new Date(i.date)>=new Date(n.getFullYear(),n.getMonth()-1,1));
     const hi=rec.filter(i=>impulse(i)>=amzThreshold);
-    if(hi.length>=3) alerts.push({ sev:'warn', icon:'📦', title:`${hi.length} impulse-flagged Amazon purchases`, body:`Total ${fmt(hi.reduce((s,i)=>s+i.total,0))} — e.g. "${(hi[0].title||'').slice(0,36)}…"`, action:'Consider a 24-hour cart rule for small orders.' });
+    if(hi.length>=3) alerts.push({ sev:'warn', icon:'🔍', title:`${hi.length} impulse-flagged detail purchases`, body:`Total ${fmt(hi.reduce((s,i)=>s+i.total,0))} — e.g. "${(hi[0].title||'').slice(0,36)}…"`, action:'Consider a 24-hour rule for small impulse purchases.' });
+    // Per-purchaser impulse alerts
+    const purchasers=[...new Set(rec.map(i=>i.purchaser).filter(Boolean))];
+    purchasers.forEach(person=>{
+      const phi=rec.filter(i=>i.purchaser===person&&impulse(i)>=amzThreshold);
+      if(phi.length>=2){
+        const hiT=phi.reduce((s,i)=>s+i.total,0);
+        alerts.push({ sev:'warn', icon:'👤', title:`${person}: ${phi.length} impulse purchases this month`, body:`${person} has ${phi.length} flagged purchases totaling ${fmt(hiT)} — e.g. "${(phi[0].title||'').slice(0,30)}…"`, action:`Review ${person}'s recent purchases in Detail Lens.` });
+      }
+    });
+    // Predict end-of-month detail spend per person
+    const day=n.getDate(), dim=new Date(n.getFullYear(),n.getMonth()+1,0).getDate();
+    purchasers.forEach(person=>{
+      const mtd=rec.filter(i=>i.purchaser===person).reduce((s,i)=>s+i.total,0);
+      const hist=amzItems.filter(i=>i.purchaser===person);
+      const mos=[...new Set(hist.map(i=>i.date.slice(0,7)))].length||1;
+      const avg=hist.reduce((s,i)=>s+i.total,0)/mos;
+      const proj=day>0?mtd*(dim/day):0;
+      if(proj>avg*1.4&&avg>20){
+        alerts.push({ sev:'warn', icon:'📈', title:`${person} on pace for ${fmt(proj)} in detail this month`, body:`${fmt(mtd)} so far · projected ${fmt(proj)} · historical avg ${fmt(avg)}.`, action:`${dim-day} days left. Review in Detail Lens.` });
+      }
+    });
   }
 
   // ── Life-stage alerts ──
@@ -704,16 +727,17 @@ function renderAmazon() {
 
   el.innerHTML=`
     <div class="amz-hero">
-      <div class="amz-eyebrow">${family.familyName} Family · Amazon Watchlist</div>
-      <div class="amz-title">📦 Amazon<span> Pulse</span></div>
+      <div class="amz-eyebrow">${family.familyName} Family · Detail Lens</div>
+      <div class="amz-title">🔍 Detail<span> Lens</span></div>
       <div class="amz-big">${fmtK(total)}</div>
-      <div class="amz-big-sub">total spend · ${amzItems.length.toLocaleString()} items · ${orders.length||'?'} orders</div>
+      <div class="amz-big-sub">total · ${amzItems.length.toLocaleString()} items · ${[...new Set(amzItems.map(i=>i.source||'Amazon'))].join('/')}</div>
     </div>
     <div class="amz-stats">
       <div class="amz-stat"><div class="amz-stat-lbl">Last 3 months</div><div class="amz-stat-val">${fmtK(recT)}</div></div>
       <div class="amz-stat"><div class="amz-stat-lbl">Monthly avg</div><div class="amz-stat-val">${fmtK(total/mos)}</div></div>
       <div class="amz-stat"><div class="amz-stat-lbl">Flagged</div><div class="amz-stat-val" style="color:var(--gold);">${amzItems.filter(i=>impulse(i)>=amzThreshold).length}</div></div>
     </div>
+    ${(()=>{const pp=[...new Set(amzItems.map(i=>i.purchaser).filter(Boolean))];return pp.length?`<div style="display:flex;gap:8px;padding:10px 14px;background:var(--lift);border-top:1px solid var(--border);flex-wrap:wrap;">${pp.map(p=>{const pt=amzItems.filter(i=>i.purchaser===p).reduce((s,i)=>s+i.total,0);const mtdP=rec.filter(i=>i.purchaser===p).reduce((s,i)=>s+i.total,0);return`<div style="flex:1;min-width:120px;background:var(--card);border-radius:var(--r-sm);padding:8px 10px;"><div style="font-size:10px;color:var(--ink4);margin-bottom:2px;">👤 ${p}</div><div style="font-size:15px;font-weight:600;color:var(--ink);">${fmtK(pt)}</div><div style="font-size:10px;color:var(--ink4);">this month: ${fmt(mtdP)}</div></div>`;}).join('')}</div>`:'';})()}
     <div class="amz-filters">
       <div class="f-pill${amzF==='all'?' active':''}"    onclick="setAF('all',this)">All Items</div>
       <div class="f-pill${amzF==='recent'?' active':''}" onclick="setAF('recent',this)">Recent</div>
@@ -757,6 +781,22 @@ function buildContext() {
   const alerts=buildAlerts();
   const goalsStr=goals.length?goals.map(g=>`${g.name}: ${fmt(g.current)}/${fmt(g.target)} (${((g.current/g.target)*100).toFixed(0)}%)`).join(', '):'No goals configured';
   const amzT=amzItems.reduce((s,i)=>s+i.total,0);
+  // Per-purchaser detail breakdown
+  const purchasers=[...new Set(amzItems.map(i=>i.purchaser).filter(Boolean))];
+  const purchaserStr=purchasers.length?purchasers.map(p=>{
+    const mine=amzItems.filter(i=>i.purchaser===p);
+    const t=mine.reduce((s,i)=>s+i.total,0);
+    const top=(()=>{const c={};mine.forEach(i=>c[i.category]=(c[i.category]||0)+i.total);return Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0]||'misc';})();
+    return `${p}: ${fmtK(t)} (top cat: ${top})`;
+  }).join(' | '):'No purchaser data';
+  // Per-person Quicken account spend
+  const acctOwners=family.accountOwners||{};
+  const ownerPeople=[...new Set(Object.values(acctOwners))];
+  const qkPurchaserStr=ownerPeople.length?ownerPeople.map(p=>{
+    const owned=Object.entries(acctOwners).filter(([,v])=>v===p).map(([k])=>k);
+    const t=Math.abs(txns.filter(tx=>owned.includes(tx.account)&&tx.amount<0).reduce((s,tx)=>s+tx.amount,0));
+    return `${p} (Quicken): ${fmtK(t)}`;
+  }).join(' | '):'';
   const dates=txns.map(t=>t.date).sort();
 
   // Life-stage context
@@ -812,13 +852,13 @@ ${mode}
 
 ALWAYS: Use specific numbers from the data. End with one clear, actionable recommendation when relevant. Under 180 words unless depth is genuinely needed. No markdown headers. No asterisks. No hedging. Straight talk from someone who sees the full picture.
 
-NEVER: Say "I cannot" or "I apologize." Never be vague when data is available. Sid finds the play, always.`;
+NEVER: Say "I cannot" or "I apologize." Never be vague when data is available. $id finds the play, always.`;
 }
 
 // ── SID PROXY CONFIGURATION ──
 // Replace this URL with your Cloudflare Worker URL after setup.
 // See forge_worker.js for setup instructions (takes ~10 min, free).
-// Until configured, Sid will show a setup prompt instead of an error.
+// Until configured, $id will show a setup prompt instead of an error.
 const SID_PROXY_URL = 'WORKER_URL_HERE';
 
 async function callSid(msg) {
@@ -859,7 +899,7 @@ async function callSid(msg) {
 
     const d = await r.json();
     const txt = d.content?.[0]?.text || '';
-    if (!txt) return 'Sid had trouble generating a response — try again.';
+    if (!txt) return '$id had trouble generating a response — try again.';
     return txt;
   } catch(e) {
     clearTimeout(timeout);
@@ -872,7 +912,7 @@ function getSidSetupMessage() {
   const u = family.user1 || 'there';
   return `Hey ${u} — $id here. Almost ready, but one quick setup is needed before the chat works.
 
-To turn on the Ask Sid feature, you need to connect a free Cloudflare Worker that keeps your API key secure. It takes about 10 minutes and costs nothing.
+To turn on the Ask $id feature, you need to connect a free Cloudflare Worker that keeps your API key secure. It takes about 10 minutes and costs nothing.
 
 STEP 1 — Get an API key
 Go to console.anthropic.com and sign in (or create a free account). Click API Keys in the left menu, then + Create Key. Name it anything you like. Copy the key right away — it starts with sk-ant- and is only shown once.
@@ -944,9 +984,9 @@ async function sendChat() {
     } else if (errMsg.includes('429')) {
       userMsg = "$id is getting too many requests right now. Wait about 30 seconds and try again.";
     } else if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError')) {
-      userMsg = "$id cannot reach the server. This usually means the Worker URL was not set up correctly. Open the Forge Sid Setup Guide and check Step 4 — the URL should start with https:// and end with .workers.dev";
+      userMsg = "$id cannot reach the server. This usually means the Worker URL was not set up correctly. Open the Forge $id Setup Guide and check Step 4 — the URL should start with https:// and end with .workers.dev";
     } else {
-      userMsg = `Something went wrong — Sid could not respond. If this keeps happening, check that your Cloudflare Worker is deployed and your API key is set correctly.`;
+      userMsg = `Something went wrong — $id could not respond. If this keeps happening, check that your Cloudflare Worker is deployed and your API key is set correctly.`;
     }
     addBubble(userMsg,'assistant');
   }

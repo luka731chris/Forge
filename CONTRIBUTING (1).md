@@ -1,0 +1,137 @@
+# Contributing & Development Guide
+
+---
+
+## Development Setup
+
+No build tools required.
+
+```bash
+git clone https://github.com/luka731chris/Forge.git
+cd Forge
+open index.html   # macOS · or double-click in any OS
+```
+
+For live reload: `python3 -m http.server 8080` then open `http://localhost:8080`.
+
+---
+
+## Code Organization (index.html)
+
+Functions are grouped under `// ════` comment headers:
+
+```
+CONSTANTS & STATE          — DB_KEY, SETTINGS_KEY, DEFAULT_SETTINGS, IMPULSE_CATS, etc.
+DEMO DATA GENERATOR        — generateDemoData(), loadDemo()
+PERSISTENCE                — saveData(), loadData(), saveSettings(), loadSettings()
+FILE HANDLING              — handleFiles(), renderFileList(), processAll(), showImportResults()
+QUICKEN PARSERS            — parseCSV(), parseQIF(), parseOFX(), parseDate(), splitCSV()
+DETAIL PARSERS             — parseAmazon(), parseAppleCard(), parseGenericDetail(), parseDetailFile()
+PURCHASER INTELLIGENCE     — personSummary(), detectPersonTrends(), predictMonthlyDetail(),
+                             inferTxnOwner(), getPersonSpend()
+HELPERS                    — fmt(), fmtK(), fmtPct(), getRange(), inRange(), getMonthlyData()
+INIT APP                   — initApp(), buildSidebar(), populateFilters()
+NAVIGATION                 — showPage(), switchTab(), setRange()
+DASHBOARD                  — renderDashboard()
+INTELLIGENCE ENGINE        — runIntelligence(), detectTrendAlerts(), detectBudgetDrift(),
+                             detectAnomalies(), detectSeasonal()
+INTELLIGENCE RENDERERS     — renderAlerts(), renderTrends(), renderBudgetDrift(), etc.
+CASH FLOW                  — renderCF()
+CATEGORIES                 — renderCats()
+MERCHANTS                  — renderMch()
+DETAIL LENS                — renderAmazon(), renderPurchaserTab(), renderAmzItems(), renderAmzPage()
+TRANSACTIONS               — renderTxns(), renderTxnPage()
+DRAG + DROP                — event listeners on dz1, dz2
+TOAST                      — showToast()
+FAMILY REVIEW              — renderFamily(), buildStep1–6(), exportPDF()
+SETTINGS                   — renderSettingsPage(), saveSettings(), renderAccountOwnerSection(),
+                             renderKidsList(), renderAccountOwnerSection()
+LIFE-STAGE                 — buildLifeStageRecommendations()
+```
+
+---
+
+## Adding a New Detail File Format
+
+1. Write a parser function following `parseAppleCard()` as a template:
+   - Arguments: `(text, fname, purchaser)`
+   - Returns: `amzItem[]` — each item must have `date`, `title`, `category`, `price`, `qty`, `total`, `orderId`, `asin`, `source`, `purchaser`
+   - `orderId` can be synthetic: `GD-${date}-${title.slice(0,8)}`
+   - `purchaser` comes from the argument (set by `processAll` via filename inference)
+
+2. Add detection logic to `parseDetailFile()`:
+   ```javascript
+   if (firstLine.includes('your-unique-column') || fname.toLowerCase().includes('yourservice')) {
+     return parseYourService(text, fname, purchaser);
+   }
+   ```
+
+3. Add a test case to `forge_tests.js`
+
+---
+
+## Adding a New Purchaser Feature
+
+The purchaser data model is simple. Every `amzItem` has:
+```javascript
+{ ..., source: 'Amazon', purchaser: 'Chris' }
+```
+
+And `settings.accountOwners` maps account names to person names:
+```javascript
+{ "Chase Sapphire (CC)": "Chris", "Apple Card (CC)": "Kira" }
+```
+
+To add a new per-person analytic:
+1. Filter `amzItems` by `purchaser` using `personSummary()` or direct filter
+2. For Quicken transactions, use `inferTxnOwner(txn)` which checks `accountOwners`
+3. Surface in the Bullpen via `intelAlerts.push(...)` in `detectTrendAlerts()`
+4. Surface in the Recommended Actions via `buildLifeStageRecommendations()`
+
+---
+
+## Testing
+
+```bash
+node forge_tests.js      # 149 tests — parsers, logic, dedup, life-stage
+node forge_sid_tests.js  # 96 tests  — $id AI layer, context, error handling
+```
+
+Both must pass at 100% before any commit. The test harness extracts functions from `index.html` at runtime — no separate test build needed.
+
+**Adding a test:**
+```javascript
+t.test('parseAppleCard: handles payment rows', () => {
+  const result = parseAppleCard(
+    'Transaction Date,Description,Category,Amount (USD)\n2024-01-15,Autopay,Payment,-89.00',
+    'test.csv', 'Chris'
+  );
+  t.equal(result.length, 0, 'payment rows should be filtered out');
+});
+```
+
+---
+
+## Deployment
+
+**GitHub Pages** — any push to `main` deploys automatically. Live URL: `luka731chris.github.io/Forge`. Deployment takes 30–90 seconds.
+
+**Cloudflare Worker** — not auto-deployed. After changing `forge_worker.js`:
+- Dashboard: dash.cloudflare.com → forge-sid → Edit Code → paste → Deploy
+- CLI: `npm install -g wrangler && wrangler login && wrangler deploy`
+
+---
+
+## Common Mistakes
+
+**"Variables cannot be added to a Worker with static assets"**
+The `wrangler.jsonc` has an `"assets"` block. Remove it. The `assets` key makes Cloudflare treat the Worker as a static site host, disabling secrets and the `fetch` handler.
+
+**"Purchaser not attributed even with correct filename"**
+Check that the family member's first name is in Settings → The Family. Forge compares the filename against `settings.user1`, `settings.user2`, and each `settings.kids[n].name`. If the settings haven't been saved, the name list is empty.
+
+**"New detail format doesn't parse"**
+`parseDetailFile()` detects formats by column headers in the first line. If your file's headers don't contain the expected keywords, it falls through to `parseGenericDetail()`. Log `firstLine` in the console and add your column names to the detection logic.
+
+**"Forge shows no data after clearing browser storage"**
+`localStorage` is the only data store. Re-import from Quicken using the full-history export workflow. Detail files must be re-imported separately.

@@ -1134,7 +1134,7 @@ select option { background: var(--float); color: var(--ink2); }
     </div>
     <div class="nav-item" onclick="showPage('amazon')" id="nav-amazon">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
-      Amazon Watchlist
+      Detail Lens
     </div>
     <div class="nav-item" onclick="showPage('transactions')" id="nav-transactions">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -1191,15 +1191,17 @@ select option { background: var(--float); color: var(--ink2); }
 
     <!-- ── HERO ── -->
     <div style="margin-bottom:40px;">
-      <div style="font-family:var(--font-d);font-size:38px;font-weight:600;color:var(--ink);line-height:1.15;margin-bottom:10px;">
-        Import your data,<br><em>or explore the demo.</em>
+      <!-- Pittsburgh identity mark -->
+      <div style="font-family:var(--font-m);font-size:9px;letter-spacing:.18em;color:var(--gold);opacity:.7;margin-bottom:14px;text-transform:uppercase;">⚾ <strong style="letter-spacing:.04em;">$kenes</strong> #30 reads the scouting report &nbsp;·&nbsp; 🏒 <strong style="letter-spacing:.04em;">$id</strong> #87 reads the play</div>
+      <div style="font-family:var(--font-d);font-size:40px;font-weight:600;color:var(--ink);line-height:1.12;margin-bottom:12px;">
+        Build what lasts.<br><em style="color:var(--gold);">Start with your data.</em>
       </div>
-      <div style="font-size:14px;color:var(--ink3);line-height:1.8;margin-bottom:20px;max-width:560px;">
-        Forge reads Quicken exports directly. No bank logins. No credentials shared. Your data stays in your browser.
+      <div style="font-size:14px;color:var(--ink3);line-height:1.85;margin-bottom:22px;max-width:560px;">
+        Forge reads directly from Quicken — no bank logins, no shared credentials, nothing leaving your browser. Import your history once, refresh in two minutes every month.
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="btn btn-outline" onclick="loadDemo()" style="font-size:13px;padding:9px 22px;">▶&nbsp;&nbsp;Load 4-year demo to explore first</button>
-        <button onclick="clearUploadPage()" style="font-size:13px;padding:9px 18px;background:none;border:1px solid var(--line2);border-radius:var(--r-md);color:var(--ink3);cursor:pointer;" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--ink3)'">↺ Clear upload page</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-forge" onclick="loadDemo()" style="font-size:13px;padding:10px 24px;">⚾&nbsp;&nbsp;Load Pittsburgh demo</button>
+        <button onclick="clearUploadPage()" style="font-size:13px;padding:9px 16px;background:none;border:1px solid var(--line2);border-radius:var(--r-md);color:var(--ink3);cursor:pointer;" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--ink3)'">↺ Clear</button>
       </div>
     </div>
 
@@ -1277,8 +1279,6 @@ select option { background: var(--float); color: var(--ink2); }
 
         </div>
       </div>
-    </div>
-
     <!-- ── MONTHLY REFRESH ───────────────────────────────────── -->
     <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:28px;overflow:hidden;">
 
@@ -1343,11 +1343,13 @@ select option { background: var(--float); color: var(--ink2); }
       </div>
       <div class="furnace-zone" id="dz1" onclick="if(!event.target.matches('input')){document.getElementById('fi1').click()}" style="padding:36px 28px;">
         <input type="file" id="fi1" accept=".csv,.qif,.qfx,.ofx" multiple onchange="handleFiles(this.files,'quicken')">
-        <div class="furnace-zone-inner"><div style="font-size:40px;margin-bottom:12px;pointer-events:none;">📂</div>
-        <div style="font-size:17px;font-weight:600;color:var(--ink);margin-bottom:5px;pointer-events:none;">Drop Quicken export here</div>
-        <div style="font-size:13px;color:var(--ink3);margin-bottom:8px;pointer-events:none;">or click anywhere in this box to browse for a file</div>
-        <div style="display:flex;gap:7px;justify-content:center;flex-wrap:wrap;pointer-events:none;">
-          <span class="pill csv">CSV</span><span class="pill qif">QIF</span><span class="pill qfx">QFX / OFX</span>
+        <div class="furnace-zone-inner">
+          <div style="font-size:40px;margin-bottom:12px;pointer-events:none;">📂</div>
+          <div style="font-size:17px;font-weight:600;color:var(--ink);margin-bottom:5px;pointer-events:none;">Drop Quicken export here</div>
+          <div style="font-size:13px;color:var(--ink3);margin-bottom:8px;pointer-events:none;">or click anywhere in this box to browse for a file</div>
+          <div style="display:flex;gap:7px;justify-content:center;flex-wrap:wrap;pointer-events:none;">
+            <span class="pill csv">CSV</span><span class="pill qif">QIF</span><span class="pill qfx">QFX / OFX</span>
+          </div>
         </div>
       </div>
     </div>
@@ -1358,17 +1360,17 @@ select option { background: var(--float); color: var(--ink2); }
       <div style="padding:20px 26px 0;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
           <div style="width:26px;height:26px;background:var(--float);border:1px solid var(--line2);color:var(--ink2);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">③</div>
-          <div style="font-size:18px;font-weight:700;color:var(--ink);">Amazon order history &nbsp;<span style="font-size:12px;font-weight:400;color:var(--ink4);background:var(--lift);padding:2px 9px;border-radius:20px;border:1px solid var(--line2);">optional</span></div>
+          <div style="font-size:18px;font-weight:700;color:var(--ink);">Detail files — line-item enrichment &nbsp;<span style="font-size:12px;font-weight:400;color:var(--ink4);background:var(--lift);padding:2px 9px;border-radius:20px;border:1px solid var(--line2);">optional</span></div>
         </div>
         <div style="font-size:13px;color:var(--ink3);line-height:1.75;margin-bottom:20px;padding-left:36px;">
-          Forge can analyze your Amazon spending for impulse-buy patterns and category trends. Amazon changed their export process in 2023 — you must request your data and wait for an email. You cannot do this from the Amazon app.
+          Detail files unmask lump-sum charges into line-item intelligence. Supported: Amazon order history, Apple Card monthly statements, or any CSV with Date, Description, and Amount columns. <strong style="color:var(--ink2);">Name the file with a family member's first name</strong> (e.g. <span style="font-family:var(--font-m);color:var(--gold);font-size:12px;">amazon_chris.csv</span>) to enable per-person analytics.
         </div>
       </div>
 
       <div style="padding:0 26px 24px;">
         <div style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-md);padding:20px 22px;">
 
-          <div style="font-family:var(--font-m);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;">How to get your Amazon order data</div>
+          <div style="font-family:var(--font-m);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;">How to get detail files — Amazon, Apple Card, and others</div>
 
           <div style="display:flex;flex-direction:column;gap:14px;">
 
@@ -1417,10 +1419,12 @@ select option { background: var(--float); color: var(--ink2); }
       <div style="padding:0 26px 26px;">
         <div class="furnace-zone" id="dz2" onclick="if(!event.target.matches('input')){document.getElementById('fi2').click()}" style="padding:36px 28px;">
           <input type="file" id="fi2" accept=".csv" multiple onchange="handleFiles(this.files,'amazon')">
-          <div class="furnace-zone-inner"><div style="font-size:40px;margin-bottom:12px;pointer-events:none;">📦</div>
-          <div style="font-size:16px;font-weight:600;color:var(--ink);margin-bottom:5px;pointer-events:none;">Drop <span style="color:var(--gold);font-family:var(--font-m);font-size:14px;">Retail.OrderHistory.1.csv</span> here</div>
-          <div style="font-size:13px;color:var(--ink3);margin-bottom:4px;pointer-events:none;">or click anywhere in this box to browse</div>
-          <div style="font-size:12px;color:var(--ink4);pointer-events:none;">from the "Your Orders" folder in Amazon's ZIP file</div>
+          <div class="furnace-zone-inner">
+            <div style="font-size:40px;margin-bottom:12px;pointer-events:none;">📦</div>
+            <div style="font-size:16px;font-weight:600;color:var(--ink);margin-bottom:5px;pointer-events:none;">Drop <span style="color:var(--gold);font-family:var(--font-m);font-size:14px;">Retail.OrderHistory.1.csv</span> here</div>
+            <div style="font-size:13px;color:var(--ink3);margin-bottom:4px;pointer-events:none;">or click anywhere in this box to browse</div>
+            <div style="font-size:12px;color:var(--ink4);pointer-events:none;">from the "Your Orders" folder in Amazon's ZIP file</div>
+          </div>
         </div>
       </div>
 
@@ -1447,7 +1451,7 @@ select option { background: var(--float); color: var(--ink2); }
 <!-- ══ DASHBOARD ══ -->
 <div id="page-dashboard" class="page">
   <div id="demoBanner" class="demo-banner" style="display:none;">
-    <span>🎯 <strong>Demo Mode</strong> — 4 years of synthetic data across 11 accounts · 87 months of history. Import your real files to replace this.</span>
+    <span>⚾ <strong>$kenes Demo</strong> — 4 years · 11 accounts · 4,387 transactions. $kenes reads the scouting report. Import your real data to forge what lasts.</span>
     <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);" onclick="showPage('upload')">Import Real Data</button>
   </div>
   <div class="page-hdr">
@@ -1552,29 +1556,30 @@ select option { background: var(--float); color: var(--ink2); }
 <!-- ══ AMAZON ══ -->
 <div id="page-amazon" class="page">
   <div class="amz-header">
-    <div><div class="amz-logo">📦 Watchlist<span>The Furnace</span></div><div id="amzMeta" style="font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;"></div></div>
-    <div style="text-align:right;"><div id="amzBig" style="font-family:'DM Serif Display',serif;font-size:30px;color:#ff9900;"></div><div style="font-size:11px;color:rgba(255,255,255,.4);">total amazon spend</div></div>
+    <div><div class="amz-logo">🔍 Detail Lens<span>Purchase Intelligence</span></div><div id="amzMeta" style="font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;"></div></div>
+    <div style="text-align:right;"><div id="amzBig" style="font-family:'DM Serif Display',serif;font-size:30px;color:#ff9900;"></div><div style="font-size:11px;color:rgba(255,255,255,.4);">detail lens total</div></div>
   </div>
-  <div id="amzNoData" style="text-align:center;padding:50px;color:var(--muted);"><div style="font-size:40px;">📦</div><h3 style="color:var(--ink3);margin:12px 0 6px;">No Watchlist data</h3><p style="font-size:12px;">Import Watchlist Items CSV exports to unlock this view.</p><button class="btn btn-outline" style="margin-top:14px;" onclick="showPage('upload')">+ Import</button></div>
+  <div id="amzNoData" style="text-align:center;padding:50px;color:var(--muted);"><div style="font-size:40px;">🔍</div><h3 style="color:var(--ink3);margin:12px 0 6px;">No detail files imported</h3><p style="font-size:12px;max-width:360px;margin:0 auto 0;line-height:1.65;">Drop an Amazon order history, Apple Card statement CSV, or any itemized purchase export to unlock per-person analytics and line-item intelligence.</p><button class="btn btn-outline" style="margin-top:14px;" onclick="showPage('upload')">+ Import</button></div>
   <div id="amzContent" style="display:none;">
     <div class="cards-5" id="amzCards"></div>
     <div id="amzFlags"></div>
-    <div class="tab-strip"><button class="tab-btn active" onclick="switchTab('amz','overview')">Overview</button><button class="tab-btn" onclick="switchTab('amz','categories')">By Category</button><button class="tab-btn" onclick="switchTab('amz','items')">All Items</button><button class="tab-btn" onclick="switchTab('amz','compare')">vs. Total Spend</button></div>
+    <div class="tab-strip"><button class="tab-btn active" onclick="switchTab('amz','overview')">Overview</button><button class="tab-btn" onclick="switchTab('amz','categories')">By Category</button><button class="tab-btn" onclick="switchTab('amz','items')">All Items</button><button class="tab-btn" onclick="switchTab('amz','purchaser')">👤 By Purchaser</button><button class="tab-btn" onclick="switchTab('amz','compare')">vs. Total Spend</button></div>
     <div class="tab-pane active" id="amztab-overview">
-      <div class="grid-2-1"><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Monthly Watchlist Spend</div></div><canvas id="amzMonthly" height="210"></canvas></div><div class="chart-card"><div class="chart-hdr"><div class="chart-title">By Category</div></div><canvas id="amzCatDonut" height="210"></canvas></div></div>
+      <div class="grid-2-1"><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Monthly Detail Spend</div></div><canvas id="amzMonthly" height="210"></canvas></div><div class="chart-card"><div class="chart-hdr"><div class="chart-title">By Category</div></div><canvas id="amzCatDonut" height="210"></canvas></div></div>
     </div>
     <div class="tab-pane" id="amztab-categories">
       <div class="grid-2"><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Spend by Category</div></div><canvas id="amzCatBar" height="260"></canvas></div><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Impulse Score by Category</div></div><canvas id="amzImpBar" height="260"></canvas></div></div>
       <div class="tbl-card"><div class="tbl-hdr"><div class="tbl-title">Spending by Category</div></div><table><thead><tr><th>Category</th><th>Items</th><th>Avg Price</th><th>Impulse Score</th><th style="text-align:right">Total</th></tr></thead><tbody id="amzCatTbl"></tbody></table></div>
     </div>
+    <div class="tab-pane" id="amztab-purchaser"></div>
     <div class="tab-pane" id="amztab-items">
-      <div class="filters"><input type="text" id="amzSearch" placeholder="Search items..." oninput="renderAmzItems()"><span class="filter-lbl">Category:</span><select id="amzCatF" onchange="renderAmzItems()"></select><span class="filter-lbl">Flag:</span><select id="amzFlagF" onchange="renderAmzItems()"><option value="all">All</option><option value="impulse">Impulse</option><option value="repeat">Repeat Buys</option><option value="high">High Value $50+</option></select></div>
+      <div class="filters"><input type="text" id="amzSearch" placeholder="Search items..." oninput="renderAmzItems()"><span class="filter-lbl">Category:</span><select id="amzCatF" onchange="renderAmzItems()"></select><span class="filter-lbl">Person:</span><select id="amzPersonF" onchange="renderAmzItems()"></select><span class="filter-lbl">Source:</span><select id="amzSrcF" onchange="renderAmzItems()"></select><span class="filter-lbl">Flag:</span><select id="amzFlagF" onchange="renderAmzItems()"><option value="all">All</option><option value="impulse">Impulse</option><option value="repeat">Repeat Buys</option><option value="high">High Value $50+</option></select></div>
       <div class="tbl-card"><table><thead><tr><th>Date</th><th>Item</th><th>Category</th><th>Qty</th><th>Flag</th><th style="text-align:right">Total</th></tr></thead><tbody id="amzItemTbl"></tbody></table><div id="amzPager" style="padding:12px 18px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);"></div></div>
     </div>
     <div class="tab-pane" id="amztab-compare">
       <div class="cards-3" id="amzCmpCards"></div>
-      <div class="chart-card" style="margin-bottom:18px;"><div class="chart-hdr"><div class="chart-title">Watchlist vs All Other Spending</div></div><canvas id="amzCmpChart" height="170"></canvas></div>
-      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Watchlist as % of Monthly Spend</div></div><canvas id="amzPctChart" height="120"></canvas></div>
+      <div class="chart-card" style="margin-bottom:18px;"><div class="chart-hdr"><div class="chart-title">Detail Lens vs All Other Spending</div></div><canvas id="amzCmpChart" height="170"></canvas></div>
+      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Detail Lens as % of Monthly Spend</div></div><canvas id="amzPctChart" height="120"></canvas></div>
     </div>
   </div>
 </div>
@@ -1858,6 +1863,24 @@ select option { background: var(--float); color: var(--ink2); }
       </div>
     </div>
 
+    <!-- ACCOUNT OWNERS -->
+    <div class="settings-section">
+      <div class="settings-hdr">
+        <div class="settings-hdr-icon">👤</div>
+        <div>
+          <div class="settings-hdr-title">Account Owners</div>
+          <div class="settings-hdr-sub">Map Quicken accounts to family members for per-person spending analytics</div>
+        </div>
+      </div>
+      <div class="settings-body">
+        <div class="field-note" style="margin-bottom:12px;">Assign each Quicken account to the person who primarily uses it. Forge uses this to surface individual spending trends, personalized alerts, and per-person analytics in the Bullpen and Detail Lens. Shared accounts can be left as <strong style="color:var(--ink2);">Shared / Unassigned</strong>.</div>
+        <div id="acct-owner-list">
+          <div style="font-size:12px;color:var(--ink4);padding:8px 0;">Import data first — accounts will appear here automatically.</div>
+        </div>
+        <div class="field-note" style="margin-top:10px;">For detail files (Amazon, Apple Card), include a family member's first name in the filename — e.g. <span style="font-family:var(--font-m);color:var(--gold);">amazon_chris.csv</span> or <span style="font-family:var(--font-m);color:var(--gold);">applecard_kira.csv</span>.</div>
+      </div>
+    </div>
+
     <!-- FINANCIAL TARGETS -->
     <div class="settings-section">
       <div class="settings-hdr">
@@ -2112,7 +2135,7 @@ function loadDemo() {
   generateDemoData();
   saveData();
   initApp();
-  showToast('⚾ $kenes takes the mound — demo data loaded');
+  showToast('⚾ $kenes takes the mound — Pittsburgh demo loaded. #30 is on the clock.');
 }
 
 function generateDemoData() {
@@ -2183,7 +2206,7 @@ function generateDemoData() {
   ];
 
   // Generate 4 years of transactions
-  const now = new Date(2026, 2, 26); // March 26 2026
+  const now = new Date(); // always generate through today
   const startDate = new Date(2022, 0, 1);
 
   // Seasonal multipliers by month (0=Jan)
@@ -2404,7 +2427,7 @@ function renderFileList() {
           <div class="fi-info">
             <div class="fi-name">${pf.file.name}</div>
             <div class="fi-meta">
-              <span class="badge ${isAmz?'badge-org':'badge-grn'}">${isAmz?'📦 Amazon':'💳 Quicken'}</span>
+              <span class="badge ${isAmz?'badge-org':'badge-grn'}">${isAmz?'🔍 Detail':'💳 Quicken'}</span>
               <span style="color:var(--ink4);font-size:11px;margin-left:6px;">${mb} · .${ext.toUpperCase()}</span>
             </div>
           </div>
@@ -2455,11 +2478,24 @@ async function processAll() {
       const text = await readFile(f);
 
       if (source==='amazon') {
-        const amzParsed = parseAmazon(text);
-        newAmz.push(...amzParsed);
-        fileResults.push({name:f.name, count:amzParsed.length, type:'amazon', ok:amzParsed.length>0,
-          reason: amzParsed.length===0 ? 'This doesn\'t look like the right Amazon file. Use the file named Retail.OrderHistory.1.csv from the Your Orders folder inside the ZIP file Amazon emailed you.' : null});
-        console.log(`Amazon ${f.name}: ${amzParsed.length} items`);
+        // Infer purchaser from filename tags like "amazon_chris.csv" or "applecard_kira.csv"
+        const fnLower = f.name.toLowerCase();
+        let purchaser = null;
+        const allPeople = [settings.user1, settings.user2, ...settings.kids.map(k=>k.name)].filter(Boolean);
+        allPeople.forEach(p => { if (fnLower.includes(p.toLowerCase())) purchaser = p; });
+
+        const detailParsed = parseDetailFile(text, f.name, purchaser);
+        newAmz.push(...detailParsed);
+
+        // Detect what format was parsed for the result label
+        const fl = text.split('\n')[0].toLowerCase();
+        const srcLabel = fl.includes('asin') || fnLower.includes('retail.order') ? 'Amazon' :
+                         fl.includes('clearing date') || fnLower.includes('apple') ? 'Apple Card' : 'Detail';
+        const pLabel = purchaser ? ` · ${purchaser}` : '';
+        fileResults.push({name:f.name, count:detailParsed.length, type:srcLabel, ok:detailParsed.length>0,
+          reason: detailParsed.length===0 ?
+            'Forge couldn\'t read line-item detail from this file. Supported: Amazon order history (Retail.OrderHistory.1.csv), Apple Card monthly CSV, or any CSV with Date, Description, and Amount columns. To tag a file to a specific person, include their first name in the filename (e.g. amazon_chris.csv).' : null});
+        console.log(`Detail ${f.name} (${srcLabel}${pLabel}): ${detailParsed.length} items`);
         continue;
       }
 
@@ -2519,8 +2555,8 @@ async function processAll() {
   txns = [...txns,...deduped].sort((a,b)=>new Date(b.date)-new Date(a.date));
   accounts = [...acctMap.values()];
 
-  const exA = new Set(amzItems.map(i=>`${i.date}|${i.title}|${i.orderId}`));
-  const dedupedA = newAmz.filter(i=>!exA.has(`${i.date}|${i.title}|${i.orderId}`));
+  const exA = new Set(amzItems.map(i=>`${i.date}|${i.title}|${i.orderId}|${i.purchaser||''}`));
+  const dedupedA = newAmz.filter(i=>!exA.has(`${i.date}|${i.title}|${i.orderId}|${i.purchaser||''}`));
   amzItems = [...amzItems,...dedupedA].sort((a,b)=>new Date(b.date)-new Date(a.date));
 
   isDemoMode = false;
@@ -2710,6 +2746,188 @@ function parseAmazon(text) {
   }).filter(Boolean);
 }
 
+// ══════════════════════════════════════════════════════════════
+// DETAIL FILE PARSERS — Amazon, Apple Card, Generic enrichment
+// These produce amzItems-compatible objects with a 'purchaser' field
+// ══════════════════════════════════════════════════════════════
+
+// ── Apple Card Monthly Statement CSV ─────────────────────────
+// Export: Wallet app → Apple Card → scroll to statement → Export
+// Columns: Transaction Date, Clearing Date, Description, Merchant,
+//          Category, Type, Amount (USD)
+function parseAppleCard(text, fname, purchaser) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return [];
+  const hdr = lines[0].split(',').map(h => h.replace(/"/g,'').trim().toLowerCase());
+  const col = (...ns) => { for (const n of ns) { const i = hdr.indexOf(n); if (i >= 0) return i; } return -1; };
+  const dIdx = col('transaction date','clearing date','date');
+  const tIdx = col('merchant','description','payee');
+  const aIdx = col('amount (usd)','amount');
+  const cIdx = col('category','type');
+  if (dIdx < 0 || tIdx < 0 || aIdx < 0) return [];
+  const owner = purchaser || fname.replace(/\.csv$/i,'').replace(/[_-]/g,' ').trim() || 'Apple Card';
+  return lines.slice(1).map(line => {
+    const row = splitCSV(line);
+    const raw = (row[aIdx]||'').replace(/[",]/g,'').trim();
+    if (!raw) return null;
+    const amount = parseFloat(raw.replace(/[$()]/g,'').trim());
+    if (!amount || amount <= 0) return null;
+    const date = parseDate((row[dIdx]||'').replace(/"/g,'').trim());
+    if (!date) return null;
+    const title = (row[tIdx]||'').replace(/"/g,'').trim();
+    if (!title) return null;
+    const catRaw = cIdx >= 0 ? (row[cIdx]||'').replace(/"/g,'').trim() : 'Shopping';
+    // Skip payments, credits, autopay rows
+    if (['payment','autopay','credit','refund'].some(k => catRaw.toLowerCase().includes(k) || title.toLowerCase().includes(k))) return null;
+    return {
+      date, title, category: catRaw || 'Shopping',
+      price: amount, qty: 1, total: parseFloat(amount.toFixed(2)),
+      orderId: `AC-${date}-${title.slice(0,8).replace(/\s/g,'')}`,
+      asin: '', source: 'Apple Card', purchaser: owner,
+    };
+  }).filter(Boolean);
+}
+
+// ── Generic Enrichment CSV ────────────────────────────────────
+// Catches PayPal, Venmo, Costco, store loyalty exports, etc.
+// Any CSV with date + name/description + amount columns
+function parseGenericDetail(text, fname, purchaser) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return [];
+  const hdr = lines[0].split(',').map(h => h.replace(/"/g,'').trim().toLowerCase());
+  const col = (...ns) => { for (const n of ns) { const i = hdr.indexOf(n); if (i >= 0) return i; } return -1; };
+  const dIdx = col('date','transaction date','order date','purchase date','posted date');
+  const tIdx = col('description','merchant','name','payee','title','item','memo');
+  const aIdx = col('amount','total','price','charge','debit','cost','amount usd');
+  const cIdx = col('category','type','department');
+  if (dIdx < 0 || tIdx < 0 || aIdx < 0) return [];
+  const srcName = fname.replace(/\.csv$/i,'').replace(/[_-]/g,' ').trim() || 'Detail Import';
+  const owner = purchaser || null;
+  return lines.slice(1).map(line => {
+    const row = splitCSV(line);
+    const raw = (row[aIdx]||'').replace(/[",]/g,'').trim();
+    if (!raw) return null;
+    const amount = Math.abs(parseFloat(raw.replace(/[$()]/g,'').trim()) || 0);
+    if (!amount) return null;
+    const date = parseDate((row[dIdx]||'').replace(/"/g,'').trim());
+    if (!date) return null;
+    const title = (row[tIdx]||'').replace(/"/g,'').trim();
+    if (!title) return null;
+    const category = cIdx >= 0 ? (row[cIdx]||'').replace(/"/g,'').trim() || srcName : srcName;
+    return {
+      date, title, category,
+      price: amount, qty: 1, total: parseFloat(amount.toFixed(2)),
+      orderId: `GD-${date}-${title.slice(0,8).replace(/\s/g,'')}`,
+      asin: '', source: srcName, purchaser: owner,
+    };
+  }).filter(i => i && i.total > 0);
+}
+
+// ── Detail File Auto-Router ───────────────────────────────────
+// Detects the format of an enrichment CSV and routes to the right parser.
+// All parsers add 'source' and 'purchaser' fields to every item.
+function parseDetailFile(text, fname, purchaser) {
+  if (!text || !text.trim()) return [];
+  const firstLine = text.split('\n')[0].toLowerCase();
+  // Amazon: ASIN column, 'product name', 'order id', or filename match
+  if (firstLine.includes('asin') || firstLine.includes('product name') ||
+      firstLine.includes('order id') || fname.toLowerCase().includes('retail.orderhistory') ||
+      fname.toLowerCase().includes('orderhistory')) {
+    const items = parseAmazon(text);
+    // Stamp purchaser and source on every Amazon item
+    return items.map(i => ({ ...i, source: 'Amazon', purchaser: purchaser || null }));
+  }
+  // Apple Card: clearing date column or "amount (usd)" or filename
+  if (firstLine.includes('clearing date') || firstLine.includes('amount (usd)') ||
+      fname.toLowerCase().includes('apple') || fname.toLowerCase().includes('applecard')) {
+    return parseAppleCard(text, fname, purchaser);
+  }
+  // Fall back to generic parser
+  return parseGenericDetail(text, fname, purchaser);
+}
+
+// ── Purchaser Inference from Quicken transactions ─────────────
+// Returns a best-guess owner for a txn based on accountOwners mapping in settings
+function inferTxnOwner(txn) {
+  if (!settings.accountOwners) return null;
+  return settings.accountOwners[txn.account] || null;
+}
+
+// ── Per-Person spending analytics ────────────────────────────
+// Groups amzItems by purchaser for individual-level analytics
+function getPersonSpend(items, personName) {
+  if (!personName) return items;
+  return items.filter(i => i.purchaser === personName);
+}
+
+// Returns {name, total, items, topCat, impulseRate, avgOrder, monthlyAvg}
+function personSummary(personName, dateFrom) {
+  const mine = amzItems.filter(i => i.purchaser === personName &&
+    (!dateFrom || new Date(i.date) >= dateFrom));
+  if (!mine.length) return null;
+  const total = mine.reduce((s,i) => s+i.total, 0);
+  const catMap = {};
+  mine.forEach(i => catMap[i.category] = (catMap[i.category]||0)+i.total);
+  const topCat = Object.entries(catMap).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
+  const highImp = mine.filter(i => scoreImpulse(i) >= 60);
+  const months = [...new Set(mine.map(i=>i.date.slice(0,7)))].length || 1;
+  return {
+    name: personName, total, items: mine.length,
+    topCat, impulseRate: mine.length ? Math.round(highImp.length/mine.length*100) : 0,
+    avgOrder: mine.length ? total/mine.length : 0,
+    monthlyAvg: total/months,
+    categories: Object.entries(catMap).sort((a,b)=>b[1]-a[1]),
+  };
+}
+
+// ── Purchaser trend detection ─────────────────────────────────
+// Detects acceleration in spend for a specific person
+function detectPersonTrends() {
+  const people = [...new Set(amzItems.map(i=>i.purchaser).filter(Boolean))];
+  const trends = [];
+  const now = new Date();
+  const c3start = new Date(now.getFullYear(), now.getMonth()-2, 1);
+  const p3start = new Date(now.getFullYear(), now.getMonth()-5, 1);
+
+  people.forEach(person => {
+    const cur3 = amzItems.filter(i => i.purchaser===person && new Date(i.date)>=c3start);
+    const prv3 = amzItems.filter(i => i.purchaser===person && new Date(i.date)>=p3start && new Date(i.date)<c3start);
+    const curT = cur3.reduce((s,i)=>s+i.total,0);
+    const prvT = prv3.reduce((s,i)=>s+i.total,0);
+    if (prvT < 30) return;
+    const pct = ((curT-prvT)/prvT)*100;
+
+    // Category-level trends per person
+    const curCats={}, prvCats={};
+    cur3.forEach(i=>curCats[i.category]=(curCats[i.category]||0)+i.total);
+    prv3.forEach(i=>prvCats[i.category]=(prvCats[i.category]||0)+i.total);
+    Object.entries(curCats).forEach(([cat,v])=>{
+      const p=prvCats[cat]||0; if(p<15)return;
+      const pct2=((v-p)/p)*100;
+      if(pct2>40) trends.push({ person, cat, pct:pct2, cur:v, prv:p, sev:pct2>80?'danger':'warn' });
+    });
+
+    if (pct > 30) trends.push({ person, cat:'ALL', pct, cur:curT, prv:prvT, sev:pct>70?'danger':'warn' });
+  });
+  return trends;
+}
+
+// ── Predictive monthly spend for a person ────────────────────
+function predictMonthlyDetail(personName) {
+  if (!amzItems.length) return null;
+  const now = new Date();
+  const day = now.getDate();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const mtd = amzItems.filter(i => i.purchaser===personName && i.date.startsWith(now.toISOString().slice(0,7)));
+  const mtdTotal = mtd.reduce((s,i)=>s+i.total, 0);
+  const projected = day > 0 ? mtdTotal * (daysInMonth/day) : 0;
+  const hist = amzItems.filter(i => i.purchaser===personName);
+  const months = [...new Set(hist.map(i=>i.date.slice(0,7)))].length || 1;
+  const histAvg = hist.reduce((s,i)=>s+i.total,0) / months;
+  return { projected, histAvg, mtdTotal, daysLeft: daysInMonth-day };
+}
+
+
 function splitCSV(l){const r=[];let c='',q=false;for(const ch of l){if(ch==='"'){q=!q;}else if(ch===','&&!q){r.push(c.trim());c='';}else c+=ch;}r.push(c.trim());return r;}
 function parseDate(s) {
   if (!s) return null;
@@ -2893,6 +3111,7 @@ function showPage(name) {
 }
 
 function switchTab(ns, tab) {
+  if (ns==='amz' && tab==='purchaser') { renderPurchaserTab(); }
   const prefix=ns==='intel'?'itab-':'amztab-';
   document.querySelectorAll(`[id^="${prefix}"]`).forEach(p=>p.classList.remove('active'));
   const el=document.getElementById(prefix+tab); if(el)el.classList.add('active');
@@ -2937,8 +3156,9 @@ function renderDashboard() {
 
   const md=getMonthlyData(filtered);
   destroyChart('cfChart');
-  charts['cfChart']=new Chart(document.getElementById('cfChart'),{type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.7)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.7)',borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:true,labels:{boxWidth:12,font:{size:11}}}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  try { charts['cfChart']=new Chart(document.getElementById('cfChart'),{type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.7)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.7)',borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:true,labels:{boxWidth:12,font:{size:11}}}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
 
+} catch(e){ console.warn("cfChart:",e); }
   const cats={};
   exp.forEach(t=>{const c=t.category||'Uncategorized';cats[c]=(cats[c]||0)+Math.abs(t.amount);});
   const topCats=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,9);
@@ -3012,6 +3232,45 @@ function detectTrendAlerts() {
       intelAlerts.push({type:'trend',severity:pct>50?'danger':'alert',icon:'📈',title:`${cat} spending up ${pct.toFixed(0)}%`,body:`You spent ${fmt(curAmt)} in the last 3 months on ${cat}, vs ${fmt(prvAmt)} the prior 3 months — a ${pct.toFixed(0)}% increase.`,action:`Review ${cat} transactions and identify if this is a one-time spike or an emerging pattern.`});
     }
   });
+
+  // ── Per-person account trends (Quicken) ──────────────────
+  if (settings.accountOwners && Object.keys(settings.accountOwners).length) {
+    const people = [...new Set(Object.values(settings.accountOwners))];
+    people.forEach(person => {
+      const personAccts = Object.entries(settings.accountOwners)
+        .filter(([,p])=>p===person).map(([a])=>a);
+      const pCur3 = cur3.filter(t=>personAccts.includes(t.account));
+      const pPrv3 = prv3.filter(t=>personAccts.includes(t.account));
+      const pCurT = pCur3.reduce((s,t)=>s+Math.abs(t.amount),0);
+      const pPrvT = pPrv3.reduce((s,t)=>s+Math.abs(t.amount),0);
+      if (pPrvT < 50) return;
+      const pct2 = ((pCurT-pPrvT)/pPrvT)*100;
+      if (pct2 > 35) {
+        intelAlerts.push({type:'purchaser',severity:pct2>60?'danger':'alert',icon:'👤',
+          title:`${person}'s spending up ${pct2.toFixed(0)}% this quarter`,
+          body:`${person}'s accounts totaled ${fmt(pCurT)} last 3 months vs ${fmt(pPrvT)} prior. Their accounts: ${personAccts.join(', ')}.`,
+          action:`Review ${person}'s transaction history in the Ledger Room.`});
+      }
+    });
+  }
+
+  // ── Detail file purchaser trends ─────────────────────────
+  if (amzItems.length) {
+    const personTrends = detectPersonTrends();
+    personTrends.forEach(pt => {
+      if (pt.cat === 'ALL') {
+        intelAlerts.push({type:'purchaser',severity:pt.sev,icon:'👤',
+          title:`${pt.person}'s detail spending up ${pt.pct.toFixed(0)}%`,
+          body:`${pt.person} spent ${fmt(pt.cur)} on detail imports (Amazon/Apple Card) this quarter vs ${fmt(pt.prv)} prior.`,
+          action:`Review ${pt.person}'s purchase history in the Detail Lens.`});
+      } else {
+        intelAlerts.push({type:'purchaser',severity:pt.sev,icon:'👤',
+          title:`${pt.person}: ${pt.cat} up ${pt.pct.toFixed(0)}%`,
+          body:`${pt.person}'s ${pt.cat} spending: ${fmt(pt.cur)} recently vs ${fmt(pt.prv)} prior quarter.`,
+          action:`Check ${pt.person}'s ${pt.cat} items in Detail Lens.`});
+      }
+    });
+  }
 }
 
 // ── BUDGET DRIFT ──
@@ -3380,6 +3639,12 @@ function renderAmazon() {
   const months=[...new Set(amzItems.map(i=>i.date.slice(0,7)))].length||1;
   const highImp=amzItems.filter(i=>scoreImpulse(i)>=60);
   const topCat=(()=>{const c={};amzItems.forEach(i=>c[i.category]=(c[i.category]||0)+i.total);return Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';})();
+  // Per-purchaser summaries for KPI cards
+  const purchasers = [...new Set(amzItems.map(i=>i.purchaser).filter(Boolean))];
+  const hasPurchasers = purchasers.length > 0;
+  const now3 = new Date();
+  const since3m = new Date(now3.getFullYear(), now3.getMonth()-2, 1);
+
   document.getElementById('amzCards').innerHTML=`
     <div class="card card-al gold"><div class="card-lbl">Total</div><div class="card-val" style="font-size:22px;">${fmtK(total)}</div><div class="card-sub">${fmt(total/months)}/mo</div></div>
     <div class="card card-al"><div class="card-lbl">Orders</div><div class="card-val" style="font-size:22px;">${orders.length||amzItems.length}</div><div class="card-sub">avg ${fmt((orders.length?total/orders.length:0))}/order</div></div>
@@ -3449,10 +3714,89 @@ function renderAmazon() {
   renderAmzItems();
 }
 
+
+function renderPurchaserTab() {
+  const el = document.getElementById('amztab-purchaser');
+  if (!el) return;
+  const purchasers = [...new Set(amzItems.map(i=>i.purchaser).filter(Boolean))];
+  if (!purchasers.length) {
+    el.innerHTML = `<div style="padding:40px;text-align:center;color:var(--ink4);">
+      <div style="font-size:32px;margin-bottom:12px;">👤</div>
+      <div style="font-size:14px;font-weight:600;color:var(--ink3);margin-bottom:8px;">No purchaser data yet</div>
+      <div style="font-size:12px;max-width:420px;margin:0 auto;line-height:1.7;color:var(--ink4);">To enable per-person analytics, name your detail files with a family member's first name — e.g. <strong style="color:var(--ink2);">amazon_chris.csv</strong> or <strong style="color:var(--ink2);">applecard_kira.csv</strong>. Forge will automatically attribute those purchases to that person.<br><br>You can also map Quicken accounts to family members in <strong style="color:var(--gold);">Settings → Account Owners</strong>.</div>
+    </div>`;
+    return;
+  }
+  const now = new Date();
+  const summaries = purchasers.map(p => personSummary(p, null)).filter(Boolean);
+  const total = amzItems.reduce((s,i)=>s+i.total, 0);
+  const allTrends = detectPersonTrends();
+
+  const cards = summaries.map((s, idx) => {
+    const share = total > 0 ? (s.total/total*100).toFixed(0) : 0;
+    const pred = predictMonthlyDetail(s.name);
+    const topTrend = allTrends.filter(t=>t.person===s.name && t.cat!=='ALL').sort((a,b)=>b.pct-a.pct)[0];
+    const colors = ['var(--gold-dim)','rgba(96,165,250,.12)','rgba(167,139,250,.12)','rgba(45,212,191,.12)'];
+    return `
+    <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <div style="width:38px;height:38px;background:${colors[idx%4]};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">👤</div>
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--ink);">${s.name}</div>
+          <div style="font-size:11px;color:var(--ink4);">${s.items} items · ${s.topCat} is top category</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;">
+          <div style="font-size:20px;font-weight:700;color:var(--gold);">${fmtK(s.total)}</div>
+          <div style="font-size:10px;color:var(--ink4);">${share}% of detail spend</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+        <div style="background:var(--lift);border-radius:var(--r-sm);padding:10px;text-align:center;">
+          <div style="font-size:10px;color:var(--ink4);margin-bottom:3px;">Monthly avg</div>
+          <div style="font-size:15px;font-weight:600;color:var(--ink);">${fmtK(s.monthlyAvg)}</div>
+        </div>
+        <div style="background:var(--lift);border-radius:var(--r-sm);padding:10px;text-align:center;">
+          <div style="font-size:10px;color:var(--ink4);margin-bottom:3px;">Impulse rate</div>
+          <div style="font-size:15px;font-weight:600;color:${s.impulseRate>30?'var(--negative)':'var(--positive)'};">${s.impulseRate}%</div>
+        </div>
+        <div style="background:var(--lift);border-radius:var(--r-sm);padding:10px;text-align:center;">
+          <div style="font-size:10px;color:var(--ink4);margin-bottom:3px;">Avg order</div>
+          <div style="font-size:15px;font-weight:600;color:var(--ink);">${fmt(s.avgOrder)}</div>
+        </div>
+      </div>
+      ${pred && pred.histAvg > 10 ? `<div style="background:rgba(245,168,0,.06);border:1px solid rgba(245,168,0,.15);border-radius:var(--r-sm);padding:10px 14px;font-size:12px;color:var(--ink3);margin-bottom:10px;">
+        📈 Projected this month: <strong style="color:var(--gold);">${fmt(pred.projected)}</strong> · ${fmt(pred.mtdTotal)} so far · ${pred.daysLeft} days left · Historical avg: ${fmt(pred.histAvg)}
+        ${pred.projected > pred.histAvg * 1.3 ? ' <strong style="color:var(--negative);">↑ Above average</strong>' : ''}
+      </div>` : ''}
+      ${topTrend ? `<div style="background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-sm);padding:10px 14px;font-size:12px;color:var(--ink3);margin-bottom:10px;">
+        ⚠ ${topTrend.cat} up <strong style="color:var(--negative);">${topTrend.pct.toFixed(0)}%</strong> vs prior quarter (${fmt(topTrend.cur)} vs ${fmt(topTrend.prv)})
+      </div>` : ''}
+      <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px;">
+        <div style="font-size:10px;color:var(--ink4);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;">Top Categories</div>
+        ${s.categories.slice(0,5).map(([cat,v])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:12px;"><span style="color:var(--ink2);">${cat}</span><span style="color:var(--ink3);">${fmt(v)}</span></div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="margin-bottom:16px;padding:14px 16px;background:var(--float);border:1px solid var(--line);border-radius:var(--r-md);font-size:12px;color:var(--ink3);line-height:1.7;">
+      <strong style="color:var(--ink2);">How purchaser attribution works:</strong>
+      Name your detail files with a family member's first name before importing (e.g. <strong style="color:var(--gold-lt);">amazon_chris.csv</strong>, <strong style="color:var(--gold-lt);">applecard_kira.csv</strong>).
+      For Quicken accounts, map each account to a person in <strong style="color:var(--gold-lt);">Settings → Account Owners</strong>.
+    </div>
+    ${cards}`;
+}
+
 function populateAmzFilters(){
   const cats=[...new Set(amzItems.map(i=>i.category))].sort();
-  const el=document.getElementById('amzCatF');
-  if(el)el.innerHTML=`<option value="all">All</option>`+cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const catEl=document.getElementById('amzCatF');
+  if(catEl)catEl.innerHTML=`<option value="all">All Categories</option>`+cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const people=[...new Set(amzItems.map(i=>i.purchaser).filter(Boolean))].sort();
+  const pEl=document.getElementById('amzPersonF');
+  if(pEl)pEl.innerHTML=`<option value="all">All People</option>`+people.map(p=>`<option value="${p}">${p}</option>`).join('');
+  const srcs=[...new Set(amzItems.map(i=>i.source).filter(Boolean))].sort();
+  const sEl=document.getElementById('amzSrcF');
+  if(sEl)sEl.innerHTML=`<option value="all">All Sources</option>`+srcs.map(s=>`<option value="${s}">${s}</option>`).join('');
 }
 
 function renderAmzItems(){
@@ -3469,11 +3813,17 @@ function renderAmzPage(){
   if(flag==='impulse')items=items.filter(i=>scoreImpulse(i)>=60);
   if(flag==='repeat'){const c={};amzItems.forEach(i=>{const k=i.title.slice(0,40);c[k]=(c[k]||0)+1;});items=items.filter(i=>c[i.title.slice(0,40)]>=2);}
   if(flag==='high')items=items.filter(i=>i.total>=50);
+  const person=document.getElementById('amzPersonF')?.value||'all';
+  if(person!=='all') items=items.filter(i=>i.purchaser===person);
+  const src=document.getElementById('amzSrcF')?.value||'all';
+  if(src!=='all') items=items.filter(i=>i.source===src);
   items.sort((a,b)=>new Date(b.date)-new Date(a.date));
   const pg=items.slice(amzPage*AMZ_PAGE,(amzPage+1)*AMZ_PAGE);
   document.getElementById('amzItemTbl').innerHTML=pg.map(i=>{
     const sc=scoreImpulse(i);const{lbl,cls}=impulseBadge(sc);
-    return`<tr><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ink3);">${i.date}</td><td><div style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;" title="${i.title}">${i.title}</div></td><td><span class="badge badge-blu" style="font-size:9px;">${i.category}</span></td><td class="td-r">${i.qty}</td><td><span class="impulse-badge ${cls}">${lbl}</span></td><td class="td-r"><strong>${fmt(i.total)}</strong></td></tr>`;
+    const ownerBadge = i.purchaser ? `<span class="badge" style="background:rgba(96,165,250,.15);color:var(--river);font-size:9px;margin-left:4px;">${i.purchaser}</span>` : '';
+    const srcBadge   = i.source && i.source!=='Amazon' ? `<span class="badge" style="background:rgba(167,139,250,.12);color:var(--purple);font-size:9px;">${i.source}</span>` : '';
+    return`<tr><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ink3);">${i.date}</td><td><div style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;" title="${i.title}">${i.title}</div>${ownerBadge}${srcBadge}</td><td><span class="badge badge-blu" style="font-size:9px;">${i.category}</span></td><td class="td-r">${i.qty}</td><td><span class="impulse-badge ${cls}">${lbl}</span></td><td class="td-r"><strong>${fmt(i.total)}</strong></td></tr>`;
   }).join('')||'<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);">No items found</td></tr>';
   const tp=Math.ceil(items.length/AMZ_PAGE);
   document.getElementById('amzPager').innerHTML=tp>1?`<div style="display:flex;align-items:center;gap:8px;">${amzPage>0?`<button class="btn btn-outline btn-sm" onclick="amzPage--;renderAmzPage()">← Prev</button>`:''}<span>${items.length.toLocaleString()} items · Page ${amzPage+1}/${tp}</span>${amzPage<tp-1?`<button class="btn btn-outline btn-sm" onclick="amzPage++;renderAmzPage()">Next →</button>`:''}</div>`:items.length+' items';
@@ -3838,7 +4188,7 @@ function buildStep6() {
       <li>Drag into Forge to refresh the data</li>
       <li>Open this view and run through the agenda again</li>
       <li>Check whether any decisions from this meeting took effect</li>
-      <li style="font-size:12px;color:var(--ink4);">⚾ #30 reads the scouting report &nbsp;·&nbsp; 🏒 #87 reads the play</li>
+      <li style="font-size:12px;color:var(--ink4);">⚾ <strong style="letter-spacing:.04em;">$kenes</strong> #30 reads the scouting report &nbsp;·&nbsp; 🏒 <strong style="letter-spacing:.04em;">$id</strong> #87 reads the play</li>
     </ul></div></div>`;
 
   document.getElementById('fbrStep6Content').innerHTML = html;
@@ -4177,6 +4527,10 @@ const DEFAULT_SETTINGS = {
   pdfSavings: true,
   categoryBudgets: {},
   agendaSteps: { 1:true, 2:true, 3:true, 4:true, 5:true, 6:true },
+  // Maps Quicken account names → family member name for per-person analytics
+  accountOwners: {},
+  // How aggressively to flag detail-file impulse items (1=lenient, 5=strict)
+  detailSensitivity: 3,
 };
 
 let settings = { ...DEFAULT_SETTINGS };
@@ -4243,6 +4597,14 @@ function saveSettings() {
     const cat = inp.dataset.category;
     const val = parseFloat(inp.value);
     if (cat && !isNaN(val) && val > 0) settings.categoryBudgets[cat] = val;
+  });
+
+  // Read account owners mapping
+  settings.accountOwners = {};
+  document.querySelectorAll('.acct-owner-select').forEach(sel => {
+    const acct = sel.dataset.account;
+    const owner = sel.value;
+    if (acct && owner && owner !== 'unassigned') settings.accountOwners[acct] = owner;
   });
 
   // Read agenda toggles
@@ -4334,6 +4696,26 @@ function updateSidPreview() {
 }
 
 // ── RENDER SETTINGS PAGE ──
+
+// ── Account Owner Settings ──────────────────────────────────
+function renderAccountOwnerSection() {
+  const el = document.getElementById('acct-owner-list');
+  if (!el || !accounts.length) return;
+  const people = [settings.user1, settings.user2, ...settings.kids.map(k=>k.name)].filter(Boolean);
+  el.innerHTML = accounts.map(a => {
+    const currentOwner = settings.accountOwners?.[a.name] || 'unassigned';
+    return `<div class="field-row" style="margin-bottom:8px;">
+      <div style="flex:1;font-size:13px;color:var(--ink2);display:flex;align-items:center;gap:8px;">
+        <span class="acct-dot" style="background:${a.color};width:8px;height:8px;border-radius:50%;flex-shrink:0;"></span>
+        ${a.name}
+      </div>
+      <select class="field-input acct-owner-select" data-account="${a.name}" style="max-width:160px;font-size:12px;">
+        <option value="unassigned"${currentOwner==='unassigned'?' selected':''}>— Shared / Unassigned</option>
+        ${people.map(p => `<option value="${p}"${currentOwner===p?' selected':''}>${p}</option>`).join('')}
+      </select>
+    </div>`;
+  }).join('');
+}
 function renderSettingsPage() {
   loadSettings();
   // Family fields
@@ -4350,6 +4732,7 @@ function renderSettingsPage() {
   document.getElementById('s-user2-dob')?.addEventListener('change', () => updateAgeBadge('s-user2-dob','s-user2-age-badge',true));
   // Kids
   renderKidsList();
+  renderAccountOwnerSection();
   // Sid settings
   setChecked('s-confluence-mode', settings.confluenceMode);
   setChecked('s-kids-in-alerts', settings.kidsInAlerts);
@@ -4558,6 +4941,37 @@ function buildLifeStageRecommendations() {
       body: `With ${familySize} people in the household${chrisAge > 45 ? ' and increasing healthcare exposure' : ''}, a more appropriate emergency fund is ${fmt(suggestedEmergency)} — ${fmt(suggestedEmergency - settings.emergencyTarget)} above your current target of ${fmt(settings.emergencyTarget)}.`,
       action: `Consider revising your emergency fund target to ${fmt(suggestedEmergency)} in Forge Settings.`
     });
+  }
+
+  // ── Per-person detail-file recommendations ────────────────
+  if (amzItems.length) {
+    const purchasers = [...new Set(amzItems.map(i=>i.purchaser).filter(Boolean))];
+    purchasers.forEach(person => {
+      const pred = predictMonthlyDetail(person);
+      if (pred && pred.projected > pred.histAvg * 1.3) {
+        recs.push({ icon:'👤', priority:'High',
+          title:`${person} on pace for record detail spend this month`,
+          body:`Projected ${fmt(pred.projected)} vs ${fmt(pred.histAvg)} historical average — ${((pred.projected/pred.histAvg-1)*100).toFixed(0)}% above normal with ${pred.daysLeft} days remaining.`,
+          effort:'Review now', impact:'High' });
+      }
+      const s = personSummary(person, null);
+      if (s && s.impulseRate > 40) {
+        recs.push({ icon:'👤', priority:'Medium',
+          title:`${person}'s impulse rate is ${s.impulseRate}% — worth discussing`,
+          body:`${person} has ${s.impulseRate}% of detail purchases scoring high-impulse. Average order: ${fmt(s.avgOrder)}. Top category: ${s.topCat}.`,
+          effort:'Discuss at Confluence', impact:'Medium' });
+      }
+    });
+    const detailMonthly = amzItems.reduce((s,i)=>s+i.total,0) /
+      Math.max(1,[...new Set(amzItems.map(i=>i.date.slice(0,7)))].length);
+    const txnMonthly = txns.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0) /
+      Math.max(1,[...new Set(txns.map(t=>t.date.slice(0,7)))].length);
+    if (txnMonthly > 0 && detailMonthly/txnMonthly > 0.15) {
+      recs.push({ icon:'🔍', priority:'Medium',
+        title:`Detail imports are ${((detailMonthly/txnMonthly)*100).toFixed(0)}% of monthly spending`,
+        body:`Amazon/Apple Card/other detail imports average ${fmt(detailMonthly)}/month — significant enough to move the savings rate.`,
+        effort:'Review Detail Lens', impact:'Medium' });
+    }
   }
 
   return recs;
