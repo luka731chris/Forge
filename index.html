@@ -682,26 +682,99 @@ select option { background: var(--float); color: var(--ink2); }
 }
 
 .furnace-zone {
-  border: 1px dashed var(--line2);
+  border: 2px dashed var(--line2);
   border-radius: var(--r-lg);
   padding: 48px 36px;
   background: var(--float); cursor: pointer;
-  transition: all var(--dur-mid) var(--ease-out);
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease;
   position: relative; overflow: hidden;
+  text-align: center;
+  user-select: none;
 }
+/* The file input fills the entire zone so ANY click opens the picker */
+.furnace-zone input[type=file] {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  opacity: 0; cursor: pointer;
+  z-index: 10; /* on top of all child content */
+}
+/* Hover — subtle gold glow */
+.furnace-zone:hover {
+  border-color: var(--gold-line);
+  background: rgba(245,168,0,.04);
+  box-shadow: 0 0 0 2px rgba(245,168,0,.12);
+}
+/* Drag-over — strong gold, scale up, solid border */
+.furnace-zone.dragover {
+  border-color: var(--gold) !important;
+  border-style: solid !important;
+  background: rgba(245,168,0,.09) !important;
+  box-shadow: 0 0 0 4px rgba(245,168,0,.28) !important;
+  transform: scale(1.015);
+}
+.furnace-zone.dragover::before {
+  content: '📂';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 56px;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 5;
+}
+.furnace-zone.dragover .furnace-zone-inner {
+  opacity: 0.15;
+}
+/* Success — green flash with checkmark */
+.furnace-zone.drop-success {
+  border-color: var(--positive) !important;
+  border-style: solid !important;
+  background: rgba(45,212,191,.09) !important;
+  box-shadow: 0 0 0 4px rgba(45,212,191,.22) !important;
+  animation: zone-success-pulse .5s ease;
+}
+@keyframes zone-success-pulse {
+  0%   { box-shadow: 0 0 0 4px rgba(45,212,191,.22); }
+  50%  { box-shadow: 0 0 0 12px rgba(45,212,191,.18); }
+  100% { box-shadow: 0 0 0 4px rgba(45,212,191,.22); }
+}
+.furnace-zone.drop-success::after {
+  content: '✓';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%) scale(1);
+  font-size: 52px;
+  color: var(--positive);
+  opacity: 0.85;
+  pointer-events: none;
+  animation: checkmark-pop .35s cubic-bezier(.34,1.56,.64,1) forwards;
+  z-index: 20;
+}
+@keyframes checkmark-pop {
+  0%   { transform: translate(-50%,-50%) scale(0); opacity: 0; }
+  60%  { transform: translate(-50%,-50%) scale(1.15); opacity: 1; }
+  100% { transform: translate(-50%,-50%) scale(1); opacity: 0.85; }
+}
+.furnace-zone.drop-success::before {
+  content: '✓';
+  position: absolute; top: 10px; right: 14px;
+  font-size: 22px; color: var(--positive);
+  animation: pop-in .2s cubic-bezier(.34,1.56,.64,1);
+  z-index: 20;
+}
+/* Bottom shimmer line */
 .furnace-zone::after {
   content: '';
   position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
   background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  opacity: 0; transition: opacity var(--dur-mid);
-}
-.furnace-zone:hover, .furnace-zone.dragover {
-  border-color: var(--gold-line);
-  background: rgba(245,168,0,.03);
-  box-shadow: var(--shadow-gold);
+  opacity: 0; transition: opacity .2s;
+  pointer-events: none;
 }
 .furnace-zone:hover::after, .furnace-zone.dragover::after { opacity: 1; }
-.furnace-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+@keyframes pop-in {
+  from { transform: scale(0) rotate(-10deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0deg);   opacity: 1; }
+}
 .furnace-icon  { font-size: 40px; margin-bottom: 16px; }
 .furnace-title { font-family: var(--font-d); font-size: 22px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
 .furnace-sub   { font-size: 13px; color: var(--ink4); }
@@ -712,6 +785,24 @@ select option { background: var(--float); color: var(--ink2); }
 .pill.qfx { background: rgba(167,139,250,.08);color: var(--purple); border-color: rgba(167,139,250,.2); }
 .pill.amz { background: var(--gold-dim); color: var(--gold); border-color: var(--gold-line); }
 .file-item { display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; background: var(--lift); border-radius: var(--r-sm); margin-bottom: 6px; font-size: 13px; color: var(--ink2); border: 1px solid var(--line); }
+.file-queue { margin-bottom: 8px; }
+.file-item-v2 {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; background: var(--lift);
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  margin-bottom: 8px; transition: border-color .15s;
+}
+.file-item-v2:hover { border-color: var(--line2); }
+.fi-icon { font-size: 24px; flex-shrink: 0; }
+.fi-info { flex: 1; min-width: 0; }
+.fi-name { font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+.fi-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.furnace-zone-inner { transition: opacity .15s ease; pointer-events: none; }
+.import-progress-wrap { margin-top: 10px; margin-bottom: 4px; }
+.import-progress-bar { height: 4px; background: var(--lift); border-radius: 2px; overflow: hidden; }
+.import-progress-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width .3s ease; width: 0%; }
+.import-progress-label { font-size: 11px; color: var(--ink4); margin-top: 4px; }
+@keyframes pop-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 .pour-note { margin-top: 32px; padding: 20px 24px; background: var(--float); border: 1px solid var(--line); border-radius: var(--r-lg); text-align: left; }
 .pour-note-title { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
@@ -1064,93 +1155,253 @@ select option { background: var(--float); color: var(--ink2); }
 
 <!-- ══ UPLOAD ══ -->
 <div id="page-upload" class="page active">
-  <div style="max-width:680px;margin:0 auto;padding:8px 0 48px;">
+  <div style="max-width:700px;margin:0 auto;padding:16px 0 64px;">
 
-    <div style="margin-bottom:36px;">
-      <div style="font-family:var(--font-d);font-size:36px;font-weight:600;color:var(--ink);line-height:1.15;margin-bottom:12px;">Import your data,<br><em>or explore the demo.</em></div>
-      <div style="font-size:14px;color:var(--ink3);line-height:1.75;margin-bottom:20px;">Forge reads Quicken exports and your Amazon order history. Drag a file to import — no accounts to connect, no credentials to share.</div>
-      <button class="btn btn-outline" onclick="loadDemo()" style="font-size:13px;padding:9px 22px;">▶&nbsp;&nbsp;Load 4-year demo to explore first</button>
-    </div>
-
-    <div style="margin-bottom:32px;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-        <div style="width:30px;height:30px;background:var(--gold);color:#000;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">1</div>
-        <div>
-          <div style="font-size:17px;font-weight:600;color:var(--ink);">Export from Quicken</div>
-          <div style="font-size:13px;color:var(--ink3);margin-top:3px;">File → Export → Transactions → Last 30 days → Save as CSV</div>
-        </div>
+    <!-- ── HERO ── -->
+    <div style="margin-bottom:40px;">
+      <div style="font-family:var(--font-d);font-size:38px;font-weight:600;color:var(--ink);line-height:1.15;margin-bottom:10px;">
+        Import your data,<br><em>or explore the demo.</em>
       </div>
-      <div class="furnace-zone" id="dz1" style="padding:36px 28px;">
-        <input type="file" id="fi1" accept=".csv,.qif,.qfx,.qxf,.ofx" multiple onchange="handleFiles(this.files,'quicken')">
-        <div style="font-size:36px;margin-bottom:14px;">📂</div>
-        <div style="font-size:17px;font-weight:600;color:var(--ink);margin-bottom:6px;">Drop Quicken file here</div>
-        <div style="font-size:13px;color:var(--ink3);margin-bottom:16px;">or click anywhere to browse</div>
-        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;"><span class="pill csv">CSV</span><span class="pill qif">QIF</span><span class="pill qfx">QFX / OFX</span></div>
+      <div style="font-size:14px;color:var(--ink3);line-height:1.8;margin-bottom:20px;max-width:560px;">
+        Forge reads Quicken exports directly. No bank logins. No credentials shared. Your data stays in your browser.
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-outline" onclick="loadDemo()" style="font-size:13px;padding:9px 22px;">▶&nbsp;&nbsp;Load 4-year demo to explore first</button>
+        <button onclick="clearUploadPage()" style="font-size:13px;padding:9px 18px;background:none;border:1px solid var(--line2);border-radius:var(--r-md);color:var(--ink3);cursor:pointer;" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--ink3)'">↺ Clear upload page</button>
       </div>
     </div>
 
-    <div style="margin-bottom:32px;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-        <div style="width:30px;height:30px;background:var(--float);border:1px solid var(--line2);color:var(--ink2);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">2</div>
-        <div>
-          <div style="font-size:17px;font-weight:600;color:var(--ink);">Export from Amazon &nbsp;<span style="font-size:12px;font-weight:400;color:var(--ink4);background:var(--lift);padding:2px 9px;border-radius:20px;border:1px solid var(--line2);">optional</span></div>
-          <div style="font-size:13px;color:var(--ink3);margin-top:3px;">Amazon changed their export process in 2023 — you must request your data and wait for an email.</div>
+    <!-- ── FIRST-TIME SETUP ─────────────────────────────────── -->
+    <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:28px;overflow:hidden;">
+
+      <div style="padding:20px 26px 0;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+          <div style="width:26px;height:26px;background:var(--gold);color:#000;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">①</div>
+          <div style="font-size:18px;font-weight:700;color:var(--ink);">First time? Start with a full history export</div>
+        </div>
+        <div style="font-size:13px;color:var(--ink3);line-height:1.75;margin-bottom:20px;padding-left:36px;">
+          The more history you give Forge, the smarter its alerts and trends become. For first-time setup, export <strong style="color:var(--ink);">all of your accounts going back as far as Quicken will allow</strong> — ideally 2–5 years. You only do this once.
         </div>
       </div>
 
-      <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:24px 26px;margin-bottom:16px;">
-        <div style="font-family:var(--font-m);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;">How to get your Amazon order data</div>
-        <div style="display:flex;flex-direction:column;gap:16px;">
+      <!-- Step-by-step inside the card -->
+      <div style="padding:0 26px 24px;">
+        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-md);padding:20px 22px;">
 
-          <div style="display:flex;gap:16px;">
-            <div style="min-width:24px;height:24px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--ink3);flex-shrink:0;">1</div>
-            <div style="font-size:14px;color:var(--ink2);line-height:1.65;">On a <strong style="color:var(--ink);">desktop browser</strong>, go to <strong style="color:var(--ink);">amazon.com</strong> and sign in<br><span style="font-size:12px;color:var(--ink4);">Cannot be done from the Amazon mobile app.</span></div>
+          <div style="font-family:var(--font-m);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;">How to export from Quicken — full history</div>
+
+          <div style="display:flex;flex-direction:column;gap:14px;">
+
+            <div style="display:flex;gap:14px;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">1</div>
+              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">Open Quicken on your computer and sign in</div>
+            </div>
+
+            <div style="display:flex;gap:14px;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</div>
+              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">
+                In the menu bar, click <strong style="color:var(--ink);">File → Export → Transactions to QIF</strong><br>
+                <span style="font-size:12px;color:var(--ink4);">If you don't see "Transactions to QIF", look for "File → Export → Transactions" — either works.</span>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:14px;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</div>
+              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">
+                In the export dialog:<br>
+                &nbsp;• <strong style="color:var(--ink);">Accounts:</strong> Select <strong style="color:var(--ink);">All Accounts</strong> (not just one)<br>
+                &nbsp;• <strong style="color:var(--ink);">Date range:</strong> Set the start date as far back as possible — at least 2017 if available<br>
+                &nbsp;• <strong style="color:var(--ink);">File type:</strong> Save as <strong style="color:var(--ink);">CSV</strong> or <strong style="color:var(--ink);">QIF</strong> — both work
+              </div>
+            </div>
+
+            <div style="display:flex;gap:14px;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">4</div>
+              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">
+                Click <strong style="color:var(--ink);">Save</strong> — Quicken creates the file on your computer
+              </div>
+            </div>
+
+            <div style="display:flex;gap:14px;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">5</div>
+              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">
+                Drag that file into the drop zone below, then click <strong style="color:var(--ink);">Begin Forging</strong>
+              </div>
+            </div>
+
           </div>
 
-          <div style="display:flex;gap:16px;">
-            <div style="min-width:24px;height:24px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--ink3);flex-shrink:0;">2</div>
-            <div style="font-size:14px;color:var(--ink2);line-height:1.65;">Click <strong style="color:var(--ink);">Account &amp; Lists → Account</strong><br>Scroll down to <strong style="color:var(--ink);">Manage your data</strong> → click <strong style="color:var(--ink);">Request your data</strong></div>
-          </div>
-
-          <div style="display:flex;gap:16px;">
-            <div style="min-width:24px;height:24px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--ink3);flex-shrink:0;">3</div>
-            <div style="font-size:14px;color:var(--ink2);line-height:1.65;">Select <strong style="color:var(--ink);">Your Orders</strong> and submit the request</div>
-          </div>
-
-          <div style="display:flex;gap:16px;">
-            <div style="min-width:24px;height:24px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--ink3);flex-shrink:0;">4</div>
-            <div style="font-size:14px;color:var(--ink2);line-height:1.65;">Amazon sends a <strong style="color:var(--ink);">confirmation email</strong> — click the link to confirm your request</div>
-          </div>
-
-          <div style="display:flex;gap:16px;">
-            <div style="min-width:24px;height:24px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--ink3);flex-shrink:0;">5</div>
-            <div style="font-size:14px;color:var(--ink2);line-height:1.65;">Wait for a <strong style="color:var(--ink);">second email with your download link</strong><br><span style="font-size:12px;color:var(--ink4);">Usually a few hours. Sometimes up to 24 hours.</span></div>
-          </div>
-
-          <div style="display:flex;gap:16px;">
-            <div style="min-width:24px;height:24px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">6</div>
-            <div style="font-size:14px;color:var(--ink2);line-height:1.65;">Download and <strong style="color:var(--ink);">unzip</strong> the file → open the <strong style="color:var(--ink);">Your Orders</strong> folder → find the file named <strong style="color:var(--gold);font-family:var(--font-m);font-size:13px;">Retail.OrderHistory.1.csv</strong> and drop it below</div>
+          <!-- Warning box about .qxf -->
+          <div style="margin-top:18px;padding:12px 14px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);border-radius:var(--r-sm);font-size:12px;color:var(--ink3);line-height:1.7;">
+            <strong style="color:var(--negative);">⚠ Do not use</strong> <strong style="color:var(--ink2);">File → Export → Quicken Transfer Format (.qxf)</strong> — that file is for moving Quicken to a new computer and cannot be imported here. You want <strong style="color:var(--ink2);">File → Export → Transactions</strong> instead.
           </div>
 
         </div>
-        <div style="margin-top:20px;padding:14px 16px;background:var(--lift);border-radius:var(--r-sm);border-left:3px solid var(--gold-line);font-size:13px;color:var(--ink3);line-height:1.7;"><strong style="color:var(--ink2);">Monthly refresh:</strong> Repeat each month during your Confluence session. Forge deduplicates automatically — always safe to re-import.</div>
-      </div>
-
-      <div class="furnace-zone" id="dz2" style="padding:32px 28px;">
-        <input type="file" id="fi2" accept=".csv" multiple onchange="handleFiles(this.files,'amazon')">
-        <div style="font-size:32px;margin-bottom:12px;">📦</div>
-        <div style="font-size:16px;font-weight:600;color:var(--ink);margin-bottom:6px;">Drop <span style="color:var(--gold);font-family:var(--font-m);font-size:14px;">Retail.OrderHistory.1.csv</span> here</div>
-        <div style="font-size:13px;color:var(--ink3);">from the "Your Orders" folder in Amazon's ZIP file</div>
       </div>
     </div>
 
+    <!-- ── MONTHLY REFRESH ───────────────────────────────────── -->
+    <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:28px;overflow:hidden;">
+
+      <div style="padding:20px 26px 0;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+          <div style="width:26px;height:26px;background:var(--float);border:1px solid var(--line2);color:var(--ink2);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">②</div>
+          <div style="font-size:18px;font-weight:700;color:var(--ink);">Every month — keep Forge current</div>
+        </div>
+        <div style="font-size:13px;color:var(--ink3);line-height:1.75;margin-bottom:20px;padding-left:36px;">
+          Once your history is loaded, monthly updates take about 2 minutes. Forge deduplicates automatically — it's always safe to re-import a file you've imported before.
+        </div>
+      </div>
+
+      <div style="padding:0 26px 24px;">
+        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-md);padding:20px 22px;">
+
+          <div style="font-family:var(--font-m);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink4);margin-bottom:18px;">Monthly routine — do this on the 1st of each month</div>
+
+          <div style="display:flex;flex-direction:column;gap:12px;">
+
+            <div style="display:flex;gap:14px;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">1</div>
+              <div style="font-size:13px;color:var(--ink2);line-height:1.65;">
+                Open Quicken → <strong style="color:var(--ink);">File → Export → Transactions</strong>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:14px;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">2</div>
+              <div style="font-size:13px;color:var(--ink2);line-height:1.65;">
+                Set date range to <strong style="color:var(--ink);">Last 30–60 days</strong> · All Accounts · Save as CSV
+              </div>
+            </div>
+
+            <div style="display:flex;gap:14px;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">3</div>
+              <div style="font-size:13px;color:var(--ink2);line-height:1.65;">
+                Drop the file below → click <strong style="color:var(--ink);">Begin Forging</strong> → done
+              </div>
+            </div>
+
+          </div>
+
+          <div style="margin-top:14px;padding:10px 14px;background:rgba(47,168,122,.07);border:1px solid rgba(47,168,122,.2);border-radius:var(--r-sm);font-size:12px;color:var(--ink3);line-height:1.7;">
+            <strong style="color:var(--positive);">✓ Safe to re-import</strong> — Forge automatically skips any transactions already in the ledger. Importing the same file twice will not create duplicates.
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── QUICKEN DROP ZONE ─────────────────────────────────── -->
+    <div style="margin-bottom:28px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="font-size:17px;font-weight:700;color:var(--ink);">Drop your Quicken file here</div>
+        <div style="display:flex;gap:6px;">
+          <span class="pill csv">CSV</span>
+          <span class="pill qif">QIF</span>
+          <span class="pill qfx">QFX / OFX</span>
+        </div>
+      </div>
+      <div class="furnace-zone" id="dz1" onclick="if(!event.target.matches('input')){document.getElementById('fi1').click()}" style="padding:36px 28px;">
+        <input type="file" id="fi1" accept=".csv,.qif,.qfx,.ofx" multiple onchange="handleFiles(this.files,'quicken')">
+        <div class="furnace-zone-inner"><div style="font-size:40px;margin-bottom:12px;pointer-events:none;">📂</div>
+        <div style="font-size:17px;font-weight:600;color:var(--ink);margin-bottom:5px;pointer-events:none;">Drop Quicken export here</div>
+        <div style="font-size:13px;color:var(--ink3);margin-bottom:8px;pointer-events:none;">or click anywhere in this box to browse for a file</div>
+        <div style="display:flex;gap:7px;justify-content:center;flex-wrap:wrap;pointer-events:none;">
+          <span class="pill csv">CSV</span><span class="pill qif">QIF</span><span class="pill qfx">QFX / OFX</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── AMAZON ─────────────────────────────────────────────── -->
+    <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:28px;overflow:hidden;">
+
+      <div style="padding:20px 26px 0;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+          <div style="width:26px;height:26px;background:var(--float);border:1px solid var(--line2);color:var(--ink2);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">③</div>
+          <div style="font-size:18px;font-weight:700;color:var(--ink);">Amazon order history &nbsp;<span style="font-size:12px;font-weight:400;color:var(--ink4);background:var(--lift);padding:2px 9px;border-radius:20px;border:1px solid var(--line2);">optional</span></div>
+        </div>
+        <div style="font-size:13px;color:var(--ink3);line-height:1.75;margin-bottom:20px;padding-left:36px;">
+          Forge can analyze your Amazon spending for impulse-buy patterns and category trends. Amazon changed their export process in 2023 — you must request your data and wait for an email. You cannot do this from the Amazon app.
+        </div>
+      </div>
+
+      <div style="padding:0 26px 24px;">
+        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-md);padding:20px 22px;">
+
+          <div style="font-family:var(--font-m);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;">How to get your Amazon order data</div>
+
+          <div style="display:flex;flex-direction:column;gap:14px;">
+
+            <div style="display:flex;gap:14px;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">1</div>
+              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">On a <strong style="color:var(--ink);">desktop browser</strong>, go to <strong style="color:var(--ink);">amazon.com</strong> and sign in</div>
+            </div>
+
+            <div style="display:flex;gap:14px;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">2</div>
+              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">Click <strong style="color:var(--ink);">Account &amp; Lists → Account</strong> → scroll to <strong style="color:var(--ink);">Manage your data</strong> → click <strong style="color:var(--ink);">Request your data</strong></div>
+            </div>
+
+            <div style="display:flex;gap:14px;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">3</div>
+              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">Select <strong style="color:var(--ink);">Your Orders</strong> and submit the request</div>
+            </div>
+
+            <div style="display:flex;gap:14px;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">4</div>
+              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">Amazon sends a <strong style="color:var(--ink);">confirmation email</strong> — click the link in it to confirm your request</div>
+            </div>
+
+            <div style="display:flex;gap:14px;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">5</div>
+              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">Wait for a <strong style="color:var(--ink);">second email with your download link</strong><br><span style="font-size:12px;color:var(--ink4);">Usually a few hours. Can be up to 24 hours.</span></div>
+            </div>
+
+            <div style="display:flex;gap:14px;">
+              <div style="min-width:22px;height:22px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">6</div>
+              <div style="font-size:14px;color:var(--ink2);line-height:1.65;">
+                Download and <strong style="color:var(--ink);">unzip</strong> the file → open the <strong style="color:var(--ink);">Your Orders</strong> folder → find the file named <strong style="color:var(--gold);font-family:var(--font-m);font-size:13px;">Retail.OrderHistory.1.csv</strong> and drop it in the Amazon zone below
+              </div>
+            </div>
+
+          </div>
+
+          <div style="margin-top:16px;padding:10px 14px;background:rgba(245,168,0,.07);border:1px solid rgba(245,168,0,.2);border-radius:var(--r-sm);font-size:12px;color:var(--ink3);line-height:1.7;">
+            <strong style="color:var(--ink2);">Monthly refresh:</strong> Repeat step 3 onward each month. Always safe to re-import — Forge skips orders it has already seen.
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Amazon drop zone -->
+      <div style="padding:0 26px 26px;">
+        <div class="furnace-zone" id="dz2" onclick="if(!event.target.matches('input')){document.getElementById('fi2').click()}" style="padding:36px 28px;">
+          <input type="file" id="fi2" accept=".csv" multiple onchange="handleFiles(this.files,'amazon')">
+          <div class="furnace-zone-inner"><div style="font-size:40px;margin-bottom:12px;pointer-events:none;">📦</div>
+          <div style="font-size:16px;font-weight:600;color:var(--ink);margin-bottom:5px;pointer-events:none;">Drop <span style="color:var(--gold);font-family:var(--font-m);font-size:14px;">Retail.OrderHistory.1.csv</span> here</div>
+          <div style="font-size:13px;color:var(--ink3);margin-bottom:4px;pointer-events:none;">or click anywhere in this box to browse</div>
+          <div style="font-size:12px;color:var(--ink4);pointer-events:none;">from the "Your Orders" folder in Amazon's ZIP file</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── FILE LIST + IMPORT BUTTON ─────────────────────────── -->
     <div id="fileList" style="margin-top:14px;"></div>
     <div id="importActions" style="display:none;margin-top:22px;">
-      <button class="btn btn-forge" onclick="processAll()" style="width:100%;justify-content:center;padding:15px;font-size:15px;letter-spacing:0.04em;">Begin Forging →</button>
+      <div class="import-progress-wrap" id="importProgressWrap" style="display:none;">
+        <div class="import-progress-bar">
+          <div class="import-progress-fill" id="importProgress"></div>
+        </div>
+        <div class="import-progress-label" id="importProgressLabel">Preparing…</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-forge" onclick="showImportProgress();processAll()" style="flex:1;justify-content:center;padding:15px;font-size:15px;letter-spacing:0.04em;">Begin Forging →</button>
+        <button onclick="clearUploadPage()" title="Clear files and start over" style="padding:14px 16px;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-md);color:var(--ink3);cursor:pointer;font-size:13px;white-space:nowrap;" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--ink3)'">✕ Clear</button>
+      </div>
     </div>
 
-  
-  <div id="importResultPanel" style="display:none;padding:0 28px 28px;"></div>
+  <div id="importResultPanel" style="display:none;padding:0 0 28px;"></div>
 </div>
 
 <!-- ══ DASHBOARD ══ -->
@@ -2021,33 +2272,144 @@ function clearAll() {
   document.getElementById('demoTag').style.display='none';
 }
 
+function showImportProgress() {
+  const wrap = document.getElementById('importProgressWrap');
+  const fill = document.getElementById('importProgress');
+  const lbl  = document.getElementById('importProgressLabel');
+  if (wrap) wrap.style.display = 'block';
+  if (fill) fill.style.width = '0%';
+  if (lbl)  lbl.textContent = 'Reading files…';
+}
+
+function clearUploadPage() {
+  pendingFiles = [];
+  renderFileList();
+  const rp = document.getElementById('importResultPanel');
+  if (rp) { rp.style.display = 'none'; rp.innerHTML = ''; }
+  // Reset both file inputs so same file can be re-selected
+  ['fi1','fi2'].forEach(id => {
+    const inp = document.getElementById(id);
+    if (inp) inp.value = '';
+  });
+  // Remove any drop-success state from zones
+  ['dz1','dz2'].forEach(id => {
+    const z = document.getElementById(id);
+    if (z) z.classList.remove('drop-success','dragover');
+  });
+  showToast('Upload page cleared');
+}
+
 // ════════════════════════════════════════════════════
 // FILE HANDLING
 // ════════════════════════════════════════════════════
 function handleFiles(files, source) {
+  if (!files || files.length === 0) return;
+  let added = 0;
+  const skipped = [];
   for (const f of files) {
-    if (!pendingFiles.find(p => p.file.name===f.name && p.source===source)) pendingFiles.push({file:f,source});
+    if (pendingFiles.find(p => p.file.name === f.name && p.source === source)) {
+      skipped.push(f.name);
+    } else {
+      pendingFiles.push({ file: f, source });
+      added++;
+    }
+  }
+  // Green checkmark flash on the zone
+  const zoneId = source === 'amazon' ? 'dz2' : 'dz1';
+  const zone = document.getElementById(zoneId);
+  if (zone) {
+    zone.classList.remove('drop-success');
+    void zone.offsetWidth; // force reflow so animation replays
+    if (added > 0) {
+      zone.classList.add('drop-success');
+      setTimeout(() => zone.classList.remove('drop-success'), 2200);
+    }
+  }
+  if (skipped.length > 0 && added === 0) {
+    showToast(`Already queued: ${skipped[0]}${skipped.length>1?' + '+(skipped.length-1)+' more':''}`, 'warn');
   }
   renderFileList();
 }
 
 function renderFileList() {
   const el = document.getElementById('fileList');
-  if (!pendingFiles.length) { el.innerHTML=''; document.getElementById('importActions').style.display='none'; return; }
-  el.innerHTML = pendingFiles.map((pf,i) => `
-    <div class="file-item">
-      <div><strong>${pf.file.name}</strong> <span class="badge ${pf.source==='amazon'?'badge-org':'badge-grn'}" style="margin-left:5px;">${pf.source==='amazon'?'📦 Amazon':'💳 Quicken'}</span><br><span style="color:var(--ink3);font-size:11px;">${(pf.file.size/1024).toFixed(0)} KB</span></div>
-      <button onclick="pendingFiles.splice(${i},1);renderFileList();" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button>
-    </div>`).join('');
-  document.getElementById('importActions').style.display='block';
+  if (!pendingFiles.length) {
+    el.innerHTML = '';
+    document.getElementById('importActions').style.display = 'none';
+    document.getElementById('importResultPanel').style.display = 'none';
+    return;
+  }
+
+  const ext_icon = ext => ({csv:'📄',qif:'📋',qfx:'🔗',ofx:'🔗',json:'📦'}[ext] || '📂');
+
+  el.innerHTML = `
+    <div class="file-queue">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;">
+          ${pendingFiles.length} file${pendingFiles.length>1?'s':''} ready to import
+        </div>
+        <button onclick="clearPendingFiles()" style="font-size:11px;color:var(--ink4);background:none;border:1px solid var(--line2);border-radius:var(--r-sm);padding:3px 10px;cursor:pointer;">
+          Clear all
+        </button>
+      </div>
+      ${pendingFiles.map((pf, i) => {
+        const ext = pf.file.name.split('.').pop().toLowerCase();
+        const kb = (pf.file.size / 1024).toFixed(0);
+        const mb = pf.file.size > 1024*1024 ? (pf.file.size/1024/1024).toFixed(1)+' MB' : kb+' KB';
+        const isAmz = pf.source === 'amazon';
+        return `
+        <div class="file-item-v2" id="fi-card-${i}">
+          <div class="fi-icon">${ext_icon(ext)}</div>
+          <div class="fi-info">
+            <div class="fi-name">${pf.file.name}</div>
+            <div class="fi-meta">
+              <span class="badge ${isAmz?'badge-org':'badge-grn'}">${isAmz?'📦 Amazon':'💳 Quicken'}</span>
+              <span style="color:var(--ink4);font-size:11px;margin-left:6px;">${mb} · .${ext.toUpperCase()}</span>
+            </div>
+          </div>
+          <button
+            onclick="removePendingFile(${i})"
+            title="Remove this file"
+            style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:18px;padding:4px 8px;border-radius:var(--r-sm);transition:color .15s;"
+            onmouseover="this.style.color='var(--negative)'"
+            onmouseout="this.style.color='var(--ink4)'">✕</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+  document.getElementById('importActions').style.display = 'block';
+}
+
+function removePendingFile(i) {
+  pendingFiles.splice(i, 1);
+  renderFileList();
+}
+
+function clearPendingFiles() {
+  pendingFiles = [];
+  renderFileList();
+  document.getElementById('importResultPanel').style.display = 'none';
 }
 
 async function processAll() {
   const newTxns=[], newAmz=[], fileResults=[];
   const acctMap = new Map(accounts.map(a=>[a.name,a]));
-  const validExts = ['csv','qif','qfx','qxf','ofx'];
+  const validExts = ['csv','qif','qfx','ofx'];
+  const total = pendingFiles.length;
+  let done = 0;
+
+  // Show processing state on button
+  const btn = document.querySelector('#importActions .btn-forge');
+  if (btn) { btn.textContent = 'Processing…'; btn.disabled = true; }
 
   for (const {file:f, source} of pendingFiles) {
+    done++;
+    // Update progress bar if visible
+    const prog = document.getElementById('importProgress');
+    if (prog) {
+      prog.style.width = Math.round((done/total)*100)+'%';
+      const lbl = document.getElementById('importProgressLabel');
+      if (lbl) lbl.textContent = `Reading ${f.name}…`;
+    }
     try {
       const text = await readFile(f);
 
@@ -2063,13 +2425,15 @@ async function processAll() {
       const ext = f.name.split('.').pop().toLowerCase();
       if (!validExts.includes(ext)) {
         fileResults.push({name:f.name, count:0, type:ext.toUpperCase(), ok:false,
-          reason:`"${ext.toUpperCase()}" is not a recognised file type. Open Quicken, go to File → Export → Transactions, and save the file as CSV. Then drop it here.`});
+          reason: ext==='qxf'
+            ? 'This is a Quicken Transfer File (.qxf) — it moves your Quicken data between computers but cannot be imported here. To get your transactions, open Quicken and go to File → Export → Transactions. Save as CSV, then drop that file here.'
+            : `".${ext.toUpperCase()}" is not a recognized file type. Open Quicken, go to File → Export → Transactions, save as CSV, and drop that file here.`});
         continue;
       }
 
       let parsed;
       if (ext==='qif') parsed = parseQIF(text, f.name);
-      else if (ext==='qfx'||ext==='qxf'||ext==='ofx') parsed = parseOFX(text, f.name);
+      else if (ext==='qfx'||ext==='ofx') parsed = parseOFX(text, f.name);
       else parsed = parseCSV(text, f.name);
 
       console.log(`${f.name} (${ext}): ${parsed.length} rows. First line: ${text.split('\n')[0].slice(0,100)}`);
@@ -2120,10 +2484,17 @@ async function processAll() {
 
   isDemoMode = false;
   saveData();
-  pendingFiles=[];
+  pendingFiles = [];
   renderFileList();
+
+  // Reset button state
+  const btn2 = document.querySelector('#importActions .btn-forge');
+  if (btn2) { btn2.textContent = 'Begin Forging →'; btn2.disabled = false; }
+
   showImportResults(fileResults, deduped.length, dedupedA.length);
-  if (deduped.length>0 || dedupedA.length>0) initApp();
+  if (deduped.length > 0 || dedupedA.length > 0) {
+    setTimeout(() => initApp(), 1200); // brief pause so user sees the success state
+  }
 }
 
 function showImportResults(fileResults, txnCount, amzCount) {
@@ -3096,11 +3467,38 @@ function renderTxnPage(){
 // ════════════════════════════════════════════════════
 // DRAG + DROP
 // ════════════════════════════════════════════════════
-['dz1','dz2'].forEach((id,idx)=>{
-  const el=document.getElementById(id); if(!el)return;
-  el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('dragover');});
-  el.addEventListener('dragleave',()=>el.classList.remove('dragover'));
-  el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('dragover');handleFiles(e.dataTransfer.files,idx===0?'quicken':'amazon');});
+// ── DRAG + DROP ──────────────────────────────────────────────
+// Uses dragenter/dragleave depth counter to prevent false dragleave
+// events when dragging over child elements inside the zone.
+['dz1','dz2'].forEach((id, zoneIdx) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  let depth = 0;
+
+  el.addEventListener('dragenter', e => {
+    e.preventDefault();
+    depth++;
+    el.classList.add('dragover');
+    el.classList.remove('drop-success');
+  });
+  el.addEventListener('dragleave', e => {
+    e.preventDefault();
+    depth = Math.max(0, depth - 1);
+    if (depth === 0) el.classList.remove('dragover');
+  });
+  el.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  });
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    depth = 0;
+    el.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+    const source = zoneIdx === 0 ? 'quicken' : 'amazon';
+    handleFiles(files, source);
+  });
 });
 
 // ════════════════════════════════════════════════════
@@ -4372,4 +4770,7 @@ function getFamilyReportSubtitle() {
 
 </script>
 </body>
-</html>
+</html
+        </div>
+          </div>
+        >
