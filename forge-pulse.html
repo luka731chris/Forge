@@ -24,9 +24,9 @@
   --line:      #2A2A2A;
   --line2:     #333333;
   --ink:       #F2EFE9;
-  --ink2:      #B8B4AE;
-  --ink3:      #7A766F;
-  --ink4:      #4A4642;
+  --ink2:      #D0CBC4;
+  --ink3:      #9E9890;
+  --ink4:      #6E6A65;
   --gold:      #F5A800;
   --gold-lt:   #FFB612;
   --gold-dim:  rgba(245,168,0,.10);
@@ -85,8 +85,8 @@ body {
 .tab-btn {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   padding: 6px 14px; border: none; background: transparent;
-  color: var(--ink4); cursor: pointer;
-  font-family: var(--font-ui); font-size: 10px; font-weight: 500;
+  color: var(--ink3); cursor: pointer;
+  font-family: var(--font-ui); font-size: 11px; font-weight: 500;
   transition: color .2s var(--ease); position: relative; min-width: 68px;
   letter-spacing: 0.03em;
 }
@@ -99,7 +99,7 @@ body {
 .pg-head { background: rgba(8,8,8,.9); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); padding: 18px 22px 14px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--line); }
 .pg-head::after { content:''; position:absolute; bottom:-1px; left:22px; right:22px; height:1px; background:linear-gradient(90deg,transparent,var(--gold-line),transparent); }
 .pg-title { font-family: var(--font-d); font-size: 30px; font-weight: 600; color: var(--ink); line-height: 1; }
-.pg-sub   { font-size: 11px; color: var(--ink4); margin-top: 4px; font-family: var(--font-m); letter-spacing: 0.06em; }
+.pg-sub   { font-size: 12px; color: var(--ink3); margin-top: 4px; font-family: var(--font-m); letter-spacing: 0.06em; }
 
 /* ── SNAPSHOT HERO ── */
 .snap-hero { background: linear-gradient(160deg, #0F0E09 0%, #0C0B07 60%, var(--void) 100%); padding: 28px 22px 30px; position: relative; overflow: hidden; }
@@ -171,7 +171,7 @@ body {
 .alert-emoji   { font-size: 22px; flex-shrink: 0; line-height: 1.2; }
 .alert-content { flex: 1; }
 .alert-title   { font-weight: 600; font-size: 14px; color: var(--ink); margin-bottom: 6px; line-height: 1.35; }
-.alert-body    { font-size: 12.5px; color: var(--ink4); line-height: 1.6; }
+.alert-body    { font-size: 13px; color: var(--ink2); line-height: 1.65; }
 .alert-action  { margin-top: 9px; font-size: 12px; font-weight: 500; color: var(--river); }
 
 /* ── AMAZON ── */
@@ -400,11 +400,12 @@ function getLifeStage(age) {
 }
 
 function getParentStage(age) {
-  if (age === null) return null;
-  if (age < 35) return { stage:'early_career',   label:'Early Career',   icon:'🚀' };
-  if (age < 45) return { stage:'peak_earning',   label:'Peak Earning',   icon:'📈' };
-  if (age < 55) return { stage:'pre_retirement', label:'Pre-Retirement', icon:'🏗️' };
-  return              { stage:'late_career',     label:'Late Career',    icon:'🏁' };
+  if (age === null || age === undefined) return null;
+  if (age < 37) return { stage:'early_career',   label:'Early Career',   icon:'🚀' };
+  if (age < 47) return { stage:'peak_earning',   label:'Peak Earning',   icon:'📈' };
+  if (age < 58) return { stage:'pre_retirement', label:'Pre-Retirement', icon:'🏗️' };
+  if (age < 67) return { stage:'late_career',    label:'Late Career',    icon:'🏁' };
+  return              { stage:'retirement',      label:'Retirement',     icon:'🌅' };
 }
 
 function getKidsContext() {
@@ -814,7 +815,18 @@ ALWAYS: Use specific numbers from the data. End with one clear, actionable recom
 NEVER: Say "I cannot" or "I apologize." Never be vague when data is available. Sid finds the play, always.`;
 }
 
+// ── SID PROXY CONFIGURATION ──
+// Replace this URL with your Cloudflare Worker URL after setup.
+// See forge_worker.js for setup instructions (takes ~10 min, free).
+// Until configured, Sid will show a setup prompt instead of an error.
+const SID_PROXY_URL = 'WORKER_URL_HERE';
+
 async function callSid(msg) {
+  // Check if proxy has been configured
+  if (!SID_PROXY_URL || SID_PROXY_URL === 'WORKER_URL_HERE') {
+    return getSidSetupMessage();
+  }
+
   const ctx = buildContext();
   const msgs = [
     { role:'user',      content:`Financial data:\n\n${ctx}` },
@@ -822,14 +834,54 @@ async function callSid(msg) {
     ...history,
     { role:'user', content: msg }
   ];
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:500, system:buildSidPrompt(msg), messages:msgs })
-  });
-  if (!r.ok) throw new Error('API '+r.status);
-  const d = await r.json();
-  return d.content?.[0]?.text || 'Sorry, I had trouble responding.';
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+
+  try {
+    const r = await fetch(SID_PROXY_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        model:     'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        system:    buildSidPrompt(msg),
+        messages:  msgs,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!r.ok) {
+      const errText = await r.text().catch(() => '');
+      throw new Error(`API ${r.status}: ${errText.slice(0,100)}`);
+    }
+
+    const d = await r.json();
+    const txt = d.content?.[0]?.text || '';
+    if (!txt) return 'Sid had trouble generating a response — try again.';
+    return txt;
+  } catch(e) {
+    clearTimeout(timeout);
+    if (e.name === 'AbortError') throw new Error('Request timed out after 30 seconds.');
+    throw e;
+  }
+}
+
+function getSidSetupMessage() {
+  return `Hey ${family.user1||'there'} — Sid here. I'm almost ready, but need one quick setup step first.
+
+To activate the chat feature, you need to configure a free Cloudflare Worker proxy that securely holds your Anthropic API key. It takes about 10 minutes and costs nothing.
+
+Here's what to do:
+1. Go to workers.cloudflare.com and create a free account
+2. Create a new Worker and paste the forge_worker.js file (available in your Forge project)
+3. In the Worker's Settings → Variables, add a Secret called ANTHROPIC_API_KEY with your key from console.anthropic.com
+4. Copy your Worker URL (something like forge-sid.yourname.workers.dev)
+5. Open forge-pulse.html, find SID_PROXY_URL near the top of the script, and replace WORKER_URL_HERE with your Worker URL
+6. Re-upload forge-pulse.html to GitHub
+
+Once that's done, I'll be fully operational. The financial snapshot, alerts, and Amazon watchlist all work right now without any setup.`;
 }
 
 function addBubble(text, role) {
@@ -847,7 +899,9 @@ function rmTyping()  { const t=document.getElementById('typ'); if(t)t.remove(); 
 
 function sendWelcome() {
   if (!txns.length) {
-    addBubble(`Hey — Sid here. Forge Pulse is the mobile companion to your Forge desktop app.\n\nOnce you've imported data in Forge on a laptop or computer, I'll have everything I need to answer your questions here. Come back after The Pour.`, 'assistant');
+    addBubble(`Hey — Sid here. Forge Pulse is the mobile companion to your Forge desktop app.\n\nOnce you've imported data in Forge on a laptop or computer, I'll have everything I need to answer your questions here. Come back after The Pour.
+
+Note: The Ask Sid chat feature also requires a one-time Cloudflare Worker setup — send me any message and I'll walk you through it.`, 'assistant');
     return;
   }
   const n=new Date(), cm=nowMo();
@@ -874,7 +928,21 @@ async function sendChat() {
     history.push({role:'assistant',content:rep});
     if(history.length>16) history=history.slice(-16);
   } catch(e) {
-    rmTyping(); addBubble(`Sid's offline right now — check your connection and try again.`,'assistant');
+    rmTyping();
+    const errMsg = e.message || '';
+    let userMsg;
+    if (errMsg.includes('timed out')) {
+      userMsg = "That took too long — Anthropic's servers may be busy. Try a shorter question.";
+    } else if (errMsg.includes('401')) {
+      userMsg = "API key issue — double-check the ANTHROPIC_API_KEY in your Cloudflare Worker settings.";
+    } else if (errMsg.includes('429')) {
+      userMsg = "Rate limit hit — wait a moment and try again.";
+    } else if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError')) {
+      userMsg = "Can't reach the proxy server. Check your Worker URL in SID_PROXY_URL.";
+    } else {
+      userMsg = `Sid ran into an issue: ${errMsg||'unknown error'}. Check your Worker setup if this keeps happening.`;
+    }
+    addBubble(userMsg,'assistant');
   }
   document.getElementById('chatStatus').textContent='Sid is ready';
 }
@@ -893,7 +961,7 @@ function emptyHTML(tab) {
     <div class="empty-title">No data yet</div>
     <div class="empty-sub">Open <strong style="color:var(--gold);">Forge</strong> on a laptop or computer, run The Pour to import your files, then come back here.</div>
     <div class="data-note" style="margin-top:20px;text-align:left;">
-      <span class="gold-star"></span><strong>Quick start:</strong> Go to your GitHub Pages URL on a computer → Load Demo → explore everything in action. Then import your real Quicken and Amazon files.
+      <strong style="color:var(--gold);">Quick start:</strong> Open Forge on a desktop browser and load the demo. To import real data: Quicken CSV or QIF, plus <strong>Retail.OrderHistory.1.csv</strong> from Amazon's "Request your data" portal (Account → Manage your data → Request your data → Your Orders).
     </div>
   </div>`;
 }
