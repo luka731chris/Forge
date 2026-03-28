@@ -1081,7 +1081,7 @@ select option { background: var(--float); color: var(--ink2); }
         </div>
       </div>
       <div class="furnace-zone" id="dz1" style="padding:36px 28px;">
-        <input type="file" id="fi1" accept=".csv,.qif,.qfx,.ofx" multiple onchange="handleFiles(this.files,'quicken')">
+        <input type="file" id="fi1" accept=".csv,.qif,.qfx,.qxf,.ofx" multiple onchange="handleFiles(this.files,'quicken')">
         <div style="font-size:36px;margin-bottom:14px;">📂</div>
         <div style="font-size:17px;font-weight:600;color:var(--ink);margin-bottom:6px;">Drop Quicken file here</div>
         <div style="font-size:13px;color:var(--ink3);margin-bottom:16px;">or click anywhere to browse</div>
@@ -1721,6 +1721,7 @@ select option { background: var(--float); color: var(--ink2); }
 
 <script>
 
+
 // ════════════════════════════════════════════════════
 // FORGE BOOT — simple, no overlay
 // ════════════════════════════════════════════════════
@@ -2044,7 +2045,7 @@ function renderFileList() {
 async function processAll() {
   const newTxns=[], newAmz=[], fileResults=[];
   const acctMap = new Map(accounts.map(a=>[a.name,a]));
-  const validExts = ['csv','qif','qfx','ofx'];
+  const validExts = ['csv','qif','qfx','qxf','ofx'];
 
   for (const {file:f, source} of pendingFiles) {
     try {
@@ -2054,7 +2055,7 @@ async function processAll() {
         const amzParsed = parseAmazon(text);
         newAmz.push(...amzParsed);
         fileResults.push({name:f.name, count:amzParsed.length, type:'amazon', ok:amzParsed.length>0,
-          reason: amzParsed.length===0 ? 'No items found — ensure this is Retail.OrderHistory.1.csv from Amazon Privacy Central' : null});
+          reason: amzParsed.length===0 ? 'This doesn\'t look like the right Amazon file. Use the file named Retail.OrderHistory.1.csv from the Your Orders folder inside the ZIP file Amazon emailed you.' : null});
         console.log(`Amazon ${f.name}: ${amzParsed.length} items`);
         continue;
       }
@@ -2068,30 +2069,31 @@ async function processAll() {
 
       let parsed;
       if (ext==='qif') parsed = parseQIF(text, f.name);
-      else if (ext==='qfx'||ext==='ofx') parsed = parseOFX(text, f.name);
+      else if (ext==='qfx'||ext==='qxf'||ext==='ofx') parsed = parseOFX(text, f.name);
       else parsed = parseCSV(text, f.name);
 
       console.log(`${f.name} (${ext}): ${parsed.length} rows. First line: ${text.split('\n')[0].slice(0,100)}`);
 
       let reason = null;
       if (parsed.length===0) {
-        if (!text.trim()) reason = 'File is empty';
-        else if (ext==='csv' && !text.includes(',') && !text.includes('\t'))
-          reason = 'No commas or tabs found — may not be a valid CSV';
-        else if (ext==='csv' && !text.includes('\n'))
-          reason = 'Single-line file — export may have failed';
-        else {
+        if (!text || !text.trim()) {
+          reason = 'The file appears to be empty. Try exporting from Quicken again — go to File \u2192 Export \u2192 Transactions, pick a date range, and save.';
+        } else if (ext==='csv') {
           const firstLine = text.split('\n')[0].toLowerCase();
-          const hasDate = firstLine.includes('date');
+          const hasDate   = firstLine.includes('date');
           const hasAmount = firstLine.includes('amount') || firstLine.includes('debit') || firstLine.includes('credit');
-          if (!hasDate && !hasAmount)
-            reason = 'Column headers not recognized — need Date, Payee/Description, Amount columns';
-          else if (!hasDate)
-            reason = 'No "Date" column found in headers — check Quicken export settings';
-          else if (!hasAmount)
-            reason = 'No amount column found — check that Amount/Debit/Credit is included in export';
-          else
-            reason = 'No valid transactions found — dates may be in an unrecognized format';
+          const hasPayee  = firstLine.includes('payee') || firstLine.includes('description') || firstLine.includes('merchant');
+          if (!hasDate && !hasAmount && !hasPayee) {
+            reason = "Forge couldn't find the expected columns. When exporting from Quicken, make sure the file includes Date, Payee, and Amount columns.";
+          } else if (!hasDate) {
+            reason = 'This file is missing a Date column. In Quicken, go to File \u2192 Export \u2192 Transactions and make sure Date is included.';
+          } else if (!hasAmount) {
+            reason = 'This file is missing an amount column. In Quicken, go to File \u2192 Export \u2192 Transactions and make sure the Amount column is included.';
+          } else {
+            reason = 'Forge found the right columns but could not read any transactions. Try exporting from Quicken with the default CSV settings.';
+          }
+        } else {
+          reason = 'No transactions were found. The file may cover the wrong date range. Try exporting from Quicken with a wider date range.';
         }
       }
 
@@ -2102,7 +2104,7 @@ async function processAll() {
       });
       newTxns.push(...parsed);
     } catch(e) {
-      fileResults.push({name:f.name, count:0, type:'?', ok:false, reason:`Parse error: ${e.message}`});
+      fileResults.push({name:f.name, count:0, type:'?', ok:false, reason:'Something went wrong reading this file. Try exporting from Quicken again (File → Export → Transactions, save as CSV). If it keeps failing, try a different date range.'});
       console.error(`Error parsing ${f.name}:`, e);
     }
   }
@@ -2155,10 +2157,13 @@ function showImportResults(fileResults, txnCount, amzCount) {
                 ? (r.type==='amazon'
                     ? `${r.count} Amazon item${r.count===1?'':'s'} ready to review in Amazon Watchlist`
                     : `${r.count.toLocaleString()} transaction${r.count===1?'':'s'} imported`)
-                : (r.reason || 'Could not read any transactions from this file')}
+                : (r.reason || 'Forge couldn\'t read this file. Try exporting from Quicken as CSV (File \u2192 Export \u2192 Transactions) and drop the new file here.')}
             </div>
-            ${!r.ok ? `<div style="margin-top:8px;padding:8px 10px;background:rgba(0,0,0,.2);border-radius:4px;font-size:11px;color:var(--ink3);line-height:1.6;">
-              <strong style="color:var(--ink2);">How to fix:</strong> In Quicken, go to <strong>File → Export → Transactions</strong>. Make sure the export includes <strong>Date</strong>, <strong>Payee</strong>, and <strong>Amount</strong> columns. Save as <strong>CSV</strong> and try again.
+                        ${!r.ok && r.type!=='amazon' ? `<div style="margin-top:8px;padding:10px 12px;background:rgba(0,0,0,.18);border-radius:4px;font-size:12px;color:var(--ink3);line-height:1.9;">
+              <strong style="color:var(--gold);">What to do next:</strong> Open Quicken &rarr; <strong style="color:var(--ink2);">File &rarr; Export &rarr; Transactions</strong> &rarr; choose a date range &rarr; save as <strong style="color:var(--ink2);">CSV</strong> &rarr; drop the new file here.
+            </div>` : ''}
+            ${!r.ok && r.type==='amazon' ? `<div style="margin-top:8px;padding:10px 12px;background:rgba(0,0,0,.18);border-radius:4px;font-size:12px;color:var(--ink3);line-height:1.9;">
+              <strong style="color:var(--gold);">What to do next:</strong> Go to amazon.com &rarr; Account &amp; Lists &rarr; Account &rarr; Manage Your Data &rarr; Request Your Data &rarr; select Your Orders &rarr; wait for Amazon's email (up to 24 hrs) &rarr; open the ZIP &rarr; find <strong style="color:var(--ink2);">Retail.OrderHistory.1.csv</strong> inside the Your Orders folder.
             </div>` : ''}
           </div>
           ${r.ok&&r.count>0?`<div style="font-size:22px;font-weight:700;color:var(--positive);flex-shrink:0;padding-top:2px;">+${r.count.toLocaleString()}</div>`:''}
@@ -2171,7 +2176,7 @@ function showImportResults(fileResults, txnCount, amzCount) {
           Navigating to Dashboard in a moment...
         </div>` : `
         <div style="margin-top:8px;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--ink3);">
-          Already up to date — no new transactions found. These may have been imported previously.
+          No new transactions found — everything in this file is already in Forge. This is normal when re-importing. Try exporting a wider date range from Quicken if you expected new data.
         </div>`}
     </div>`;
 }
@@ -2215,6 +2220,7 @@ function parseCSV(text, fname) {
 }
 
 function parseQIF(text, fname) {
+  if (!text || !text.trim()) return [];
   const acctName=fname.replace(/\.[^.]+$/,''); let cur={}, acct=acctName; const out=[];
   for (const line of text.split('\n')) {
     const l=line.trim(); if(!l)continue;
@@ -2225,6 +2231,7 @@ function parseQIF(text, fname) {
 }
 
 function parseOFX(text, fname) {
+  if (!text || !text.trim()) return [];
   const acctName=fname.replace(/\.[^.]+$/,''); const out=[];
   const blocks=text.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/gi)||[];
   const acctM=text.match(/<ACCTID>(.*?)</i); const acctId=acctM?acctM[1].trim():acctName;
@@ -3814,6 +3821,15 @@ function saveSettings() {
       } else if (el.style) { el.style.borderColor = ''; }
     });
     if (_dobBad.length) { showToast(_dobBad[0], 'warn', 6000); return; }
+    var _dobBad = [];
+    document.querySelectorAll('.kid-dob-input').forEach(function(el, i) {
+      var v = (el.value||'').trim();
+      if (v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+        _dobBad.push('Kid ' + (i+1) + ' date "' + v + '" — use YYYY-MM-DD (e.g. 2014-06-22)');
+        if (el.style) el.style.borderColor = 'var(--negative)';
+      } else if (el.style) { el.style.borderColor = ''; }
+    });
+    if (_dobBad.length) { showToast(_dobBad[0], 'warn', 6000); return; }
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     showSaveStatus('✓ Saved', true);
     showToast(`Settings saved · Welcome, ${settings.familyName} family`);
@@ -4348,6 +4364,7 @@ function getFamilyReportSubtitle() {
   loadSettings();
   return settings.reportSubtitle || 'Monthly Financial Review';
 }
+
 
 
 

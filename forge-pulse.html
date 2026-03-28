@@ -819,7 +819,7 @@ NEVER: Say "I cannot" or "I apologize." Never be vague when data is available. S
 // Replace this URL with your Cloudflare Worker URL after setup.
 // See forge_worker.js for setup instructions (takes ~10 min, free).
 // Until configured, Sid will show a setup prompt instead of an error.
-const SID_PROXY_URL = 'https://forge-sid.luka731chris.workers.dev';
+const SID_PROXY_URL = 'WORKER_URL_HERE';
 
 async function callSid(msg) {
   // Check if proxy has been configured
@@ -869,19 +869,27 @@ async function callSid(msg) {
 }
 
 function getSidSetupMessage() {
-  return `Hey ${family.user1||'there'} — Sid here. I'm almost ready, but need one quick setup step first.
+  const u = family.user1 || 'there';
+  return `Hey ${u} — Sid here. Almost ready, but one quick setup is needed before the chat works.
 
-To activate the chat feature, you need to configure a free Cloudflare Worker proxy that securely holds your Anthropic API key. It takes about 10 minutes and costs nothing.
+To turn on the Ask Sid feature, you need to connect a free Cloudflare Worker that keeps your API key secure. It takes about 10 minutes and costs nothing.
 
-Here's what to do:
-1. Go to workers.cloudflare.com and create a free account
-2. Create a new Worker and paste the forge_worker.js file (available in your Forge project)
-3. In the Worker's Settings → Variables, add a Secret called ANTHROPIC_API_KEY with your key from console.anthropic.com
-4. Copy your Worker URL (something like forge-sid.yourname.workers.dev)
-5. Open forge-pulse.html, find SID_PROXY_URL near the top of the script, and replace WORKER_URL_HERE with your Worker URL
-6. Re-upload forge-pulse.html to GitHub
+STEP 1 — Get an API key
+Go to console.anthropic.com and sign in (or create a free account). Click API Keys in the left menu, then + Create Key. Name it anything you like. Copy the key right away — it starts with sk-ant- and is only shown once.
 
-Once that's done, I'll be fully operational. The financial snapshot, alerts, and Amazon watchlist all work right now without any setup.`;
+STEP 2 — Add $5 in billing credits
+Still on console.anthropic.com, click Billing in the left menu and add $5. Without credits the API will not respond.
+
+STEP 3 — Create the Cloudflare Worker
+Go to dash.cloudflare.com (free). Click Workers and Pages → Create → Hello World → name it forge-sid → Deploy → Continue to project. Click Edit Code. Select all the default code and delete it. Paste in the forge_worker.js code from your Forge project files. Click Deploy.
+
+STEP 4 — Add your API key to the Worker
+On the Worker detail page, click Settings → Variables and Secrets → Add. Set the type to Secret. Name it ANTHROPIC_API_KEY. Paste your sk-ant- key as the value. Click Deploy.
+
+STEP 5 — Update Forge Pulse
+Open forge-pulse.html in a text editor. Find the line that says WORKER_URL_HERE and replace it with your Worker URL — something like https://forge-sid.yourname.workers.dev. Save the file and upload it to GitHub in place of the old version.
+
+Once those five steps are done, come back here and I will be fully ready. The snapshot, alerts, and Amazon watchlist all work right now — no setup needed for those.`;
 }
 
 function addBubble(text, role) {
@@ -899,9 +907,7 @@ function rmTyping()  { const t=document.getElementById('typ'); if(t)t.remove(); 
 
 function sendWelcome() {
   if (!txns.length) {
-    addBubble(`Hey — Sid here. Forge Pulse is the mobile companion to your Forge desktop app.\n\nOnce you've imported data in Forge on a laptop or computer, I'll have everything I need to answer your questions here. Come back after The Pour.
-
-Note: The Ask Sid chat feature also requires a one-time Cloudflare Worker setup — send me any message and I'll walk you through it.`, 'assistant');
+    addBubble(`Hey — Sid here.\n\nNo financial data yet. To get started, open Forge on your laptop or desktop, go to The Pour (the + button), and import your Quicken file. Once that's done, come back here and I'll have everything I need.\n\nThe first time you use the chat feature, you'll also need to complete a one-time setup. Just send me any message and I'll walk you through it — takes about 10 minutes.`, 'assistant');
     return;
   }
   const n=new Date(), cm=nowMo();
@@ -921,7 +927,7 @@ async function sendChat() {
   addBubble(msg,'user');
   history.push({role:'user',content:msg});
   addTyping();
-  document.getElementById('chatStatus').textContent='Sid is reading the play…';
+  document.getElementById('chatStatus').textContent='Sid is thinking…';
   try {
     const rep=await callSid(msg);
     rmTyping(); addBubble(rep,'assistant');
@@ -932,15 +938,15 @@ async function sendChat() {
     const errMsg = e.message || '';
     let userMsg;
     if (errMsg.includes('timed out')) {
-      userMsg = "That took too long — Anthropic's servers may be busy. Try a shorter question.";
+      userMsg = "Sid took too long to respond — the servers may be busy. Wait a few seconds and try again. Shorter questions tend to come back faster.";
     } else if (errMsg.includes('401')) {
-      userMsg = "API key issue — double-check the ANTHROPIC_API_KEY in your Cloudflare Worker settings.";
+      userMsg = "Sid cannot connect — the API key is not working. Open your Cloudflare Worker, go to Settings → Variables and Secrets, and make sure ANTHROPIC_API_KEY is set correctly with your key from console.anthropic.com.";
     } else if (errMsg.includes('429')) {
-      userMsg = "Rate limit hit — wait a moment and try again.";
+      userMsg = "Sid is getting too many requests right now. Wait about 30 seconds and try again.";
     } else if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError')) {
-      userMsg = "Can't reach the proxy server. Check your Worker URL in SID_PROXY_URL.";
+      userMsg = "Sid cannot reach the server. This usually means the Worker URL was not set up correctly. Open the Forge Sid Setup Guide and check Step 4 — the URL should start with https:// and end with .workers.dev";
     } else {
-      userMsg = `Sid ran into an issue: ${errMsg||'unknown error'}. Check your Worker setup if this keeps happening.`;
+      userMsg = `Something went wrong — Sid could not respond. If this keeps happening, check that your Cloudflare Worker is deployed and your API key is set correctly.`;
     }
     addBubble(userMsg,'assistant');
   }
