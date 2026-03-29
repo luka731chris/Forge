@@ -1075,6 +1075,204 @@ select option { background: var(--float); color: var(--ink2); }
   opacity: .55;
   letter-spacing: .08em;
 }
+
+/* ── ANALYTICS PAGE ──────────────────────────────────── */
+.ana-header {
+  background: linear-gradient(135deg, var(--float) 0%, var(--lift) 100%);
+  border-bottom: 1px solid var(--line);
+  padding: 22px 28px 20px;
+  margin: -28px -28px 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.ana-logo {
+  font-family: var(--font-d);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1;
+}
+.ana-logo span { color: var(--gold); font-style: italic; }
+.ana-sub {
+  font-size: 11px;
+  color: var(--ink4);
+  font-family: var(--font-m);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.ana-controls {
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+.ana-ctrl-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 110px;
+  flex: 1;
+}
+.ana-ctrl-lbl {
+  font-size: 9.5px;
+  font-family: var(--font-m);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink4);
+}
+.ana-select {
+  background: var(--lift);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-sm);
+  color: var(--ink2);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: border-color var(--dur-fast);
+}
+.ana-select:focus { outline: none; border-color: var(--gold); }
+.ana-chart-types {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.ana-ct {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line2);
+  background: var(--lift);
+  color: var(--ink4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all var(--dur-fast);
+  flex-shrink: 0;
+}
+.ana-ct:hover { border-color: var(--gold); color: var(--gold); }
+.ana-ct.active { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+.ana-main-chart {
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 20px 22px;
+  margin-bottom: 18px;
+  position: relative;
+  min-height: 340px;
+}
+.ana-chart-title {
+  font-family: var(--font-d);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.ana-chart-sub {
+  font-size: 11px;
+  color: var(--ink4);
+  font-family: var(--font-m);
+  margin-bottom: 16px;
+}
+.ana-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.ana-insight {
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 16px 18px;
+}
+.ana-insight-lbl {
+  font-size: 10px;
+  font-family: var(--font-m);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  margin-bottom: 6px;
+}
+.ana-insight-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.ana-insight-delta {
+  font-size: 11px;
+  font-family: var(--font-m);
+  color: var(--ink4);
+}
+.ana-insight-delta.up { color: var(--negative); }
+.ana-insight-delta.dn { color: var(--positive); }
+.ana-table-card {
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+.ana-tbl-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.ana-tbl-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink2);
+}
+.ana-tbl-toggle {
+  font-size: 11px;
+  color: var(--ink4);
+  background: none;
+  border: 1px solid var(--line2);
+  border-radius: var(--r-sm);
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+}
+.ana-tbl-toggle:hover { color: var(--ink); border-color: var(--gold); }
+.ana-secondary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.ana-mini-chart {
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 16px 18px;
+}
+.ana-mini-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink3);
+  margin-bottom: 12px;
+}
+@media (max-width: 700px) {
+  .ana-insight-grid { grid-template-columns: 1fr 1fr; }
+  .ana-secondary-grid { grid-template-columns: 1fr; }
+  .ana-controls { flex-direction: column; }
+}
+
 </style>
 </head>
 <body>
@@ -1135,6 +1333,10 @@ select option { background: var(--float); color: var(--ink2); }
     <div class="nav-item" onclick="showPage('amazon')" id="nav-amazon">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
       Detail Lens
+    </div>
+    <div class="nav-item" onclick="showPage('analytics')" id="nav-analytics">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+      Analytics
     </div>
     <div class="nav-item" onclick="showPage('transactions')" id="nav-transactions">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -1540,6 +1742,145 @@ select option { background: var(--float); color: var(--ink2); }
   </div>
 </div>
 
+<!-- ══ ANALYTICS ══ -->
+<div id="page-analytics" class="page">
+
+  <!-- Header -->
+  <div class="ana-header">
+    <div>
+      <div class="ana-logo">⚾ <span>Analytics</span> Studio</div>
+      <div class="ana-sub">$kenes · #30 · Self-Service Intelligence</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:11px;color:var(--ink4);font-family:var(--font-m);" id="ana-scope-label">Loading…</div>
+      <div style="font-size:10px;color:var(--ink4);opacity:.5;font-family:var(--font-m);margin-top:2px;">All sources · Auto-deduped</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="ana-controls" id="ana-controls">
+    <div class="ana-ctrl-group" style="min-width:150px;">
+      <div class="ana-ctrl-lbl">View By</div>
+      <select class="ana-select" id="ana-dim" onchange="renderAnalytics()">
+        <option value="month">Month</option>
+        <option value="category">Category</option>
+        <option value="account">Account</option>
+        <option value="purchaser">Purchaser</option>
+        <option value="source">Source</option>
+        <option value="dayofweek">Day of Week</option>
+        <option value="quarter">Quarter</option>
+        <option value="year">Year</option>
+      </select>
+    </div>
+    <div class="ana-ctrl-group" style="min-width:150px;">
+      <div class="ana-ctrl-lbl">Measure</div>
+      <select class="ana-select" id="ana-metric" onchange="renderAnalytics()">
+        <option value="spending">Total Spending</option>
+        <option value="income">Total Income</option>
+        <option value="net">Net Savings</option>
+        <option value="txncount">Transaction Count</option>
+        <option value="avg">Avg Transaction</option>
+        <option value="savings_rate">Savings Rate %</option>
+      </select>
+    </div>
+    <div class="ana-ctrl-group" style="min-width:130px;">
+      <div class="ana-ctrl-lbl">Date Range</div>
+      <select class="ana-select" id="ana-range" onchange="renderAnalytics()">
+        <option value="3m">Last 3 Months</option>
+        <option value="6m">Last 6 Months</option>
+        <option value="1y" selected>Last 12 Months</option>
+        <option value="2y">Last 2 Years</option>
+        <option value="all">All Time</option>
+      </select>
+    </div>
+    <div class="ana-ctrl-group" style="min-width:130px;">
+      <div class="ana-ctrl-lbl">Filter Category</div>
+      <select class="ana-select" id="ana-cat-filter" onchange="renderAnalytics()">
+        <option value="all">All Categories</option>
+      </select>
+    </div>
+    <div class="ana-ctrl-group" style="min-width:130px;">
+      <div class="ana-ctrl-lbl">Filter Account</div>
+      <select class="ana-select" id="ana-acct-filter" onchange="renderAnalytics()">
+        <option value="all">All Accounts</option>
+      </select>
+    </div>
+    <div class="ana-ctrl-group">
+      <div class="ana-ctrl-lbl">Chart Type</div>
+      <div class="ana-chart-types" id="ana-chart-types">
+        <button class="ana-ct active" data-ct="bar"     onclick="setAnaChart('bar',this)"    title="Bar">▬</button>
+        <button class="ana-ct"       data-ct="hbar"    onclick="setAnaChart('hbar',this)"   title="Horizontal Bar">▮</button>
+        <button class="ana-ct"       data-ct="line"    onclick="setAnaChart('line',this)"   title="Line">⟋</button>
+        <button class="ana-ct"       data-ct="area"    onclick="setAnaChart('area',this)"   title="Area">◿</button>
+        <button class="ana-ct"       data-ct="donut"   onclick="setAnaChart('donut',this)"  title="Donut">◎</button>
+        <button class="ana-ct"       data-ct="scatter" onclick="setAnaChart('scatter',this)" title="Scatter">⁙</button>
+        <button class="ana-ct"       data-ct="waterfall" onclick="setAnaChart('waterfall',this)" title="Waterfall">⬦</button>
+        <button class="ana-ct"       data-ct="heatmap" onclick="setAnaChart('heatmap',this)" title="Heatmap">⊞</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insight KPI cards -->
+  <div class="ana-insight-grid" id="ana-insights"></div>
+
+  <!-- Primary chart -->
+  <div class="ana-main-chart">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+      <div>
+        <div class="ana-chart-title" id="ana-chart-title">Monthly Spending</div>
+        <div class="ana-chart-sub" id="ana-chart-sub">Last 12 months · all accounts · all categories</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="exportAnaChart()" style="font-size:11px;padding:5px 12px;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);color:var(--ink4);cursor:pointer;font-family:var(--font-ui);" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--ink4)'">↓ PNG</button>
+        <button onclick="toggleAnaTable()" style="font-size:11px;padding:5px 12px;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);color:var(--ink4);cursor:pointer;font-family:var(--font-ui);" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--ink4)'" id="ana-table-btn">⊞ Data</button>
+      </div>
+    </div>
+    <div id="ana-chart-wrap" style="position:relative;height:320px;">
+      <canvas id="anaMainChart"></canvas>
+      <div id="ana-heatmap-wrap" style="display:none;width:100%;"></div>
+    </div>
+  </div>
+
+  <!-- Secondary charts row -->
+  <div class="ana-secondary-grid">
+    <div class="ana-mini-chart">
+      <div class="ana-mini-title">Spending vs Income</div>
+      <div style="position:relative;height:180px;"><canvas id="anaMiniStack"></canvas></div>
+    </div>
+    <div class="ana-mini-chart">
+      <div class="ana-mini-title">Top 8 Categories</div>
+      <div style="position:relative;height:180px;"><canvas id="anaMiniDonut"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Third row — scatter + waterfall -->
+  <div class="ana-secondary-grid">
+    <div class="ana-mini-chart">
+      <div class="ana-mini-title">Spending by Day of Week</div>
+      <div style="position:relative;height:180px;"><canvas id="anaMiniDow"></canvas></div>
+    </div>
+    <div class="ana-mini-chart">
+      <div class="ana-mini-title" id="ana-mini-purchaser-title">Spend by Purchaser</div>
+      <div style="position:relative;height:180px;"><canvas id="anaMiniPurchaser"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Data table (collapsible) -->
+  <div class="ana-table-card" id="ana-data-table" style="display:none;">
+    <div class="ana-tbl-hdr">
+      <div class="ana-tbl-title" id="ana-tbl-title">Data Table</div>
+      <button class="ana-tbl-toggle" onclick="toggleAnaTable()">✕ Close</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead id="ana-tbl-head"></thead>
+        <tbody id="ana-tbl-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
 <!-- ══ TRANSACTIONS ══ -->
 <div id="page-transactions" class="page">
   <div class="page-hdr"><div><div class="page-title">Ledger Room</div><div class="page-sub" id="txnSub"></div></div></div>
@@ -1720,7 +2061,7 @@ select option { background: var(--float); color: var(--ink2); }
         <div class="settings-hdr-icon">🏠</div>
         <div>
           <div class="settings-hdr-title">The Family</div>
-          <div class="settings-hdr-sub">Names used across all reports, Confluence agendas, and Sid's responses</div>
+          <div class="settings-hdr-sub">Names used across all reports, Confluence agendas, and $id's responses</div>
         </div>
       </div>
       <div class="settings-body">
@@ -1748,7 +2089,7 @@ select option { background: var(--float); color: var(--ink2); }
           <input class="field-input" id="s-user2-dob" type="text" placeholder="YYYY-MM-DD" maxlength="10" autocomplete="off" style="font-family:var(--font-m);font-size:12px;letter-spacing:0.05em;" oninput="updateAgeBadge('s-user2-dob','s-user2-age-badge',true)">
           <span id="s-user2-age-badge" style="font-size:11px;font-family:var(--font-m);color:var(--gold);white-space:nowrap;margin-left:6px;"></span>
         </div>
-        <div class="field-note">Sid shifts to story-first mode when partner's name appears in prompts</div>
+        <div class="field-note">$id shifts to story-first mode when partner's name appears in prompts</div>
         <div class="field-row" style="align-items:flex-start;gap:10px;">
           <div class="field-label" style="padding-top:6px;">Kids</div>
           <div style="flex:1;">
@@ -1781,7 +2122,7 @@ select option { background: var(--float); color: var(--ink2); }
         <div class="sid-mode-row">
           <div class="sid-mode-info">
             <div class="sid-mode-label">Story-first mode</div>
-            <div class="sid-mode-desc">Context and narrative before the numbers. Sid activates this when he detects <span id="s-user2-preview" style="color:var(--gold);">your partner</span>'s name in a prompt, or during Confluence meetings.</div>
+            <div class="sid-mode-desc">Context and narrative before the numbers. $id activates this when detecting <span id="s-user2-preview" style="color:var(--gold);">your partner</span>'s name in a prompt, or during Confluence meetings.</div>
             <div class="sid-preview-bubble" style="margin-top:8px;padding:8px 10px;background:var(--lift);border-radius:3px;border-left:2px solid var(--gold);font-size:11px;color:var(--muted);font-style:italic;">"This was a good month overall. You came out ahead by over a thousand dollars, which is solid — though dining crept up more than we'd like. Worth a quick conversation."</div>
           </div>
         </div>
@@ -1789,7 +2130,7 @@ select option { background: var(--float); color: var(--ink2); }
         <div class="sid-mode-row">
           <div class="sid-mode-info">
             <div class="sid-mode-label">Confluence mode</div>
-            <div class="sid-mode-desc">Warmer, more conversational tone automatically active during The Confluence meeting. Sid talks to both of you together — uses family names, speaks in "we."</div>
+            <div class="sid-mode-desc">Warmer, more conversational tone automatically active during The Confluence meeting. $id talks to both of you together — uses family names, speaks in "we."</div>
           </div>
           <label class="toggle" style="flex-shrink:0;margin-left:12px;">
             <input type="checkbox" id="s-confluence-mode" checked>
@@ -1800,7 +2141,7 @@ select option { background: var(--float); color: var(--ink2); }
         <div class="sid-mode-row">
           <div class="sid-mode-info">
             <div class="sid-mode-label">Use kids' names in alerts</div>
-            <div class="sid-mode-desc">Sid references college funds, education expenses, and kid-related purchases by name when relevant.</div>
+            <div class="sid-mode-desc">$id references college funds, education expenses, and kid-related purchases by name when relevant.</div>
           </div>
           <label class="toggle" style="flex-shrink:0;margin-left:12px;">
             <input type="checkbox" id="s-kids-in-alerts" checked>
@@ -1812,9 +2153,9 @@ select option { background: var(--float); color: var(--ink2); }
         <div class="sid-preview-card">
           <div class="sid-preview-label">
             <svg width="12" height="12" viewBox="0 0 32 32" fill="none"><path d="M4 10 C 10 10, 14 16, 28 16" stroke="#F5A800" stroke-width="1.5" stroke-linecap="round" fill="none"/><path d="M4 16 C 10 16, 14 16, 28 16" stroke="#F5A800" stroke-width="1.5" stroke-linecap="round" fill="none"/><path d="M4 22 C 10 22, 14 16, 28 16" stroke="#F5A800" stroke-width="1.5" stroke-linecap="round" fill="none"/><circle cx="28" cy="16" r="2" fill="#F5A800"/></svg>
-            Live Sid Preview
+            Live $id Preview
           </div>
-          <div class="sid-preview-bubble" id="sid-live-preview">Adjust settings above to see how Sid will speak to your family.</div>
+          <div class="sid-preview-bubble" id="sid-live-preview">Adjust settings above to see how $id will speak to your family.</div>
         </div>
       </div>
     </div>
@@ -1843,7 +2184,7 @@ select option { background: var(--float); color: var(--ink2); }
         <div class="settings-hdr-icon">🎯</div>
         <div>
           <div class="settings-hdr-title">Financial Targets</div>
-          <div class="settings-hdr-sub">Thresholds that drive The Furnace alerts and Sid's recommendations</div>
+          <div class="settings-hdr-sub">Thresholds that drive The Furnace alerts and $id's recommendations</div>
         </div>
       </div>
       <div class="settings-body">
@@ -1861,7 +2202,7 @@ select option { background: var(--float); color: var(--ink2); }
           <input class="field-input narrow" id="s-emergency-target" type="number" min="0" step="1000" placeholder="25000">
           <span style="font-size:12px;color:var(--muted);margin-left:6px;">dollars</span>
         </div>
-        <div class="field-note">Sid flags progress toward this. Recommendation: 3–6 months of expenses.</div>
+        <div class="field-note">$id flags progress toward this. Recommendation: 3–6 months of expenses.</div>
 
         <div class="field-row">
           <div class="field-label">Large Purchase Alert</div>
@@ -1878,7 +2219,7 @@ select option { background: var(--float); color: var(--ink2); }
           </div>
         </div>
         <div class="slider-labels"><span>Lenient</span><span>Balanced</span><span>Strict</span></div>
-        <div class="field-note" style="margin-top:6px;">Controls how aggressively Sid flags Amazon impulse purchases. Strict = flags more.</div>
+        <div class="field-note" style="margin-top:6px;">Controls how aggressively $id flags Amazon impulse purchases. Strict = flags more.</div>
       </div>
     </div>
 
@@ -2089,9 +2430,23 @@ function loadDemo() {
   isDemoMode = true;
   txns = []; amzItems = []; accounts = [];
   generateDemoData();
+  // Auto-configure account owners for the demo
+  loadSettings();
+  settings.accountOwners = {
+    'Chase Sapphire (CC)':     'Chris',
+    'Apple Card - Chris (CC)': 'Chris',
+    'Citi Double Cash (CC)':   'Chris',
+    'PNC Business Checking':   'Chris',
+    'Amex Blue Cash (CC)':     'Kira',
+    'Apple Card - Kira (CC)':  'Kira',
+    'Nordstrom Credit Card':   'Kira',
+    'Fidelity 401k':           'Chris',
+    'Fidelity Brokerage':      'Chris',
+  };
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch(e) {}
   saveData();
   initApp();
-  showToast('⚾ $kenes takes the mound — Pittsburgh demo loaded. #30 is on the clock.');
+  showToast('⚾ $kenes takes the mound — Pittsburgh demo loaded. Account owners pre-configured.');
 }
 
 function generateDemoData() {
@@ -2105,8 +2460,10 @@ function generateDemoData() {
     { name:'Fidelity Brokerage', type:'investment', color:ACCT_COLORS[6] },
     { name:'Marcus Savings (HYSA)', type:'savings', color:ACCT_COLORS[7] },
     { name:'PNC Business Checking', type:'checking', color:ACCT_COLORS[8] },
-    { name:'Apple Card (CC)', type:'credit', color:ACCT_COLORS[9] },
-    { name:'PayPal', type:'other', color:ACCT_COLORS[10] },
+    { name:'Apple Card - Chris (CC)', type:'credit', color:ACCT_COLORS[9] },
+    { name:'Apple Card - Kira (CC)', type:'credit', color:ACCT_COLORS[10] },
+    { name:'Nordstrom Credit Card', type:'credit', color:ACCT_COLORS[11] },
+    { name:'PayPal', type:'other', color:ACCT_COLORS[3] },
   ];
   accounts = acctDefs;
 
@@ -2129,24 +2486,27 @@ function generateDemoData() {
     ['Target','Shopping','Amex Blue Cash (CC)', 140, 2, 50],
     ['Costco Wholesale','Shopping','Amex Blue Cash (CC)', 280, 1, 80],
     ['Macy\'s','Clothing','Citi Double Cash (CC)', 95, 0.7, 60],
-    ['TJ Maxx','Clothing','Apple Card (CC)', 65, 0.8, 40],
-    ['Starbucks','Dining','Apple Card (CC)', 8, 14, 3],
+    ['TJ Maxx','Clothing','Apple Card - Kira (CC)', 65, 0.8, 40],
+    ['Starbucks','Dining','Apple Card - Chris (CC)', 8, 14, 3],
     ['Panera Bread','Dining','Chase Sapphire (CC)', 22, 4, 8],
     ['DoorDash','Dining','Chase Sapphire (CC)', 48, 5, 18],
-    ['Chipotle','Dining','Apple Card (CC)', 15, 5, 5],
+    ['Chipotle','Dining','Apple Card - Chris (CC)', 15, 5, 5],
     ['Primanti Brothers','Dining','Chase Sapphire (CC)', 55, 2, 20],
     ['Giant Eagle Gas','Transportation','Amex Blue Cash (CC)', 65, 3, 20],
     ['Shell','Transportation','Amex Blue Cash (CC)', 58, 2, 15],
     ['EZ Pass PA','Transportation','Chase Checking', 30, 1, 8],
-    ['Pittsburgh Parking','Transportation','Apple Card (CC)', 18, 4, 10],
-    ['Netflix','Entertainment','Apple Card (CC)', 22, 1, 0],
-    ['Spotify','Entertainment','Apple Card (CC)', 17, 1, 0],
-    ['Disney+','Entertainment','Apple Card (CC)', 14, 1, 0],
+    ['Pittsburgh Parking','Transportation','Apple Card - Chris (CC)', 18, 4, 10],
+    ['Netflix','Entertainment','Apple Card - Chris (CC)', 22, 1, 0],
+    ['Spotify','Entertainment','Apple Card - Chris (CC)', 17, 1, 0],
+    ['Disney+','Entertainment','Apple Card - Kira (CC)', 14, 1, 0],
     ['AMC Theatres','Entertainment','Chase Sapphire (CC)', 38, 0.8, 15],
     ['Steelers Tickets','Entertainment','Chase Sapphire (CC)', 180, 0.4, 60],
     ['Planet Fitness','Health & Fitness','Chase Checking', 25, 1, 0],
     ['REI','Health & Fitness','Chase Sapphire (CC)', 120, 0.4, 80],
     ['Dick\'s Sporting Goods','Health & Fitness','Chase Sapphire (CC)', 85, 0.5, 50],
+    ['Nordstrom','Clothing','Nordstrom Credit Card', 145, 1, 80],
+    ['Nordstrom Rack','Clothing','Nordstrom Credit Card', 78, 0.7, 40],
+    ['Loft','Clothing','Nordstrom Credit Card', 92, 0.6, 50],
     ['Chase Mortgage','Housing','Chase Checking', 0, 0, 0], // skip
     ['Lowe\'s','Home Improvement','Chase Checking', 145, 0.7, 100],
     ['Home Depot','Home Improvement','Chase Checking', 110, 0.6, 90],
@@ -2155,6 +2515,9 @@ function generateDemoData() {
     ['USAA Home','Insurance','Chase Checking', 145, 1, 0],
     ['Wex Bank','Transportation','PNC Business Checking', 0, 0, 0],
     ['Chase College','Education','Chase Checking', 850, 0.4, 200],
+    ['Peloton','Health & Fitness','Apple Card - Kira (CC)', 44, 1, 0],
+    ['lululemon','Clothing','Apple Card - Kira (CC)', 98, 0.6, 40],
+    ['Sephora','Health & Beauty','Nordstrom Credit Card', 55, 0.8, 30],
     ['Paypal Transfer','Transfer','PayPal', 200, 0.5, 100],
     ['Interest Income','Income','Marcus Savings (HYSA)', 85, 1, 15],
     ['401k Contribution','Savings','Fidelity 401k', 780, 1, 0],
@@ -2203,16 +2566,19 @@ function generateDemoData() {
     // Random one-off transactions
     if (Math.random() < 0.03) {
       const oneOffs = [
-        ['Apple Store','Electronics','Apple Card (CC)',-380],
+        ['Apple Store','Electronics','Apple Card - Chris (CC)',-380],
         ['Best Buy','Electronics','Chase Sapphire (CC)',-520],
         ['Southwest Airlines','Travel','Chase Sapphire (CC)',-340],
         ['Marriott Hotels','Travel','Chase Sapphire (CC)',-620],
         ['Airbnb','Travel','Chase Sapphire (CC)',-480],
-        ['Uber','Transportation','Apple Card (CC)',-22],
+        ['Uber','Transportation','Apple Card - Chris (CC)',-22],
         ['Amazon.com','Shopping','Chase Sapphire (CC)',-210],
         ['Williams-Sonoma','Home Improvement','Amex Blue Cash (CC)',-185],
         ['Chewy.com','Pet Supplies','Amex Blue Cash (CC)',-95],
         ['PetSmart','Pet Supplies','Amex Blue Cash (CC)',-65],
+        ['Nordstrom Anniversary Sale','Clothing','Nordstrom Credit Card',-420],
+        ['Spa at the Westin','Health & Beauty','Apple Card - Kira (CC)',-180],
+        ['Equinox','Health & Fitness','Apple Card - Kira (CC)',-85],
       ];
       const pick = oneOffs[Math.floor(Math.random()*oneOffs.length)];
       const dateStr = `${yr}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
@@ -2258,9 +2624,99 @@ function generateDemoData() {
       price = Math.max(1.99, parseFloat(price.toFixed(2)));
       const qty = Math.random() < 0.2 ? Math.floor(Math.random()*3)+2 : 1;
       const dateStr = `${yr}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      amzItems.push({ date:dateStr, title, category:cat, price, qty, total:parseFloat((price*qty).toFixed(2)), orderId:`D01-${Math.random().toString(36).slice(2,10).toUpperCase()}`, asin:'' });
+      amzItems.push({ date:dateStr, title, category:cat, price, qty, total:parseFloat((price*qty).toFixed(2)), orderId:`D01-${Math.random().toString(36).slice(2,10).toUpperCase()}`, asin:'', source:'Amazon', purchaser:null });
     });
   }
+  amzItems.sort((a,b) => new Date(b.date)-new Date(a.date));
+
+  // ── Apple Card - Chris line items ─────────────────────────
+  // These unmask the lump-sum "Apple Card - Chris (CC)" Quicken charges
+  const appleChrisMerchants = [
+    { title:'Starbucks Reserve Roastery', category:'Dining', baseAmt:14, freq:12, std:4 },
+    { title:'Chipotle Mexican Grill', category:'Dining', baseAmt:16, freq:5, std:5 },
+    { title:'Apple One Subscription', category:'Entertainment', baseAmt:37, freq:1, std:0 },
+    { title:'Apple Store - AirPods Pro', category:'Electronics', baseAmt:249, freq:0.05, std:0 },
+    { title:'Pittsburgh Parking Authority', category:'Transportation', baseAmt:20, freq:4, std:8 },
+    { title:'Uber', category:'Transportation', baseAmt:22, freq:3, std:10 },
+    { title:'iTunes / App Store', category:'Entertainment', baseAmt:8, freq:2, std:5 },
+    { title:'Nike.com', category:'Sporting Goods', baseAmt:95, freq:0.4, std:40 },
+    { title:'Peloton Monthly', category:'Health & Fitness', baseAmt:0, freq:0, std:0 }, // Kira only
+    { title:'Shake Shack', category:'Dining', baseAmt:18, freq:1.5, std:6 },
+  ];
+  for (let d = new Date(startDate); d <= now; d.setDate(d.getDate() + 1)) {
+    const yr = d.getFullYear(), mo = d.getMonth(), day = d.getDate();
+    const dateStr = `${yr}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    appleChrisMerchants.forEach(m => {
+      if (m.freq === 0 || Math.random() > m.freq/30) return;
+      let price = m.baseAmt + (Math.random()-0.5)*2*m.std;
+      price = Math.max(1.99, parseFloat(price.toFixed(2)));
+      amzItems.push({ date:dateStr, title:m.title, category:m.category,
+        price, qty:1, total:price,
+        orderId:`AC-${Math.random().toString(36).slice(2,9).toUpperCase()}`,
+        asin:'', source:'Apple Card', purchaser:'Chris' });
+    });
+  }
+
+  // ── Apple Card - Kira line items ──────────────────────────
+  const appleKiraMerchants = [
+    { title:'Peloton Monthly Membership', category:'Health & Fitness', baseAmt:44, freq:1, std:0 },
+    { title:'lululemon', category:'Clothing', baseAmt:105, freq:0.6, std:40 },
+    { title:'Sephora', category:'Health & Beauty', baseAmt:58, freq:0.8, std:28 },
+    { title:'Disney+', category:'Entertainment', baseAmt:14, freq:1, std:0 },
+    { title:'TJ Maxx', category:'Clothing', baseAmt:72, freq:0.8, std:35 },
+    { title:'Whole Foods Market (Apple Pay)', category:'Groceries', baseAmt:65, freq:2, std:25 },
+    { title:'Athleta', category:'Clothing', baseAmt:88, freq:0.4, std:35 },
+    { title:'Pilates Studio PGH', category:'Health & Fitness', baseAmt:95, freq:0.8, std:0 },
+    { title:'Barnes & Noble', category:'Books & Media', baseAmt:32, freq:0.5, std:15 },
+    { title:'Ulta Beauty', category:'Health & Beauty', baseAmt:48, freq:0.7, std:22 },
+  ];
+  for (let d = new Date(startDate); d <= now; d.setDate(d.getDate() + 1)) {
+    const yr = d.getFullYear(), mo = d.getMonth(), day = d.getDate();
+    const dateStr = `${yr}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const sm = seasonMult[mo];
+    appleKiraMerchants.forEach(m => {
+      if (m.freq === 0 || Math.random() > m.freq/30) return;
+      let price = m.baseAmt + (Math.random()-0.5)*2*m.std;
+      // Clothing spikes in spring/fall
+      if (['Clothing'].includes(m.category) && [2,3,8,9].includes(mo)) price *= 1.4;
+      price = Math.max(1.99, parseFloat(price.toFixed(2)));
+      amzItems.push({ date:dateStr, title:m.title, category:m.category,
+        price, qty:1, total:price,
+        orderId:`AK-${Math.random().toString(36).slice(2,9).toUpperCase()}`,
+        asin:'', source:'Apple Card', purchaser:'Kira' });
+    });
+  }
+
+  // ── Nordstrom Card line items ─────────────────────────────
+  // Kira's primary clothing card — unmasks the Nordstrom lump sums in Quicken
+  const nordstromItems = [
+    { title:'Nordstrom - Eileen Fisher Top', category:'Clothing', baseAmt:148, freq:0.5, std:60 },
+    { title:'Nordstrom - Free People Dress', category:'Clothing', baseAmt:178, freq:0.3, std:70 },
+    { title:'Nordstrom - Nike Running Shoes', category:'Sporting Goods', baseAmt:130, freq:0.3, std:30 },
+    { title:'Nordstrom - Handbag', category:'Accessories', baseAmt:295, freq:0.15, std:100 },
+    { title:'Nordstrom - Clarins Skincare', category:'Health & Beauty', baseAmt:85, freq:0.5, std:30 },
+    { title:'Nordstrom Rack - Calvin Klein', category:'Clothing', baseAmt:88, freq:0.5, std:35 },
+    { title:'Nordstrom Rack - Sandals', category:'Footwear', baseAmt:55, freq:0.4, std:20 },
+    { title:'Sephora at Nordstrom', category:'Health & Beauty', baseAmt:62, freq:0.7, std:25 },
+    { title:'Nordstrom Cafe', category:'Dining', baseAmt:28, freq:0.3, std:10 },
+    { title:'Loft at Nordstrom', category:'Clothing', baseAmt:95, freq:0.4, std:40 },
+  ];
+  for (let d = new Date(startDate); d <= now; d.setDate(d.getDate() + 1)) {
+    const yr = d.getFullYear(), mo = d.getMonth(), day = d.getDate();
+    const dateStr = `${yr}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    // Anniversary sale spike in July-August
+    const nordMult = [6,7].includes(mo) ? 2.2 : [2,3,8,9].includes(mo) ? 1.4 : 1.0;
+    nordstromItems.forEach(m => {
+      if (Math.random() > (m.freq * nordMult)/30) return;
+      let price = m.baseAmt + (Math.random()-0.5)*2*m.std;
+      price = Math.max(9.99, parseFloat(price.toFixed(2)));
+      amzItems.push({ date:dateStr, title:m.title, category:m.category,
+        price, qty:1, total:price,
+        orderId:`NR-${Math.random().toString(36).slice(2,9).toUpperCase()}`,
+        asin:'', source:'Nordstrom Card', purchaser:'Kira' });
+    });
+  }
+
   amzItems.sort((a,b) => new Date(b.date)-new Date(a.date));
 }
 
@@ -2614,7 +3070,7 @@ function showImportResults(fileResults, txnCount, amzCount) {
             <div style="font-size:12px;color:${r.ok?'var(--positive)':'var(--negative)'};">
               ${r.ok
                 ? (r.type==='amazon'
-                    ? `${r.count} Amazon item${r.count===1?'':'s'} ready to review in Amazon Watchlist`
+                    ? `${r.count} Amazon item${r.count===1?'':'s'} ready to review in Detail Lens`
                     : `${r.count.toLocaleString()} transaction${r.count===1?'':'s'} imported`)
                 : (r.reason || 'Forge couldn\'t read this file. Try exporting from Quicken as CSV (File \u2192 Export \u2192 Transactions) and drop the new file here.')}
             </div>
@@ -2661,7 +3117,7 @@ function parseCSV(text, fname) {
   };
   const dateC = col('date','transaction date','trans date','posted date','post date','value date');
   const payeeC= col('payee','description','merchant','name','memo','narrative','details');
-  const amtC  = col('amount','transaction amount','value','debit/credit','net amount','withdrawal','deposit');
+  const amtC  = col('amount','transaction amount','value','debit/credit','debit','credit','net amount','withdrawal','deposit');
   const catC  = col('category','type','transaction type','class');
   const acctC = col('account','account name','account number');
   const memoC = col('memo','notes','note','reference');
@@ -2776,7 +3232,7 @@ function parseAppleCard(text, fname, purchaser) {
   const aIdx = col('amount (usd)','amount');
   const cIdx = col('category','type');
   if (dIdx < 0 || tIdx < 0 || aIdx < 0) return [];
-  const owner = purchaser || fname.replace(/\.csv$/i,'').replace(/[_-]/g,' ').trim() || 'Apple Card';
+  const owner = (purchaser !== undefined && purchaser !== null) ? purchaser : (fname.replace(/\.csv$/i,'').replace(/[_-]/g,' ').trim() || 'Apple Card');
   return lines.slice(1).map(line => {
     const row = splitCSV(line);
     const raw = (row[aIdx]||'').replace(/[",]/g,'').trim();
@@ -2813,7 +3269,7 @@ function parseGenericDetail(text, fname, purchaser) {
   const cIdx = col('category','type','department');
   if (dIdx < 0 || tIdx < 0 || aIdx < 0) return [];
   const srcName = fname.replace(/\.csv$/i,'').replace(/[_-]/g,' ').trim() || 'Detail Import';
-  const owner = purchaser || null;
+  const owner = (purchaser !== undefined) ? purchaser : null;
   return lines.slice(1).map(line => {
     const row = splitCSV(line);
     const raw = (row[aIdx]||'').replace(/[",]/g,'').trim();
@@ -2980,7 +3436,7 @@ function parseDate(s) {
   return null;
 }
 function parseOFXDate(s){if(!s)return null;s=s.replace(/\[.*\]/,'').trim();return s.length>=8?`${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`:null;}
-function guessType(n){n=n.toLowerCase();if(n.includes('check'))return'checking';if(n.includes('sav'))return'savings';if(n.includes('visa')||n.includes('credit')||n.includes('card')||n.includes('amex')||n.includes('mc'))return'credit';if(n.includes('invest')||n.includes('401')||n.includes('ira'))return'investment';return'other';}
+function guessType(n){n=n.toLowerCase();if(n.includes('check'))return'checking';if(n.includes('sav'))return'savings';if(n.includes('visa')||n.includes('credit')||n.includes('card')||n.includes('amex')||n.includes('mc'))return'credit';if(n.includes('invest')||n.includes('401')||n.includes('ira')||n.includes('brokerage')||n.includes('roth'))return'investment';return'other';}
 
 // ════════════════════════════════════════════════════
 // HELPERS
@@ -3021,7 +3477,7 @@ function scoreImpulse(item){
   const total = item.total||0;
   const qty   = item.qty||1;
   if(IMPULSE_CATS&&IMPULSE_CATS.has(item.category))s+=30;
-  if(total<15)s+=25;else if(total<30)s+=15;
+  if(total>0&&total<15)s+=25;else if(total>=15&&total<30)s+=15;
   if(qty>=3&&total<50)s+=15;
   if(ttl.includes('pack')||ttl.includes('bundle')||ttl.includes('variety'))s+=10;
   return Math.min(s,100);
@@ -3032,6 +3488,466 @@ function impulseBadge(sc){
   if(sc>=30)return{lbl:'🟡 Med',cls:'imp-md'};
   return{lbl:'🟢 Low',cls:'imp-lo'};
 }
+
+
+// ════════════════════════════════════════════════════════════
+// ANALYTICS STUDIO — $kenes Self-Service BI
+// ════════════════════════════════════════════════════════════
+
+let anaChartType = 'bar';
+let anaChart = null, anaMiniStackChart = null, anaMiniDonutChart = null, anaMiniDowChart = null, anaMiniPurchaserChart = null;
+let anaTableVisible = false;
+let anaDataCache = null;
+
+// ── Helpers ──────────────────────────────────────────────────
+function getAnaRange() {
+  const v = document.getElementById('ana-range')?.value || '1y';
+  const now = new Date();
+  if (v === '3m') return new Date(now.getFullYear(), now.getMonth()-2, 1);
+  if (v === '6m') return new Date(now.getFullYear(), now.getMonth()-5, 1);
+  if (v === '1y') return new Date(now.getFullYear()-1, now.getMonth()+1, 1);
+  if (v === '2y') return new Date(now.getFullYear()-2, now.getMonth()+1, 1);
+  return new Date('2000-01-01');
+}
+
+function getAnaFiltered() {
+  const since = getAnaRange();
+  const catF = document.getElementById('ana-cat-filter')?.value || 'all';
+  const acctF = document.getElementById('ana-acct-filter')?.value || 'all';
+  let t = txns.filter(tx => new Date(tx.date) >= since && tx.amount < 0);
+  if (catF !== 'all') t = t.filter(tx => tx.category === catF);
+  if (acctF !== 'all') t = t.filter(tx => tx.account === acctF);
+  return t;
+}
+
+function getAnaAllFiltered() {
+  const since = getAnaRange();
+  const catF = document.getElementById('ana-cat-filter')?.value || 'all';
+  const acctF = document.getElementById('ana-acct-filter')?.value || 'all';
+  let t = txns.filter(tx => new Date(tx.date) >= since);
+  if (catF !== 'all') t = t.filter(tx => tx.category === catF);
+  if (acctF !== 'all') t = t.filter(tx => tx.account === acctF);
+  return t;
+}
+
+function setAnaChart(type, btn) {
+  anaChartType = type;
+  document.querySelectorAll('.ana-ct').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAnalytics();
+}
+
+function toggleAnaTable() {
+  const el = document.getElementById('ana-data-table');
+  anaTableVisible = !anaTableVisible;
+  el.style.display = anaTableVisible ? 'block' : 'none';
+  document.getElementById('ana-table-btn').textContent = anaTableVisible ? '✕ Data' : '⊞ Data';
+}
+
+function exportAnaChart() {
+  const canvas = document.getElementById('anaMainChart');
+  if (!canvas) return;
+  const a = document.createElement('a');
+  a.download = 'forge-analytics.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+function destroyAnaCharts() {
+  [anaChart, anaMiniStackChart, anaMiniDonutChart, anaMiniDowChart, anaMiniPurchaserChart].forEach(c => {
+    try { if(c) c.destroy(); } catch(e) {}
+  });
+  anaChart = anaMiniStackChart = anaMiniDonutChart = anaMiniDowChart = anaMiniPurchaserChart = null;
+}
+
+// ── Dimension grouping ────────────────────────────────────────
+function groupByDimension(txns, dim) {
+  const groups = {};
+  txns.forEach(t => {
+    let key;
+    const d = new Date(t.date);
+    if (dim === 'month')     key = t.date.slice(0,7);
+    else if (dim === 'quarter') {
+      const q = Math.floor(d.getMonth()/3)+1;
+      key = `${d.getFullYear()} Q${q}`;
+    }
+    else if (dim === 'year')       key = String(d.getFullYear());
+    else if (dim === 'category')   key = t.category || 'Uncategorized';
+    else if (dim === 'account')    key = t.account || 'Unknown';
+    else if (dim === 'purchaser')  key = inferTxnOwner(t) || 'Shared';
+    else if (dim === 'source')     key = t.account || 'Unknown';
+    else if (dim === 'dayofweek')  key = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+    else key = t.category;
+    if (!groups[key]) groups[key] = { exp:0, inc:0, count:0, amounts:[] };
+    if (t.amount < 0) { groups[key].exp += Math.abs(t.amount); groups[key].count++; groups[key].amounts.push(Math.abs(t.amount)); }
+    else groups[key].inc += t.amount;
+  });
+  return groups;
+}
+
+function computeMetric(group, metric) {
+  if (metric === 'spending')     return group.exp;
+  if (metric === 'income')       return group.inc;
+  if (metric === 'net')          return group.inc - group.exp;
+  if (metric === 'txncount')     return group.count;
+  if (metric === 'avg')          return group.count > 0 ? group.exp/group.count : 0;
+  if (metric === 'savings_rate') return (group.inc + group.exp) > 0 ? ((group.inc-group.exp)/group.inc*100) : 0;
+  return group.exp;
+}
+
+// ── Populate filter dropdowns ─────────────────────────────────
+function populateAnaFilters() {
+  const cats = [...new Set(txns.map(t=>t.category))].sort();
+  const catEl = document.getElementById('ana-cat-filter');
+  if (catEl) catEl.innerHTML = '<option value="all">All Categories</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const accts = [...new Set(txns.map(t=>t.account))].sort();
+  const acctEl = document.getElementById('ana-acct-filter');
+  if (acctEl) acctEl.innerHTML = '<option value="all">All Accounts</option>' + accts.map(a=>`<option value="${a}">${a}</option>`).join('');
+  const total = txns.filter(t=>t.amount<0).length;
+  const span = document.getElementById('ana-scope-label');
+  if (span) span.textContent = `${txns.length.toLocaleString()} txns · ${accounts.length} accounts`;
+}
+
+// ── Main analytics renderer ───────────────────────────────────
+function renderAnalytics() {
+  if (!txns.length) return;
+  destroyAnaCharts();
+  populateAnaFilters();
+
+  const dim    = document.getElementById('ana-dim')?.value || 'month';
+  const metric = document.getElementById('ana-metric')?.value || 'spending';
+  const filtered = getAnaAllFiltered();
+  const groups = groupByDimension(filtered, dim);
+
+  // Sort keys
+  let keys = Object.keys(groups);
+  if (dim === 'month' || dim === 'quarter' || dim === 'year') keys.sort();
+  else if (dim === 'dayofweek') keys = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].filter(k=>keys.includes(k));
+  else keys.sort((a,b) => computeMetric(groups[b],metric) - computeMetric(groups[a],metric));
+
+  const values = keys.map(k => parseFloat(computeMetric(groups[k], metric).toFixed(2)));
+  const isNegativeOk = metric === 'net' || metric === 'savings_rate';
+  const palette = CAT_COLORS;
+
+  // Build title/sub
+  const dimLabels = { month:'Month', category:'Category', account:'Account', purchaser:'Person', source:'Source', dayofweek:'Day of Week', quarter:'Quarter', year:'Year' };
+  const metLabels = { spending:'Total Spending', income:'Total Income', net:'Net Savings', txncount:'Transaction Count', avg:'Avg Transaction', savings_rate:'Savings Rate %' };
+  const rangeEl = document.getElementById('ana-range');
+  const rLabel = rangeEl?.options[rangeEl.selectedIndex]?.text || 'Period';
+  document.getElementById('ana-chart-title').textContent = `${metLabels[metric]} by ${dimLabels[dim]}`;
+  document.getElementById('ana-chart-sub').textContent = `${rLabel} · ${document.getElementById('ana-cat-filter')?.value === 'all' ? 'all categories' : document.getElementById('ana-cat-filter').value} · ${document.getElementById('ana-acct-filter')?.value === 'all' ? 'all accounts' : document.getElementById('ana-acct-filter').value}`;
+
+  // Cache for table
+  anaDataCache = { keys, values, metric, dim };
+
+  // ── Render KPI insights ────────────────────────────────────
+  const nonZero = values.filter(v => v !== 0);
+  const total   = nonZero.reduce((a,b)=>a+b, 0);
+  const avg     = nonZero.length ? total/nonZero.length : 0;
+  const max     = nonZero.length ? Math.max(...nonZero) : 0;
+  const maxKey  = keys[values.indexOf(max)] || '—';
+  const min     = nonZero.length ? Math.min(...nonZero) : 0;
+  const minKey  = keys[values.indexOf(min)] || '—';
+  const isCurr  = metric === 'savings_rate' || metric === 'txncount';
+  const fv = v => isCurr ? (metric === 'savings_rate' ? v.toFixed(1)+'%' : v.toLocaleString()) : fmt(v);
+
+  document.getElementById('ana-insights').innerHTML = [
+    { lbl:'Total', val:fv(total), delta: nonZero.length + ' ' + (dim==='month'?'months':dim+'s') },
+    { lbl:'Average', val:fv(avg), delta: 'per ' + (dim==='dayofweek'?'day':dim) },
+    { lbl: metric==='spending'||metric==='income'?'Highest':'Best', val: fv(max), delta: maxKey, cls: metric==='net'||metric==='savings_rate' ? 'dn' : '' },
+  ].map(c=>`<div class="ana-insight"><div class="ana-insight-lbl">${c.lbl}</div><div class="ana-insight-val">${c.val}</div><div class="ana-insight-delta ${c.cls||''}">${c.delta}</div></div>`).join('');
+
+  // ── Show/hide canvas vs heatmap ────────────────────────────
+  const canvas = document.getElementById('anaMainChart');
+  const heatWrap = document.getElementById('ana-heatmap-wrap');
+  if (anaChartType === 'heatmap') {
+    canvas.style.display = 'none';
+    heatWrap.style.display = 'block';
+    renderHeatmap(groups, heatWrap, metric);
+  } else {
+    canvas.style.display = 'block';
+    heatWrap.style.display = 'none';
+    renderMainChart(keys, values, metric, palette, isNegativeOk);
+  }
+
+  // Update table if visible
+  if (anaTableVisible) renderAnaTable(keys, values, groups, metric);
+
+  // ── Secondary charts (always rendered) ────────────────────
+  renderMiniStack(filtered);
+  renderMiniDonut(filtered);
+  renderMiniDow(filtered);
+  renderMiniPurchaser();
+}
+
+// ── Main chart renderer (switches on anaChartType) ────────────
+function renderMainChart(keys, values, metric, palette, isNegativeOk) {
+  const ctx = document.getElementById('anaMainChart')?.getContext('2d');
+  if (!ctx) return;
+  const isMoney = !['txncount','savings_rate'].includes(metric);
+  const yFmt = v => isMoney ? fmtK(v) : (metric==='savings_rate' ? v.toFixed(0)+'%' : v.toLocaleString());
+
+  const positiveColor = 'rgba(245,168,0,.8)';
+  const negColor = 'rgba(248,113,113,.8)';
+  const barColors = values.map((v,i) => {
+    if (isNegativeOk) return v >= 0 ? 'rgba(45,212,191,.8)' : 'rgba(248,113,113,.8)';
+    return palette[i % palette.length] + 'CC';
+  });
+
+  const chartConfigs = {
+    bar: {
+      type: 'bar',
+      data: { labels: keys, datasets: [{ data:values, backgroundColor:barColors, borderRadius:5, borderSkipped:false }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+    },
+    hbar: {
+      type: 'bar',
+      data: { labels: keys.slice().reverse(), datasets:[{ data:values.slice().reverse(), backgroundColor:barColors.slice().reverse(), borderRadius:5, borderSkipped:false }] },
+      options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{callback:yFmt}}} }
+    },
+    line: {
+      type: 'line',
+      data: { labels:keys, datasets:[{ data:values, borderColor:'var(--gold)', backgroundColor:'rgba(245,168,0,.08)', tension:.35, pointRadius:3, pointBackgroundColor:'var(--gold)', fill:false }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+    },
+    area: {
+      type: 'line',
+      data: { labels:keys, datasets:[{ data:values, borderColor:'#60A5FA', backgroundColor:'rgba(96,165,250,.15)', tension:.35, pointRadius:2, fill:true }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+    },
+    donut: {
+      type: 'doughnut',
+      data: { labels:keys, datasets:[{ data:values.map(Math.abs), backgroundColor:palette.slice(0,keys.length).map(c=>c+'CC'), borderWidth:2, borderColor:'rgba(255,255,255,.05)', hoverOffset:8 }] },
+      options: { responsive:true, maintainAspectRatio:false, cutout:'58%', plugins:{ legend:{ position:'right', labels:{ font:{size:10}, boxWidth:10, color:'#9E9890' }}} }
+    },
+    scatter: {
+      type: 'scatter',
+      data: { datasets:[{ data: keys.map((k,i)=>({x:i, y:values[i], label:k})), backgroundColor:palette.slice(0,keys.length).map(c=>c+'CC'), pointRadius:7, pointHoverRadius:10 }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${keys[ctx.parsed.x]}: ${yFmt(ctx.parsed.y)}`}}}, scales:{x:{display:false}, y:{ticks:{callback:yFmt}}} }
+    },
+    waterfall: (() => {
+      // Waterfall: running cumulative with floating bars
+      let running = 0;
+      const wfData = values.map(v => {
+        const start = running;
+        running += v;
+        return { start, end: running, value: v };
+      });
+      const wfColors = wfData.map(d => d.value >= 0 ? 'rgba(45,212,191,.8)' : 'rgba(248,113,113,.8)');
+      return {
+        type: 'bar',
+        data: { labels: keys, datasets:[{ data: wfData.map(d=>[Math.min(d.start,d.end), Math.max(d.start,d.end)]), backgroundColor: wfColors, borderRadius:3, borderSkipped:false }] },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+      };
+    })(),
+  };
+
+  const config = chartConfigs[anaChartType] || chartConfigs.bar;
+  // Shared defaults
+  if (!config.options.plugins) config.options.plugins = {};
+  config.options.animation = { duration: 400 };
+  if (config.options.scales) {
+    Object.values(config.options.scales).forEach(ax => {
+      ax.grid = ax.grid || { color:'rgba(255,255,255,.04)' };
+      if (ax.ticks) ax.ticks.color = '#6E6A65';
+    });
+  }
+
+  try { anaChart = new Chart(ctx, config); } catch(e) { console.warn('ana chart:', e); }
+}
+
+// ── Heatmap renderer (month × day-of-week) ───────────────────
+function renderHeatmap(groups, wrap, metric) {
+  const since = getAnaRange();
+  const filtered = getAnaAllFiltered().filter(t => t.amount < 0);
+  // Build month × weekday grid
+  const months = [...new Set(filtered.map(t=>t.date.slice(0,7)))].sort().slice(-12);
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const grid = {};
+  months.forEach(m => { grid[m] = {}; days.forEach(d => grid[m][d] = 0); });
+  filtered.forEach(t => {
+    const m = t.date.slice(0,7);
+    if (!grid[m]) return;
+    const dn = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(t.date).getDay()];
+    grid[m][dn] = (grid[m][dn] || 0) + Math.abs(t.amount);
+  });
+  const vals = months.flatMap(m => days.map(d => grid[m][d]||0));
+  const maxVal = Math.max(...vals, 1);
+
+  wrap.innerHTML = `
+    <div style="overflow-x:auto;">
+      <table style="border-collapse:collapse;width:100%;font-size:10px;font-family:var(--font-m);">
+        <thead>
+          <tr>
+            <th style="padding:4px 8px;color:var(--ink4);text-align:left;width:60px;">Month</th>
+            ${days.map(d=>`<th style="padding:4px 6px;color:var(--ink4);text-align:center;">${d}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${months.map(m => `
+            <tr>
+              <td style="padding:4px 8px;color:var(--ink3);">${m}</td>
+              ${days.map(d => {
+                const v = grid[m][d]||0;
+                const pct = v/maxVal;
+                const alpha = Math.round(pct * 200);
+                const bg = v > 0 ? `rgba(245,168,0,${(pct*0.7+0.05).toFixed(2)})` : 'var(--lift)';
+                return `<td style="padding:3px 4px;text-align:center;"><div style="background:${bg};border-radius:3px;padding:5px 2px;color:${pct>0.5?'#000':'var(--ink4)'};">${v>0?fmtK(v):''}</div></td>`;
+              }).join('')}
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ── Secondary mini charts ─────────────────────────────────────
+function renderMiniStack(filtered) {
+  const ctx = document.getElementById('anaMiniStack')?.getContext('2d');
+  if (!ctx) return;
+  // Last 12 months income vs spending stacked
+  const since = new Date(); since.setFullYear(since.getFullYear()-1);
+  const mos = [];
+  for (let i=11; i>=0; i--) {
+    const d = new Date(); d.setMonth(d.getMonth()-i);
+    mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  }
+  const inc = mos.map(m => txns.filter(t=>t.date.startsWith(m)&&t.amount>0).reduce((s,t)=>s+t.amount,0));
+  const exp = mos.map(m => txns.filter(t=>t.date.startsWith(m)&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0));
+  try {
+    anaMiniStackChart = new Chart(ctx, {
+      type:'bar',
+      data:{ labels:mos.map(m=>m.slice(5)), datasets:[
+        { label:'Income', data:inc, backgroundColor:'rgba(45,212,191,.7)', borderRadius:3, stack:'a' },
+        { label:'Spending', data:exp, backgroundColor:'rgba(248,113,113,.6)', borderRadius:3, stack:'b' }
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false, animation:{duration:300},
+        plugins:{legend:{labels:{font:{size:9},boxWidth:10,color:'#9E9890'}}},
+        scales:{y:{ticks:{callback:v=>fmtK(v),color:'#6E6A65'},grid:{color:'rgba(255,255,255,.04)'}},
+                x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
+      }
+    });
+  } catch(e) {}
+}
+
+function renderMiniDonut(filtered) {
+  const ctx = document.getElementById('anaMiniDonut')?.getContext('2d');
+  if (!ctx) return;
+  const cats = {};
+  filtered.filter(t=>t.amount<0).forEach(t=>cats[t.category]=(cats[t.category]||0)+Math.abs(t.amount));
+  const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  try {
+    anaMiniDonutChart = new Chart(ctx, {
+      type:'doughnut',
+      data:{ labels:sorted.map(([c])=>c), datasets:[{ data:sorted.map(([,v])=>v), backgroundColor:CAT_COLORS.slice(0,8).map(c=>c+'CC'), borderWidth:1, borderColor:'rgba(255,255,255,.05)' }] },
+      options:{ responsive:true, maintainAspectRatio:false, animation:{duration:300}, cutout:'50%',
+        plugins:{legend:{position:'right', labels:{font:{size:9},boxWidth:8,color:'#9E9890',padding:4}}}
+      }
+    });
+  } catch(e) {}
+}
+
+function renderMiniDow(filtered) {
+  const ctx = document.getElementById('anaMiniDow')?.getContext('2d');
+  if (!ctx) return;
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const totals = Object.fromEntries(days.map(d=>[d,0]));
+  const counts = Object.fromEntries(days.map(d=>[d,0]));
+  filtered.filter(t=>t.amount<0).forEach(t=>{
+    const dn = days[([0,6,1,2,3,4,5])[new Date(t.date).getDay()]];
+    totals[dn]=(totals[dn]||0)+Math.abs(t.amount); counts[dn]=(counts[dn]||0)+1;
+  });
+  const avgs = days.map(d=>counts[d]>0?parseFloat((totals[d]/counts[d]).toFixed(2)):0);
+  try {
+    anaMiniDowChart = new Chart(ctx, {
+      type:'bar',
+      data:{ labels:days, datasets:[{ data:avgs, backgroundColor:days.map((_,i)=>CAT_COLORS[i]+'CC'), borderRadius:4, borderSkipped:false }] },
+      options:{ responsive:true, maintainAspectRatio:false, animation:{duration:300},
+        plugins:{legend:{display:false}},
+        scales:{y:{ticks:{callback:v=>fmtK(v),color:'#6E6A65'},grid:{color:'rgba(255,255,255,.04)'}},
+                x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
+      }
+    });
+  } catch(e) {}
+}
+
+function renderMiniPurchaser() {
+  const ctx = document.getElementById('anaMiniPurchaser')?.getContext('2d');
+  if (!ctx) return;
+  // Combine Quicken account owners + detail file purchasers
+  const people = [...new Set([...Object.values(settings.accountOwners||{}), ...amzItems.map(i=>i.purchaser).filter(Boolean)])];
+  if (!people.length) {
+    // Show source breakdown instead
+    document.getElementById('ana-mini-purchaser-title').textContent = 'Detail Spend by Source';
+    const srcs = {};
+    amzItems.forEach(i=>srcs[i.source||'Amazon']=(srcs[i.source||'Amazon']||0)+i.total);
+    const sorted = Object.entries(srcs).sort((a,b)=>b[1]-a[1]);
+    try {
+      anaMiniPurchaserChart = new Chart(ctx, {
+        type:'doughnut',
+        data:{ labels:sorted.map(([s])=>s), datasets:[{ data:sorted.map(([,v])=>v), backgroundColor:['rgba(245,168,0,.8)','rgba(167,139,250,.8)','rgba(96,165,250,.8)','rgba(45,212,191,.8)'], borderWidth:1 }] },
+        options:{ responsive:true, maintainAspectRatio:false, animation:{duration:300}, cutout:'50%',
+          plugins:{legend:{position:'right', labels:{font:{size:9},boxWidth:8,color:'#9E9890'}}}
+        }
+      });
+    } catch(e) {}
+    return;
+  }
+  document.getElementById('ana-mini-purchaser-title').textContent = 'Spending by Person';
+  const since = getAnaRange();
+  const pData = people.map(p => {
+    // Quicken spending via accountOwners
+    const ownedAccts = Object.entries(settings.accountOwners||{}).filter(([,v])=>v===p).map(([k])=>k);
+    const qkn = Math.abs(txns.filter(t=>new Date(t.date)>=since&&t.amount<0&&ownedAccts.includes(t.account)).reduce((s,t)=>s+t.amount,0));
+    // Detail spending
+    const det = amzItems.filter(i=>i.purchaser===p&&new Date(i.date)>=since).reduce((s,i)=>s+i.total,0);
+    return { p, total: qkn + det, qkn, det };
+  }).sort((a,b)=>b.total-a.total);
+
+  try {
+    anaMiniPurchaserChart = new Chart(ctx, {
+      type:'bar',
+      data:{ labels:pData.map(d=>d.p), datasets:[
+        { label:'Quicken', data:pData.map(d=>d.qkn), backgroundColor:'rgba(245,168,0,.75)', borderRadius:4, stack:'a' },
+        { label:'Detail', data:pData.map(d=>d.det), backgroundColor:'rgba(167,139,250,.75)', borderRadius:4, stack:'a' },
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false, animation:{duration:300},
+        plugins:{legend:{labels:{font:{size:9},boxWidth:10,color:'#9E9890'}}},
+        scales:{y:{ticks:{callback:v=>fmtK(v),color:'#6E6A65'},grid:{color:'rgba(255,255,255,.04)'}},
+                x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
+      }
+    });
+  } catch(e) {}
+}
+
+// ── Data table ───────────────────────────────────────────────
+function renderAnaTable(keys, values, groups, metric) {
+  const isMoney = !['txncount','savings_rate'].includes(metric);
+  const fv = v => isMoney ? fmt(v) : (metric==='savings_rate' ? v.toFixed(1)+'%' : v.toLocaleString());
+  const total = values.reduce((a,b)=>a+b,0);
+
+  document.getElementById('ana-tbl-head').innerHTML = `<tr style="background:var(--lift);">
+    <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink4);font-weight:600;letter-spacing:.06em;">Label</th>
+    <th style="padding:10px 14px;text-align:right;font-size:11px;color:var(--ink4);font-weight:600;letter-spacing:.06em;">Value</th>
+    <th style="padding:10px 14px;text-align:right;font-size:11px;color:var(--ink4);font-weight:600;letter-spacing:.06em;">Share</th>
+    <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink4);font-weight:600;letter-spacing:.06em;">Bar</th>
+  </tr>`;
+
+  const maxV = Math.max(...values.map(Math.abs), 1);
+  document.getElementById('ana-tbl-body').innerHTML = keys.map((k,i) => {
+    const v = values[i];
+    const pct = total !== 0 ? (v/total*100).toFixed(1) : '0.0';
+    const barW = Math.round(Math.abs(v)/maxV*120);
+    const barColor = v >= 0 ? 'rgba(245,168,0,.6)' : 'rgba(248,113,113,.6)';
+    return `<tr style="border-bottom:1px solid var(--line);">
+      <td style="padding:9px 14px;font-size:12px;color:var(--ink2);">${k}</td>
+      <td style="padding:9px 14px;text-align:right;font-family:var(--font-m);font-size:12px;color:var(--ink);font-weight:600;">${fv(v)}</td>
+      <td style="padding:9px 14px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">${pct}%</td>
+      <td style="padding:9px 14px;"><div style="height:8px;width:${barW}px;background:${barColor};border-radius:3px;"></div></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('ana-tbl-title').textContent = `${keys.length} rows · sorted by value`;
+}
+
 
 // ════════════════════════════════════════════════════
 // INIT APP
@@ -3044,7 +3960,7 @@ function initApp() {
   document.getElementById('clearBtn').style.display='inline-flex';
   document.getElementById('demoTag').style.display=isDemoMode?'inline-flex':'none';
   const dates=txns.map(t=>t.date).sort();
-  const amzPart=amzItems.length?` · 📦 ${amzItems.length.toLocaleString()} amz`:'';
+  const amzSrcs=[...new Set(amzItems.map(i=>i.source||'Detail'))]; const amzPart=amzItems.length?` · 🔍 ${amzItems.length.toLocaleString()} ${amzSrcs.length===1?amzSrcs[0]:'detail'}`:'';
   document.getElementById('hdrInfo').textContent=`${txns.length.toLocaleString()} txns${amzPart}`;
   const dashSub=document.getElementById('dashSub');
   if(dashSub&&settings.user1) dashSub.textContent=`${settings.user1}'s financial picture · The Gauge`;
@@ -3118,6 +4034,7 @@ function showPage(name) {
   if(name==='merchants'&&txns.length)renderMch();
   if(name==='amazon')renderAmazon();
   if(name==='transactions'&&txns.length)renderTxns();
+  if(name==='analytics'&&txns.length){ loadSettings(); renderAnalytics(); }
   if(name==='dashboard'&&isDemoMode)document.getElementById('demoBanner').style.display='flex';
 }
 
@@ -3644,7 +4561,12 @@ function renderAmazon() {
   if(!has)return;
   const total=amzItems.reduce((s,i)=>s+i.total,0);
   const orders=[...new Set(amzItems.map(i=>i.orderId).filter(Boolean))];
-  document.getElementById('amzMeta').textContent=`${amzItems.length.toLocaleString()} items · ${orders.length||'?'} orders · ${amzItems[amzItems.length-1]?.date||''} – ${amzItems[0]?.date||''}`;
+  document.getElementById('amzMeta').textContent=(()=>{
+    const srcs=[...new Set(amzItems.map(i=>i.source||'Amazon'))].join(' · ');
+    const ppl=[...new Set(amzItems.map(i=>i.purchaser).filter(Boolean))];
+    const pStr=ppl.length?' · '+ppl.join(', '):'';
+    return `${amzItems.length.toLocaleString()} line items · ${srcs}${pStr} · ${amzItems[amzItems.length-1]?.date||''} – ${amzItems[0]?.date||''}`;
+  })();
   document.getElementById('amzBig').textContent=fmtK(total);
 
   const months=[...new Set(amzItems.map(i=>i.date.slice(0,7)))].length||1;
@@ -3711,12 +4633,12 @@ function renderAmazon() {
     const totalAll=Object.values(allByMo).reduce((a,b)=>a+b,0);
     const pct=totalAll>0?(totalAmz/totalAll*100).toFixed(1):0;
     document.getElementById('amzCmpCards').innerHTML=`
-      <div class="card card-al gold"><div class="card-lbl">Amazon Total</div><div class="card-val">${fmtK(totalAmz)}</div><div class="card-sub">${pct}% of all expenses</div></div>
-      <div class="card card-al b"><div class="card-lbl">All Other</div><div class="card-val">${fmtK(totalAll-totalAmz)}</div><div class="card-sub">${(100-parseFloat(pct)).toFixed(1)}% of expenses</div></div>
-      <div class="card card-al"><div class="card-lbl">Amazon Share</div><div class="card-val">${pct}%</div><div class="card-sub" style="margin-top:8px;"><div style="height:8px;border-radius:4px;background:var(--lift);overflow:hidden;display:flex;"><div style="width:${pct}%;background:#ff9900;"></div><div style="flex:1;background:var(--river);"></div></div></div></div>
+      <div class="card card-al gold"><div class="card-lbl">Detail Total</div><div class="card-val">${fmtK(totalAmz)}</div><div class="card-sub">${pct}% of all spending</div></div>
+      <div class="card card-al b"><div class="card-lbl">All Other</div><div class="card-val">${fmtK(totalAll-totalAmz)}</div><div class="card-sub">${(100-parseFloat(pct)).toFixed(1)}% of spending</div></div>
+      <div class="card card-al"><div class="card-lbl">Detail Share</div><div class="card-val">${pct}%</div><div class="card-sub" style="margin-top:8px;"><div style="height:8px;border-radius:4px;background:var(--lift);overflow:hidden;display:flex;"><div style="width:${pct}%;background:#ff9900;"></div><div style="flex:1;background:var(--river);"></div></div></div></div>
     `;
     destroyChart('amzCmpChart');
-    charts['amzCmpChart']=new Chart(document.getElementById('amzCmpChart'),{type:'bar',data:{labels:allMos.map(monthLabel),datasets:[{label:'Amazon',data:amzVals,backgroundColor:'rgba(255,153,0,.8)',borderRadius:4,stack:'a'},{label:'Other',data:otherVals,backgroundColor:'rgba(47,107,200,.6)',borderRadius:4,stack:'a'}]},options:{responsive:true,scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)}},x:{stacked:true}}}});
+    charts['amzCmpChart']=new Chart(document.getElementById('amzCmpChart'),{type:'bar',data:{labels:allMos.map(monthLabel),datasets:[{label:'Detail',data:amzVals,backgroundColor:'rgba(255,153,0,.8)',borderRadius:4,stack:'a'},{label:'Other Spending',data:otherVals,backgroundColor:'rgba(47,107,200,.6)',borderRadius:4,stack:'a'}]},options:{responsive:true,scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)}},x:{stacked:true}}}});
     destroyChart('amzPctChart');
     charts['amzPctChart']=new Chart(document.getElementById('amzPctChart'),{type:'line',data:{labels:allMos.map(monthLabel),datasets:[{data:pctVals,borderColor:'#ff9900',backgroundColor:'rgba(255,153,0,.1)',fill:true,tension:.3,pointRadius:2}]},options:{responsive:true,scales:{y:{ticks:{callback:v=>v+'%'},max:100}}}});
   }

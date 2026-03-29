@@ -1,184 +1,169 @@
 # Forge Import Guide
 
-Everything you need to get your Quicken data into Forge — first time and every month after.
+One drop zone. Any file. Forge figures out the rest.
 
 ---
 
-## The Two Workflows
+## How It Works
 
-| When | What to do |
-|------|-----------|
-| **First time** | Export your full history — as many years as Quicken has |
-| **Every month** | Export the last 30–60 days and drop it in |
+Drop any file — Quicken export, Amazon order history, Apple Card statement, or any itemized CSV — onto the single import zone in The Pour. Forge reads the first line of each file to detect what format it is, routes it to the right parser, and processes everything in one pass. You can drop multiple files at once.
 
-Forge deduplicates automatically. You cannot create duplicate transactions by importing a file twice or overlapping date ranges.
+| What you drop | How Forge detects it | What it becomes |
+|---------------|---------------------|-----------------|
+| Quicken CSV | `payee`, `account`, `amount` columns | Ledger transactions |
+| Quicken QIF | `.qif` extension | Ledger transactions |
+| Quicken QFX / OFX | `.qfx` / `.ofx` extension | Ledger transactions |
+| Amazon order history | `asin`, `product name`, or `order id` + `quantity` columns | Detail Lens items |
+| Apple Card statement | `clearing date` or `amount (usd)` column | Detail Lens items |
+| Any other itemized CSV | Date + description + amount (Forge tries) | Detail Lens items |
 
----
-
-## First-Time Setup: Full History Export
-
-This is a one-time step. The more history you give Forge, the more accurate its trend analysis, seasonal patterns, and year-over-year comparisons become. Do this once, then switch to the monthly routine.
-
-### Step 1 — Export from Quicken
-
-1. Open Quicken on your computer and sign in
-2. In the menu bar, click **File → Export → Transactions to QIF**
-   - If you don't see this exact option, look for **File → Export → Transactions**
-3. In the export dialog:
-   - **Accounts:** Select **All Accounts** — not just one account
-   - **Date range:** Set the start date as far back as Quicken will allow (ideally 2017 or earlier)
-   - **File type:** Save as **CSV** or **QIF** — both are supported
-4. Click **Save** — Quicken creates the file on your computer
-
-### Step 2 — Import into Forge
-
-1. In Forge, click **+ The Pour** in the left navigation
-2. Drag your exported file onto the **Quicken drop zone** (the left drop zone on The Pour page)
-   - The zone turns **gold** as you hold the file over it
-   - It flashes **green** with a ✓ when the file is accepted
-   - The file appears in the queue below the drop zone
-3. Click **Begin Forging**
-4. A progress bar shows the import in progress
-5. The **Import Results** panel shows what was imported, with a count of new transactions
-6. After a successful import, Forge navigates to The Gauge (Dashboard) automatically
-
-### What to Expect
-
-- A full 5-year history from Quicken typically imports 10,000–30,000 transactions
-- Import time: 5–30 seconds depending on file size
-- Forge automatically creates accounts based on the account names in your Quicken file
-- Categories and payee names come directly from your Quicken data — nothing is remapped
+Deduplication is automatic across all types. Re-importing any file already in the ledger adds nothing.
 
 ---
 
-## Monthly Routine (2 minutes)
+## Quicken Export — First Time (Full History)
 
-After your initial import, do this on the 1st of every month.
+Export everything going back as far as Quicken will allow. The more history Forge has, the more accurate its seasonal patterns, trend baselines, and year-over-year comparisons become. Do this once, then switch to the monthly routine.
 
-1. Open Quicken → **File → Export → Transactions**
-2. Set the date range to **Last 30–60 days**, All Accounts, save as CSV
-3. In Forge, go to **The Pour** and drop the file onto the Quicken drop zone
-4. Click **Begin Forging**
-5. Done — Forge merges the new transactions with your existing history
+### Mac
 
-> **Tip:** Export 60 days instead of 30 to catch any late-posting transactions. Forge skips anything already in the ledger.
+1. Open Quicken and sign in
+2. In the **left sidebar**, click **All Transactions** — shows every account together
+3. Clear any date filters so the full history is visible
+4. **File → Export → Register Transactions to CSV File**
+5. Choose **Export: All visible transactions** · uncheck Scheduled Transactions · **Save**
+6. Drop the file in The Pour → **Begin Forging**
+
+### Windows
+
+1. Open Quicken and sign in
+2. **Reports → Banking → Transaction**
+3. Set **Accounts: All Accounts** · date range from your earliest date through today
+4. Run the report
+5. Click the **Export icon** (green arrow at top) → **Export to CSV File**
+6. Drop the file in The Pour → **Begin Forging**
+
+### Fallback — Account by Account
+
+Export each account individually (gear icon → Export to Excel workbook) and drop all the files at once. Forge merges them automatically.
+
+> ⚠️ **Do not use** *File → Export → Quicken Transfer Format (.qxf)* — that file moves Quicken between computers and cannot be imported here.
+
+---
+
+## Monthly Routine (2–3 Minutes)
+
+Same export path, just change the date range to Last 30–60 days, All Accounts. Then add any detail files for the same period — Amazon orders, Apple Card statement — and drop everything at once. Forge handles the rest.
+
+---
+
+## Detail Files — Line-Item Enrichment
+
+Detail files unmask the lump-sum charges in your Quicken register. "Amazon.com — $147.32" becomes 14 individual line items. "Apple Card — $89.00" becomes the specific merchant. Drop detail files in the same zone as your Quicken export — Forge auto-detects and routes them correctly.
+
+### Amazon Order History
+
+Amazon changed their export in 2023 — you must request the file and wait for an email.
+
+1. On a **desktop browser**, go to amazon.com and sign in (the mobile app cannot do this)
+2. **Account & Lists → Account → Manage your data → Request your data**
+3. Select **Your Orders** → submit
+4. Amazon sends a confirmation email immediately — **click the link to confirm**
+5. Wait for a second email with the download link (usually a few hours, up to 24)
+6. Download the ZIP file · unzip · open the **Your Orders** folder
+7. Use the file named **`Retail.OrderHistory.1.csv`**
+8. Drop it in The Pour with your other files
+
+### Apple Card Monthly Statement
+
+1. Open **Wallet** on iPhone
+2. Tap **Apple Card**
+3. Scroll down · tap any month's statement
+4. Tap **Export Transactions** (or the share icon) → saves as CSV
+5. Transfer the file to your computer and drop it in The Pour
+
+### Other Sources — Any Itemized CSV
+
+PayPal activity exports, Venmo transaction history, Costco purchase history, store loyalty exports — anything with Date, Description, and Amount columns. Drop it in. If Forge can read it, it will. If it can't, the import result panel tells you exactly what was missing.
+
+---
+
+## Purchaser Attribution — Who Bought What
+
+Include a family member's first name in the filename to attribute every item in that file to that person:
+
+| Filename | Who gets credited |
+|----------|------------------|
+| `amazon_chris.csv` | Chris |
+| `applecard_kira.csv` | Kira |
+| `orders_sam.csv` | Sam |
+| `amazon.csv` | Unattributed (shared) |
+
+Forge checks the filename against the full family member list from Settings (user1, user2, and every kid). The match is case-insensitive. This works for any file type — Amazon, Apple Card, or generic.
+
+For Quicken accounts, go to **Settings → Account Owners** to map each account to the person who primarily uses it.
+
+Once attribution is configured, the Detail Lens By Purchaser tab shows individual spending cards, impulse rates, monthly projections, and category acceleration warnings per person.
 
 ---
 
 ## Supported File Formats
 
+### Quicken formats (drop in the unified zone)
+
 | Format | Extension | Notes |
 |--------|-----------|-------|
-| Comma-separated values | `.csv` | Most reliable. Use this if Quicken offers a choice. |
-| Quicken Interchange Format | `.qif` | Also reliable. Preserves account structure well. |
-| Quicken Financial Exchange | `.qfx` | OFX format. Works but sometimes exports empty from newer Quicken versions. |
-| Open Financial Exchange | `.ofx` | Same as QFX. |
+| Comma-separated values | `.csv` | Most reliable |
+| Quicken Interchange Format | `.qif` | Also reliable |
+| Quicken Financial Exchange | `.qfx` | May export empty in newer Quicken |
+| Open Financial Exchange | `.ofx` | Same as QFX |
 
-### ⚠️ The File You Must NOT Use
+### Detail Enrichment (also in the same drop zone)
 
-**File → Export → Quicken Transfer Format (.qxf)** — this is the wrong export.
-
-`.qxf` is used to move your entire Quicken installation to a new computer. It is an encrypted binary file with no readable transaction data inside. Forge detects this file and tells you exactly what to do instead.
-
-The correct path is always: **File → Export → Transactions** (not "Transfer Format").
-
----
-
-## CSV Column Requirements
-
-If you export as CSV, Forge looks for these columns (case-insensitive, flexible naming):
-
-| Column | Accepted Names |
-|--------|---------------|
-| Date | `date`, `transaction date`, `trans date`, `posted date`, `post date`, `value date` |
-| Payee | `payee`, `description`, `merchant`, `name`, `memo`, `narrative`, `details` |
-| Amount | `amount`, `transaction amount`, `value`, `debit/credit`, `net amount`, `withdrawal`, `deposit` |
-| Category | `category`, `type`, `transaction type`, `class` (optional) |
-| Account | `account`, `account name`, `account number` (optional) |
-
-If the Account column is missing, Forge uses the filename as the account name.
+| Format | How Forge detects it |
+|--------|---------------------|
+| Amazon order history | `asin` column, or `product name` + `order id` + `quantity` columns, or `retail.orderhistory` in filename |
+| Apple Card statement | `clearing date` column, or `amount (usd)` column, or `apple`/`applecard` in filename |
+| Generic enrichment | Date + description + amount columns — Forge tries; if it reads >0 rows, it worked |
 
 ---
 
-## Amazon Order History
+## Troubleshooting
 
-Forge can analyze your Amazon spending for impulse-buy patterns, category trends, and repeat purchases. This is optional — all other features work without it.
+### "0 transactions imported" from Quicken
 
-Amazon changed their export process in 2023. You cannot download order history directly — you must request it and wait for an email.
+Most common cause: single-account or narrow-date export.
 
-### How to Request Your Amazon Data
+- **Mac:** Click **All Transactions** in the sidebar before exporting, not an individual account
+- **Windows:** Use **Reports → Banking → Transaction** with All Accounts selected
 
-1. On a **desktop browser**, go to amazon.com and sign in (cannot be done from the mobile app)
-2. Click **Account & Lists → Account**
-3. Scroll down to **Manage your data** → click **Request your data**
-4. Select **Your Orders** and submit the request
-5. Amazon sends a **confirmation email immediately** — click the link in it to confirm your request
-6. Wait for a **second email with your download link** (usually a few hours, sometimes up to 24)
-7. Download the ZIP file
-8. Unzip it and open the **Your Orders** folder
-9. Find the file named **`Retail.OrderHistory.1.csv`**
-10. Drag it onto the **Amazon drop zone** (the right drop zone on The Pour page)
+### File detected as wrong type
 
-### Monthly Amazon Refresh
+Forge uses column headers to detect format. If a Quicken CSV is being read as a detail file, it likely has column names that overlap with detail file formats. Add the file extension (`.qif`) or use the standard Quicken export path which produces consistent headers.
 
-Repeat the request process each month. Amazon will send you a new ZIP with your updated order history. Forge deduplicates automatically — orders already in the Watchlist are skipped.
+### "Forge couldn't read line-item detail"
 
----
+The detail file doesn't have the expected columns. Forge needs: date + description or merchant + amount. Check that the file is a transaction export, not a summary or report.
 
-## Removing Files Before Importing
+### Purchaser not attributed
 
-Files added to the import queue appear below the drop zones with their filename, size, and source badge.
+The filename didn't match any family member's name. Check that Settings → The Family has correct first names entered and that the filename contains the first name (case-insensitive): `amazon_Chris.csv` and `amazon_chris.csv` both work.
 
-- **Remove one file:** Click the **✕** button on the right side of the file card
-- **Remove all files:** Click **Clear all** above the file list
-- **Clear everything and start over:** Click **↺ Clear** next to the Begin Forging button, or **↺ Clear upload page** near the top of the page
+### "0 items" from Amazon
+
+Use `Retail.OrderHistory.1.csv` from inside the **Your Orders** folder of the ZIP Amazon emailed you. Other files in the ZIP will not parse correctly.
 
 ---
 
-## Troubleshooting Import Errors
+## Monthly Checklist
 
-### "0 transactions imported"
-
-**Most common cause:** The export dialog in Quicken was set to a single account or a very narrow date range.
-
-Fix: Re-export with **All Accounts** selected and a wider date range.
-
-### "File is not a recognized type"
-
-You have a `.qxf` file (Quicken Transfer Format). This is the wrong export.
-
-Fix: In Quicken, use **File → Export → Transactions** (not "Transfer Format").
-
-### "No Date column found"
-
-The CSV is missing the Date column, or the column header is named differently.
-
-Fix: Open the CSV in Excel or Numbers and check the first row. The date column must have a header that includes the word "date". Re-export from Quicken with default CSV settings.
-
-### "No amount column found"
-
-Same issue — the amount column header is not being recognized.
-
-Fix: The amount column must be named something containing "amount", "debit", "credit", "value", or "withdrawal". Re-export with default Quicken CSV settings.
-
-### Import seems to work but transaction count is lower than expected
-
-This is normal when re-importing. Forge shows the count of **new** transactions added, not the total in the file. If all transactions in the file already exist in the ledger, the count will be 0 — and that is correct behavior.
-
-### Amazon: "0 items found"
-
-You are using the wrong file from the ZIP.
-
-Fix: Inside the ZIP Amazon sends you, open the **Your Orders** folder. Use only the file named **`Retail.OrderHistory.1.csv`**. Do not use any other file from the ZIP.
-
----
-
-## What Forge Does With Your Data
-
-1. **Parses** the file in-memory (never touches a server)
-2. **Deduplicates** against your existing ledger using a `date|payee|amount|account` composite key
-3. **Saves** all new transactions to `localStorage` under the key `ledger_v3`
-4. **Auto-creates accounts** from account names found in the file
-5. **Navigates** to The Gauge (Dashboard) after a successful import
-
-All data stays in your browser. Nothing is uploaded anywhere. Clearing your browser's localStorage or using private/incognito mode will remove all Forge data.
+```
+□  Export Quicken — last 30–60 days, All Accounts
+□  Download Amazon order history (if you want this month's detail)
+□  Export Apple Card statement for the month
+□  Name detail files with purchaser first names before importing
+□  Drop ALL files at once into The Pour
+□  Click Begin Forging
+□  Open The Confluence with your partner (~35 min)
+□  Export PDF Blueprint
+```

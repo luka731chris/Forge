@@ -85,6 +85,96 @@ settings.accountOwners = {
 
 ---
 
+## Demo Data
+
+`generateDemoData()` generates 4 years of synthetic Pittsburgh-family financial data:
+
+**Quicken Accounts (13):**
+- Chase Checking, Chase Savings, Marcus Savings (HYSA) — banking
+- Chase Sapphire (CC), Amex Blue Cash (CC), Citi Double Cash (CC) — credit
+- Apple Card - Chris (CC), Apple Card - Kira (CC) — individual Apple Cards
+- Nordstrom Credit Card — Kira's clothing/beauty card
+- Fidelity 401k, Fidelity Brokerage — investments
+- PNC Business Checking, PayPal — business/other
+
+**Detail File Sources (3):**
+- `Apple Card` (purchaser: Chris) — mobile pay, dining, streaming, app purchases
+- `Apple Card` (purchaser: Kira) — fitness, clothing, beauty, grocery Apple Pay
+- `Nordstrom Card` (purchaser: Kira) — clothing, footwear, beauty, dining; July/August Anniversary Sale spike
+
+**Account Owners auto-configured on loadDemo():**
+
+```javascript
+settings.accountOwners = {
+  'Chase Sapphire (CC)':     'Chris',
+  'Apple Card - Chris (CC)': 'Chris',
+  'Citi Double Cash (CC)':   'Chris',
+  'PNC Business Checking':   'Chris',
+  'Amex Blue Cash (CC)':     'Kira',
+  'Apple Card - Kira (CC)':  'Kira',
+  'Nordstrom Credit Card':   'Kira',
+  'Fidelity 401k':           'Chris',
+  'Fidelity Brokerage':      'Chris',
+};
+```
+
+---
+
+## Known Fixes Applied in v3.3
+
+| Function | Bug | Fix |
+|----------|-----|-----|
+| `scoreImpulse` | `total=0` was triggering low-price bonus (+25 pts) | Added `total > 0` guard before price tier check |
+| `guessType` | `'brokerage'` and `'roth'` returned `'other'` | Added to investment detection pattern |
+| `parseCSV` | Standalone `Debit` column not recognized | Added `'debit'` and `'credit'` to amount column detector |
+| `parseAppleCard` | `null` purchaser overwritten by filename fallback | Explicit `null` now preserved; fallback only for `undefined` |
+| `parseGenericDetail` | Same null-purchaser issue | Same fix applied |
+
+---
+
+## v3.3 Bug Fixes
+
+The following bugs were identified by the exhaustive test suite (forge_tests_v2.js) and fixed:
+
+### `scoreImpulse(item)`
+**Before:** `if (total < 15) s += 25` — items with `total=0` (empty objects, malformed rows) received a 25-point low-price bonus.
+**After:** `if (total > 0 && total < 15) s += 25` — requires a positive total.
+
+### `guessType(name)`
+**Before:** Only recognized `invest`, `401`, `ira` as investment signals.
+**After:** Also recognizes `brokerage` and `roth`.
+
+```javascript
+// Before
+if (n.includes('invest') || n.includes('401') || n.includes('ira')) return 'investment';
+// After
+if (n.includes('invest') || n.includes('401') || n.includes('ira') || n.includes('brokerage') || n.includes('roth')) return 'investment';
+```
+
+### `parseCSV(text, fname)`
+**Before:** Amount column detection did not include standalone `debit` or `credit` columns.
+**After:** Both added to the `col()` call for amount detection, enabling Apple Card bank-format CSVs to import correctly.
+
+### `parseAppleCard(text, fname, purchaser)` and `parseGenericDetail(text, fname, purchaser)`
+**Before:** `const owner = purchaser || fname.replace(...)` — when `purchaser=null` was passed explicitly, the `||` short-circuit replaced it with the filename-derived label.
+**After:** `const owner = (purchaser !== undefined && purchaser !== null) ? purchaser : fname.replace(...)` — explicit `null` is now preserved, preventing false attribution.
+
+---
+
+## Bug Fix History (v3.2)
+
+Five defects were found by the v3.2 test suite and corrected in the production code:
+
+| Function | Issue | Fix |
+|----------|-------|-----|
+| `scoreImpulse` | `total=0` triggered low-price bonus (25 pts), so empty objects scored Medium Impulse | Added `total > 0` guard before the `< 15` branch |
+| `guessType` | `brokerage` and `roth` matched `other` instead of `investment` | Added both keywords to the investment detection condition |
+| `parseCSV` | Standalone `debit`/`credit` column headers not recognized as amount columns | Added `'debit'` and `'credit'` to `col()` lookup list |
+| `parseAppleCard` | `null` purchaser was replaced by filename-derived label via JS `||` operator | Changed to explicit `!== null && !== undefined` guard |
+| `parseGenericDetail` | Same null-purchaser issue as `parseAppleCard` | Same fix applied |
+
+---
+
 ## Parser Reference
 
 ### `parseAmazon(text)`
@@ -302,6 +392,78 @@ The purchaser is part of the detail dedup key so the same item can be attributed
 | Fira Code | — | Google Fonts | Monospace typography |
 
 No npm, no webpack, no framework. Works offline except for CDN resources.
+
+---
+
+## Analytics Studio
+
+### Architecture
+
+The Analytics page is a single `renderAnalytics()` call that orchestrates five sub-renderers. All computation happens client-side in the browser using existing `txns` and `amzItems` data.
+
+**Control flow:**
+1. User changes any control → `renderAnalytics()` fires
+2. `getAnaFiltered()` applies date range, category, and account filters to `txns`
+3. `groupByDimension(txns, dim)` groups the filtered data by the selected dimension
+4. `computeMetric(group, metric)` extracts the requested metric value per group
+5. `renderMainChart()` switches on `anaChartType` and constructs the Chart.js config
+6. Four secondary mini charts render independently with fixed configurations
+7. `renderAnaTable()` renders if `anaTableVisible` is true
+
+### Chart Types
+
+| Type | Implementation | Notes |
+|------|---------------|-------|
+| Bar | Chart.js `bar`, vertical | Default; color per bar |
+| Horizontal Bar | Chart.js `bar`, `indexAxis:'y'` | Sorted descending |
+| Line | Chart.js `line`, tension 0.35 | Gold accent color |
+| Area | Chart.js `line`, fill:true | River blue fill |
+| Donut | Chart.js `doughnut`, cutout 58% | Legend right |
+| Scatter | Chart.js `scatter`, index as x | Tooltip maps x→label |
+| Waterfall | Chart.js `bar`, floating `[start,end]` pairs | Green/red per direction |
+| Heatmap | Pure HTML table | Month × day-of-week grid, gold opacity scale |
+
+### State Variables
+
+```javascript
+let anaChartType = 'bar';          // current chart type
+let anaChart = null;               // primary Chart.js instance
+let anaMiniStackChart = null;      // secondary: income vs spending
+let anaMiniDonutChart = null;      // secondary: top categories
+let anaMiniDowChart = null;        // secondary: day of week
+let anaMiniPurchaserChart = null;  // secondary: by person
+let anaTableVisible = false;       // data table open/closed
+let anaDataCache = null;           // {keys, values, metric, dim} for table
+```
+
+---
+
+## Test Suites
+
+Three test suites cover all parser, analytics, and AI logic. Run with Node.js — no browser required.
+
+```bash
+node forge_tests.js       # 149 tests — parsers, formatters, dedup (original suite)
+node forge_tests_v2.js    # 285 tests — Apple Card, analytics, purchaser, edge cases
+node forge_sid_tests.js   # 96 tests  — $id AI layer, context, alerts, error routing
+# Total: 530 tests
+```
+
+### Test framework
+
+Micro-framework defined inside each test file: `suite(name)`, `test(name, fn)`, `assert(cond, msg)`, `eq(a, b, msg)`, `near(a, b, tol)`, `gt(a, b)`, `gte(a, b)`, `isArr(v)`, `hasKeys(obj, keys)`, `noThrow(fn)`, `throws(fn)`.
+
+### forge_module.js (auto-generated)
+
+The test harness requires functions extracted from `forge.html` into `forge_module.js`. Rebuild whenever `forge.html` changes:
+
+```javascript
+// Extract functions from forge.html and write to forge_module.js
+// Run: node forge_docs_v2.js  (this also rebuilds Word docs)
+// Or run the Python extraction script in forge_tests.js comments
+```
+
+The extractor uses a depth-counting parser to find function boundaries and a top-level guard to avoid extracting `const` declarations from inside function bodies.
 
 ---
 

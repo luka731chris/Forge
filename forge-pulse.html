@@ -244,6 +244,71 @@ body {
 .toast { position: fixed; bottom: calc(var(--tab-h) + var(--safe-bot) + 14px); left: 18px; right: 18px; background: var(--gold); color: #000; padding: 14px 20px; border-radius: var(--r-sm); font-size: 13px; font-weight: 600; text-align: center; box-shadow: 0 4px 28px rgba(245,168,0,.35); z-index: 9999; transform: translateY(20px); opacity: 0; transition: all .3s var(--ease); pointer-events: none; font-family: var(--font-ui); letter-spacing: 0.01em; }
 .toast.show { transform: translateY(0); opacity: 1; }
 .gold-star { display: inline-block; width: 10px; height: 10px; background: var(--gold); clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%); vertical-align: middle; margin-right: 4px; }
+
+/* ── ANALYTICS (Pulse) ─────────────────────────── */
+.p-ana-card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 16px 16px 14px;
+  margin-bottom: 12px;
+}
+.p-ana-header {
+  font-size: 10px;
+  font-family: var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.p-ana-pill {
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: rgba(245,168,0,.1);
+  color: var(--gold);
+  border: 1px solid rgba(245,168,0,.2);
+}
+.p-ana-dim-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.p-dim-chip {
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--mono);
+  transition: all .15s;
+}
+.p-dim-chip.active {
+  background: var(--gold);
+  color: #000;
+  border-color: var(--gold);
+}
+.p-ana-canvas-wrap { position: relative; height: 180px; }
+.p-insight-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.p-insight {
+  flex: 1;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 8px 10px;
+  text-align: center;
+}
+.p-insight-lbl { font-size: 9px; color: var(--muted); font-family: var(--mono); letter-spacing:.08em; text-transform:uppercase; }
+.p-insight-val { font-size: 16px; font-weight: 700; color: var(--ink); margin-top: 2px; }
+
 </style>
 </head>
 <body>
@@ -264,6 +329,70 @@ body {
 
   <!-- ══ AMAZON WATCHLIST ══ -->
   <div class="page" id="pg-amazon"><div id="amz-out"></div></div>
+
+  <!-- ══ ANALYTICS ══ -->
+  <div class="page" id="pg-analytics">
+    <div style="padding:14px 14px 100px;">
+
+      <!-- Header -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:10px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.7;margin-bottom:6px;">⚾ $kenes · Analytics</div>
+        <div style="font-family:var(--serif);font-size:22px;font-weight:600;color:var(--ink);">Your Numbers<span style="color:var(--gold);font-style:italic;">, Visualized</span></div>
+      </div>
+
+      <!-- Spending by Category -->
+      <div class="p-ana-card">
+        <div class="p-ana-header">
+          Spending by Category
+          <span class="p-ana-pill" id="p-cat-range-lbl">Last 3 mo</span>
+        </div>
+        <div class="p-ana-dim-row" id="p-cat-dims">
+          <div class="p-dim-chip active" onclick="setPulseRange('3m',this,'cat')">3M</div>
+          <div class="p-dim-chip" onclick="setPulseRange('6m',this,'cat')">6M</div>
+          <div class="p-dim-chip" onclick="setPulseRange('1y',this,'cat')">1Y</div>
+          <div class="p-dim-chip" onclick="setPulseRange('all',this,'cat')">All</div>
+        </div>
+        <div class="p-ana-canvas-wrap"><canvas id="p-cat-chart"></canvas></div>
+        <div class="p-insight-row" id="p-cat-insights"></div>
+      </div>
+
+      <!-- Monthly Trend -->
+      <div class="p-ana-card">
+        <div class="p-ana-header">
+          Monthly Cash Flow
+          <span class="p-ana-pill">12 months</span>
+        </div>
+        <div class="p-ana-canvas-wrap"><canvas id="p-trend-chart"></canvas></div>
+      </div>
+
+      <!-- By Purchaser -->
+      <div class="p-ana-card" id="p-purchaser-card">
+        <div class="p-ana-header">
+          Spending by Person
+          <span class="p-ana-pill" id="p-purchaser-range-lbl">Last 3 mo</span>
+        </div>
+        <div class="p-ana-dim-row" id="p-purchaser-dims">
+          <div class="p-dim-chip active" onclick="setPulseRange('3m',this,'purchaser')">3M</div>
+          <div class="p-dim-chip" onclick="setPulseRange('6m',this,'purchaser')">6M</div>
+          <div class="p-dim-chip" onclick="setPulseRange('1y',this,'purchaser')">1Y</div>
+        </div>
+        <div class="p-ana-canvas-wrap"><canvas id="p-purchaser-chart"></canvas></div>
+      </div>
+
+      <!-- Day of Week heatmap -->
+      <div class="p-ana-card">
+        <div class="p-ana-header">Avg Spending by Day of Week</div>
+        <div class="p-ana-canvas-wrap"><canvas id="p-dow-chart"></canvas></div>
+      </div>
+
+      <!-- Savings Rate Trend -->
+      <div class="p-ana-card">
+        <div class="p-ana-header">Savings Rate — Month by Month</div>
+        <div class="p-ana-canvas-wrap"><canvas id="p-savrate-chart"></canvas></div>
+      </div>
+
+    </div>
+  </div>
 
   <!-- ══ ASK SID ══ -->
   <div class="page" id="pg-chat">
@@ -312,6 +441,10 @@ body {
   <button class="tab-btn" id="tab-amazon" onclick="go('amazon')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
     Detail Lens
+  </button>
+  <button class="tab-btn" id="tab-analytics" onclick="go('analytics')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+    Analytics
   </button>
   <button class="tab-btn" id="tab-chat" onclick="go('chat')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="8" cy="10" r="1" fill="currentColor"/><circle cx="12" cy="10" r="1" fill="currentColor"/><circle cx="16" cy="10" r="1" fill="currentColor"/></svg>
@@ -445,6 +578,7 @@ function go(tab) {
   if (tab==='snapshot') renderSnapshot();
   if (tab==='alerts')   renderAlerts();
   if (tab==='amazon')   renderAmazon();
+  if (tab==='analytics') renderPulseAnalytics();
   if (tab==='chat' && !chatReady) { chatReady=true; sendWelcome(); }
 }
 
@@ -707,7 +841,7 @@ function renderAlerts() {
 }
 
 // ════════════════════════════════════════════
-// AMAZON WATCHLIST
+// DETAIL LENS
 // ════════════════════════════════════════════
 function renderAmazon() {
   const el = document.getElementById('amz-out');
@@ -944,6 +1078,192 @@ function addBubble(text, role) {
 
 function addTyping() { const m=document.getElementById('chatMsgs'); const d=document.createElement('div'); d.className='typing-wrap'; d.id='typ'; d.innerHTML='<div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>'; m.appendChild(d); m.scrollTop=m.scrollHeight; }
 function rmTyping()  { const t=document.getElementById('typ'); if(t)t.remove(); }
+
+
+// ════════════════════════════════════════════════════════════
+// PULSE ANALYTICS — $id Mobile Intelligence
+// ════════════════════════════════════════════════════════════
+
+let pCatRange = '3m', pPurchaserRange = '3m';
+let pCatChart=null, pTrendChart=null, pPurchaserChart=null, pDowChart=null, pSavRateChart=null;
+
+function setPulseRange(range, btn, type) {
+  const container = btn.closest('.p-ana-dim-row');
+  container.querySelectorAll('.p-dim-chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const labels = {'3m':'Last 3 mo','6m':'Last 6 mo','1y':'Last year','all':'All time'};
+  if (type === 'cat') {
+    pCatRange = range;
+    document.getElementById('p-cat-range-lbl').textContent = labels[range];
+    renderPulseCategories();
+  } else {
+    pPurchaserRange = range;
+    document.getElementById('p-purchaser-range-lbl').textContent = labels[range];
+    renderPulsePurchaser();
+  }
+}
+
+function getPulseSince(range) {
+  const n = new Date();
+  if (range==='3m') return new Date(n.getFullYear(), n.getMonth()-2, 1);
+  if (range==='6m') return new Date(n.getFullYear(), n.getMonth()-5, 1);
+  if (range==='1y') return new Date(n.getFullYear()-1, n.getMonth()+1, 1);
+  return new Date('2000-01-01');
+}
+
+function destroyPulseAna() {
+  [pCatChart, pTrendChart, pPurchaserChart, pDowChart, pSavRateChart].forEach(c => {
+    try { if(c) c.destroy(); } catch(e) {}
+  });
+  pCatChart=pTrendChart=pPurchaserChart=pDowChart=pSavRateChart=null;
+}
+
+function renderPulseAnalytics() {
+  if (!txns.length) return;
+  destroyPulseAna();
+  renderPulseCategories();
+  renderPulseTrend();
+  renderPulsePurchaser();
+  renderPulseDow();
+  renderPulseSavRate();
+}
+
+function renderPulseCategories() {
+  const ctx = document.getElementById('p-cat-chart')?.getContext('2d');
+  if (!ctx) return;
+  if (pCatChart) { try { pCatChart.destroy(); } catch(e) {} }
+  const since = getPulseSince(pCatRange);
+  const cats = {};
+  txns.filter(t=>new Date(t.date)>=since&&t.amount<0).forEach(t=>cats[t.category]=(cats[t.category]||0)+Math.abs(t.amount));
+  const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const total = sorted.reduce((s,[,v])=>s+v, 0);
+  const labels = sorted.map(([c])=>c), values = sorted.map(([,v])=>v);
+  try {
+    pCatChart = new Chart(ctx, {
+      type:'doughnut',
+      data:{labels, datasets:[{data:values, backgroundColor:['#F5A800','#60A5FA','#A78BFA','#2DD4BF','#F87171','#34D399','#FBBF24','#FB923C'].map(c=>c+'CC'), borderWidth:1, borderColor:'rgba(0,0,0,.2)', hoverOffset:6}]},
+      options:{responsive:true, maintainAspectRatio:false, animation:{duration:300}, cutout:'52%',
+        plugins:{legend:{position:'bottom', labels:{font:{size:9},boxWidth:8, color:'rgba(255,255,255,.5)',padding:6}}}}
+    });
+  } catch(e) {}
+  // Insights
+  const top = sorted[0];
+  const el = document.getElementById('p-cat-insights');
+  if (el && top) el.innerHTML = [
+    {lbl:'Total',val:fmtK(total)},
+    {lbl:'Top Cat',val:top[0].split(' ')[0]},
+    {lbl:'Top Spend',val:fmtK(top[1])},
+  ].map(i=>`<div class="p-insight"><div class="p-insight-lbl">${i.lbl}</div><div class="p-insight-val">${i.val}</div></div>`).join('');
+}
+
+function renderPulseTrend() {
+  const ctx = document.getElementById('p-trend-chart')?.getContext('2d');
+  if (!ctx) return;
+  const mos = [];
+  for (let i=11;i>=0;i--) { const d=new Date(); d.setMonth(d.getMonth()-i); mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`); }
+  const inc = mos.map(m=>txns.filter(t=>t.date.startsWith(m)&&t.amount>0).reduce((s,t)=>s+t.amount,0));
+  const exp = mos.map(m=>txns.filter(t=>t.date.startsWith(m)&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0));
+  try {
+    pTrendChart = new Chart(ctx, {
+      type:'bar',
+      data:{labels:mos.map(m=>m.slice(5)), datasets:[
+        {label:'Income',data:inc,backgroundColor:'rgba(45,212,191,.7)',borderRadius:3,stack:'a'},
+        {label:'Spending',data:exp,backgroundColor:'rgba(248,113,113,.6)',borderRadius:3,stack:'b'},
+      ]},
+      options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
+        plugins:{legend:{labels:{font:{size:9},boxWidth:8,color:'rgba(255,255,255,.4)',padding:6}}},
+        scales:{y:{ticks:{callback:v=>fmtK(v),color:'rgba(255,255,255,.3)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
+                x:{ticks:{color:'rgba(255,255,255,.3)',font:{size:9}},grid:{display:false}}}
+      }
+    });
+  } catch(e) {}
+}
+
+function renderPulsePurchaser() {
+  const ctx = document.getElementById('p-purchaser-chart')?.getContext('2d');
+  if (!ctx) return;
+  if (pPurchaserChart) { try { pPurchaserChart.destroy(); } catch(e) {} }
+  const since = getPulseSince(pPurchaserRange);
+  const people = [...new Set([...Object.values(family.accountOwners||{}), ...amzItems.map(i=>i.purchaser).filter(Boolean)])];
+  const card = document.getElementById('p-purchaser-card');
+  if (!people.length) { if(card) card.style.display='none'; return; }
+  if(card) card.style.display='block';
+
+  const data = people.map(p => {
+    const accts = Object.entries(family.accountOwners||{}).filter(([,v])=>v===p).map(([k])=>k);
+    const qkn = Math.abs(txns.filter(t=>new Date(t.date)>=since&&t.amount<0&&accts.includes(t.account)).reduce((s,t)=>s+t.amount,0));
+    const det = amzItems.filter(i=>i.purchaser===p&&new Date(i.date)>=since).reduce((s,i)=>s+i.total,0);
+    return {p, qkn, det};
+  }).sort((a,b)=>(b.qkn+b.det)-(a.qkn+a.det));
+
+  try {
+    pPurchaserChart = new Chart(ctx, {
+      type:'bar',
+      data:{labels:data.map(d=>d.p), datasets:[
+        {label:'Accounts',data:data.map(d=>d.qkn),backgroundColor:'rgba(245,168,0,.75)',borderRadius:4,stack:'a'},
+        {label:'Detail',data:data.map(d=>d.det),backgroundColor:'rgba(167,139,250,.75)',borderRadius:4,stack:'a'},
+      ]},
+      options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
+        plugins:{legend:{labels:{font:{size:9},boxWidth:8,color:'rgba(255,255,255,.4)'}}},
+        scales:{y:{ticks:{callback:v=>fmtK(v),color:'rgba(255,255,255,.3)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
+                x:{ticks:{color:'rgba(255,255,255,.3)',font:{size:9}},grid:{display:false}}}
+      }
+    });
+  } catch(e) {}
+}
+
+function renderPulseDow() {
+  const ctx = document.getElementById('p-dow-chart')?.getContext('2d');
+  if (!ctx) return;
+  const since = new Date(); since.setFullYear(since.getFullYear()-1);
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const totals={}, counts={};
+  days.forEach(d=>{totals[d]=0; counts[d]=0;});
+  txns.filter(t=>new Date(t.date)>=since&&t.amount<0).forEach(t=>{
+    const dn=days[([0,6,1,2,3,4,5])[new Date(t.date).getDay()]];
+    totals[dn]+=Math.abs(t.amount); counts[dn]++;
+  });
+  const avgs=days.map(d=>counts[d]>0?parseFloat((totals[d]/counts[d]).toFixed(2)):0);
+  try {
+    pDowChart = new Chart(ctx, {
+      type:'bar',
+      data:{labels:days, datasets:[{data:avgs, backgroundColor:['#F5A800','#60A5FA','#A78BFA','#2DD4BF','#F87171','#34D399','#FBBF24'].map(c=>c+'CC'), borderRadius:4, borderSkipped:false}]},
+      options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
+        plugins:{legend:{display:false}},
+        scales:{y:{ticks:{callback:v=>fmtK(v),color:'rgba(255,255,255,.3)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
+                x:{ticks:{color:'rgba(255,255,255,.3)',font:{size:9}},grid:{display:false}}}
+      }
+    });
+  } catch(e) {}
+}
+
+function renderPulseSavRate() {
+  const ctx = document.getElementById('p-savrate-chart')?.getContext('2d');
+  if (!ctx) return;
+  const mos=[];
+  for(let i=11;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
+  const rates = mos.map(m => {
+    const inc=txns.filter(t=>t.date.startsWith(m)&&t.amount>0).reduce((s,t)=>s+t.amount,0);
+    const exp=Math.abs(txns.filter(t=>t.date.startsWith(m)&&t.amount<0).reduce((s,t)=>s+t.amount,0));
+    return inc>0 ? parseFloat(((inc-exp)/inc*100).toFixed(1)) : 0;
+  });
+  const target = family.savingsTarget || 20;
+  try {
+    pSavRateChart = new Chart(ctx, {
+      type:'line',
+      data:{labels:mos.map(m=>m.slice(5)), datasets:[
+        {label:'Savings Rate',data:rates, borderColor:'#F5A800', backgroundColor:'rgba(245,168,0,.08)', tension:.35, pointRadius:3, pointBackgroundColor:'#F5A800', fill:true},
+        {label:`Target ${target}%`, data:mos.map(()=>target), borderColor:'rgba(255,255,255,.2)', borderDash:[4,4], pointRadius:0, tension:0},
+      ]},
+      options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
+        plugins:{legend:{labels:{font:{size:9},boxWidth:8,color:'rgba(255,255,255,.4)'}}},
+        scales:{y:{ticks:{callback:v=>v+'%',color:'rgba(255,255,255,.3)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
+                x:{ticks:{color:'rgba(255,255,255,.3)',font:{size:9}},grid:{display:false}}}
+      }
+    });
+  } catch(e) {}
+}
+
 
 function sendWelcome() {
   if (!txns.length) {

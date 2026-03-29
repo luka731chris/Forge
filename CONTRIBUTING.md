@@ -72,6 +72,52 @@ LIFE-STAGE                 — buildLifeStageRecommendations()
 
 ---
 
+## Adding a New Chart Type
+
+To add a chart type to Analytics Studio:
+
+1. Add a button to `#ana-chart-types` in the HTML:
+   ```html
+   <button class="ana-ct" data-ct="mytype" onclick="setAnaChart('mytype',this)" title="My Chart">⊡</button>
+   ```
+
+2. Add the chart config to `chartConfigs` in `renderMainChart()`:
+   ```javascript
+   mytype: {
+     type: 'bar', // or any Chart.js type
+     data: { labels: keys, datasets: [{ data: values, ... }] },
+     options: { responsive: true, maintainAspectRatio: false, ... }
+   }
+   ```
+
+3. If it requires special handling (like `heatmap`), add a branch before `renderMainChart()` in `renderAnalytics()`.
+
+---
+
+## Adding a New Dimension
+
+To add a new grouping option to Analytics Studio:
+
+1. Add an `<option>` to `#ana-dim` in the HTML
+2. Add the case to `groupByDimension()`:
+   ```javascript
+   else if (dim === 'myDimension') key = t.someField || 'Unknown';
+   ```
+
+---
+
+## Adding a New Pulse Chart
+
+To add a chart to the Pulse Analytics tab:
+
+1. Add a `.p-ana-card` div inside `#pg-analytics` in the HTML with a `<canvas>` element
+2. Add a chart variable: `let pMyChart = null;`
+3. Add to `destroyPulseAna()`: `try { if(pMyChart) pMyChart.destroy(); } catch(e) {}`
+4. Write a `function renderPulseMyChart() {...}` function
+5. Call it from `renderPulseAnalytics()`
+
+---
+
 ## Adding a New Purchaser Feature
 
 The purchaser data model is simple. Every `amzItem` has:
@@ -95,20 +141,23 @@ To add a new per-person analytic:
 ## Testing
 
 ```bash
-node forge_tests.js      # 149 tests — parsers, logic, dedup, life-stage
-node forge_sid_tests.js  # 96 tests  — $id AI layer, context, error handling
+node forge_tests.js       # 149 tests — original parsers, formatters, dedup
+node forge_tests_v2.js    # 285 tests — Apple Card, analytics, purchaser, edge cases
+node forge_sid_tests.js   # 96 tests  — $id AI layer, context, error handling
+# Total: 530 tests · 100% pass rate required before any commit
 ```
 
 Both must pass at 100% before any commit. The test harness extracts functions from `index.html` at runtime — no separate test build needed.
 
 **Adding a test:**
 ```javascript
-t.test('parseAppleCard: handles payment rows', () => {
+// In forge_tests_v2.js, inside a suite() block:
+test('parseAppleCard: handles payment rows', ()=>{
   const result = parseAppleCard(
-    'Transaction Date,Description,Category,Amount (USD)\n2024-01-15,Autopay,Payment,-89.00',
+    'Transaction Date,Merchant,Category,Amount (USD)\n2024-01-15,Autopay,Payment,89.00',
     'test.csv', 'Chris'
   );
-  t.equal(result.length, 0, 'payment rows should be filtered out');
+  eq(result.length, 0, 'payment rows should be filtered out');
 });
 ```
 

@@ -37,6 +37,12 @@ Tag a file with a family member's name (`amazon_chris.csv`, `applecard_kira.csv`
 
 ### Forge Desktop — $kenes
 
+**Analytics Studio — Self-Service BI** *(v3.2)*
+- 8 chart types: Bar, Horizontal Bar, Line, Area, Donut, Scatter, Waterfall, Heatmap
+- 8 dimensions × 6 metrics — slice any way, update instantly
+- 4 secondary mini-charts always visible; data table; PNG export
+- Pulse: 5 mobile chart cards with range chips
+
 **The Pour — Import Pipeline**
 - **Single unified drop zone** — accepts any file type in one place; Forge auto-detects each file's format from its column headers
 - Quicken: `.csv`, `.qif`, `.qfx`, `.ofx` — routed to the ledger parser
@@ -165,6 +171,7 @@ From that point, The Bullpen will surface per-person Quicken trends and $id will
 | `README.md` | — | This file |
 | `IMPORT-GUIDE.md` | — | Quicken + Detail file import, purchaser tagging |
 | `SID-SETUP.md` | — | Cloudflare Worker and API key setup |
+| `TESTING.md` | — | Test suite documentation, bug fix log, suite index |
 | `TECHNICAL.md` | — | Architecture, data model, parser reference |
 | `CONTRIBUTING.md` | — | Dev setup, testing, deployment |
 | `CHANGELOG.md` | — | Version history |
@@ -186,6 +193,19 @@ From that point, The Bullpen will surface per-person Quicken trends and $id will
 Vanilla JS · Chart.js 4.4.1 · Cormorant Garamond / DM Sans / Fira Code (Google Fonts) · GitHub Pages · Cloudflare Workers · Claude claude-sonnet-4-20250514 · Browser `localStorage`
 
 No npm. No build step. No framework. No server. Open `index.html` and it works.
+
+---
+
+## Testing
+
+```bash
+node forge_tests.js       # 434 tests across 39 suites — parsers, formatters, dedup
+node forge_tests_v2.js    # 434 tests (285 new + 149 original) — Apple Card, analytics, purchaser, edge cases
+node forge_sid_tests.js   # 96 tests  — $id AI layer
+# 530 total · 100% pass rate
+```
+
+All three suites must pass before pushing any update. The test harness extracts functions from `forge.html` into `forge_module.js` — run any extraction script after changing `forge.html`.
 
 ---
 
