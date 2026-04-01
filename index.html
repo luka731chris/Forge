@@ -2341,10 +2341,15 @@ canvas { display: block; max-width: 100%; height: auto; }
 // FORGE BOOT — simple, no overlay
 // ════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', function() {
-  // Force body visible immediately - no animations, no delays
+  // Step 1: Force body visible — no CSS animation can override inline style
   document.body.style.opacity = '1';
   document.body.style.visibility = 'visible';
   document.body.style.display = 'block';
+
+  // Step 2: Apply Chart.js theme defaults (safe — Chart must be loaded by now)
+  try { applyChartDefaults(); } catch(e) { console.warn('Chart defaults:', e); }
+
+  // Step 3: Boot the app
   try {
     loadSettings();
     if (loadData()) {
@@ -2354,8 +2359,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
   } catch(e) {
     console.error('Forge boot error:', e);
-    // Fallback: show upload page so user can at least import data
-    try { showPage('upload'); } catch(e2) { console.error('showPage upload failed:', e2); }
+    try { showPage('upload'); } catch(e2) {}
   }
 });
 
@@ -2415,21 +2419,26 @@ const CAT_COLORS = ['#FFB612','#4a9eff','#3ecf8e','#f97316','#a78bfa','#f43f5e',
 const ACCT_COLORS = ['#FFB612','#4a9eff','#3ecf8e','#f97316','#a78bfa','#f43f5e','#06b6d4','#eab308','#8b5cf6','#10b981','#fb923c','#60a5fa'];
 
 // ── Pittsburgh dark theme for all Chart.js charts ──
-Chart.defaults.color = '#666';
-Chart.defaults.borderColor = '#2a2a2a';
-Chart.defaults.backgroundColor = '#161616';
-Chart.defaults.plugins.legend.labels.color = '#888';
-Chart.defaults.plugins.tooltip.backgroundColor = '#1e1e1e';
-Chart.defaults.plugins.tooltip.titleColor = '#FFB612';
-Chart.defaults.plugins.tooltip.bodyColor = '#ccc';
-Chart.defaults.plugins.tooltip.borderColor = '#333';
-Chart.defaults.plugins.tooltip.borderWidth = 1;
-Chart.defaults.scale.grid = { color:'rgba(255,255,255,0.04)' };
-Chart.defaults.scale.ticks = { color:'#555' };
+// Chart.js defaults — guarded: only set if Chart is loaded
+function applyChartDefaults() {
+  if (typeof Chart === 'undefined') return;
+  Chart.defaults.color = '#666';
+  Chart.defaults.borderColor = '#2a2a2a';
+  Chart.defaults.backgroundColor = '#161616';
+  Chart.defaults.plugins.legend.labels.color = '#888';
+  Chart.defaults.plugins.tooltip.backgroundColor = '#1e1e1e';
+  Chart.defaults.plugins.tooltip.titleColor = '#FFB612';
+  Chart.defaults.plugins.tooltip.bodyColor = '#ccc';
+  Chart.defaults.plugins.tooltip.borderColor = '#333';
+  Chart.defaults.plugins.tooltip.borderWidth = 1;
+  Chart.defaults.scale.grid = { color:'rgba(255,255,255,0.04)' };
+  Chart.defaults.scale.ticks = { color:'#555' };
+}
 const IMPULSE_CATS = new Set(['Health & Beauty','Toys & Games','Books','Electronics Accessories','Home','Kitchen','Sports','Pet Supplies','Arts Crafts & Sewing','Clothing','Shoes','Beauty','Grocery & Gourmet Food']);
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 let txns = [], accounts = [], amzItems = [], charts = {};
+let fbrState = { notes:{}, goals:[], decisions:[], plannedPurchases:[], kidsLog:[] };
 let range = '1y', catR = '1y', mchR = '1y', intelR = '6m';
 let txnPage = 0, amzPage = 0;
 const PAGE = 100, AMZ_PAGE = 80;
@@ -5169,6 +5178,15 @@ function showToast(msg, type, duration) {
   t._timer = setTimeout(function() { t.classList.remove('show'); }, duration);
 }
 
+function loadFBR() {
+  try {
+    const raw = localStorage.getItem(FBR_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      fbrState = { ...fbrState, ...saved };
+    }
+  } catch(e) { console.warn('loadFBR:', e); }
+}
 function saveFBR() {
   try { localStorage.setItem(FBR_KEY, JSON.stringify(fbrState)); } catch(e) {}
 }
