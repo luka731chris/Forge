@@ -66,8 +66,8 @@ body {
 .status-fill { position: fixed; top: 0; left: 0; right: 0; height: var(--safe-top); background: var(--void); z-index: 300; }
 .shell { flex: 1; position: relative; overflow: hidden; }
 .page { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; display: none; background: var(--base); }
-.page.active { display: block; animation: pgIn .22s var(--ease); }
-@keyframes pgIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.page.active { display: block;  }
+@keyframes pgIn { from { transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
 
 /* ── TAB BAR ── */
 .tab-bar {
@@ -572,19 +572,28 @@ function toast(m) { const t=document.getElementById('toast'); t.textContent=m; t
 // ════════════════════════════════════════════
 let active = 'snapshot';
 function go(tab) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(function(p) {
+    p.classList.remove('active');
+    p.style.display = 'none';
+    p.style.opacity = '1';
+  });
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
   const pg = document.getElementById('pg-'+tab);
-  if (pg) { pg.classList.add('active'); pg.style.opacity='1'; }
+  if (pg) {
+    pg.classList.add('active');
+    pg.style.display = 'block';
+    pg.style.opacity = '1';
+    pg.style.visibility = 'visible';
+  }
   const tb = document.getElementById('tab-'+tab);
   if (tb) tb.classList.add('active');
   active = tab;
-  const safe=(fn,lbl)=>{ try{fn();}catch(e){console.error('Pulse '+lbl+' error:',e);} };
-  if (tab==='snapshot') safe(()=>renderSnapshot(),'snapshot');
-  if (tab==='alerts')   safe(()=>renderAlerts(),'alerts');
-  if (tab==='amazon')   safe(()=>renderAmazon(),'amazon');
-  if (tab==='analytics') safe(()=>renderPulseAnalytics(),'analytics');
-  if (tab==='chat' && !chatReady) { chatReady=true; safe(()=>sendWelcome(),'welcome'); }
+  const safe = function(fn, lbl) { try { fn(); } catch(e) { console.error('Pulse '+lbl+' error:', e); } };
+  if (tab==='snapshot') safe(function(){ renderSnapshot(); }, 'snapshot');
+  if (tab==='alerts')   safe(function(){ renderAlerts(); }, 'alerts');
+  if (tab==='amazon')   safe(function(){ renderAmazon(); }, 'amazon');
+  if (tab==='analytics') safe(function(){ renderPulseAnalytics(); }, 'analytics');
+  if (tab==='chat' && !chatReady) { chatReady=true; safe(function(){ sendWelcome(); }, 'welcome'); }
 }
 
 // ════════════════════════════════════════════
@@ -1340,8 +1349,8 @@ function emptyHTML(tab) {
 // ════════════════════════════════════════════
 // BOOT
 // ════════════════════════════════════════════
-window.addEventListener('DOMContentLoaded', () => {
-  // Force visibility immediately — prevent black screen on slow connections
+window.addEventListener('DOMContentLoaded', function() {
+  // Force visible immediately
   document.body.style.opacity = '1';
   document.body.style.visibility = 'visible';
   try { loadFamily(); } catch(e) { console.warn('loadFamily:', e); }
@@ -1350,8 +1359,8 @@ window.addEventListener('DOMContentLoaded', () => {
   try {
     const alerts = buildAlerts();
     const dot = document.getElementById('alertDot');
-    if (dot) dot.className = 'tab-dot' + (alerts.some(a=>a.sev==='danger') ? ' show' : '');
-  } catch(e) { console.warn('alerts boot:', e); }
+    if (dot) dot.className = 'tab-dot' + (alerts.some(function(a){ return a.sev==='danger'; }) ? ' show' : '');
+  } catch(e) { console.warn('alerts:', e); }
 });
 </script>
 </body>

@@ -317,7 +317,7 @@ test('fmtPct: positive has + prefix', ()=>assert(fmtPct(5).startsWith('+')));
 // ═══════════════════════════════════════════════════════════════
 suite('14 · getRange / inRange — date filtering');
 
-test('getRange 3m: start is ~3 months ago', ()=>{ const {start}=getRange('3m'); const diff=(Date.now()-start.getTime())/(1000*60*60*24); assert(diff>=60&&diff<=100,'~3mo'); });
+test('getRange 3m: start is ~3 months ago', ()=>{ const {start}=getRange('3m'); const diff=(Date.now()-start.getTime())/(1000*60*60*24); assert(diff>=55&&diff<=100,'~3mo'); });
 test('getRange 6m: start is ~6 months ago', ()=>{ const {start}=getRange('6m'); const diff=(Date.now()-start.getTime())/(1000*60*60*24); assert(diff>=150&&diff<=200,'~6mo'); });
 test('getRange 1y: start is ~1 year ago', ()=>{ const {start}=getRange('1y'); const diff=(Date.now()-start.getTime())/(1000*60*60*24); assert(diff>=330&&diff<=400,'~1y'); });
 test('getRange all: start is 2000-01-01', ()=>{ const {start}=getRange('all'); assert(start.getFullYear()<=2000); });

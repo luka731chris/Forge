@@ -1,3 +1,32 @@
+## [3.5] — 2026-04-01
+
+### Fixed — Black Screen (Root Cause Found and Eliminated)
+
+**The definitive root cause: a JS syntax error on line 25.**
+
+A prior session's partial replacement of the boot block left an orphan `}` on line 25 of the main script. This was a hard syntax error — the browser refused to parse the script entirely, meaning `loadDemo()`, `showPage()`, `renderDashboard()`, and every other function simply did not exist at runtime. The browser showed the `body` background color (near-black) with no content. No console error appeared visible to users because the page appeared to load normally (HTML rendered, header appeared) — only the JS was silently dead.
+
+**Secondary causes also eliminated:**
+
+| Cause | Effect | Fix |
+|-------|--------|-----|
+| `body { animation: bodyReveal 420ms both }` | `both` fill-mode held body at opacity:0.95 before animation fired; any render error left it stuck | Removed animation entirely |
+| `renderDashboard` had no outer `try/catch` | `showPage()`'s `safe()` swallowed all errors silently; dashboard was `display:block` but empty | Wrapped in `try/catch` |
+| `pageReveal` animation on `.page.active` | Pages started at translateY(6px) with `both` fill; if Chart.js threw, page stayed at pre-animation state | Removed animation entirely |
+| Pulse `pgIn` keyframe started at `opacity:0` | Same mechanism — Pulse tabs could stay invisible after navigation | Changed start frame to `opacity:1` |
+| Pulse `go()` relied on CSS class for `display` | CSS could be overridden; tab pages occasionally stayed hidden | Now sets `display:block` via inline style |
+
+**Rendering system now operates on this principle:** CSS handles styling only. Visibility is controlled exclusively via JavaScript inline styles (`element.style.display`, `element.style.opacity`). No CSS animation can prevent content from being visible.
+
+### Changed — Architecture
+
+- `showPage()`: explicitly sets `display:'none'` on all inactive pages and `display:'block'; opacity:'1'; visibility:'visible'` on the target page via inline style. CSS class `.page.active` is now a fallback only.
+- Boot sequence: single `DOMContentLoaded` listener, no Chart.js timing dependency, forces `document.body.style.opacity='1'` as first instruction.
+- All 14 render functions now have outer `try/catch` — one function's error cannot blank an adjacent page.
+- Pulse `go()`: same inline style enforcement as desktop `showPage()`.
+
+---
+
 ## [3.4] — 2026-03-29
 
 ### Fixed — CSV Import: Blank Columns and All Edge Cases
