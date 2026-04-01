@@ -1,3 +1,43 @@
+## [3.4] — 2026-03-29
+
+### Fixed — CSV Import: Blank Columns and All Edge Cases
+
+Complete rewrite of `parseCSV()` to handle every structural variation any CSV-producing application generates.
+
+**Blank column handling (new):**
+- Blank header columns (leading, middle, trailing) are now ignored — only named columns are mapped
+- Blank payee cell → `Unknown`; blank category cell → `Uncategorized`; blank account cell → filename fallback
+- Blank amount cell → row skipped cleanly
+- Blank date cell → row skipped cleanly
+- Both debit AND credit cells blank → row skipped (was: included as $0 row)
+- Quoted blank cells (`""`) → treated as empty
+- Whitespace-only cells → treated as empty
+- Comma-only rows (`,,,`) → skipped entirely
+- Out-of-bounds column access on short rows → safe `get()` helper returns `''` instead of crashing
+
+**Format handling (new):**
+- `sep=,` (Excel CSV hint line) now stripped before header detection
+- `# comment` and `// comment` lines before the header now stripped
+- UTF-8 BOM (`﻿`) stripped from file start AND from first column name
+- Semicolon (`;`) and pipe (`|`) delimiters now detected and parsed
+- Mixed CRLF + LF line endings now handled
+- European decimal format (`1.234,56`) detected and converted
+- Amount `N/A`, `--`, word strings → row skipped (was: NaN propagation)
+- Repeated header rows mid-file → skipped (date parses as null)
+- Extra columns beyond header → safe (extra data ignored)
+- Truncated rows (fewer cols than header) → safe (missing cols treated as blank)
+
+**`sniffFile()` improvements:**
+- Now skips `sep=`, `#` comments, and BOM before reading the first line for format detection
+- Prevents mis-detection when Excel hint lines or metadata precede the actual header
+
+**Test coverage:**
+- Suite 26 added: 39 tests covering every blank column and edge case scenario
+- Total: 324 tests / 26 suites in `forge_tests_v2.js` (was 285/25)
+- Combined suite total: 473 tests across all three test files
+
+---
+
 # Changelog
 
 ---

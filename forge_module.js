@@ -1,5 +1,5 @@
 'use strict';
-let txns = [], accounts = [], amzItems = [], charts = {};
+let txns=[],accounts=[],amzItems=[],charts={};
 const DEFAULT_SETTINGS = {
   familyName: 'Luka',
   user1: 'Chris',
@@ -93,46 +93,230 @@ function parseDate(s) {
 function splitCSV(l){const r=[];let c='',q=false;for(const ch of l){if(ch==='"'){q=!q;}else if(ch===','&&!q){r.push(c.trim());c='';}else c+=ch;}r.push(c.trim());return r;}
 
 function parseCSV(text, fname) {
-  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  if (!text || !text.trim()) return [];
+
+  // ── Pre-processing ─────────────────────────────────────────
+  // 1. Normalize line endings (CRLF, CR, LF → LF)
+  let raw = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  // 2. Strip BOM (UTF-8 byte order mark)
+  if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
+
+  // 3. Split into non-empty lines
+  let lines = raw.split('\n');
+
+  // 4. Skip leading non-data lines:
+  //    "sep=," (Excel hint), "#..." comments, lines with no comma/tab at all
+  //    that precede the header row
+  let dataStart = 0;
+  for (let li = 0; li < Math.min(lines.length, 8); li++) {
+    const l = lines[li].trim();
+    if (!l) continue;
+    // Skip "sep=" Excel hint lines
+    if (/^sep=/i.test(l)) { dataStart = li + 1; continue; }
+    // Skip comment lines
+    if (l.startsWith('#') || l.startsWith('//')) { dataStart = li + 1; continue; }
+    // First non-skipped non-empty line is the header
+    dataStart = li;
+    break;
+  }
+  lines = lines.slice(dataStart).filter(l => l.trim() !== '');
   if (!lines.length) return [];
-  // Handle both comma and tab delimited (Quicken exports both)
-  const delimiter = lines[0].includes('\t') ? '\t' : ',';
-  const hdr = lines[0].split(delimiter).map(h=>h.replace(/["\']/g,'').trim().toLowerCase());
-  const col = (...ns) => {
-    for (const n of ns) {
-      const i = hdr.findIndex(h => h===n || h.includes(n));
-      if (i>=0) return i;
+
+  // ── Delimiter detection ────────────────────────────────────
+  // Priority: tab > comma > semicolon > pipe
+  const headerSample = lines[0];
+  const delimiter =
+    headerSample.includes('\t')  ? '\t'  :
+    headerSample.includes(';')   ? ';'   :
+    headerSample.includes('|')   ? '|'   : ',';
+
+  // ── Column parsing helper ──────────────────────────────────
+  function splitRow(line) {
+    if (delimiter !== ',') {
+      // For non-comma delimiters, split directly and strip quotes
+      return line.split(delimiter).map(c => c.replace(/^["']+|["']+$/g, '').trim());
+    }
+    // For comma delimiter, use proper CSV parser (handles quoted commas)
+    const result = [];
+    let cell = '', inQ = false;
+    for (let ci = 0; ci < line.length; ci++) {
+      const ch = line[ci];
+      if (ch === '"') {
+        // Handle doubled quotes inside quoted fields: "" → "
+        if (inQ && line[ci+1] === '"') { cell += '"'; ci++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) {
+        result.push(cell.trim());
+        cell = '';
+      } else {
+        cell += ch;
+      }
+    }
+    result.push(cell.trim());
+    return result;
+  }
+
+  // ── Header processing ─────────────────────────────────────
+  const rawHdr = splitRow(lines[0]);
+  // Normalise each header: strip BOM, quotes, whitespace, lowercase
+  const hdr = rawHdr.map(h =>
+    h.replace(/^\uFEFF/, '')    // BOM on first col
+     .replace(/^["']+|["']+$/g, '') // surrounding quotes
+     .replace(/\s+/g, ' ')         // collapse whitespace
+     .trim()
+     .toLowerCase()
+  );
+
+  // ── Column finder ─────────────────────────────────────────
+  // Tries exact match first, then substring (contained-in) match
+  const col = (...names) => {
+    // Exact match pass
+    for (const n of names) {
+      const idx = hdr.indexOf(n);
+      if (idx >= 0) return idx;
+    }
+    // Substring match pass (header col contains the search term)
+    for (const n of names) {
+      const idx = hdr.findIndex(h => h.includes(n));
+      if (idx >= 0) return idx;
     }
     return -1;
   };
-  const dateC = col('date','transaction date','trans date','posted date','post date','value date');
-  const payeeC= col('payee','description','merchant','name','memo','narrative','details');
-  const amtC  = col('amount','transaction amount','value','debit/credit','debit','credit','net amount','withdrawal','deposit');
-  const catC  = col('category','type','transaction type','class');
-  const acctC = col('account','account name','account number');
-  const memoC = col('memo','notes','note','reference');
-  const acctName = fname.replace(/\.[^.]+$/,'');
-  return lines.slice(1).map(l=>{
-    const r = delimiter==='\t' ? l.split('\t').map(c=>c.trim()) : splitCSV(l);
+
+  // ── Column index map ───────────────────────────────────────
+  const dateC  = col('date','transaction date','trans date','posted date','post date','value date','settled date','booking date');
+  const payeeC = col('payee','description','merchant','name','narrative','details','transaction description','original description','memo');
+  const amtC   = col('amount','transaction amount','net amount','value','debit/credit','transaction amount','sum');
+  const debC   = col('debit','withdrawal','dr','money out','debit amount','out');
+  const creC   = col('credit','deposit','cr','money in','credit amount','in');
+  const catC   = col('category','type','transaction type','class','label','spending category');
+  const acctC  = col('account','account name','account number','account id','account #');
+  const memoC  = col('memo','notes','note','reference','ref','check number','check #');
+
+  // Fallback account name from filename (strip extension + separators)
+  const acctName = fname.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ').trim() || 'Imported';
+
+  // ── Amount parser ──────────────────────────────────────────
+  // Handles: $1,234.56  (1,234.56)  -1234  1.234,56 (European)  N/A  blank
+  function parseAmt(raw) {
+    if (raw === undefined || raw === null) return NaN;
+    const s = String(raw)
+      .replace(/^["']+|["']+$/g, '') // strip surrounding quotes
+      .trim();
+    if (!s || s === '-' || s === '--' || s === 'N/A' || s === 'n/a') return NaN;
+    // Parentheses = negative: (1,234.56)
+    const neg = s.startsWith('(') && s.endsWith(')');
+    // Strip all non-numeric except . - (and detect European comma-decimal)
+    // European: 1.234,56 → has comma after digits and dot as thousands sep
+    let cleaned = s.replace(/[()]/g, '').trim();
+    // Detect European format: ends with comma + 1-2 digits e.g. "1.234,56"
+    if (/^\d{1,3}(\.\d{3})*(,\d{1,2})$/.test(cleaned)) {
+      cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+    } else {
+      // Standard: strip currency symbols, commas, spaces
+      cleaned = cleaned.replace(/[$£€¥₹,\s]/g, '');
+    }
+    const v = parseFloat(cleaned);
+    return isNaN(v) ? NaN : (neg ? -Math.abs(v) : v);
+  }
+
+  // ── Row processor ──────────────────────────────────────────
+  return lines.slice(1).map(line => {
+    const trimmed = line.trim();
+    // Skip blank lines and comma-only lines
+    if (!trimmed || /^[,;\|\t]*$/.test(trimmed)) return null;
+
+    const r = splitRow(line);
+
+    // Skip if not enough columns
     if (r.length < 2) return null;
-    const date=parseDate(dateC>=0?r[dateC]:''); if(!date)return null;
-    const _rawA=(amtC>=0?r[amtC]:'0')||'0';
-    const _neg=_rawA.trim().startsWith('(')||(_rawA.trim().startsWith('-')&&_rawA.trim().length>1);
-    const amount=parseFloat(_rawA.replace(/[$,()"\s]/g,'').replace(/,/g,''))*(_neg&&!_rawA.includes('-')?-1:1);
-    if(isNaN(amount))return null;
-    return { date, payee:(payeeC>=0?r[payeeC]:'Unknown').replace(/"/g,'').trim()||'Unknown', amount, category:(catC>=0?r[catC]:'Uncategorized').replace(/"/g,'').trim()||'Uncategorized', account:(acctC>=0?r[acctC]:acctName).replace(/"/g,'').trim()||acctName, memo:'', type:amount>=0?'credit':'debit' };
+
+    // Safe column getter — returns '' for out-of-bounds or undefined cells
+    const get = (idx) => (idx >= 0 && idx < r.length && r[idx] !== undefined)
+      ? String(r[idx]).replace(/^["']+|["']+$/g, '').trim()
+      : '';
+
+    // Date — required
+    const date = parseDate(get(dateC));
+    if (!date) return null;
+
+    // Amount — try combined column first, then separate debit/credit
+    let amount;
+    const rawAmt = get(amtC);
+    if (amtC >= 0 && rawAmt !== '') {
+      amount = parseAmt(rawAmt);
+    } else if (debC >= 0 || creC >= 0) {
+      const dRaw = get(debC);
+      const cRaw = get(creC);
+      const d = parseAmt(dRaw);
+      const c = parseAmt(cRaw);
+      // Debit = expense (negative), Credit = income (positive)
+      // Guard: if BOTH are blank/NaN, skip the row
+      const dHasVal = !isNaN(d) && d !== 0;
+      const cHasVal = !isNaN(c) && c !== 0;
+      if (!dHasVal && !cHasVal) {
+        // Both blank — skip this row
+        return null;
+      }
+      if (dHasVal) amount = -Math.abs(d);
+      else if (cHasVal) amount = Math.abs(c);
+      else amount = 0;
+    } else {
+      return null; // No amount column at all
+    }
+
+    if (isNaN(amount)) return null;
+
+    // Build transaction
+    const payee    = get(payeeC) || 'Unknown';
+    const category = get(catC)   || 'Uncategorized';
+    const account  = get(acctC)  || acctName;
+    const memo     = get(memoC)  || '';
+
+    return {
+      date,
+      payee:    payee    || 'Unknown',
+      amount,
+      category: category || 'Uncategorized',
+      account:  account  || acctName,
+      memo,
+      type: amount >= 0 ? 'credit' : 'debit'
+    };
   }).filter(Boolean);
 }
 
 function parseQIF(text, fname) {
-  if (!text || !text.trim()) return [];
-  const acctName=fname.replace(/\.[^.]+$/,''); let cur={}, acct=acctName; const out=[];
-  for (const line of text.split('\n')) {
-    const l=line.trim(); if(!l)continue;
-    if(l==='^'){if(cur.date&&cur.amount!==undefined){out.push({date:cur.date,payee:cur.payee||'Unknown',amount:cur.amount,category:cur.category||'Uncategorized',account:acct,memo:cur.memo||'',type:cur.amount>=0?'credit':'debit'});}cur={};}
-    else{const c=l[0],v=l.slice(1).trim();if(c==='D')cur.date=parseDate(v);else if(c==='T')cur.amount=parseFloat(v.replace(/[$,]/g,''));else if(c==='P')cur.payee=v;else if(c==='L')cur.category=v.replace(/^\[|\]$/g,'');else if(c==='M')cur.memo=v;}
-  }
-  return out.filter(t=>t.date);
+  const acctName = fname.replace(/\.[^.]+$/,'');
+  const result = [];
+  let currentAccount = acctName;
+  // Split on the ^ record separator
+  const raw = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  const records = raw.split(/\n\^\s*\n?/);
+  records.forEach(rec => {
+    const lines = rec.split('\n').map(l=>l.trim()).filter(l=>l.length>1);
+    let date='', amount=NaN, payee='', category='', memo='';
+    let isAccountBlock = false;
+    for (const line of lines) {
+      const code = line[0];
+      const val  = line.slice(1).trim();
+      if (code === '!') { isAccountBlock = val.toLowerCase().includes('account'); continue; }
+      if (code === 'N' && isAccountBlock) { currentAccount = val || acctName; continue; }
+      if (code === 'D') date = parseDate(val) || '';
+      else if (code === 'T' || code === 'U') {
+        const neg = val.startsWith('(') && val.endsWith(')');
+        const v = parseFloat(val.replace(/[$,£€()\s]/g,''));
+        amount = isNaN(v) ? NaN : (neg ? -Math.abs(v) : v);
+      }
+      else if (code === 'P') payee = val;
+      else if (code === 'L') category = val.replace(/^\[|\]$/g,'');
+      else if (code === 'M') memo = val;
+    }
+    if (date && !isNaN(amount) && amount !== 0) {
+      result.push({date, payee:payee||memo||'Unknown', amount, category:category||'Uncategorized', account:currentAccount, memo, type:amount>=0?'credit':'debit'});
+    }
+  });
+  return result;
 }
 
 function parseOFX(text, fname) {
@@ -292,34 +476,48 @@ function parseDetailFile(text, fname, purchaser) {
 
 function sniffFile(text, fname) {
   if (!text || !text.trim()) return 'quicken';
-  const fl = text.split('\n')[0].toLowerCase().replace(/"/g, '');
-  const fn = fname.toLowerCase();
+  const fn  = fname.toLowerCase();
+  // Get first meaningful line — skip BOM, sep=, comment lines
+  const rawLines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  let firstLine = '';
+  for (const l of rawLines) {
+    const cl = l.replace(/^\uFEFF/,'').trim();
+    if (!cl) continue;
+    if (/^sep=/i.test(cl) || cl.startsWith('#') || cl.startsWith('//')) continue;
+    firstLine = cl; break;
+  }
+  const fl = firstLine.toLowerCase().replace(/"/g,'').replace(/	/g,',');
 
-  // Amazon: has ASIN column or product name + order id
+  // Filename shortcuts — unambiguous
+  if (fn.includes('retail.orderhistory') || fn.includes('orderhistory')) return 'amazon';
+  if ((fn.includes('applecard') || fn.includes('apple_card') ||
+      (fn.includes('apple') && fn.includes('card'))) && fn.endsWith('.csv')) return 'applecard';
+
+  // Amazon content signals — must have asin/product name AND no Quicken payee
   if (fl.includes('asin') || fl.includes('product name') ||
-      (fl.includes('order id') && fl.includes('quantity')) ||
-      fn.includes('retail.orderhistory') || fn.includes('orderhistory')) {
-    return 'amazon';
-  }
-  // Apple Card: clearing date + amount (usd), or filename signal
-  if (fl.includes('clearing date') || fl.includes('amount (usd)') ||
-      fn.includes('applecard') || fn.includes('apple_card') ||
-      (fn.includes('apple') && fn.includes('card'))) {
-    return 'applecard';
-  }
-  // Other detail formats: has "order date" but not Quicken-like payee/account structure
-  if ((fl.includes('order date') || fl.includes('order id') || fl.includes('product') ||
-       fl.includes('merchant') && !fl.includes('payee') && !fl.includes('account')) &&
-      !fl.includes('qif') && !fl.includes('ofx')) {
-    // Could be detail if it lacks the Quicken signature columns
-    const hasQuickenCols = fl.includes('payee') || fl.includes('account');
-    if (!hasQuickenCols) return 'detail';
-  }
-  // Quicken QIF/QFX/OFX are always Quicken format
-  const ext = fname.split('.').pop().toLowerCase();
-  if (['qif','qfx','ofx'].includes(ext)) return 'quicken';
+      (fl.includes('order id') && fl.includes('quantity') && !fl.includes('payee'))) return 'amazon';
 
-  // For CSV: if it has ASIN/product signal it's detail, otherwise Quicken
+  // Apple Card content signals
+  if (fl.includes('clearing date') || fl.includes('amount (usd)')) return 'applecard';
+
+  // Non-CSV formats
+  const ext = fn.split('.').pop();
+  if (ext === 'qif' || ext === 'qfx' || ext === 'ofx') return 'quicken';
+
+  // Quicken/bank signals — if it has date + amount + any payee/account/category field, it is Quicken
+  const hasDate   = fl.includes('date');
+  const hasAmount = fl.includes('amount') || fl.includes('debit') || fl.includes('credit') ||
+                    fl.includes('withdrawal') || fl.includes('deposit');
+  const hasPayee  = fl.includes('payee') || fl.includes('description') || fl.includes('merchant') ||
+                    fl.includes('narrative') || fl.includes('details') || fl.includes('name');
+  const hasAcct   = fl.includes('account') || fl.includes('acct');
+  const hasCat    = fl.includes('category') || fl.includes('class') || fl.includes('type');
+
+  if (hasDate && hasAmount && (hasPayee || hasAcct || hasCat)) return 'quicken';
+
+  // Generic detail: date + amount + some description, but no account/category context
+  if (hasDate && hasAmount && hasPayee && !hasAcct && !hasCat) return 'detail';
+
   return 'quicken';
 }
 
@@ -524,4 +722,4 @@ function getPersonSpend(items, personName) {
 }
 
 
-module.exports = {txns, amzItems, accounts, parseDate, splitCSV, parseCSV, parseQIF, parseOFX, parseOFXDate, parseAmazon, parseAppleCard, parseGenericDetail, parseDetailFile, sniffFile, scoreImpulse, impulseBadge, guessType, calcAge, calcAgeInYears, getLifeStage, getParentLifeStage, getRange, inRange, getSavingsRate, getAnnualNet, groupByDimension, computeMetric, personSummary, detectPersonTrends, predictMonthlyDetail, inferTxnOwner, getPersonSpend, DEFAULT_SETTINGS, CAT_COLORS, ACCT_COLORS, MONTHS, IMPULSE_CATS, KID_EMOJIS, DB_KEY, SETTINGS_KEY, fmt, fmtK, fmtPct, settings, range, intelAlerts, budgetDriftData, anomalyData, seasonalData, isDemoMode, pendingFiles};
+module.exports={txns,amzItems,accounts,parseDate,splitCSV,parseCSV,parseQIF,parseOFX,parseOFXDate,parseAmazon,parseAppleCard,parseGenericDetail,parseDetailFile,sniffFile,scoreImpulse,impulseBadge,guessType,calcAge,calcAgeInYears,getLifeStage,getParentLifeStage,getRange,inRange,getSavingsRate,getAnnualNet,groupByDimension,computeMetric,personSummary,detectPersonTrends,predictMonthlyDetail,inferTxnOwner,getPersonSpend,DEFAULT_SETTINGS,CAT_COLORS,ACCT_COLORS,MONTHS,IMPULSE_CATS,KID_EMOJIS,DB_KEY,SETTINGS_KEY,fmt,fmtK,fmtPct,settings,range,intelAlerts,budgetDriftData,anomalyData,seasonalData,isDemoMode,pendingFiles};

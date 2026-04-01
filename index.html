@@ -113,7 +113,7 @@ body {
   animation: bodyReveal var(--dur-slow) var(--ease) both;
 }
 @keyframes bodyReveal {
-  from { opacity: 0; }
+  from { opacity: 0.95; }
   to   { opacity: 1; }
 }
 
@@ -121,9 +121,11 @@ body {
 body::after {
   content: '';
   position: fixed; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events: none; z-index: 9998; opacity: 1;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
 }
+
 
 /* ── APP SHELL ── */
 .app {
@@ -256,6 +258,7 @@ nav {
   height: calc(100vh - 60px);
   overflow-y: auto; overflow-x: hidden;
   display: flex; flex-direction: column;
+  z-index: 10;
   scrollbar-width: thin;
   scrollbar-color: var(--line2) transparent;
 }
@@ -377,10 +380,12 @@ nav::-webkit-scrollbar-thumb:hover { background: var(--border2); }
 ═══════════════════════════════════════════════ */
 main {
   flex: 1;
-  padding: 32px 36px 40px;
+  padding: 28px 32px 60px;
   overflow-y: auto;
   max-width: 1400px;
   min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .page { display: none; }
@@ -389,8 +394,8 @@ main {
   animation: pageReveal var(--dur-mid) var(--ease) both;
 }
 @keyframes pageReveal {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { transform: translateY(6px); }
+  to   { transform: translateY(0); }
 }
 
 /* ── PAGE HEADER ── */
@@ -1273,6 +1278,8 @@ select option { background: var(--float); color: var(--ink2); }
   .ana-controls { flex-direction: column; }
 }
 
+
+canvas { display: block; max-width: 100%; height: auto; }
 </style>
 </head>
 <body>
@@ -1609,7 +1616,7 @@ select option { background: var(--float); color: var(--ink2); }
 <!-- ══ DASHBOARD ══ -->
 <div id="page-dashboard" class="page">
   <div id="demoBanner" class="demo-banner" style="display:none;">
-    <span>⚾ <strong>$kenes Demo</strong> — 4 years · 11 accounts · 4,387 transactions. $kenes reads the scouting report. Import your real data to forge what lasts.</span>
+    <span>⚾ <strong>$kenes Demo</strong> — 4 years · 13 accounts · 5,000+ transactions across 3 data sources. $kenes reads the scouting report. Import your real data to forge what lasts.</span>
     <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);" onclick="showPage('upload')">Import Real Data</button>
   </div>
   <div class="page-hdr">
@@ -2337,14 +2344,42 @@ select option { background: var(--float); color: var(--ink2); }
 // ════════════════════════════════════════════════════
 // FORGE BOOT — simple, no overlay
 // ════════════════════════════════════════════════════
-window.addEventListener('DOMContentLoaded', () => {
-  loadSettings();
-  if (loadData()) {
-    initApp();
-  } else {
-    showPage('upload');
+function forgeInit() {
+  // Ensure body is visible immediately, regardless of animation state
+  document.body.style.opacity = '1';
+  document.body.style.visibility = 'visible';
+  try {
+    loadSettings();
+    if (loadData()) {
+      initApp();
+    } else {
+      showPage('upload');
+    }
+  } catch(e) {
+    console.error('Forge boot error:', e);
+    try { showPage('upload'); } catch(e2) {}
   }
-});
+}
+
+// Handle both sync and async Chart.js loading
+if (typeof Chart !== 'undefined') {
+  // Chart.js already loaded
+  window.addEventListener('DOMContentLoaded', forgeInit);
+} else {
+  // Wait for Chart.js before booting
+  window.addEventListener('DOMContentLoaded', () => {
+    const chartScript = document.querySelector('script[src*="chart"]');
+    if (chartScript) {
+      chartScript.addEventListener('load', forgeInit);
+      chartScript.addEventListener('error', () => {
+        console.warn('Chart.js failed to load — charts disabled');
+        forgeInit(); // boot anyway, charts will be no-ops
+      });
+    } else {
+      forgeInit();
+    }
+  });
+}
 
 // ═══════════════════════════════════════════════
 // FORGE CONFLUENCE ENTRY ANIMATION
@@ -2427,26 +2462,35 @@ let pendingFiles = []; // [{file, source}]
 // DEMO DATA GENERATOR
 // ════════════════════════════════════════════════════
 function loadDemo() {
-  isDemoMode = true;
-  txns = []; amzItems = []; accounts = [];
-  generateDemoData();
-  // Auto-configure account owners for the demo
-  loadSettings();
-  settings.accountOwners = {
-    'Chase Sapphire (CC)':     'Chris',
-    'Apple Card - Chris (CC)': 'Chris',
-    'Citi Double Cash (CC)':   'Chris',
-    'PNC Business Checking':   'Chris',
-    'Amex Blue Cash (CC)':     'Kira',
-    'Apple Card - Kira (CC)':  'Kira',
-    'Nordstrom Credit Card':   'Kira',
-    'Fidelity 401k':           'Chris',
-    'Fidelity Brokerage':      'Chris',
-  };
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch(e) {}
-  saveData();
-  initApp();
-  showToast('⚾ $kenes takes the mound — Pittsburgh demo loaded. Account owners pre-configured.');
+  try {
+    isDemoMode = true;
+    txns = []; amzItems = []; accounts = [];
+    destroyAll();
+    generateDemoData();
+    // Auto-configure account owners for the demo
+    loadSettings();
+    settings.accountOwners = {
+      'Chase Sapphire (CC)':     'Chris',
+      'Apple Card - Chris (CC)': 'Chris',
+      'Citi Double Cash (CC)':   'Chris',
+      'PNC Business Checking':   'Chris',
+      'Amex Blue Cash (CC)':     'Kira',
+      'Apple Card - Kira (CC)':  'Kira',
+      'Nordstrom Credit Card':   'Kira',
+      'Fidelity 401k':           'Chris',
+      'Fidelity Brokerage':      'Chris',
+    };
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch(e) {}
+    try { saveData(); } catch(e) { console.warn('saveData in demo:', e); }
+    initApp();
+    showToast('⚾ $kenes takes the mound — Pittsburgh demo loaded.');
+  } catch(e) {
+    console.error('loadDemo error:', e);
+    // Even on error, show something useful
+    document.body.style.opacity='1';
+    showToast('Demo data ready — if display is blank, try refreshing.');
+    try { showPage('dashboard'); } catch(e2) {}
+  }
 }
 
 function generateDemoData() {
@@ -2729,12 +2773,16 @@ function saveData() {
 
 function loadData() {
   try {
+    if (typeof localStorage === 'undefined') return false;
     const raw = localStorage.getItem(DB_KEY);
     if (!raw) return false;
     const d = JSON.parse(raw);
-    txns = d.txns||[]; accounts = d.accounts||[]; amzItems = d.amzItems||[]; isDemoMode = d.isDemoMode||false;
+    txns = Array.isArray(d.txns) ? d.txns : [];
+    accounts = Array.isArray(d.accounts) ? d.accounts : [];
+    amzItems = Array.isArray(d.amzItems) ? d.amzItems : [];
+    isDemoMode = !!d.isDemoMode;
     return txns.length > 0 || amzItems.length > 0;
-  } catch(e) { return false; }
+  } catch(e) { console.warn('loadData:', e); return false; }
 }
 
 function clearAll() {
@@ -2780,34 +2828,48 @@ function clearUploadPage() {
 // Returns: 'amazon' | 'applecard' | 'detail' | 'quicken'
 function sniffFile(text, fname) {
   if (!text || !text.trim()) return 'quicken';
-  const fl = text.split('\n')[0].toLowerCase().replace(/"/g, '');
-  const fn = fname.toLowerCase();
+  const fn  = fname.toLowerCase();
+  // Get first meaningful line — skip BOM, sep=, comment lines
+  const rawLines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  let firstLine = '';
+  for (const l of rawLines) {
+    const cl = l.replace(/^\uFEFF/,'').trim();
+    if (!cl) continue;
+    if (/^sep=/i.test(cl) || cl.startsWith('#') || cl.startsWith('//')) continue;
+    firstLine = cl; break;
+  }
+  const fl = firstLine.toLowerCase().replace(/"/g,'').replace(/	/g,',');
 
-  // Amazon: has ASIN column or product name + order id
+  // Filename shortcuts — unambiguous
+  if (fn.includes('retail.orderhistory') || fn.includes('orderhistory')) return 'amazon';
+  if ((fn.includes('applecard') || fn.includes('apple_card') ||
+      (fn.includes('apple') && fn.includes('card'))) && fn.endsWith('.csv')) return 'applecard';
+
+  // Amazon content signals — must have asin/product name AND no Quicken payee
   if (fl.includes('asin') || fl.includes('product name') ||
-      (fl.includes('order id') && fl.includes('quantity')) ||
-      fn.includes('retail.orderhistory') || fn.includes('orderhistory')) {
-    return 'amazon';
-  }
-  // Apple Card: clearing date + amount (usd), or filename signal
-  if (fl.includes('clearing date') || fl.includes('amount (usd)') ||
-      fn.includes('applecard') || fn.includes('apple_card') ||
-      (fn.includes('apple') && fn.includes('card'))) {
-    return 'applecard';
-  }
-  // Other detail formats: has "order date" but not Quicken-like payee/account structure
-  if ((fl.includes('order date') || fl.includes('order id') || fl.includes('product') ||
-       fl.includes('merchant') && !fl.includes('payee') && !fl.includes('account')) &&
-      !fl.includes('qif') && !fl.includes('ofx')) {
-    // Could be detail if it lacks the Quicken signature columns
-    const hasQuickenCols = fl.includes('payee') || fl.includes('account');
-    if (!hasQuickenCols) return 'detail';
-  }
-  // Quicken QIF/QFX/OFX are always Quicken format
-  const ext = fname.split('.').pop().toLowerCase();
-  if (['qif','qfx','ofx'].includes(ext)) return 'quicken';
+      (fl.includes('order id') && fl.includes('quantity') && !fl.includes('payee'))) return 'amazon';
 
-  // For CSV: if it has ASIN/product signal it's detail, otherwise Quicken
+  // Apple Card content signals
+  if (fl.includes('clearing date') || fl.includes('amount (usd)')) return 'applecard';
+
+  // Non-CSV formats
+  const ext = fn.split('.').pop();
+  if (ext === 'qif' || ext === 'qfx' || ext === 'ofx') return 'quicken';
+
+  // Quicken/bank signals — if it has date + amount + any payee/account/category field, it is Quicken
+  const hasDate   = fl.includes('date');
+  const hasAmount = fl.includes('amount') || fl.includes('debit') || fl.includes('credit') ||
+                    fl.includes('withdrawal') || fl.includes('deposit');
+  const hasPayee  = fl.includes('payee') || fl.includes('description') || fl.includes('merchant') ||
+                    fl.includes('narrative') || fl.includes('details') || fl.includes('name');
+  const hasAcct   = fl.includes('account') || fl.includes('acct');
+  const hasCat    = fl.includes('category') || fl.includes('class') || fl.includes('type');
+
+  if (hasDate && hasAmount && (hasPayee || hasAcct || hasCat)) return 'quicken';
+
+  // Generic detail: date + amount + some description, but no account/category context
+  if (hasDate && hasAmount && hasPayee && !hasAcct && !hasCat) return 'detail';
+
   return 'quicken';
 }
 
@@ -2987,18 +3049,20 @@ async function processAll() {
         if (!text || !text.trim()) {
           reason = 'The file appears to be empty. Try exporting from Quicken again — go to File \u2192 Export \u2192 Transactions, pick a date range, and save.';
         } else if (ext==='csv') {
-          const firstLine = text.split('\n')[0].toLowerCase();
-          const hasDate   = firstLine.includes('date');
-          const hasAmount = firstLine.includes('amount') || firstLine.includes('debit') || firstLine.includes('credit');
-          const hasPayee  = firstLine.includes('payee') || firstLine.includes('description') || firstLine.includes('merchant');
+          const firstLine = text.split('\n')[0];
+          const fl2 = firstLine.toLowerCase();
+          const hasDate   = fl2.includes('date');
+          const hasAmount = fl2.includes('amount')||fl2.includes('debit')||fl2.includes('credit')||fl2.includes('withdrawal');
+          const hasPayee  = fl2.includes('payee')||fl2.includes('description')||fl2.includes('merchant')||fl2.includes('name')||fl2.includes('narrative');
+          const colSnip = firstLine.slice(0,140);
           if (!hasDate && !hasAmount && !hasPayee) {
-            reason = "Forge couldn't find the expected columns. When exporting from Quicken, make sure the file includes Date, Payee, and Amount columns.";
+            reason = `No recognizable columns found. Columns in file: "${colSnip}". Export from Quicken as CSV: File → Export → Transactions (not QXF).`;
           } else if (!hasDate) {
-            reason = 'This file is missing a Date column. In Quicken, go to File \u2192 Export \u2192 Transactions and make sure Date is included.';
+            reason = `Missing Date column. Columns: "${colSnip}". Ensure Date is included in your Quicken export.`;
           } else if (!hasAmount) {
-            reason = 'This file is missing an amount column. In Quicken, go to File \u2192 Export \u2192 Transactions and make sure the Amount column is included.';
+            reason = `Missing Amount column. Columns: "${colSnip}". Ensure Amount (or Debit/Credit) is included in export.`;
           } else {
-            reason = 'Forge found the right columns but could not read any transactions. Try exporting from Quicken with the default CSV settings.';
+            reason = `Columns look correct ("${colSnip}") but no rows parsed. Check: is the date format standard? Are amounts in a single Amount column or separate Debit/Credit columns?`;
           }
         } else {
           reason = 'No transactions were found. The file may cover the wrong date range. Try exporting from Quicken with a wider date range.';
@@ -3103,46 +3167,230 @@ function readFile(f) { return new Promise((res,rej)=>{const r=new FileReader();r
 // PARSERS
 // ════════════════════════════════════════════════════
 function parseCSV(text, fname) {
-  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  if (!text || !text.trim()) return [];
+
+  // ── Pre-processing ─────────────────────────────────────────
+  // 1. Normalize line endings (CRLF, CR, LF → LF)
+  let raw = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  // 2. Strip BOM (UTF-8 byte order mark)
+  if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
+
+  // 3. Split into non-empty lines
+  let lines = raw.split('\n');
+
+  // 4. Skip leading non-data lines:
+  //    "sep=," (Excel hint), "#..." comments, lines with no comma/tab at all
+  //    that precede the header row
+  let dataStart = 0;
+  for (let li = 0; li < Math.min(lines.length, 8); li++) {
+    const l = lines[li].trim();
+    if (!l) continue;
+    // Skip "sep=" Excel hint lines
+    if (/^sep=/i.test(l)) { dataStart = li + 1; continue; }
+    // Skip comment lines
+    if (l.startsWith('#') || l.startsWith('//')) { dataStart = li + 1; continue; }
+    // First non-skipped non-empty line is the header
+    dataStart = li;
+    break;
+  }
+  lines = lines.slice(dataStart).filter(l => l.trim() !== '');
   if (!lines.length) return [];
-  // Handle both comma and tab delimited (Quicken exports both)
-  const delimiter = lines[0].includes('\t') ? '\t' : ',';
-  const hdr = lines[0].split(delimiter).map(h=>h.replace(/["\']/g,'').trim().toLowerCase());
-  const col = (...ns) => {
-    for (const n of ns) {
-      const i = hdr.findIndex(h => h===n || h.includes(n));
-      if (i>=0) return i;
+
+  // ── Delimiter detection ────────────────────────────────────
+  // Priority: tab > comma > semicolon > pipe
+  const headerSample = lines[0];
+  const delimiter =
+    headerSample.includes('\t')  ? '\t'  :
+    headerSample.includes(';')   ? ';'   :
+    headerSample.includes('|')   ? '|'   : ',';
+
+  // ── Column parsing helper ──────────────────────────────────
+  function splitRow(line) {
+    if (delimiter !== ',') {
+      // For non-comma delimiters, split directly and strip quotes
+      return line.split(delimiter).map(c => c.replace(/^["']+|["']+$/g, '').trim());
+    }
+    // For comma delimiter, use proper CSV parser (handles quoted commas)
+    const result = [];
+    let cell = '', inQ = false;
+    for (let ci = 0; ci < line.length; ci++) {
+      const ch = line[ci];
+      if (ch === '"') {
+        // Handle doubled quotes inside quoted fields: "" → "
+        if (inQ && line[ci+1] === '"') { cell += '"'; ci++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) {
+        result.push(cell.trim());
+        cell = '';
+      } else {
+        cell += ch;
+      }
+    }
+    result.push(cell.trim());
+    return result;
+  }
+
+  // ── Header processing ─────────────────────────────────────
+  const rawHdr = splitRow(lines[0]);
+  // Normalise each header: strip BOM, quotes, whitespace, lowercase
+  const hdr = rawHdr.map(h =>
+    h.replace(/^\uFEFF/, '')    // BOM on first col
+     .replace(/^["']+|["']+$/g, '') // surrounding quotes
+     .replace(/\s+/g, ' ')         // collapse whitespace
+     .trim()
+     .toLowerCase()
+  );
+
+  // ── Column finder ─────────────────────────────────────────
+  // Tries exact match first, then substring (contained-in) match
+  const col = (...names) => {
+    // Exact match pass
+    for (const n of names) {
+      const idx = hdr.indexOf(n);
+      if (idx >= 0) return idx;
+    }
+    // Substring match pass (header col contains the search term)
+    for (const n of names) {
+      const idx = hdr.findIndex(h => h.includes(n));
+      if (idx >= 0) return idx;
     }
     return -1;
   };
-  const dateC = col('date','transaction date','trans date','posted date','post date','value date');
-  const payeeC= col('payee','description','merchant','name','memo','narrative','details');
-  const amtC  = col('amount','transaction amount','value','debit/credit','debit','credit','net amount','withdrawal','deposit');
-  const catC  = col('category','type','transaction type','class');
-  const acctC = col('account','account name','account number');
-  const memoC = col('memo','notes','note','reference');
-  const acctName = fname.replace(/\.[^.]+$/,'');
-  return lines.slice(1).map(l=>{
-    const r = delimiter==='\t' ? l.split('\t').map(c=>c.trim()) : splitCSV(l);
+
+  // ── Column index map ───────────────────────────────────────
+  const dateC  = col('date','transaction date','trans date','posted date','post date','value date','settled date','booking date');
+  const payeeC = col('payee','description','merchant','name','narrative','details','transaction description','original description','memo');
+  const amtC   = col('amount','transaction amount','net amount','value','debit/credit','transaction amount','sum');
+  const debC   = col('debit','withdrawal','dr','money out','debit amount','out');
+  const creC   = col('credit','deposit','cr','money in','credit amount','in');
+  const catC   = col('category','type','transaction type','class','label','spending category');
+  const acctC  = col('account','account name','account number','account id','account #');
+  const memoC  = col('memo','notes','note','reference','ref','check number','check #');
+
+  // Fallback account name from filename (strip extension + separators)
+  const acctName = fname.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ').trim() || 'Imported';
+
+  // ── Amount parser ──────────────────────────────────────────
+  // Handles: $1,234.56  (1,234.56)  -1234  1.234,56 (European)  N/A  blank
+  function parseAmt(raw) {
+    if (raw === undefined || raw === null) return NaN;
+    const s = String(raw)
+      .replace(/^["']+|["']+$/g, '') // strip surrounding quotes
+      .trim();
+    if (!s || s === '-' || s === '--' || s === 'N/A' || s === 'n/a') return NaN;
+    // Parentheses = negative: (1,234.56)
+    const neg = s.startsWith('(') && s.endsWith(')');
+    // Strip all non-numeric except . - (and detect European comma-decimal)
+    // European: 1.234,56 → has comma after digits and dot as thousands sep
+    let cleaned = s.replace(/[()]/g, '').trim();
+    // Detect European format: ends with comma + 1-2 digits e.g. "1.234,56"
+    if (/^\d{1,3}(\.\d{3})*(,\d{1,2})$/.test(cleaned)) {
+      cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+    } else {
+      // Standard: strip currency symbols, commas, spaces
+      cleaned = cleaned.replace(/[$£€¥₹,\s]/g, '');
+    }
+    const v = parseFloat(cleaned);
+    return isNaN(v) ? NaN : (neg ? -Math.abs(v) : v);
+  }
+
+  // ── Row processor ──────────────────────────────────────────
+  return lines.slice(1).map(line => {
+    const trimmed = line.trim();
+    // Skip blank lines and comma-only lines
+    if (!trimmed || /^[,;\|\t]*$/.test(trimmed)) return null;
+
+    const r = splitRow(line);
+
+    // Skip if not enough columns
     if (r.length < 2) return null;
-    const date=parseDate(dateC>=0?r[dateC]:''); if(!date)return null;
-    const _rawA=(amtC>=0?r[amtC]:'0')||'0';
-    const _neg=_rawA.trim().startsWith('(')||(_rawA.trim().startsWith('-')&&_rawA.trim().length>1);
-    const amount=parseFloat(_rawA.replace(/[$,()"\s]/g,'').replace(/,/g,''))*(_neg&&!_rawA.includes('-')?-1:1);
-    if(isNaN(amount))return null;
-    return { date, payee:(payeeC>=0?r[payeeC]:'Unknown').replace(/"/g,'').trim()||'Unknown', amount, category:(catC>=0?r[catC]:'Uncategorized').replace(/"/g,'').trim()||'Uncategorized', account:(acctC>=0?r[acctC]:acctName).replace(/"/g,'').trim()||acctName, memo:'', type:amount>=0?'credit':'debit' };
+
+    // Safe column getter — returns '' for out-of-bounds or undefined cells
+    const get = (idx) => (idx >= 0 && idx < r.length && r[idx] !== undefined)
+      ? String(r[idx]).replace(/^["']+|["']+$/g, '').trim()
+      : '';
+
+    // Date — required
+    const date = parseDate(get(dateC));
+    if (!date) return null;
+
+    // Amount — try combined column first, then separate debit/credit
+    let amount;
+    const rawAmt = get(amtC);
+    if (amtC >= 0 && rawAmt !== '') {
+      amount = parseAmt(rawAmt);
+    } else if (debC >= 0 || creC >= 0) {
+      const dRaw = get(debC);
+      const cRaw = get(creC);
+      const d = parseAmt(dRaw);
+      const c = parseAmt(cRaw);
+      // Debit = expense (negative), Credit = income (positive)
+      // Guard: if BOTH are blank/NaN, skip the row
+      const dHasVal = !isNaN(d) && d !== 0;
+      const cHasVal = !isNaN(c) && c !== 0;
+      if (!dHasVal && !cHasVal) {
+        // Both blank — skip this row
+        return null;
+      }
+      if (dHasVal) amount = -Math.abs(d);
+      else if (cHasVal) amount = Math.abs(c);
+      else amount = 0;
+    } else {
+      return null; // No amount column at all
+    }
+
+    if (isNaN(amount)) return null;
+
+    // Build transaction
+    const payee    = get(payeeC) || 'Unknown';
+    const category = get(catC)   || 'Uncategorized';
+    const account  = get(acctC)  || acctName;
+    const memo     = get(memoC)  || '';
+
+    return {
+      date,
+      payee:    payee    || 'Unknown',
+      amount,
+      category: category || 'Uncategorized',
+      account:  account  || acctName,
+      memo,
+      type: amount >= 0 ? 'credit' : 'debit'
+    };
   }).filter(Boolean);
 }
 
 function parseQIF(text, fname) {
-  if (!text || !text.trim()) return [];
-  const acctName=fname.replace(/\.[^.]+$/,''); let cur={}, acct=acctName; const out=[];
-  for (const line of text.split('\n')) {
-    const l=line.trim(); if(!l)continue;
-    if(l==='^'){if(cur.date&&cur.amount!==undefined){out.push({date:cur.date,payee:cur.payee||'Unknown',amount:cur.amount,category:cur.category||'Uncategorized',account:acct,memo:cur.memo||'',type:cur.amount>=0?'credit':'debit'});}cur={};}
-    else{const c=l[0],v=l.slice(1).trim();if(c==='D')cur.date=parseDate(v);else if(c==='T')cur.amount=parseFloat(v.replace(/[$,]/g,''));else if(c==='P')cur.payee=v;else if(c==='L')cur.category=v.replace(/^\[|\]$/g,'');else if(c==='M')cur.memo=v;}
-  }
-  return out.filter(t=>t.date);
+  const acctName = fname.replace(/\.[^.]+$/,'');
+  const result = [];
+  let currentAccount = acctName;
+  // Split on the ^ record separator
+  const raw = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  const records = raw.split(/\n\^\s*\n?/);
+  records.forEach(rec => {
+    const lines = rec.split('\n').map(l=>l.trim()).filter(l=>l.length>1);
+    let date='', amount=NaN, payee='', category='', memo='';
+    let isAccountBlock = false;
+    for (const line of lines) {
+      const code = line[0];
+      const val  = line.slice(1).trim();
+      if (code === '!') { isAccountBlock = val.toLowerCase().includes('account'); continue; }
+      if (code === 'N' && isAccountBlock) { currentAccount = val || acctName; continue; }
+      if (code === 'D') date = parseDate(val) || '';
+      else if (code === 'T' || code === 'U') {
+        const neg = val.startsWith('(') && val.endsWith(')');
+        const v = parseFloat(val.replace(/[$,£€()\s]/g,''));
+        amount = isNaN(v) ? NaN : (neg ? -Math.abs(v) : v);
+      }
+      else if (code === 'P') payee = val;
+      else if (code === 'L') category = val.replace(/^\[|\]$/g,'');
+      else if (code === 'M') memo = val;
+    }
+    if (date && !isNaN(amount) && amount !== 0) {
+      result.push({date, payee:payee||memo||'Unknown', amount, category:category||'Uncategorized', account:currentAccount, memo, type:amount>=0?'credit':'debit'});
+    }
+  });
+  return result;
 }
 
 function parseOFX(text, fname) {
@@ -3953,23 +4201,31 @@ function renderAnaTable(keys, values, groups, metric) {
 // INIT APP
 // ════════════════════════════════════════════════════
 function initApp() {
-  loadSettings();
-  if (!txns.length && !amzItems.length) { showPage('upload'); return; }
-  buildSidebar();
-  populateFilters();
-  document.getElementById('clearBtn').style.display='inline-flex';
-  document.getElementById('demoTag').style.display=isDemoMode?'inline-flex':'none';
-  const dates=txns.map(t=>t.date).sort();
-  const amzSrcs=[...new Set(amzItems.map(i=>i.source||'Detail'))]; const amzPart=amzItems.length?` · 🔍 ${amzItems.length.toLocaleString()} ${amzSrcs.length===1?amzSrcs[0]:'detail'}`:'';
-  document.getElementById('hdrInfo').textContent=`${txns.length.toLocaleString()} txns${amzPart}`;
-  const dashSub=document.getElementById('dashSub');
-  if(dashSub&&settings.user1) dashSub.textContent=`${settings.user1}'s financial picture · The Gauge`;
-  showPage('dashboard');
-  runIntelligence();
-  applySettingsLive();
+  try {
+    loadSettings();
+    if (!txns.length && !amzItems.length) { showPage('upload'); return; }
+    try { buildSidebar(); } catch(e) { console.warn('buildSidebar:', e); }
+    try { populateFilters(); } catch(e) { console.warn('populateFilters:', e); }
+    const cb=document.getElementById('clearBtn'); if(cb) cb.style.display='inline-flex';
+    const dt=document.getElementById('demoTag'); if(dt) dt.style.display=isDemoMode?'inline-flex':'none';
+    const amzSrcs=[...new Set(amzItems.map(i=>i.source||'Detail'))];
+    const amzPart=amzItems.length?` · 🔍 ${amzItems.length.toLocaleString()} ${amzSrcs.length===1?amzSrcs[0]:'detail'}`:'';
+    const hi=document.getElementById('hdrInfo'); if(hi) hi.textContent=`${txns.length.toLocaleString()} txns${amzPart}`;
+    const dashSub=document.getElementById('dashSub');
+    if(dashSub&&settings.user1) dashSub.textContent=`${settings.user1}'s financial picture · The Gauge`;
+    showPage('dashboard');
+    try { runIntelligence(); } catch(e) { console.warn('runIntelligence:', e); }
+    try { applySettingsLive(); } catch(e) { console.warn('applySettingsLive:', e); }
+  } catch(e) {
+    console.error('initApp fatal:', e);
+    // Fallback: at least show the upload page
+    try { showPage('upload'); } catch(e2) {}
+  }
 }
 
 function buildSidebar() {
+  try {
+
   const byA={};
   txns.forEach(t=>{if(!byA[t.account])byA[t.account]=0;byA[t.account]+=t.amount;});
   document.getElementById('acctList').innerHTML=
@@ -3983,6 +4239,8 @@ function buildSidebar() {
       <div class="acct-name" title="${a.name}">${a.name}</div>
       <div class="acct-bal" style="color:${(byA[a.name]||0)>=0?'var(--positive)':'var(--negative)'};">${fmtK(byA[a.name]||0)}</div>
     </div>`).join('');
+
+  } catch(e) { console.error("Forge buildSidebar error:", e); }
 }
 
 function filterToAccount(acctName) {
@@ -3998,6 +4256,8 @@ function filterToAccount(acctName) {
 }
 
 function populateFilters() {
+  try {
+
   const acctOpts=`<option value="all">All Accounts</option>`+accounts.map(a=>`<option value="${a.name}">${a.name}</option>`).join('');
   ['cfAcct','catAcct','txnAcct'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML=acctOpts;});
   const years=[...new Set(txns.map(t=>t.date.slice(0,4)))].sort().reverse();
@@ -4009,6 +4269,8 @@ function populateFilters() {
   const amzCats=[...new Set(amzItems.map(i=>i.category))].sort();
   const amzCatEl=document.getElementById('amzCatF');
   if(amzCatEl)amzCatEl.innerHTML=`<option value="all">All Categories</option>`+amzCats.map(c=>`<option value="${c}">${c}</option>`).join('');
+
+  } catch(e) { console.error("Forge populateFilters error:", e); }
 }
 
 // ════════════════════════════════════════════════════
@@ -4017,25 +4279,36 @@ function populateFilters() {
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  const pg=document.getElementById('page-'+name); if(pg)pg.classList.add('active');
+  const pg=document.getElementById('page-'+name);
+  if(pg) { pg.classList.add('active'); pg.style.opacity='1'; }
   const nv=document.getElementById('nav-'+name); if(nv)nv.classList.add('active');
+  // Scroll main to top on page change
+  const mainEl=document.querySelector('main');
+  if(mainEl) mainEl.scrollTop=0;
+  // Render with error isolation — one page's error never blacks out another
+  const safe=(fn,label)=>{ try{fn();}catch(e){console.error('Forge render error ['+label+']:', e);} };
   if(name==='family'){
     loadSettings();
-    if(settings.confluenceAnim) showConfluenceEntry();
-    renderFamily();
-    const fbrMonth=document.getElementById('fbrMonthTitle');
-    if(fbrMonth){const now=new Date();fbrMonth.textContent=`${MONTHS[now.getMonth()]} ${now.getFullYear()} · ${settings.familyName||'Luka'} Family Confluence`;}
+    safe(()=>{
+      if(settings.confluenceAnim) showConfluenceEntry();
+      renderFamily();
+      const fbrMonth=document.getElementById('fbrMonthTitle');
+      if(fbrMonth){const now=new Date();fbrMonth.textContent=`${MONTHS[now.getMonth()]} ${now.getFullYear()} · ${settings.familyName||'Luka'} Family Confluence`;}
+    },'family');
   }
-  if(name==='settings') renderSettingsPage();
-  if(name==='dashboard'&&txns.length)renderDashboard();
-  if(name==='intelligence'&&txns.length)renderIntelligence();
-  if(name==='cashflow'&&txns.length)renderCF();
-  if(name==='categories'&&txns.length)renderCats();
-  if(name==='merchants'&&txns.length)renderMch();
-  if(name==='amazon')renderAmazon();
-  if(name==='transactions'&&txns.length)renderTxns();
-  if(name==='analytics'&&txns.length){ loadSettings(); renderAnalytics(); }
-  if(name==='dashboard'&&isDemoMode)document.getElementById('demoBanner').style.display='flex';
+  if(name==='settings') safe(()=>renderSettingsPage(),'settings');
+  if(name==='dashboard'&&txns.length) safe(()=>renderDashboard(),'dashboard');
+  if(name==='intelligence'&&txns.length) safe(()=>renderIntelligence(),'intelligence');
+  if(name==='cashflow'&&txns.length) safe(()=>renderCF(),'cashflow');
+  if(name==='categories'&&txns.length) safe(()=>renderCats(),'categories');
+  if(name==='merchants'&&txns.length) safe(()=>renderMch(),'merchants');
+  if(name==='amazon') safe(()=>renderAmazon(),'amazon');
+  if(name==='transactions'&&txns.length) safe(()=>renderTxns(),'transactions');
+  if(name==='analytics'&&txns.length) safe(()=>{ loadSettings(); renderAnalytics(); },'analytics');
+  if(name==='dashboard'&&isDemoMode){
+    const db=document.getElementById('demoBanner');
+    if(db) db.style.display='flex';
+  }
 }
 
 function switchTab(ns, tab) {
@@ -4091,7 +4364,7 @@ function renderDashboard() {
   exp.forEach(t=>{const c=t.category||'Uncategorized';cats[c]=(cats[c]||0)+Math.abs(t.amount);});
   const topCats=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,9);
   destroyChart('catDonut');
-  charts['catDonut']=new Chart(document.getElementById('catDonut'),{type:'doughnut',data:{labels:topCats.map(([l])=>l),datasets:[{data:topCats.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topCats.length),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10}}},cutout:'60%'}});
+  try{charts['catDonut']=new Chart(document.getElementById('catDonut'),{type:'doughnut',data:{labels:topCats.map(([l])=>l),datasets:[{data:topCats.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topCats.length),borderWidth:1,borderColor:'rgba(255,255,255,.06)'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:8,color:'#9E9890',padding:5}}},cutout:'58%'}});}catch(e){console.warn('catDonut',e);}
 
   // Merchants
   const merch={};
@@ -4110,6 +4383,8 @@ function renderDashboard() {
 let intelAlerts=[];
 
 function runIntelligence() {
+  try {
+
   intelAlerts=[];
   detectTrendAlerts();
   detectBudgetDrift();
@@ -4123,6 +4398,8 @@ function runIntelligence() {
   if(total>0){badge.style.display='inline-block';badge.textContent=total;}
   else badge.style.display='none';
   document.getElementById('alertCount').textContent=total;
+
+  } catch(e) { console.error("Forge runIntelligence error:", e); }
 }
 
 function setIntelRange(r,btn){
@@ -4133,6 +4410,8 @@ function setIntelRange(r,btn){
 }
 
 function renderIntelligence() {
+  try {
+
   runIntelligence();
   renderAlerts();
   renderTrends();
@@ -4140,6 +4419,8 @@ function renderIntelligence() {
   renderAnomalies();
   renderSeasonal();
   renderActions();
+
+  } catch(e) { console.error("Forge renderIntelligence error:", e); }
 }
 
 // ── TREND ALERTS ──
@@ -4289,6 +4570,8 @@ function detectSeasonal() {
 }
 
 function renderAlerts() {
+  try {
+
   if(!intelAlerts.length){
     document.getElementById('intelAlerts').innerHTML='<div style="text-align:center;padding:50px;color:var(--muted);"><div style="font-size:36px;margin-bottom:12px;">✅</div><h3 style="color:var(--ink3);">No active alerts</h3><p style="font-size:12px;">Your spending looks healthy in the selected period.</p></div>';
     return;
@@ -4300,9 +4583,13 @@ function renderAlerts() {
       <div class="intel-body">${a.body}</div>
       <div class="intel-action">→ ${a.action}</div>
     </div>`).join('')}</div>`;
+
+  } catch(e) { console.error("Forge renderAlerts error:", e); }
 }
 
 function renderTrends() {
+  try {
+
   // 3M vs prior 3M by category
   const now=new Date();
   const cur3=txns.filter(t=>{const d=new Date(t.date);return d>=new Date(now.getFullYear(),now.getMonth()-2,1)&&t.amount<0;});
@@ -4343,9 +4630,13 @@ function renderTrends() {
       <div class="intel-action">→ ${pct>25?'Investigate — this category is accelerating fast.':pct>10?'Monitor this category closely.':pct<-10?'Great improvement — keep it up.':'Spending is relatively stable.'}</div>
     </div>`).join('')}
   </div>`;
+
+  } catch(e) { console.error("Forge renderTrends error:", e); }
 }
 
 function renderBudgetDrift() {
+  try {
+
   const now=new Date(); const day=now.getDate(); const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
   const totalMTD=budgetDriftData.reduce((s,r)=>s+r.spent,0);
   const totalAvg=budgetDriftData.reduce((s,r)=>s+r.avg,0);
@@ -4370,9 +4661,13 @@ function renderBudgetDrift() {
       <td>${badge}</td>
     </tr>`;
   }).join('');
+
+  } catch(e) { console.error("Forge renderBudgetDrift error:", e); }
 }
 
 function renderAnomalies() {
+  try {
+
   const exp=txns.filter(t=>inRange(t,intelR)&&t.amount<0);
   const amounts=exp.map(t=>Math.abs(t.amount));
   if(!amounts.length)return;
@@ -4399,9 +4694,13 @@ function renderAnomalies() {
       <div><div class="anomaly-label">${a.payee}</div><div class="anomaly-meta">${a.date} · ${a.category} · ${a.account}</div></div>
       <div class="anomaly-val"><div>${fmt(a.absAmt)}</div><span class="sigma ${a.sigma>=3?'sigma-3':'sigma-2'}">${a.sigma.toFixed(1)}σ</span></div>
     </div>`).join('');
+
+  } catch(e) { console.error("Forge renderAnomalies error:", e); }
 }
 
 function renderSeasonal() {
+  try {
+
   if(!seasonalData.avgByMonth)return;
   const{byYearMonth,years,avgByMonth,overallAvg}=seasonalData;
 
@@ -4430,9 +4729,13 @@ function renderSeasonal() {
     <div class="intel-card intel-good"><div class="intel-hdr">💚 Lowest Month: ${MONTHS[high[high.length-1].m]}</div><div class="intel-body">Average ${fmt(high[high.length-1].v)} — <strong>${((1-high[high.length-1].r)*100).toFixed(0)}% below baseline</strong>. A natural recovery month after holidays.</div><div class="intel-action">→ Use ${MONTHS[high[high.length-1].m]} to rebuild savings or pay down any holiday debt.</div></div>
     <div class="intel-card intel-info"><div class="intel-hdr">📊 Year-over-Year Drift</div><div class="intel-body">Based on ${years.length} years of data. Your spending baseline has been creeping at an estimated 3-5% per year — consistent with inflation but worth watching.</div><div class="intel-action">→ Set an annual spending target and compare each December to stay on track.</div></div>
   </div>`;
+
+  } catch(e) { console.error("Forge renderSeasonal error:", e); }
 }
 
 function renderActions() {
+  try {
+
   const actions=[];
   // Generate from alerts + data
   if(budgetDriftData.filter(r=>r.drift>30).length){
@@ -4477,12 +4780,16 @@ function renderActions() {
       panel.insertAdjacentHTML('beforeend',lsHtml);
     }
   }
+
+  } catch(e) { console.error("Forge renderActions error:", e); }
 }
 
 // ════════════════════════════════════════════════════
 // CASH FLOW
 // ════════════════════════════════════════════════════
 function renderCF() {
+  try {
+
   let t=txns;
   const ac=document.getElementById('cfAcct').value; const yr=document.getElementById('cfYear').value;
   t=byAcct(t,ac); if(yr!=='all')t=t.filter(x=>x.date.startsWith(yr));
@@ -4498,6 +4805,8 @@ function renderCF() {
   const netArr=md.income.map((v,i)=>v-md.expenses[i]);
   destroyChart('cfNetChart');
   charts['cfNetChart']=new Chart(document.getElementById('cfNetChart'),{type:'line',data:{labels:md.labels,datasets:[{data:netArr,borderColor:'#2f6bc8',backgroundColor:'rgba(47,107,200,.1)',fill:true,tension:.3,pointRadius:2}]},options:{responsive:true,scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+
+  } catch(e) { console.error("Forge renderCF error:", e); }
 }
 
 // ════════════════════════════════════════════════════
@@ -4506,6 +4815,8 @@ function renderCF() {
 function setCatR(r,btn){catR=r;document.querySelectorAll('#catRange .rtab').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');renderCats();}
 
 function renderCats() {
+  try {
+
   let t=txns.filter(x=>inRange(x,catR)&&x.amount<0);
   t=byAcct(t,document.getElementById('catAcct').value);
   const cats={}; t.forEach(x=>{ cats[x.category]=(cats[x.category]||{total:0,count:0}); cats[x.category].total+=Math.abs(x.amount); cats[x.category].count++; });
@@ -4532,6 +4843,8 @@ function renderCats() {
     const trendHtml=yoy!==null?`<span class="card-delta ${yoy>0?'delta-up':'delta-dn'}">${fmtPct(yoy)} YoY</span>`:'—';
     return`<tr><td><div class="td-cat"><span class="cat-dot" style="background:${CAT_COLORS[i%CAT_COLORS.length]}"></span>${l}</div></td><td class="td-r">${d.count}</td><td class="td-r">${fmt(d.total/months)}</td><td>${trendHtml}</td><td class="td-r">${fmt(d.total)}</td><td class="td-r">${((d.total/total)*100).toFixed(1)}%</td></tr>`;
   }).join('');
+
+  } catch(e) { console.error("Forge renderCats error:", e); }
 }
 
 // ════════════════════════════════════════════════════
@@ -4540,6 +4853,8 @@ function renderCats() {
 function setMchR(r,btn){mchR=r;document.querySelectorAll('#mchRange .rtab').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');renderMch();}
 
 function renderMch() {
+  try {
+
   let t=txns.filter(x=>inRange(x,mchR)&&x.amount<0);
   const cat=document.getElementById('mchCat').value; if(cat!=='all')t=t.filter(x=>x.category===cat);
   const m={}; t.forEach(x=>{if(!m[x.payee])m[x.payee]={total:0,count:0,cats:{}};m[x.payee].total+=Math.abs(x.amount);m[x.payee].count++;m[x.payee].cats[x.category]=(m[x.payee].cats[x.category]||0)+1;});
@@ -4549,12 +4864,16 @@ function renderMch() {
     const topCat=Object.entries(d.cats).sort((a,b)=>b[1]-a[1])[0]?.[0]||'Other';
     return`<tr><td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);">${i+1}</td><td><strong>${n}</strong></td><td><span class="badge badge-blu" style="font-size:9px;">${topCat}</span></td><td class="td-r">${d.count}</td><td class="td-r">${fmt(d.total/d.count)}</td><td class="td-r"><div class="bar-row" style="justify-content:flex-end;"><div class="mini-bar" style="width:${Math.round(d.total/maxT*70)}px;background:var(--gold);opacity:.6;"></div><strong>${fmt(d.total)}</strong></div></td></tr>`;
   }).join('');
+
+  } catch(e) { console.error("Forge renderMch error:", e); }
 }
 
 // ════════════════════════════════════════════════════
 // AMAZON
 // ════════════════════════════════════════════════════
 function renderAmazon() {
+  try {
+
   const has=amzItems.length>0;
   document.getElementById('amzNoData').style.display=has?'none':'block';
   document.getElementById('amzContent').style.display=has?'block':'none';
@@ -4645,6 +4964,8 @@ function renderAmazon() {
 
   populateAmzFilters();
   renderAmzItems();
+
+  } catch(e) { console.error("Forge renderAmazon error:", e); }
 }
 
 
@@ -4857,6 +5178,8 @@ function saveNotes() {
 
 // ── FAMILY REVIEW MAIN RENDER ──
 function renderFamily() {
+  try {
+
   loadFBR();
   const now = new Date();
   const monthName = MONTHS[now.getMonth()] + ' ' + now.getFullYear();
@@ -4894,9 +5217,13 @@ function renderFamily() {
 
   // Auto-open step 1
   if(!document.getElementById('body1').classList.contains('open')) toggleStep(1);
+
+  } catch(e) { console.error("Forge renderFamily error:", e); }
 }
 
 function buildHeroChips() {
+  try {
+
   if(!txns.length) { document.getElementById('fbrChips').innerHTML=''; return; }
   const now = new Date();
   const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
@@ -4918,6 +5245,8 @@ function buildHeroChips() {
     { txt: fbrState.stepsDone.length + '/6 steps done', cls: 'blu' },
   ];
   document.getElementById('fbrChips').innerHTML = chips.map(c=>`<div class="fbr-chip ${c.cls}">${c.txt}</div>`).join('');
+
+  } catch(e) { console.error("Forge buildHeroChips error:", e); }
 }
 
 // ── STEP 1: Month in Review ──

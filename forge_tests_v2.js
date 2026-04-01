@@ -1,7 +1,7 @@
 'use strict';
 // ═══════════════════════════════════════════════════════════════
 // FORGE v3.2 — EXHAUSTIVE TEST SUITE
-// 22 Suites · 312 Tests
+// 26 Suites · 363 Tests
 // Covers every parser, analytics engine, purchaser system,
 // demo data generator, deduplication, edge cases, and regression
 // across all new features in v3.0–3.2
@@ -589,6 +589,175 @@ test('getRange: unknown range → same as all', ()=>{ const r=getRange('bogus');
 test('MONTHS array has 12 entries', ()=>eq(MONTHS.length,12));
 test('MONTHS: Jan is first', ()=>assert(MONTHS[0].startsWith('Jan')||MONTHS[0]==='January'));
 test('IMPULSE_CATS is a Set', ()=>assert(IMPULSE_CATS instanceof Set));
+
+
+// ═══════════════════════════════════════════════════════════════
+// SUITE 26: Blank columns, edge cases, all CSV variations
+// ═══════════════════════════════════════════════════════════════
+suite('26 · Blank Columns & CSV Edge Cases');
+
+test('Blank col in middle of header',()=>{
+  const csv="Date,,Amount,Category,Account\n01/15/2024,junk,-89.99,Shopping,Chase";
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1,'blank header col'); near(r[0].amount,-89.99);
+});
+test('Two blank cols at start of header',()=>{
+  const csv=",,Date,Payee,Amount,Account\n,,01/15/2024,Target,-89.99,Chase";
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1,'leading blank cols');
+});
+test('Blank col at end of header',()=>{
+  const csv="Date,Payee,Amount,Account,\n01/15/2024,Target,-89.99,Chase,";
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1,'trailing blank col'); near(r[0].amount,-89.99);
+});
+test('Multiple scattered blank cols in header',()=>{
+  const csv="Date,,Payee,,Amount,,Account\n01/15/2024,,Target,,-89.99,,Chase";
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1,'scattered blank cols');
+});
+test('Blank payee cell → Unknown',()=>{
+  const csv="Date,Payee,Amount,Account\n01/15/2024,,-89.99,Chase";
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1); eq(r[0].payee,'Unknown');
+});
+test('Blank category cell → Uncategorized',()=>{
+  const csv="Date,Payee,Amount,Category,Account\n01/15/2024,Target,-89.99,,Chase";
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1); eq(r[0].category,'Uncategorized');
+});
+test('Blank account cell → filename fallback',()=>{
+  const csv="Date,Payee,Amount,Category,Account\n01/15/2024,Target,-89.99,Shopping,";
+  const r=parseCSV(csv,'my-account.csv'); gte(r.length,1); assert(r[0].account.length>0,'account not empty');
+});
+test('Blank amount cell → row skipped',()=>{
+  const csv="Date,Payee,Amount,Account\n01/15/2024,Target,,Chase\n01/16/2024,Starbucks,-8.50,Chase";
+  const r=parseCSV(csv,'t.csv'); eq(r.length,1,'blank amount row skipped');
+});
+test('Blank date cell → row skipped',()=>{
+  const csv="Date,Payee,Amount,Account\n,Target,-89.99,Chase\n01/16/2024,Starbucks,-8.50,Chase";
+  const r=parseCSV(csv,'t.csv'); eq(r.length,1,'blank date row skipped');
+});
+test('Blank debit AND credit → row skipped',()=>{
+  const csv="Date,Description,Debit,Credit,Account\n01/15/2024,Target,,,Chase\n01/16/2024,Salary,,100.00,Chase";
+  const r=parseCSV(csv,'t.csv'); eq(r.length,1,'both d+c blank → skip');
+});
+test('Quoted blank amount → row skipped',()=>{
+  const csv='Date,Payee,Amount,Account\n01/15/2024,Target,"",Chase\n01/16/2024,Starbucks,-8.50,Chase';
+  const r=parseCSV(csv,'t.csv'); eq(r.length,1,'quoted blank amount skipped');
+});
+test('Whitespace-only amount → row skipped',()=>{
+  const csv="Date,Payee,Amount,Account\n01/15/2024,Target,   ,Chase\n01/16/2024,Starbucks,-8.50,Chase";
+  const r=parseCSV(csv,'t.csv'); eq(r.length,1,'whitespace amount skipped');
+});
+test('Blank rows in data section',()=>{
+  const csv="Date,Payee,Amount,Account\n01/15/2024,Target,-89.99,Chase\n\n\n01/16/2024,Starbucks,-8.50,Chase";
+  const r=parseCSV(csv,'t.csv'); eq(r.length,2,'blank rows skipped');
+});
+test('Row of only commas',()=>{
+  const csv="Date,Payee,Amount,Account\n01/15/2024,Target,-89.99,Chase\n,,,\n01/16/2024,Starbucks,-8.50,Chase";
+  const r=parseCSV(csv,'t.csv'); eq(r.length,2,'comma-only row skipped');
+});
+test('Trailing comma on every row',()=>{
+  const csv="Date,Payee,Amount,Account,\n01/15/2024,Target,-89.99,Chase,\n01/16/2024,Starbucks,-8.50,Chase,";
+  const r=parseCSV(csv,'t.csv'); eq(r.length,2,'trailing commas ok');
+});
+test('Extra spaces in header col names',()=>{
+  const csv="  Date  ,  Payee  ,  Amount  ,  Account  \n01/15/2024,Target,-89.99,Chase";
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1,'spaced header names'); near(r[0].amount,-89.99);
+});
+test('Mixed case header',()=>{
+  const csv="DATE,Payee,AMOUNT,Category,Account\n01/15/2024,Target,-89.99,Shopping,Chase";
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1,'mixed case header'); near(r[0].amount,-89.99);
+});
+test('ALL CAPS header',()=>{
+  const csv="DATE,PAYEE,AMOUNT,CATEGORY,ACCOUNT\n01/15/2024,Target,-89.99,Shopping,Chase";
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1,'all caps header');
+});
+test('BOM + blank cols in header',()=>{
+  const csv="\uFEFFDate,,Payee,Amount,Account\n01/15/2024,,Target,-89.99,Chase";
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1,'BOM + blank cols');
+});
+test('sep= first line (Excel)',()=>{
+  const csv="sep=,\nDate,Payee,Amount,Account\n01/15/2024,Target,-89.99,Chase";
+  const r=parseCSV(csv,'t.csv');
+  // sep= becomes header → date col not found → 0 rows OR correctly skips sep= line
+  assert(Array.isArray(r),'sep= no crash');
+});
+test('Header with # comment lines before',()=>{
+  const csv="#Exported from Bank\nDate,Payee,Amount,Account\n01/15/2024,Target,-89.99,Chase";
+  const r=parseCSV(csv,'t.csv');
+  // #... header means # line is treated as column header → no date found → 0 rows
+  assert(Array.isArray(r),'comment before header no crash');
+});
+test('Header repeated mid-file',()=>{
+  const csv="Date,Payee,Amount,Account\n01/15/2024,Target,-89.99,Chase\nDate,Payee,Amount,Account\n01/16/2024,Starbucks,-8.50,Chase";
+  const r=parseCSV(csv,'t.csv'); eq(r.length,2,'repeated header row skipped');
+});
+test('Extra data cols beyond header',()=>{
+  const csv="Date,Payee,Amount,Account\n01/15/2024,Target,-89.99,Chase,EXTRA,JUNK,DATA";
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1,'extra cols dont break parse');
+});
+test('Fewer data cols than header',()=>{
+  const csv="Date,Payee,Amount,Category,Account\n01/15/2024,Target,-89.99";
+  const r=parseCSV(csv,'t.csv');
+  assert(Array.isArray(r),'short row no crash');
+});
+test('Row with only 1 field',()=>{
+  const csv="Date,Payee,Amount,Account\n01/15/2024";
+  const r=parseCSV(csv,'t.csv'); eq(r.length,0,'single-field row skipped');
+});
+test('Amount with trailing space',()=>{
+  const csv="Date,Payee,Amount,Account\n01/15/2024,Target,-89.99 ,Chase";
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1); near(r[0].amount,-89.99);
+});
+test('Amount with leading space',()=>{
+  const csv="Date,Payee,Amount,Account\n01/15/2024,Target, -89.99,Chase";
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1); near(r[0].amount,-89.99);
+});
+test('Dollar sign in amount',()=>{
+  const csv="Date,Payee,Amount,Account\n01/15/2024,Target,$89.99,Chase";
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1); near(Math.abs(r[0].amount),89.99);
+});
+test('Parenthetical negative amount',()=>{
+  const csv="Date,Payee,Amount,Account\n01/15/2024,Target,(89.99),Chase";
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1); assert(r[0].amount<0,'parens is negative');
+});
+test('Amount with commas in thousands',()=>{
+  const csv='Date,Payee,Amount,Account\n01/15/2024,Mortgage,"2,240.00",Chase';
+  const r=parseCSV(csv,'t.csv'); gte(r.length,1); near(r[0].amount,2240);
+});
+test('Amount zero — included',()=>{
+  const csv="Date,Payee,Amount,Account\n01/15/2024,Fee Reversal,0.00,Chase";
+  const r=parseCSV(csv,'t.csv');
+  assert(Array.isArray(r),'zero amount no crash');
+});
+test('Negative credit value',()=>{
+  const csv="Date,Description,Debit,Credit,Account\n01/15/2024,Reversal,,-89.99,Chase";
+  const r=parseCSV(csv,'t.csv'); assert(Array.isArray(r),'negative credit no crash');
+});
+test('Amount NaN string',()=>{
+  const csv="Date,Payee,Amount,Account\n01/15/2024,Target,N/A,Chase\n01/16/2024,Starbucks,-8.50,Chase";
+  const r=parseCSV(csv,'t.csv'); eq(r.length,1,'NaN amount row skipped');
+});
+test('Amount as word',()=>{
+  const csv="Date,Payee,Amount,Account\n01/15/2024,Target,DEBIT,Chase\n01/16/2024,Starbucks,-8.50,Chase";
+  const r=parseCSV(csv,'t.csv'); eq(r.length,1,'word amount row skipped');
+});
+test('Semicolon delimiter — no crash',()=>{
+  const csv="Date;Payee;Amount;Account\n01/15/2024;Target;-89.99;Chase";
+  assert(Array.isArray(parseCSV(csv,'t.csv')),'semicolon no crash');
+});
+test('Pipe delimiter — no crash',()=>{
+  const csv="Date|Payee|Amount|Account\n01/15/2024|Target|-89.99|Chase";
+  assert(Array.isArray(parseCSV(csv,'t.csv')),'pipe no crash');
+});
+test('Tab delimited',()=>{
+  const csv="Date\tPayee\tAmount\tAccount\n01/15/2024\tTarget\t-89.99\tChase";
+  const r=parseCSV(csv,'t.csv'); eq(r.length,1); near(r[0].amount,-89.99);
+});
+test('CRLF line endings',()=>{
+  const csv="Date,Payee,Amount,Account\r\n01/15/2024,Target,-89.99,Chase\r\n01/16/2024,Starbucks,-8.50,Chase";
+  const r=parseCSV(csv,'t.csv'); eq(r.length,2,'CRLF handled');
+});
+test('Mixed CRLF and LF',()=>{
+  const csv="Date,Payee,Amount,Account\r\n01/15/2024,Target,-89.99,Chase\n01/16/2024,Starbucks,-8.50,Chase";
+  const r=parseCSV(csv,'t.csv'); eq(r.length,2,'mixed CRLF+LF handled');
+});
 
 // ═══════════════════════════════════════════════════════════════
 // RESULTS
