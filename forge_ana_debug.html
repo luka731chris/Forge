@@ -7,6 +7,11 @@
 <title>Forge — Build What Lasts</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
+/* ═══════════════════════════════════════════════════════════════
+   FORGE DESIGN SYSTEM v2.0
+   Premium · Refined · Pittsburgh
+   "Nine months with a Madison Avenue UX team"
+═══════════════════════════════════════════════════════════════ */
 
 :root {
   /* ── Core Palette ── */
@@ -40,9 +45,12 @@
 
   /* ── Semantic ── */
   --bg:        var(--base);
+  --surface:   var(--lift);
   --card:      var(--float);
   --border:    var(--line);
   --border2:   var(--line2);
+  --text:      var(--ink);
+  --text2:     var(--ink2);
   --muted:     var(--ink3);
   --dim:       var(--ink4);
 
@@ -69,11 +77,24 @@
 
   /* ── Geometry ── */
   --r-sm:  4px;
+  --r:     8px;
   --r-lg:  14px;
+  --r-xl:  20px;
 
   /* ── Legacy aliases (backward compat) ── */
+  --accent:    var(--gold);
+  --accent2:   var(--river);
+  --accent3:   var(--positive);
+  --accent4:   var(--gold);
+  --slate:     var(--ink3);
+  --cream:     var(--lift);
+  --forge-dark:var(--lift);
 }
 
+/* ── GOOGLE FONTS IMPORT ── */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap');
+
+/* ── RESET ── */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0; padding: 0;
@@ -91,6 +112,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── SUBTLE GRAIN TEXTURE ── */
 body::after {
   content: '';
   position: fixed; inset: 0;
@@ -99,12 +121,17 @@ body::after {
   opacity: 0;
 }
 
+
+/* ── APP SHELL ── */
 .app {
   display: flex;
   min-height: 100vh;
   position: relative;
 }
 
+/* ═══════════════════════════════════════════════
+   FORGE HEADER — reimagined wordmark
+═══════════════════════════════════════════════ */
 .forge-header {
   position: sticky; top: 0; z-index: 200;
   background: rgba(8, 8, 8, 0.92);
@@ -124,6 +151,7 @@ body::after {
   background: linear-gradient(90deg, transparent, var(--gold-line) 20%, var(--gold-line) 80%, transparent);
 }
 
+/* ── THE FORGE WORDMARK ── */
 .forge-wordmark {
   display: flex;
   align-items: center;
@@ -172,6 +200,9 @@ body::after {
   font-size: 10px; letter-spacing: 0.08em;
 }
 
+/* ═══════════════════════════════════════════════
+   BUTTONS — refined, consistent
+═══════════════════════════════════════════════ */
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 7px 16px; border-radius: var(--r-sm);
@@ -209,7 +240,11 @@ body::after {
 }
 .btn-outline:hover { background: var(--gold-dim); }
 .btn-sm { padding: 5px 12px; font-size: 11.5px; }
+.btn-xs { padding: 3px 9px; font-size: 11px; }
 
+/* ═══════════════════════════════════════════════
+   NAVIGATION — generous, readable, structured
+═══════════════════════════════════════════════ */
 nav {
   width: 228px; flex-shrink: 0;
   background: var(--void);
@@ -266,7 +301,14 @@ nav::-webkit-scrollbar-thumb:hover { background: var(--border2); }
   border-left-color: var(--gold);
   font-weight: 500;
 }
-.nav-item
+.nav-item .nav-badge {
+  margin-left: auto;
+  background: var(--gold); color: #000;
+  padding: 1px 7px; border-radius: 20px;
+  font-size: 10px; font-weight: 700;
+  font-family: var(--font-m);
+  display: none;
+}
 
 .nav-item.nav-confluence {
   margin-top: 4px;
@@ -303,7 +345,11 @@ nav::-webkit-scrollbar-thumb:hover { background: var(--border2); }
 .acct-bal { font-family: var(--font-m); font-size: 10.5px; color: var(--ink4); flex-shrink: 0; }
 
 /* Nav footer — Bridge + tagline */
-
+.nav-footer {
+  margin-top: auto;
+  padding: 16px 16px 12px;
+  border-top: 1px solid var(--line);
+}
 .nav-bridge-svg { width: 100%; opacity: 0.08; display: block; }
 .nav-tagline {
   font-family: var(--font-m);
@@ -324,6 +370,9 @@ nav::-webkit-scrollbar-thumb:hover { background: var(--border2); }
   border-radius: 1px;
 }
 
+/* ═══════════════════════════════════════════════
+   MAIN CONTENT
+═══════════════════════════════════════════════ */
 main {
   flex: 1;
   padding: 28px 32px 60px;
@@ -339,6 +388,7 @@ main {
   display: block;
 }
 
+/* ── PAGE HEADER ── */
 .page-hdr {
   display: flex; align-items: flex-start;
   justify-content: space-between;
@@ -357,6 +407,9 @@ main {
   letter-spacing: 0.04em;
 }
 
+/* ═══════════════════════════════════════════════
+   THE GAUGE HERO — flagship dashboard element
+═══════════════════════════════════════════════ */
 .gauge-hero {
   background: var(--float);
   border: 1px solid var(--line);
@@ -380,6 +433,12 @@ main {
   width: 260px; opacity: 0.025; pointer-events: none;
 }
 
+.gauge-eyebrow {
+  font-family: var(--font-m);
+  font-size: 10px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--ink4);
+  margin-bottom: 10px;
+}
 .gauge-net {
   font-family: var(--font-d);
   font-size: 72px; font-weight: 600; line-height: 1;
@@ -388,7 +447,27 @@ main {
 }
 .gauge-net.pos { color: var(--positive); }
 .gauge-net.neg { color: var(--negative); }
+.gauge-label { font-size: 13px; color: var(--ink4); margin-bottom: 24px; }
 
+.gauge-chips {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.g-chip {
+  padding: 6px 14px;
+  border-radius: var(--r-sm);
+  font-size: 12px; font-weight: 500;
+  border: 1px solid;
+  letter-spacing: 0.01em;
+}
+.gc-gold    { background: var(--gold-dim);             color: var(--gold);     border-color: var(--gold-line); }
+.gc-positive{ background: rgba(45,212,191,.08);        color: var(--positive); border-color: rgba(45,212,191,.2); }
+.gc-negative{ background: rgba(248,113,113,.08);       color: var(--negative); border-color: rgba(248,113,113,.2); }
+.gc-river   { background: rgba(96,165,250,.08);        color: var(--river);    border-color: rgba(96,165,250,.2); }
+.gc-muted   { background: rgba(255,255,255,.04);       color: var(--ink4);     border-color: var(--line); }
+
+/* ═══════════════════════════════════════════════
+   CARDS — unified, generous proportions
+═══════════════════════════════════════════════ */
 .cards-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
 .cards-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 24px; }
 .cards-5 { display: grid; grid-template-columns: repeat(5,1fr); gap: 14px; margin-bottom: 24px; }
@@ -432,6 +511,7 @@ main {
 .delta-up  { color: var(--negative); }
 .delta-dn  { color: var(--positive); }
 
+/* ── CHARTS ── */
 .chart-card {
   background: var(--float);
   border: 1px solid var(--line);
@@ -449,6 +529,7 @@ main {
 .grid-2   { display: grid; grid-template-columns: 1fr 1fr;  gap: 20px; margin-bottom: 22px; }
 .grid-3   { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 22px; }
 
+/* ── TABLES — LEDGER ROOM ── */
 .tbl-card {
   background: var(--float);
   border: 1px solid var(--line);
@@ -483,6 +564,7 @@ tr:hover td { background: rgba(245,168,0,.025); }
 .td-cat { display: inline-flex; align-items: center; gap: 8px; }
 .cat-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 
+/* ── FILTERS ── */
 .filters { display: flex; gap: 10px; align-items: center; margin-bottom: 22px; flex-wrap: wrap; }
 .filter-lbl {
   font-family: var(--font-m); font-size: 10px;
@@ -522,6 +604,7 @@ select option { background: var(--float); color: var(--ink2); }
   box-shadow: 0 1px 4px rgba(245,168,0,.3);
 }
 
+/* ── BADGES ── */
 .badge {
   display: inline-flex; align-items: center;
   padding: 2px 8px; border-radius: var(--r-sm);
@@ -531,10 +614,11 @@ select option { background: var(--float); color: var(--ink2); }
 .badge-red  { background: rgba(248,113,113,.12); color: var(--negative); }
 .badge-grn  { background: rgba(45,212,191,.12);  color: var(--positive); }
 .badge-blu  { background: rgba(96,165,250,.12);  color: var(--river);    }
-
+.badge-gold { background: var(--gold-dim);        color: var(--gold);     }
 .badge-pu   { background: rgba(167,139,250,.12); color: var(--purple);   }
 .badge-org  { background: rgba(251,191,36,.12);  color: var(--caution);  }
 
+/* ── THE FURNACE — intelligence cards ── */
 .intel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 22px; }
 .intel-card {
   border-radius: var(--r-lg); padding: 20px 22px; border: 1px solid;
@@ -578,6 +662,7 @@ select option { background: var(--float); color: var(--ink2); }
 .season-grid { display: grid; grid-template-columns: repeat(12,1fr); gap: 4px; margin-bottom: 10px; }
 .season-cell { border-radius: 3px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; font-family: var(--font-m); color: #fff; }
 
+/* ── UPLOAD — FEED THE FURNACE ── */
 .upload-hero { max-width: 580px; margin: 64px auto; text-align: center; }
 .upload-hero h1 {
   font-family: var(--font-d);
@@ -685,6 +770,9 @@ select option { background: var(--float); color: var(--ink2); }
   from { transform: scale(0) rotate(-10deg); opacity: 0; }
   to   { transform: scale(1) rotate(0deg);   opacity: 1; }
 }
+.furnace-icon  { font-size: 40px; margin-bottom: 16px; }
+.furnace-title { font-family: var(--font-d); font-size: 22px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+.furnace-sub   { font-size: 13px; color: var(--ink4); }
 
 .pill { padding: 3px 10px; border-radius: 20px; font-size: 10.5px; font-family: var(--font-m); background: var(--float); color: var(--ink4); border: 1px solid var(--line2); }
 .pill.csv { background: rgba(45,212,191,.08); color: var(--positive); border-color: rgba(45,212,191,.2); }
@@ -709,11 +797,13 @@ select option { background: var(--float); color: var(--ink2); }
 .import-progress-bar { height: 4px; background: var(--lift); border-radius: 2px; overflow: hidden; }
 .import-progress-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width .3s ease; width: 0%; }
 .import-progress-label { font-size: 11px; color: var(--ink4); margin-top: 4px; }
+@keyframes pop-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 .pour-note { margin-top: 32px; padding: 20px 24px; background: var(--float); border: 1px solid var(--line); border-radius: var(--r-lg); text-align: left; }
 .pour-note-title { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
 .pour-note-body { font-size: 13px; color: var(--ink4); line-height: 1.75; }
 
+/* ── AMAZON / WATCHLIST ── */
 .amz-header {
   background: linear-gradient(135deg, var(--float), rgba(14,10,0,.8));
   border-radius: var(--r-lg); padding: 28px 32px; margin-bottom: 24px;
@@ -728,6 +818,7 @@ select option { background: var(--float); color: var(--ink2); }
 .imp-md { background: var(--gold-dim); color: var(--gold); border: 1px solid var(--gold-line); }
 .imp-lo { background: rgba(45,212,191,.12); color: var(--positive); border: 1px solid rgba(45,212,191,.2); }
 
+/* ── TABS ── */
 .tab-strip { display: flex; border-bottom: 1px solid var(--line); margin-bottom: 24px; gap: 2px; }
 .tab-btn {
   padding: 10px 20px; font-size: 13px; font-weight: 400;
@@ -742,6 +833,7 @@ select option { background: var(--float); color: var(--ink2); }
 .tab-pane { display: none; }
 .tab-pane.active { display: block; }
 
+/* ── THE CONFLUENCE ── */
 .confluence-entry {
   position: fixed; inset: 0;
   background: rgba(8,8,8,.95);
@@ -829,6 +921,12 @@ select option { background: var(--float); color: var(--ink2); }
 .goal-input-row input[type=text], .goal-input-row input[type=number] { padding: 6px 11px; border: 1px solid var(--line2); border-radius: var(--r-sm); font-size: 12.5px; font-family: var(--font-ui); background: var(--lift); color: var(--ink2); outline: none; }
 .goal-input-row input[type=number] { width: 110px; }
 
+.forge-moment { background: var(--float); border: 1px solid var(--gold-line); border-radius: var(--r-lg); padding: 28px; text-align: center; margin-top: 18px; box-shadow: var(--shadow-gold); }
+.forge-moment-net   { font-family: var(--font-d); font-size: 44px; font-weight: 600; color: var(--gold); letter-spacing: -0.01em; }
+.forge-moment-label { font-size: 14px; color: var(--ink4); margin-top: 7px; }
+.forge-moment-total { font-family: var(--font-m); font-size: 11px; color: var(--ink4); margin-top: 5px; letter-spacing: 0.08em; }
+
+/* ── SETTINGS ── */
 .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; }
 .settings-section { background: var(--float); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow); }
 .settings-section.full { grid-column: 1 / -1; }
@@ -890,6 +988,7 @@ select option { background: var(--float); color: var(--ink2); }
 .sid-preview-label { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; display: flex; align-items: center; gap: 7px; }
 .sid-preview-bubble { font-size: 13px; color: var(--ink4); line-height: 1.7; }
 
+/* ── TOAST ── */
 .toast {
   position: fixed; bottom: 24px; right: 24px;
   background: var(--gold); color: #000;
@@ -905,6 +1004,7 @@ select option { background: var(--float); color: var(--ink2); }
 }
 .toast.show { transform: translateY(0); opacity: 1; }
 
+/* ── MISC ── */
 .demo-banner {
   background: rgba(245,168,0,.06);
   border: 1px solid var(--gold-line);
@@ -917,6 +1017,7 @@ select option { background: var(--float); color: var(--ink2); }
 .trend-dn::before   { content:'↓ '; color: var(--positive); }
 .trend-flat::before { content:'→ '; color: var(--ink4); }
 
+/* ── PRINT / BLUEPRINT ── */
 @media print {
   header, nav, .page:not(#page-family), #forge-ignition { display: none !important; }
   #page-family { display: block !important; }
@@ -924,6 +1025,7 @@ select option { background: var(--float); color: var(--ink2); }
   body { background: #fff; color: #000;  }
 }
 
+/* ── RESPONSIVE ── */
 @media (max-width: 1024px) {
   .cards-4, .cards-5 { grid-template-columns: repeat(2,1fr); }
   .intel-grid { grid-template-columns: 1fr; }
@@ -936,8 +1038,16 @@ select option { background: var(--float); color: var(--ink2); }
   .cards-4, .cards-5 { grid-template-columns: repeat(2,1fr); }
 }
 
-/* $ sign in brand names: same font-size, gold, slightly tighter */
 
+
+/* ── $KENES · $ID — Pittsburgh Identity ──────────────────────── */
+/* $ sign in brand names: same font-size, gold, slightly tighter */
+.dollar-brand {
+  color: var(--gold);
+  font-style: normal;
+  font-weight: inherit;
+  letter-spacing: -.01em;
+}
 /* Mound silhouette watermark on The Bullpen page */
 #page-intelligence::before {
   content: '';
@@ -953,7 +1063,15 @@ select option { background: var(--float); color: var(--ink2); }
 }
 #page-intelligence > * { position: relative; z-index: 1; }
 /* #87 / #30 micro-badge */
+.jersey-badge {
+  font-family: var(--font-m);
+  font-size: 9px;
+  color: var(--gold);
+  opacity: .55;
+  letter-spacing: .08em;
+}
 
+/* ── ANALYTICS PAGE ──────────────────────────────────── */
 .ana-header {
   background: linear-gradient(135deg, var(--float) 0%, var(--lift) 100%);
   border-bottom: 1px solid var(--line);
@@ -1150,8 +1268,10 @@ select option { background: var(--float); color: var(--ink2); }
   .ana-controls { flex-direction: column; }
 }
 
+
 canvas { display: block; max-width: 100%; height: auto; }
 
+/* ── SMART SCAN ─────────────────────────────────────────────────── */
 .smart-scan-zone {
   border: 2px dashed rgba(167,139,250,.4);
   border-radius: var(--r-lg);
@@ -1209,11 +1329,10 @@ canvas { display: block; max-width: 100%; height: auto; }
   font-size: 11px; color: var(--ink4); font-family: var(--font-m);
   margin-top: 4px; letter-spacing: .02em;
 }
-
+.confidence-high   { color: var(--positive); }
+.confidence-medium { color: var(--gold); }
+.confidence-low    { color: var(--negative); }
 </style>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap">
 </head>
 <body>
 
@@ -2335,6 +2454,7 @@ canvas { display: block; max-width: 100%; height: auto; }
 
 <script>
 
+
 // ════════════════════════════════════════════════════
 // FORGE BOOT — simple, no overlay
 // ════════════════════════════════════════════════════
@@ -2390,6 +2510,7 @@ function closeConfluence() {
   }
 }
 
+
 // ════════════════════════════════════════════════════
 // CONSTANTS & STATE
 // ════════════════════════════════════════════════════
@@ -2410,6 +2531,7 @@ const SID_PERSONA = {
     return `${month} — $id here. Net ${net >= 0 ? '+' : ''}${net} saved so far. Savings rate at ${rate.toFixed(0)}% — ${mood}. Here's what I'm watching.`;
   }
 };
+
 
 const CAT_COLORS = ['#FFB612','#4a9eff','#3ecf8e','#f97316','#a78bfa','#f43f5e','#06b6d4','#eab308','#8b5cf6','#10b981','#fb923c','#60a5fa','#34d399','#fbbf24','#c084fc','#fb7185','#38bdf8','#4ade80'];
 const ACCT_COLORS = ['#FFB612','#4a9eff','#3ecf8e','#f97316','#a78bfa','#f43f5e','#06b6d4','#eab308','#8b5cf6','#10b981','#fb923c','#60a5fa'];
@@ -2970,6 +3092,9 @@ function isImageFile(fname) {
 function isPdfFile(fname) {
   return /\.pdf$/i.test(fname);
 }
+function isTextFile(fname) {
+  return /\.(csv|qif|qfx|ofx|txt|tsv|xls|xlsx|ods|json)$/i.test(fname);
+}
 
 // Build mime type for image
 function imageMime(fname) {
@@ -3151,7 +3276,7 @@ async function processAll() {
             `Forge detected this as a ${srcLabel} file but couldn\'t read line-item data. ` +
             'Expected columns: Date, Description/Product Name, and Amount. ' +
             'To tag a file to a specific person, include their first name in the filename (e.g. amazon_chris.csv).' : null});
-        
+        console.log(`Detail ${f.name} (${srcLabel}${pLabel}): ${detailParsed.length} items`);
         continue;
       }
       // Falls through to Quicken parsing below
@@ -3201,7 +3326,7 @@ async function processAll() {
       else if (ext==='qfx'||ext==='ofx') parsed = parseOFX(text, f.name);
       else parsed = parseCSV(text, f.name);
 
-      
+      console.log(f.name + ' (' + ext + '): ' + parsed.length + ' rows');
 
       // AI fallback: if zero rows parsed, try Smart Scan
       if (parsed.length === 0 && WORKER_URL) {
@@ -3421,6 +3546,7 @@ function showImportResults(fileResults, txnCount, amzCount) {
         </div>`}
     </div>`;
 }
+
 
 function readFile(f) {
   return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=()=>rej();r.readAsText(f);});
@@ -3923,6 +4049,7 @@ function predictMonthlyDetail(personName) {
   return { projected, histAvg, mtdTotal, daysLeft: daysInMonth-day };
 }
 
+
 function splitCSV(l){const r=[];let c='',q=false;for(const ch of l){if(ch==='"'){q=!q;}else if(ch===','&&!q){r.push(c.trim());c='';}else c+=ch;}r.push(c.trim());return r;}
 function parseDate(s) {
   if (!s) return null;
@@ -4017,6 +4144,7 @@ function impulseBadge(sc){
   return{lbl:'🟢 Low',cls:'imp-lo'};
 }
 
+
 // ════════════════════════════════════════════════════════════
 // ANALYTICS STUDIO — $kenes Self-Service BI
 // ════════════════════════════════════════════════════════════
@@ -4035,6 +4163,16 @@ function getAnaRange() {
   if (v === '1y') return new Date(now.getFullYear()-1, now.getMonth()+1, 1);
   if (v === '2y') return new Date(now.getFullYear()-2, now.getMonth()+1, 1);
   return new Date('2000-01-01');
+}
+
+function getAnaFiltered() {
+  const since = getAnaRange();
+  const catF = document.getElementById('ana-cat-filter')?.value || 'all';
+  const acctF = document.getElementById('ana-acct-filter')?.value || 'all';
+  let t = txns.filter(tx => new Date(tx.date) >= since && tx.amount < 0);
+  if (catF !== 'all') t = t.filter(tx => tx.category === catF);
+  if (acctF !== 'all') t = t.filter(tx => tx.account === acctF);
+  return t;
 }
 
 function getAnaAllFiltered() {
@@ -4203,12 +4341,7 @@ function renderAnalytics() {
 
 // ── Main chart renderer (switches on anaChartType) ────────────
 function renderMainChart(keys, values, metric, palette, isNegativeOk) {
-  const canvasEl = document.getElementById('anaMainChart');
-  if (!canvasEl) return;
-  // Destroy any existing Chart.js instance on this canvas
-  const existingChart = Chart.getChart ? Chart.getChart(canvasEl) : null;
-  if (existingChart) existingChart.destroy();
-  const ctx = canvasEl.getContext('2d');
+  const ctx = document.getElementById('anaMainChart')?.getContext('2d');
   if (!ctx) return;
   const isMoney = !['txncount','savings_rate'].includes(metric);
   const yFmt = v => isMoney ? fmtK(v) : (metric==='savings_rate' ? v.toFixed(0)+'%' : v.toLocaleString());
@@ -4251,20 +4384,23 @@ function renderMainChart(keys, values, metric, palette, isNegativeOk) {
       data: { datasets:[{ data: keys.map((k,i)=>({x:i, y:values[i], label:k})), backgroundColor:palette.slice(0,keys.length).map(c=>c+'CC'), pointRadius:7, pointHoverRadius:10 }] },
       options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${keys[ctx.parsed.x]}: ${yFmt(ctx.parsed.y)}`}}}, scales:{x:{display:false}, y:{ticks:{callback:yFmt}}} }
     },
-    waterfall: { type:'bar', data:{labels:keys, datasets:[{data:values, backgroundColor:'rgba(45,212,191,.8)', borderRadius:3}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}}} },
+    waterfall: (() => {
+      // Waterfall: running cumulative with floating bars
+      let running = 0;
+      const wfData = values.map(v => {
+        const start = running;
+        running += v;
+        return { start, end: running, value: v };
+      });
+      const wfColors = wfData.map(d => d.value >= 0 ? 'rgba(45,212,191,.8)' : 'rgba(248,113,113,.8)');
+      return {
+        type: 'bar',
+        data: { labels: keys, datasets:[{ data: wfData.map(d=>[Math.min(d.start,d.end), Math.max(d.start,d.end)]), backgroundColor: wfColors, borderRadius:3, borderSkipped:false }] },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+      };
+    })(),
   };
 
-  // Build waterfall config properly (lazy — only when needed)
-  if (anaChartType === 'waterfall') {
-    let running = 0;
-    const wfData = values.map(v => { const start = running; running += v; return {start, end: running, value: v}; });
-    const wfColors = wfData.map(d => d.value >= 0 ? 'rgba(45,212,191,.8)' : 'rgba(248,113,113,.8)');
-    chartConfigs.waterfall = {
-      type:'bar',
-      data:{ labels:keys, datasets:[{ data:wfData.map(d=>[Math.min(d.start,d.end),Math.max(d.start,d.end)]), backgroundColor:wfColors, borderRadius:3, borderSkipped:false }] },
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
-    };
-  }
   const config = chartConfigs[anaChartType] || chartConfigs.bar;
   // Shared defaults
   if (!config.options.plugins) config.options.plugins = {};
@@ -4325,12 +4461,7 @@ function renderHeatmap(groups, wrap, metric) {
 
 // ── Secondary mini charts ─────────────────────────────────────
 function renderMiniStack(filtered) {
-  const canvasEl = document.getElementById('anaMiniStack');
-  if (!canvasEl) return;
-  // Destroy any existing Chart.js instance on this canvas
-  const existingChart = Chart.getChart ? Chart.getChart(canvasEl) : null;
-  if (existingChart) existingChart.destroy();
-  const ctx = canvasEl.getContext('2d');
+  const ctx = document.getElementById('anaMiniStack')?.getContext('2d');
   if (!ctx) return;
   // Last 12 months income vs spending stacked
   const since = new Date(); since.setFullYear(since.getFullYear()-1);
@@ -4341,8 +4472,6 @@ function renderMiniStack(filtered) {
   }
   const inc = mos.map(m => txns.filter(t=>t.date.startsWith(m)&&t.amount>0).reduce((s,t)=>s+t.amount,0));
   const exp = mos.map(m => txns.filter(t=>t.date.startsWith(m)&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0));
-  // Validate we have data
-  if (!inc.some(v=>v>0) && !exp.some(v=>v>0)) { return; }
   try {
     anaMiniStackChart = new Chart(ctx, {
       type:'bar',
@@ -4356,16 +4485,11 @@ function renderMiniStack(filtered) {
                 x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
       }
     });
-  } catch(e) { console.error("renderMiniStack:", e.message); }
+  } catch(e) { console.error("renderMiniStack:", e.message, e); }
 }
 
 function renderMiniDonut(filtered) {
-  const canvasEl = document.getElementById('anaMiniDonut');
-  if (!canvasEl) return;
-  // Destroy any existing Chart.js instance on this canvas
-  const existingChart = Chart.getChart ? Chart.getChart(canvasEl) : null;
-  if (existingChart) existingChart.destroy();
-  const ctx = canvasEl.getContext('2d');
+  const ctx = document.getElementById('anaMiniDonut')?.getContext('2d');
   if (!ctx) return;
   const cats = {};
   filtered.filter(t=>t.amount<0).forEach(t=>cats[t.category]=(cats[t.category]||0)+Math.abs(t.amount));
@@ -4378,16 +4502,11 @@ function renderMiniDonut(filtered) {
         plugins:{legend:{position:'right', labels:{font:{size:9},boxWidth:8,color:'#9E9890',padding:4}}}
       }
     });
-  } catch(e) { console.error("renderMiniDonut:", e.message); }
+  } catch(e) {}
 }
 
 function renderMiniDow(filtered) {
-  const canvasEl = document.getElementById('anaMiniDow');
-  if (!canvasEl) return;
-  // Destroy any existing Chart.js instance on this canvas
-  const existingChart = Chart.getChart ? Chart.getChart(canvasEl) : null;
-  if (existingChart) existingChart.destroy();
-  const ctx = canvasEl.getContext('2d');
+  const ctx = document.getElementById('anaMiniDow')?.getContext('2d');
   if (!ctx) return;
   const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const totals = Object.fromEntries(days.map(d=>[d,0]));
@@ -4407,16 +4526,11 @@ function renderMiniDow(filtered) {
                 x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
       }
     });
-  } catch(e) { console.error("renderMiniDow:", e.message); }
+  } catch(e) { console.error("renderMiniDow:", e.message, e); }
 }
 
 function renderMiniPurchaser() {
-  const canvasEl = document.getElementById('anaMiniPurchaser');
-  if (!canvasEl) return;
-  // Destroy any existing Chart.js instance on this canvas
-  const existingChart = Chart.getChart ? Chart.getChart(canvasEl) : null;
-  if (existingChart) existingChart.destroy();
-  const ctx = canvasEl.getContext('2d');
+  const ctx = document.getElementById('anaMiniPurchaser')?.getContext('2d');
   if (!ctx) return;
   // Combine Quicken account owners + detail file purchasers
   const people = [...new Set([...Object.values(settings.accountOwners||{}), ...amzItems.map(i=>i.purchaser).filter(Boolean)])];
@@ -4434,7 +4548,7 @@ function renderMiniPurchaser() {
           plugins:{legend:{position:'right', labels:{font:{size:9},boxWidth:8,color:'#9E9890'}}}
         }
       });
-    } catch(e) { console.error("renderMiniPurchaser:", e.message); }
+    } catch(e) { console.error("renderMiniPurchaser:", e.message, e); }
     return;
   }
   document.getElementById('ana-mini-purchaser-title').textContent = 'Spending by Person';
@@ -4461,7 +4575,7 @@ function renderMiniPurchaser() {
                 x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
       }
     });
-  } catch(e) { console.error("renderMiniPurchaser:", e.message); }
+  } catch(e) { console.error("renderMiniPurchaser:", e.message, e); }
 }
 
 // ── Data table ───────────────────────────────────────────────
@@ -4492,6 +4606,7 @@ function renderAnaTable(keys, values, groups, metric) {
   }).join('');
   document.getElementById('ana-tbl-title').textContent = `${keys.length} rows · sorted by value`;
 }
+
 
 // ════════════════════════════════════════════════════
 // INIT APP
@@ -5277,6 +5392,7 @@ function renderAmazon() {
 
   } catch(e) { console.error("Forge renderAmazon error:", e); }
 }
+
 
 function renderPurchaserTab() {
   const el = document.getElementById('amztab-purchaser');
@@ -6089,6 +6205,7 @@ function exportPDF() {
   w.document.head.appendChild(s);
 }
 
+
 // ════════════════════════════════════════════════════
 // FORGE SETTINGS ENGINE
 // Family personalization, Sid calibration, budgets
@@ -6383,6 +6500,18 @@ function calcAge(dob) {
   return age;
 }
 
+function calcAgeInYears(dob, yearsAhead = 0) {
+  if (!dob) return null;
+  const future = new Date();
+  future.setFullYear(future.getFullYear() + yearsAhead);
+  const birth = new Date(dob);
+  if (isNaN(birth)) return null;
+  let age = future.getFullYear() - birth.getFullYear();
+  const m = future.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && future.getDate() < birth.getDate())) age--;
+  return age;
+}
+
 function getLifeStage(age) {
   if (age === null) return null;
   if (age < 5)  return { stage: 'early_childhood', label: 'Early Childhood', icon: '🍼' };
@@ -6595,6 +6724,12 @@ function renderKidsList() {
   }).join('');
 }
 
+function refreshKidAge(i, inp) {
+  // Don't re-render the whole list (resets inputs mid-typing)
+  // Just update the preview
+  updateSidPreview();
+}
+
 function addKid() {
   settings.kids.push({ name:'', dob:'', gender:'m', emoji: KID_EMOJIS[settings.kids.length % KID_EMOJIS.length] });
   renderKidsList();
@@ -6716,9 +6851,93 @@ function updateAgeBadge(dobId, badgeId, isParent = false) {
   badge.textContent = ls ? `${age} · ${ls.icon} ${ls.label}` : `${age} yrs`;
 }
 
+// ── LIFE-STAGE RECS IN FURNACE ──
+
+
+function buildSidSystemPrompt(mode='auto') {
+  loadSettings();
+  const u1 = settings.user1 || 'Chris';
+  const u2 = settings.user2 || 'Kira';
+  const familyName = settings.familyName || 'the family';
+  const kidNames = settings.kids.filter(k=>k.name).map(k=>{
+    const age = k.dob ? calcAge(k.dob) : (parseInt(k.age) || null);
+    const ls = age !== null ? getLifeStage(age) : null;
+    return `${k.name}${age !== null ? ` (${age}, ${ls?.label||''})` : ''}`;
+  });
+  const kidsStr = kidNames.length ? `Their kids are: ${kidNames.join(', ')}.` : '';
+  const sr = settings.savingsTarget || 20;
+  const lpt = settings.largePurchaseThreshold || 150;
+
+  const dataFirstMode = `COMMUNICATION STYLE — DATA-FIRST MODE (${u1}):
+Numbers lead. Give the key figure in the first sentence. Analysis follows. No preamble or pleasantries. ${u1} is a healthcare strategy director — analytically sophisticated, wants precision and specificity. Be direct. "Savings rate 17%. Dining is the gap — up 22%." Not "Your savings rate is 17%, which means..."`;
+
+  const storyFirstMode = `COMMUNICATION STYLE — STORY-FIRST MODE (${u2}):
+Context and narrative before the numbers. Start with what's happening, then support with data. ${u2} is a Physician Assistant — extremely smart, but not trained in personal finance. Pitch language at an intelligent adult learning finance, not a professional. Warm but not condescending. Example: "This was a good month overall. You came out ahead by over a thousand dollars — though dining crept up more than we'd like."`;
+
+  const confluenceMode = `CONFLUENCE MEETING MODE (both together):
+Warmer, more conversational. Speak to ${u1} and ${u2} as a team using "we" and "you both." Acknowledge that you're all sitting down together to review the month. Celebrate wins explicitly. Frame challenges as things "we can fix together" not individual failures. Use the family name: the ${familyName} family.`;
+
+  const activeMode = mode === 'chris' ? dataFirstMode
+    : mode === 'kira' ? storyFirstMode
+    : mode === 'confluence' ? confluenceMode
+    : `${dataFirstMode}\n\n${storyFirstMode}\n\nREAD THE ROOM: If the message contains "${u2}", her name, or words like "honey", "wife", "partner", switch to story-first mode. If the message comes during a Confluence meeting session, use Confluence mode.`;
+
+  return `You are Sid — named after Sidney Crosby, the greatest of his generation: precise, decisive, always sees the play before it develops. You are the AI financial intelligence engine inside Forge, a Pittsburgh-born personal finance platform.
+
+FAMILY: The ${familyName} family. Primary user: ${u1}. Partner: ${u2}. ${kidsStr}
+
+FINANCIAL CONTEXT: Their savings rate target is ${sr}%. Large purchases are flagged at $${lpt}+. ${kidsStr ? `They have children whose college funds may be referenced by name.` : ''}
+
+${activeMode}
+
+ALWAYS: Use specific numbers from the data. End with one clear, actionable recommendation when relevant. Under 180 words unless the question genuinely demands depth. No markdown headers. No asterisks. No hedging. Just clear thinking and straight talk from someone who sees the financial picture completely.
+
+NEVER: Say "I cannot" or "I apologize." Never be condescending. Never be vague when data is available. Sid doesn't make excuses — he finds the play.`;
+}
+
+
+// ── APPLY SETTINGS TO INTELLIGENCE ALERTS ──
+// Override large purchase threshold
+function getLargePurchaseThreshold() {
+  loadSettings();
+  return settings.largePurchaseThreshold || 150;
+}
+
 // Override savings rate target for badge display
+function getSavingsRateTarget() {
+  loadSettings();
+  return settings.savingsTarget || 20;
+}
 
 // Override Amazon sensitivity
+function getAmzSensitivityThreshold() {
+  loadSettings();
+  // Map 1-5 to impulse score threshold: 1=very lenient (80), 5=strict (40)
+  const s = settings.amzSensitivity || 3;
+  return 80 - (s - 1) * 10; // 1→80, 2→70, 3→60, 4→50, 5→40
+}
+
+// ── APPLY TO BUDGET DRIFT ──
+// Override monthly avg comparison to use budget targets when set
+function getCategoryBudget(cat) {
+  loadSettings();
+  return settings.categoryBudgets?.[cat] || null;
+}
+
+// ── APPLY SETTINGS TO EXPORT PDF ──
+function getFamilyReportHeader() {
+  loadSettings();
+  return settings.reportHeader || `The ${settings.familyName} Family`;
+}
+function getFamilyReportSubtitle() {
+  loadSettings();
+  return settings.reportSubtitle || 'Monthly Financial Review';
+}
+
+
+
+
+
 
 </script>
 </body>

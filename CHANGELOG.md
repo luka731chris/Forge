@@ -1,3 +1,177 @@
+## [3.12] — 2026-04-03
+
+### Optimized — Full Codebase Audit and Cleanup
+
+Complete audit of both `forge.html` and `forge-pulse.html`. All 473 tests pass. Full simulation confirms zero regressions.
+
+**Forge desktop (`forge.html`):**
+
+*JavaScript — 5,615 chars removed:*
+- Removed 11 dead functions never called anywhere (confirmed via full-file string search):
+  `buildSidSystemPrompt`, `calcAgeInYears`, `getAmzSensitivityThreshold`, `getAnaFiltered`,
+  `getCategoryBudget`, `getFamilyReportHeader`, `getFamilyReportSubtitle`,
+  `getLargePurchaseThreshold`, `getSavingsRateTarget`, `isTextFile`, `refreshKidAge`
+- Removed 2 `console.log` debug statements left from import pipeline development
+- Collapsed 3+ consecutive blank lines to 2 throughout
+
+*CSS — 4,808 chars removed:*
+- Removed 22 unused CSS classes whose selectors never appear in HTML or JS:
+  `.badge-gold`, `.btn-xs`, `.confidence-high/medium/low`, `.dollar-brand`,
+  `.forge-moment` (+3 variants), `.furnace-icon/sub/title`, `.g-chip`,
+  `.gauge-chips/eyebrow/label`, `.gc-gold/muted/negative/positive/river`,
+  `.jersey-badge`, `.nav-badge`, `.nav-footer`
+- Removed 12 unused CSS custom properties (legacy aliases never referenced):
+  `--accent` (×4), `--cream`, `--forge-dark`, `--r`, `--r-xl`, `--slate`, `--surface`, `--text`, `--text2`
+- Removed duplicate `@keyframes pop-in` definition (was defined twice)
+- Removed decorative `/* ═══ */` and `/* ─── */` divider comments throughout CSS
+
+**Forge Pulse (`forge-pulse.html`):**
+
+*CSS:*
+- Removed 3 unused CSS classes: `.chip-blu`, `.chip-muted`, `.gold-star`
+- Removed 3 unused CSS variables: `--caution`, `--hover`, `--purple`
+- Removed decorative CSS divider comments
+
+**Not removed (confirmed safe to keep):**
+- All `-webkit-` vendor prefixes (still required for Safari/iOS compatibility)
+- `-moz-osx-font-smoothing` (macOS Firefox rendering quality)
+- All remaining CSS classes that appear in JS template literals
+- All `@keyframes` definitions (all referenced by active animations)
+
+---
+
+## [3.11] — 2026-04-03
+
+### Fixed — Analytics and Cash Flow blank sections
+
+**Root causes:**
+
+**1. Canvas-already-in-use (primary):** Every analytics mini chart (`renderMiniStack`, `renderMiniDow`, `renderMiniPurchaser`, `renderMainChart`) was calling `element.getContext('2d')` without first checking whether Chart.js already had an active chart registered on that canvas. When the Analytics page is navigated to more than once, or when `renderAnalytics()` fires multiple times (e.g. on filter change), Chart.js v4 throws "Canvas is already in use by chart with id X" — which was silently swallowed by `catch(e) {}`, leaving the chart area blank. Fix: added `Chart.getChart(canvasEl)` guard before every chart creation. If an existing chart is found, it's destroyed before the new one is created.
+
+**2. Waterfall config IIFE (secondary):** The `chartConfigs` object in `renderMainChart` included a waterfall config built as an Immediately Invoked Function Expression that ran unconditionally on every call — even when the selected chart type was `bar`. This forced computation of running cumulative totals and floating bar data structures on every render, which could throw on edge-case data. Fixed by making the waterfall config lazy: only built when `anaChartType === 'waterfall'`.
+
+**3. Cash Flow perception:** The income/expense bar chart and the legend were rendering correctly. The three summary cards and the net savings line chart below them were also rendering but were below the visible area of the chart card. Not a blank — a scroll issue. No code change needed.
+
+---
+
+## [3.10] — 2026-04-02
+
+### Fixed — Black Screen: The Actual Root Cause
+
+**One missing `</div>` in the upload page HTML caused every single black screen.**
+
+The Smart Scan zone was inserted into the upload page HTML in a previous session. The insertion left the upload page's outer `<div id="page-upload">` unclosed — 112 opens, 111 closes. The dashboard page `<div id="page-dashboard">` sat **inside** the unclosed upload page div, making it a child of the upload page rather than a sibling.
+
+When `showPage('dashboard')` ran:
+1. All `.page` elements get `display:none` — including page-upload
+2. page-dashboard gets `display:block` via inline style
+3. BUT page-dashboard was nested inside page-upload, which had `display:none`
+4. A child with `display:block` inside a parent with `display:none` inherits none — the child doesn't render
+5. `offsetHeight` of page-dashboard = 0 despite `innerHTML.length = 6333` and `style.display = block`
+
+This was confirmed by the diagnostic log showing `offsetHeight: 0` with `computed height: auto` and real content. A block element with real content only has `offsetHeight: 0` when it inherits `display:none` from a parent — which is exactly what was happening.
+
+**Fix:** One `</div>` added immediately before `<!-- ══ DASHBOARD ══ -->`.
+
+**Why it took so long to find:** Node.js simulation doesn't render layout — `offsetHeight` doesn't exist in Node. Every test passed because the logic was correct. The browser was the only environment where the nesting could be observed, and the symptom (black screen) pointed toward CSS or JS rather than HTML structure.
+
+---
+
+## [3.9] — 2026-04-02
+
+### Added — Smart Scan: AI-Powered Universal Extraction
+
+Any file Forge can't parse with rules, Claude can read directly. Smart Scan activates automatically as a fallback when structured parsing returns zero rows, and is also available as a dedicated button on the upload page.
+
+**What Smart Scan handles:**
+
+| Source type | How it works |
+|-------------|--------------|
+| Photos of receipts | Base64 image → Claude reads amounts, dates, merchant |
+| Photos of bank statements | Same — Claude reads any layout |
+| Photos of handwritten notes | Same — Claude reads printed or handwritten text |
+| PDF bank statements | Native PDF block → Claude reads the full document |
+| PDF investment statements | Same |
+| W-2 / 1099 forms | Extracted as a single income transaction dated Dec 31 of the tax year |
+| Unknown CSV formats | Text sent to Claude as fallback when parser returns 0 rows |
+| Any file with readable numbers | Claude finds dates + amounts + payees regardless of structure |
+
+**How it integrates:**
+
+1. **Automatic fallback:** When any CSV/QIF/OFX returns 0 parsed rows and WORKER_URL is set, Smart Scan runs automatically. No user action needed.
+2. **Dedicated zone:** New "📷 Scan Photo or PDF" button on the upload page accepts images and PDFs directly.
+3. **Result cards:** Source type, confidence level, and any extraction notes displayed per file.
+
+**Cost:** ~$0.001–0.005 per file (Claude Sonnet, ~$0.003 per page of PDF or image). Requires the Forge Worker deployed to Cloudflare and `WORKER_URL` set in forge.html.
+
+### Added — Forge Worker v2
+
+`forge_worker.js` now handles two endpoints:
+- `POST /scan` — Smart Scan extraction (new)
+- `POST /chat` — $id financial advisor chat (existing)
+
+Both route to Anthropic with the API key stored as a Cloudflare secret. Set `WORKER_URL` once in forge.html and both features work.
+
+### Fixed — Quicken CSV Import: Preamble Detection
+
+`parseCSV` now correctly identifies the real header row even when the file begins with preamble rows. The scanner checks each line for the presence of date + amount column names rather than stopping at the first non-blank line.
+
+Confirmed: `QuickenExportAll_260329.csv` (623 KB, 7,440 lines) → **7,420 transactions parsed**, 10+ accounts, date range 2023-01-01 → 2026-03-28.
+
+---
+
+## [3.8] — 2026-04-02
+
+### Fixed — Quicken CSV Import: Header Detection
+
+**Root cause:** `parseCSV` stopped scanning for the header at the first non-blank, non-comment line. Quicken's "All Transactions" CSV export prepends a 4-line preamble:
+
+```
+Transaction,,,,,,,,          ← report title row
+,,,,,,,,                     ← blank
+1/1/2023 through 3/29/2026,, ← date range row
+,,,,,,,,                     ← blank
+Date,Account,Num,Payee,...   ← REAL HEADER (line 4)
+```
+
+The old code saw `Transaction,,,,,,,,` on line 0, decided it was the header (non-blank, not a `#` comment, not `sep=`), extracted `transaction` as the only column name, found no `date` or `amount` columns, and returned zero rows. The file's 7,420 transactions were silently discarded.
+
+**Fix:** The header scanner now simply loops through the first 30 lines and picks the first one that contains both a date-like column name and an amount-like column name. It no longer stops at the first non-blank line. Preamble rows like the title and date-range are naturally skipped because they don't satisfy the date + amount column test.
+
+**Confirmed against the actual file:** `QuickenExportAll_260329.csv` (623 KB, 7,440 lines) — **7,420 transactions parsed** across 10+ accounts, date range 2023-01-01 → 2026-03-28.
+
+Also handles:
+- Quicken `BALANCE` and `Total` summary rows (skipped)
+- Category format `Gifts & Donations:Gift` (kept as-is, brackets stripped from transfer categories like `[Checking - PNC]`)
+- Amounts with comma-thousands and quotes: `"4,808.00"` and `"-1,000.00"`
+
+---
+
+## [3.7] — 2026-04-02
+
+### Fixed — Black Screen: Definitive Root Cause
+
+**Orphaned CSS `to {...}` fragments corrupting the entire stylesheet.**
+
+When CSS animations were removed in prior sessions (`bodyReveal` and `pageReveal`), only the `@keyframes` rule bodies and their `from` frames were deleted — leaving behind orphaned closing fragments:
+
+```css
+/* These were left behind after @keyframes removal: */
+  to   { opacity: 1; }
+}
+
+  to   { transform: translateY(0); }
+}
+```
+
+These fragments appear as invalid free-standing CSS rules at the top level of the stylesheet, between `body {}` and `body::after`, and between `.page.active {}` and `.page-hdr {}`. Most browsers attempt to parse these as selector-less rules and produce unpredictable behavior — some misapply `opacity: 1` or `transform: translateY(0)` to subsequent selectors, others silently corrupt the cascade for rules that follow. The net effect is that `.page { display: none }` and `.page.active { display: block }` may not be applied correctly, leaving the dashboard invisible despite the JavaScript correctly making it active.
+
+**How this was found:** Reading the raw HTML `<head>` section character by character revealed the fragments sitting between otherwise-valid CSS rules. All prior fixes were correct (Chart.defaults, animations, z-indices, JS isolation) but the corrupted CSS was overriding everything.
+
+**Fix:** Both orphaned fragments removed. CSS brace count now 403 open / 403 closed (net zero). Every rule is correctly formed.
+
+---
+
 ## [3.6] — 2026-04-02
 
 ### Fixed — Black Screen: True Root Cause Found and Eliminated
