@@ -1,5 +1,6 @@
 'use strict';
 let txns=[],accounts=[],amzItems=[],charts={};
+let fbrState={notes:{},goals:[],decisions:[],plannedPurchases:[],kidsLog:[],stepsDone:[]};
 const DEFAULT_SETTINGS = {
   familyName: 'Luka',
   user1: 'Chris',
@@ -38,6 +39,7 @@ const IMPULSE_CATS = new Set(['Health & Beauty','Toys & Games','Books','Electron
 const KID_EMOJIS = ['👦','👧','🧒','👶'];
 const DB_KEY = 'ledger_v3';
 const SETTINGS_KEY = 'forge_settings_v1';
+const FBR_KEY      = 'ledger_fbr_v2';
 const fmt=(n)=>'$'+Math.abs(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtK=(n)=>{const a=Math.abs(n||0);return a>=1e6?'$'+(a/1e6).toFixed(1)+'M':a>=1000?'$'+(a/1000).toFixed(1)+'K':'$'+a.toFixed(0);};
 const fmtPct=(n)=>(n>=0?'+':'')+n.toFixed(1)+'%';
@@ -721,5 +723,26 @@ function getPersonSpend(items, personName) {
   return items.filter(i => i.purchaser === personName);
 }
 
+function loadFBR() {
+  try {
+    const raw = localStorage.getItem(FBR_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      fbrState = { notes:{}, goals:[], decisions:[], plannedPurchases:[], kidsLog:[], stepsDone:[], ...saved };
+      // Ensure arrays are always arrays (guard against corrupt storage)
+      if (!Array.isArray(fbrState.stepsDone))     fbrState.stepsDone = [];
+      if (!Array.isArray(fbrState.goals))          fbrState.goals = [];
+      if (!Array.isArray(fbrState.decisions))      fbrState.decisions = [];
+      if (!Array.isArray(fbrState.plannedPurchases)) fbrState.plannedPurchases = [];
+      if (!Array.isArray(fbrState.kidsLog))        fbrState.kidsLog = [];
+      if (typeof fbrState.notes !== 'object' || Array.isArray(fbrState.notes)) fbrState.notes = {};
+    }
+  } catch(e) { console.warn('loadFBR:', e); }
+}
 
-module.exports={txns,amzItems,accounts,parseDate,splitCSV,parseCSV,parseQIF,parseOFX,parseOFXDate,parseAmazon,parseAppleCard,parseGenericDetail,parseDetailFile,sniffFile,scoreImpulse,impulseBadge,guessType,calcAge,calcAgeInYears,getLifeStage,getParentLifeStage,getRange,inRange,getSavingsRate,getAnnualNet,groupByDimension,computeMetric,personSummary,detectPersonTrends,predictMonthlyDetail,inferTxnOwner,getPersonSpend,DEFAULT_SETTINGS,CAT_COLORS,ACCT_COLORS,MONTHS,IMPULSE_CATS,KID_EMOJIS,DB_KEY,SETTINGS_KEY,fmt,fmtK,fmtPct,settings,range,intelAlerts,budgetDriftData,anomalyData,seasonalData,isDemoMode,pendingFiles};
+function saveFBR() {
+  try { localStorage.setItem(FBR_KEY, JSON.stringify(fbrState)); } catch(e) {}
+}
+
+
+module.exports={txns,amzItems,accounts,fbrState,parseDate,splitCSV,parseCSV,parseQIF,parseOFX,parseOFXDate,parseAmazon,parseAppleCard,parseGenericDetail,parseDetailFile,sniffFile,scoreImpulse,impulseBadge,guessType,calcAge,calcAgeInYears,getLifeStage,getParentLifeStage,getRange,inRange,getSavingsRate,getAnnualNet,groupByDimension,computeMetric,personSummary,detectPersonTrends,predictMonthlyDetail,inferTxnOwner,getPersonSpend,loadFBR,saveFBR,DEFAULT_SETTINGS,CAT_COLORS,ACCT_COLORS,MONTHS,IMPULSE_CATS,KID_EMOJIS,DB_KEY,SETTINGS_KEY,FBR_KEY,fmt,fmtK,fmtPct,settings,range,intelAlerts,budgetDriftData,anomalyData,seasonalData,isDemoMode,pendingFiles};

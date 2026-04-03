@@ -2438,7 +2438,7 @@ const IMPULSE_CATS = new Set(['Health & Beauty','Toys & Games','Books','Electron
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 let txns = [], accounts = [], amzItems = [], charts = {};
-let fbrState = { notes:{}, goals:[], decisions:[], plannedPurchases:[], kidsLog:[] };
+let fbrState = { notes:{}, goals:[], decisions:[], plannedPurchases:[], kidsLog:[], stepsDone:[] };
 let range = '1y', catR = '1y', mchR = '1y', intelR = '6m';
 let txnPage = 0, amzPage = 0;
 const PAGE = 100, AMZ_PAGE = 80;
@@ -5183,7 +5183,14 @@ function loadFBR() {
     const raw = localStorage.getItem(FBR_KEY);
     if (raw) {
       const saved = JSON.parse(raw);
-      fbrState = { ...fbrState, ...saved };
+      fbrState = { notes:{}, goals:[], decisions:[], plannedPurchases:[], kidsLog:[], stepsDone:[], ...saved };
+      // Ensure arrays are always arrays (guard against corrupt storage)
+      if (!Array.isArray(fbrState.stepsDone))     fbrState.stepsDone = [];
+      if (!Array.isArray(fbrState.goals))          fbrState.goals = [];
+      if (!Array.isArray(fbrState.decisions))      fbrState.decisions = [];
+      if (!Array.isArray(fbrState.plannedPurchases)) fbrState.plannedPurchases = [];
+      if (!Array.isArray(fbrState.kidsLog))        fbrState.kidsLog = [];
+      if (typeof fbrState.notes !== 'object' || Array.isArray(fbrState.notes)) fbrState.notes = {};
     }
   } catch(e) { console.warn('loadFBR:', e); }
 }
@@ -5218,10 +5225,12 @@ function renderFamily() {
   });
 
   // Restore step done states
-  fbrState.stepsDone.forEach(i => {
+  if (Array.isArray(fbrState.stepsDone)) fbrState.stepsDone.forEach(i => {
     const el = document.getElementById('status'+i);
-    if(el) el.classList.add('done');
-    el.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+    if(el) {
+      el.classList.add('done');
+      el.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+    }
   });
   updateProgress();
 
@@ -5787,6 +5796,7 @@ function exportPDF() {
 // Family personalization, Sid calibration, budgets
 // ════════════════════════════════════════════════════
 const SETTINGS_KEY = 'forge_settings_v1';
+const FBR_KEY      = 'ledger_fbr_v2';
 
 const DEFAULT_SETTINGS = {
   familyName: 'Luka',

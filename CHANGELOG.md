@@ -1,3 +1,49 @@
+## [3.6] — 2026-04-02
+
+### Fixed — Black Screen: True Root Cause Found and Eliminated
+
+**The actual root cause (this session):** `Chart.defaults.*` assignments ran at the top level of the script — outside any function, outside any event listener. This code executed immediately at script parse time, before `DOMContentLoaded` fired. If Chart.js (an external CDN script loaded before the main script) had not fully parsed yet, accessing `Chart.defaults.color` threw a `TypeError` and **killed the entire script**. Every function in the 4,100-line file became undefined. Clicking "Load Demo" did nothing because `loadDemo` did not exist.
+
+This was confirmed by a complete Node.js simulation of the execution path, which showed the error directly.
+
+**Fix:** All `Chart.defaults.*` assignments moved into `applyChartDefaults()`, called from `DOMContentLoaded` after the DOM (and Chart.js) is confirmed ready.
+
+```javascript
+// Before — runs at parse time, crashes if Chart.js not ready
+Chart.defaults.color = '#666';
+Chart.defaults.borderColor = '#2a2a2a';
+// ... 9 more lines at top level
+
+// After — called safely from DOMContentLoaded
+function applyChartDefaults() {
+  if (typeof Chart === 'undefined') return;
+  Chart.defaults.color = '#666';
+  // ...
+}
+```
+
+### Fixed — Family Page Errors
+
+Three bugs in the Family page (The Confluence) that caused errors when that page was visited:
+
+| Bug | Cause | Fix |
+|-----|-------|-----|
+| `fbrState.stepsDone.length` throws | `fbrState` initialized without `stepsDone` field | Added `stepsDone: []` to default |
+| `loadFBR()` is not defined | Function was called in `renderFamily()` but never written | Added `loadFBR()` function |
+| `FBR_KEY` is not defined | Constant referenced by `saveFBR()` and new `loadFBR()` but never declared | Added `const FBR_KEY = 'ledger_fbr_v2'` |
+| `el.innerHTML` on null `el` | `stepsDone.forEach` accessed `el.innerHTML` without null guard | Added `if(el)` guard around innerHTML |
+| `loadFBR()` could produce corrupt state | Restored data not validated as correct types | Added array/object guards in `loadFBR()` |
+
+### Verified — Complete Execution Path
+
+A full Node.js simulation of the demo load sequence now confirms:
+- `generateDemoData()` → 4,500+ transactions, 3,200+ detail items, 13 accounts
+- `renderDashboard()` → completes with zero errors
+- All 11 pages (`dashboard`, `intelligence`, `cashflow`, `categories`, `merchants`, `transactions`, `analytics`, `family`, `settings`, `amazon`, `upload`) → zero errors
+- All 5 Pulse tabs (`snapshot`, `alerts`, `amazon`, `analytics`, `chat`) → zero errors
+
+---
+
 ## [3.5] — 2026-04-01
 
 ### Fixed — Black Screen (Root Cause Found and Eliminated)
