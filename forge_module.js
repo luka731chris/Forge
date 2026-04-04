@@ -97,195 +97,204 @@ function splitCSV(l){const r=[];let c='',q=false;for(const ch of l){if(ch==='"')
 function parseCSV(text, fname) {
   if (!text || !text.trim()) return [];
 
-  // ── Pre-processing ─────────────────────────────────────────
-  // 1. Normalize line endings (CRLF, CR, LF → LF)
+  // ── 1. Normalize line endings ─────────────────────────────────
   let raw = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-  // 2. Strip BOM (UTF-8 byte order mark)
+  // ── 2. Strip UTF-8 BOM ────────────────────────────────────────
   if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
 
-  // 3. Split into non-empty lines
-  let lines = raw.split('\n');
+  const allLines = raw.split('\n');
 
-  // 4. Skip leading non-data lines:
-  //    "sep=," (Excel hint), "#..." comments, lines with no comma/tab at all
-  //    that precede the header row
-  let dataStart = 0;
-  for (let li = 0; li < Math.min(lines.length, 8); li++) {
-    const l = lines[li].trim();
-    if (!l) continue;
-    // Skip "sep=" Excel hint lines
-    if (/^sep=/i.test(l)) { dataStart = li + 1; continue; }
-    // Skip comment lines
-    if (l.startsWith('#') || l.startsWith('//')) { dataStart = li + 1; continue; }
-    // First non-skipped non-empty line is the header
-    dataStart = li;
-    break;
+  // ── 3. Find the REAL header row ───────────────────────────────
+  // Quicken exports prepend: title row, blank, date-range row, blank
+  // We must skip these and find the row that actually has column names.
+  // Strategy: scan until we find a line whose comma-split fields contain
+  // 'date' and ('amount' or 'debit' or 'credit' or 'withdrawal')
+  // giving us the true header position.
+  function looksLikeHeader(line) {
+    var low = line.toLowerCase().replace(/"/g,'');
+    var fields = low.split(',').map(function(f){ return f.trim(); });
+    var hasDate   = fields.some(function(f){ return f==='date'||f.startsWith('date')||f==='transaction date'||f==='trans date'||f==='posted date'||f==='value date'; });
+    var hasAmount = fields.some(function(f){ return f==='amount'||f.includes('amount')||f==='debit'||f==='credit'||f==='withdrawal'||f==='deposit'||f==='debit/credit'; });
+    return hasDate && hasAmount;
   }
-  lines = lines.slice(dataStart).filter(l => l.trim() !== '');
-  if (!lines.length) return [];
 
-  // ── Delimiter detection ────────────────────────────────────
-  // Priority: tab > comma > semicolon > pipe
-  const headerSample = lines[0];
-  const delimiter =
-    headerSample.includes('\t')  ? '\t'  :
-    headerSample.includes(';')   ? ';'   :
-    headerSample.includes('|')   ? '|'   : ',';
+  // Also skip lines that are clearly preamble:
+  // completely blank, comma-only, or no comma at all and no date-like content
+  function isPreamble(line) {
+    var t = line.trim();
+    if (!t) return true;                         // blank
+    if (/^[,\s]+$/.test(t)) return true;         // commas/spaces only
+    if (/^sep=/i.test(t)) return true;           // Excel sep= hint
+    if (t.startsWith('#') || t.startsWith('//')) return true; // comment
+    // Lines like "Transaction" or "1/1/2023 through 3/29/2026" with no real columns
+    if (!t.includes(',')) return true;            // no delimiter at all
+    return false;
+  }
 
-  // ── Column parsing helper ──────────────────────────────────
+  // Scan up to 30 lines to find the real header row
+  // (Quicken exports can have 4+ preamble lines before the actual column names)
+  var headerLineIdx = -1;
+  for (var li = 0; li < Math.min(allLines.length, 30); li++) {
+    if (looksLikeHeader(allLines[li])) { headerLineIdx = li; break; }
+  }
+
+  if (headerLineIdx < 0) {
+    // Fallback: first non-preamble line is the header
+    for (var li2 = 0; li2 < allLines.length; li2++) {
+      if (!isPreamble(allLines[li2])) { headerLineIdx = li2; break; }
+    }
+  }
+  if (headerLineIdx < 0) return [];
+
+  // ── 4. Delimiter detection ────────────────────────────────────
+  var headerSample = allLines[headerLineIdx];
+  var delimiter = headerSample.includes('\t') ? '\t' :
+                  headerSample.includes(';')  ? ';'  :
+                  headerSample.includes('|')  ? '|'  : ',';
+
+  // ── 5. CSV field splitter ─────────────────────────────────────
   function splitRow(line) {
     if (delimiter !== ',') {
-      // For non-comma delimiters, split directly and strip quotes
-      return line.split(delimiter).map(c => c.replace(/^["']+|["']+$/g, '').trim());
+      return line.split(delimiter).map(function(c){ return c.replace(/^["']+|["']+$/g,'').trim(); });
     }
-    // For comma delimiter, use proper CSV parser (handles quoted commas)
-    const result = [];
-    let cell = '', inQ = false;
-    for (let ci = 0; ci < line.length; ci++) {
-      const ch = line[ci];
+    var result = [], cell = '', inQ = false;
+    for (var ci = 0; ci < line.length; ci++) {
+      var ch = line[ci];
       if (ch === '"') {
-        // Handle doubled quotes inside quoted fields: "" → "
         if (inQ && line[ci+1] === '"') { cell += '"'; ci++; }
         else inQ = !inQ;
-      } else if (ch === ',' && !inQ) {
-        result.push(cell.trim());
-        cell = '';
-      } else {
-        cell += ch;
-      }
+      } else if (ch === ',' && !inQ) { result.push(cell.trim()); cell = ''; }
+      else cell += ch;
     }
     result.push(cell.trim());
     return result;
   }
 
-  // ── Header processing ─────────────────────────────────────
-  const rawHdr = splitRow(lines[0]);
-  // Normalise each header: strip BOM, quotes, whitespace, lowercase
-  const hdr = rawHdr.map(h =>
-    h.replace(/^\uFEFF/, '')    // BOM on first col
-     .replace(/^["']+|["']+$/g, '') // surrounding quotes
-     .replace(/\s+/g, ' ')         // collapse whitespace
-     .trim()
-     .toLowerCase()
-  );
+  // ── 6. Parse header ───────────────────────────────────────────
+  var rawHdr = splitRow(headerSample);
+  var hdr = rawHdr.map(function(h){
+    return h.replace(/^\uFEFF/, '').replace(/^["']+|["']+$/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+  });
 
-  // ── Column finder ─────────────────────────────────────────
-  // Tries exact match first, then substring (contained-in) match
-  const col = (...names) => {
-    // Exact match pass
-    for (const n of names) {
-      const idx = hdr.indexOf(n);
+  // ── 7. Column finder ─────────────────────────────────────────
+  function col() {
+    var names = Array.prototype.slice.call(arguments);
+    for (var ni=0; ni<names.length; ni++) {
+      var n = names[ni];
+      var idx = hdr.indexOf(n);
       if (idx >= 0) return idx;
     }
-    // Substring match pass (header col contains the search term)
-    for (const n of names) {
-      const idx = hdr.findIndex(h => h.includes(n));
-      if (idx >= 0) return idx;
+    for (var ni2=0; ni2<names.length; ni2++) {
+      var n2 = names[ni2];
+      var idx2 = hdr.findIndex(function(h){ return h.includes(n2); });
+      if (idx2 >= 0) return idx2;
     }
     return -1;
-  };
+  }
 
-  // ── Column index map ───────────────────────────────────────
-  const dateC  = col('date','transaction date','trans date','posted date','post date','value date','settled date','booking date');
-  const payeeC = col('payee','description','merchant','name','narrative','details','transaction description','original description','memo');
-  const amtC   = col('amount','transaction amount','net amount','value','debit/credit','transaction amount','sum');
-  const debC   = col('debit','withdrawal','dr','money out','debit amount','out');
-  const creC   = col('credit','deposit','cr','money in','credit amount','in');
-  const catC   = col('category','type','transaction type','class','label','spending category');
-  const acctC  = col('account','account name','account number','account id','account #');
-  const memoC  = col('memo','notes','note','reference','ref','check number','check #');
+  var dateC  = col('date','transaction date','trans date','posted date','post date','value date','settled date','booking date');
+  var payeeC = col('payee','description','merchant','name','narrative','details','transaction description','original description');
+  var memoC  = col('memo','notes','note','reference','ref','check number','check #','num');
+  var amtC   = col('amount','transaction amount','net amount','value','debit/credit');
+  var debC   = col('debit','withdrawal','dr','money out','debit amount','out');
+  var creC   = col('credit','deposit','cr','money in','credit amount','in');
+  var catC   = col('category','type','transaction type','class','label','spending category');
+  var acctC  = col('account','account name','account number','account id','account #');
 
-  // Fallback account name from filename (strip extension + separators)
-  const acctName = fname.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ').trim() || 'Imported';
+  // If no date column found, abort
+  if (dateC < 0) return [];
 
-  // ── Amount parser ──────────────────────────────────────────
-  // Handles: $1,234.56  (1,234.56)  -1234  1.234,56 (European)  N/A  blank
+  var acctName = fname.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ').trim() || 'Imported';
+
+  // ── 8. Amount parser ──────────────────────────────────────────
   function parseAmt(raw) {
     if (raw === undefined || raw === null) return NaN;
-    const s = String(raw)
-      .replace(/^["']+|["']+$/g, '') // strip surrounding quotes
-      .trim();
-    if (!s || s === '-' || s === '--' || s === 'N/A' || s === 'n/a') return NaN;
-    // Parentheses = negative: (1,234.56)
-    const neg = s.startsWith('(') && s.endsWith(')');
-    // Strip all non-numeric except . - (and detect European comma-decimal)
-    // European: 1.234,56 → has comma after digits and dot as thousands sep
-    let cleaned = s.replace(/[()]/g, '').trim();
-    // Detect European format: ends with comma + 1-2 digits e.g. "1.234,56"
+    var s = String(raw).replace(/^["']+|["']+$/g,'').trim();
+    if (!s || s === '-' || s === '--' || s.toUpperCase() === 'N/A') return NaN;
+    var neg = s.startsWith('(') && s.endsWith(')');
+    var cleaned = s.replace(/[()]/g,'').trim();
+    // European: 1.234,56
     if (/^\d{1,3}(\.\d{3})*(,\d{1,2})$/.test(cleaned)) {
-      cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+      cleaned = cleaned.replace(/\./g,'').replace(',','.');
     } else {
-      // Standard: strip currency symbols, commas, spaces
-      cleaned = cleaned.replace(/[$£€¥₹,\s]/g, '');
+      cleaned = cleaned.replace(/[$£€¥₹,\s]/g,'');
     }
-    const v = parseFloat(cleaned);
+    var v = parseFloat(cleaned);
     return isNaN(v) ? NaN : (neg ? -Math.abs(v) : v);
   }
 
-  // ── Row processor ──────────────────────────────────────────
-  return lines.slice(1).map(line => {
-    const trimmed = line.trim();
-    // Skip blank lines and comma-only lines
-    if (!trimmed || /^[,;\|\t]*$/.test(trimmed)) return null;
+  // ── 9. Safe column getter ─────────────────────────────────────
+  function get(r, idx) {
+    if (idx >= 0 && idx < r.length && r[idx] !== undefined)
+      return String(r[idx]).replace(/^["']+|["']+$/g,'').trim();
+    return '';
+  }
 
-    const r = splitRow(line);
+  // ── 10. Process data rows ─────────────────────────────────────
+  var results = [];
+  for (var li3 = headerLineIdx + 1; li3 < allLines.length; li3++) {
+    var line = allLines[li3];
+    var trimmed = line.trim();
 
-    // Skip if not enough columns
-    if (r.length < 2) return null;
+    // Skip blank and comma-only rows
+    if (!trimmed || /^[,;\|\t\s]*$/.test(trimmed)) continue;
 
-    // Safe column getter — returns '' for out-of-bounds or undefined cells
-    const get = (idx) => (idx >= 0 && idx < r.length && r[idx] !== undefined)
-      ? String(r[idx]).replace(/^["']+|["']+$/g, '').trim()
-      : '';
+    // Skip Quicken preamble/summary rows: BALANCE, "Transaction", date-range rows
+    if (/^BALANCE\s/i.test(trimmed)) continue;
+    if (/^Total\s/i.test(trimmed))   continue;
+
+    var r = splitRow(line);
+    if (r.length < 2) continue;
 
     // Date — required
-    const date = parseDate(get(dateC));
-    if (!date) return null;
+    var dateStr = get(r, dateC);
+    var date = null;
+    // MM/DD/YYYY or M/D/YYYY
+    var dm = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (dm) date = dm[3] + '-' + dm[1].padStart(2,'0') + '-' + dm[2].padStart(2,'0');
+    if (!date) {
+      // Fall back to parseDate for other formats
+      date = parseDate(dateStr);
+    }
+    if (!date) continue;
 
-    // Amount — try combined column first, then separate debit/credit
-    let amount;
-    const rawAmt = get(amtC);
+    // Amount
+    var amount;
+    var rawAmt = get(r, amtC);
     if (amtC >= 0 && rawAmt !== '') {
       amount = parseAmt(rawAmt);
     } else if (debC >= 0 || creC >= 0) {
-      const dRaw = get(debC);
-      const cRaw = get(creC);
-      const d = parseAmt(dRaw);
-      const c = parseAmt(cRaw);
-      // Debit = expense (negative), Credit = income (positive)
-      // Guard: if BOTH are blank/NaN, skip the row
-      const dHasVal = !isNaN(d) && d !== 0;
-      const cHasVal = !isNaN(c) && c !== 0;
-      if (!dHasVal && !cHasVal) {
-        // Both blank — skip this row
-        return null;
-      }
-      if (dHasVal) amount = -Math.abs(d);
-      else if (cHasVal) amount = Math.abs(c);
+      var d = debC >= 0 ? parseAmt(get(r, debC)) : NaN;
+      var c = creC >= 0 ? parseAmt(get(r, creC)) : NaN;
+      var dOk = !isNaN(d) && d !== 0;
+      var cOk = !isNaN(c) && c !== 0;
+      if (!dOk && !cOk) continue; // both blank — skip row
+      if (dOk) amount = -Math.abs(d);
+      else if (cOk) amount = Math.abs(c);
       else amount = 0;
-    } else {
-      return null; // No amount column at all
-    }
+    } else continue;
+    if (isNaN(amount)) continue;
 
-    if (isNaN(amount)) return null;
+    // Payee — prefer Payee column, fall back to Memo
+    var payee = get(r, payeeC) || get(r, memoC) || 'Unknown';
+    // Category — strip Quicken transfer brackets [Account Name]
+    var rawCat = get(r, catC);
+    var category = rawCat.replace(/^\[|\]$/g, '').trim() || 'Uncategorized';
+    // Strip subcategory hierarchy if desired (keep full path for now)
+    var account  = get(r, acctC) || acctName;
+    var memo     = get(r, memoC) || '';
 
-    // Build transaction
-    const payee    = get(payeeC) || 'Unknown';
-    const category = get(catC)   || 'Uncategorized';
-    const account  = get(acctC)  || acctName;
-    const memo     = get(memoC)  || '';
-
-    return {
-      date,
-      payee:    payee    || 'Unknown',
-      amount,
+    results.push({
+      date, payee, amount,
       category: category || 'Uncategorized',
       account:  account  || acctName,
       memo,
       type: amount >= 0 ? 'credit' : 'debit'
-    };
-  }).filter(Boolean);
+    });
+  }
+
+  return results;
 }
 
 function parseQIF(text, fname) {
@@ -556,18 +565,6 @@ function calcAge(dob) {
   return age;
 }
 
-function calcAgeInYears(dob, yearsAhead = 0) {
-  if (!dob) return null;
-  const future = new Date();
-  future.setFullYear(future.getFullYear() + yearsAhead);
-  const birth = new Date(dob);
-  if (isNaN(birth)) return null;
-  let age = future.getFullYear() - birth.getFullYear();
-  const m = future.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && future.getDate() < birth.getDate())) age--;
-  return age;
-}
-
 function getLifeStage(age) {
   if (age === null) return null;
   if (age < 5)  return { stage: 'early_childhood', label: 'Early Childhood', icon: '🍼' };
@@ -718,11 +715,6 @@ function inferTxnOwner(txn) {
   return settings.accountOwners[txn.account] || null;
 }
 
-function getPersonSpend(items, personName) {
-  if (!personName) return items;
-  return items.filter(i => i.purchaser === personName);
-}
-
 function loadFBR() {
   try {
     const raw = localStorage.getItem(FBR_KEY);
@@ -745,4 +737,4 @@ function saveFBR() {
 }
 
 
-module.exports={txns,amzItems,accounts,fbrState,parseDate,splitCSV,parseCSV,parseQIF,parseOFX,parseOFXDate,parseAmazon,parseAppleCard,parseGenericDetail,parseDetailFile,sniffFile,scoreImpulse,impulseBadge,guessType,calcAge,calcAgeInYears,getLifeStage,getParentLifeStage,getRange,inRange,getSavingsRate,getAnnualNet,groupByDimension,computeMetric,personSummary,detectPersonTrends,predictMonthlyDetail,inferTxnOwner,getPersonSpend,loadFBR,saveFBR,DEFAULT_SETTINGS,CAT_COLORS,ACCT_COLORS,MONTHS,IMPULSE_CATS,KID_EMOJIS,DB_KEY,SETTINGS_KEY,FBR_KEY,fmt,fmtK,fmtPct,settings,range,intelAlerts,budgetDriftData,anomalyData,seasonalData,isDemoMode,pendingFiles};
+module.exports={txns,amzItems,accounts,fbrState,parseDate,splitCSV,parseCSV,parseQIF,parseOFX,parseOFXDate,parseAmazon,parseAppleCard,parseGenericDetail,parseDetailFile,sniffFile,scoreImpulse,impulseBadge,guessType,calcAge,getLifeStage,getParentLifeStage,getRange,inRange,getSavingsRate,getAnnualNet,groupByDimension,computeMetric,personSummary,detectPersonTrends,predictMonthlyDetail,inferTxnOwner,loadFBR,saveFBR,DEFAULT_SETTINGS,CAT_COLORS,ACCT_COLORS,MONTHS,IMPULSE_CATS,KID_EMOJIS,DB_KEY,SETTINGS_KEY,FBR_KEY,fmt,fmtK,fmtPct,settings,range,intelAlerts,budgetDriftData,anomalyData,seasonalData,isDemoMode,pendingFiles};

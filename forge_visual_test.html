@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Forge Visual Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap">
+<style>
+:root {
+  --void: #080808; --base: #0E0E0E; --float: #1C1C1C; --lift: #151515;
+  --ink: #F2EFE9; --ink2: #D0CBC4; --ink3: #9E9890; --ink4: #6E6A65;
+  --gold: #F5A800; --positive: #2DD4BF; --negative: #F87171; --river: #60A5FA;
+  --line: #2A2A2A; --line2: #333;
+  --font-d: 'Cormorant Garamond', Georgia, serif;
+  --font-num: 'Sora', 'Outfit', system-ui, sans-serif;
+  --font-ui: 'DM Sans', system-ui, sans-serif;
+  --font-m: 'Fira Code', monospace;
+  --r-lg: 14px;
+  --shadow: 0 2px 8px rgba(0,0,0,.45);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--base); color: var(--ink); font-family: var(--font-ui); padding: 40px; }
+h2 { font-family: var(--font-m); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink4); margin: 32px 0 16px; }
+h2:first-child { margin-top: 0; }
+.row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+
+/* === CARD NUMBERS === */
+.card {
+  background: var(--float); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 22px 24px; min-width: 180px; border-left: 2px solid var(--gold);
+  box-shadow: var(--shadow);
+}
+.card-lbl { font-family: var(--font-m); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink3); margin-bottom: 10px; }
+.card-val { font-family: var(--font-num); font-size: 28px; font-weight: 700; line-height: 1.05; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.card-val.pos { color: var(--positive); }
+.card-val.neg { color: var(--negative); }
+.card-val.gold { color: var(--gold); }
+.card-sub { font-size: 12px; color: var(--ink3); margin-top: 4px; }
+
+/* === GAUGE HERO === */
+.gauge-hero {
+  background: var(--float); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 36px 40px; margin-bottom: 24px; max-width: 500px;
+}
+.gauge-eyebrow { font-family: var(--font-m); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink4); margin-bottom: 10px; }
+.gauge-net { font-family: var(--font-num); font-size: 68px; font-weight: 700; line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; color: var(--positive); }
+.gauge-label { font-size: 13px; color: var(--ink4); margin-top: 8px; }
+
+/* === ANALYTICS INSIGHT === */
+.insight { background: var(--float); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; min-width: 160px; }
+.insight-lbl { font-family: var(--font-m); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink4); margin-bottom: 6px; }
+.insight-val { font-family: var(--font-num); font-size: 22px; font-weight: 700; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.insight-delta { font-family: var(--font-m); font-size: 11px; color: var(--ink4); margin-top: 4px; }
+
+/* === TYPOGRAPHY COMPARISON === */
+.comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 700px; }
+.comp-col { background: var(--float); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 24px; }
+.comp-label { font-family: var(--font-m); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
+.comp-num { font-size: 48px; font-weight: 700; line-height: 1; letter-spacing: -.03em; color: var(--ink); margin-bottom: 8px; }
+.comp-num.serif { font-family: var(--font-d); }
+.comp-num.sora { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.comp-desc { font-size: 11px; color: var(--ink4); font-family: var(--font-m); }
+
+/* Sora number showcase */
+.numbers-showcase { background: var(--float); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 28px 32px; }
+.ns-digits { font-family: var(--font-num); font-size: 52px; font-weight: 700; letter-spacing: -.04em; font-variant-numeric: tabular-nums; color: var(--ink); line-height: 1.1; }
+.ns-currency { color: var(--gold); font-size: 64px; font-weight: 700; letter-spacing: -.05em; font-variant-numeric: tabular-nums; font-family: var(--font-num); }
+.ns-pct { color: var(--positive); }
+.ns-neg { color: var(--negative); }
+</style>
+</head>
+<body>
+
+<h2>Font Comparison — Old (Cormorant Garamond serif) vs New (Sora geometric)</h2>
+<div class="comparison">
+  <div class="comp-col">
+    <div class="comp-label">Before — Cormorant Garamond</div>
+    <div class="comp-num serif">$24,850</div>
+    <div class="comp-num serif" style="color:var(--positive);font-size:32px;">+$3,210</div>
+    <div class="comp-num serif" style="color:var(--negative);font-size:28px;">−$18,640</div>
+    <div class="comp-desc">Elegant editorial serif — beautiful for headings, harder to scan at a glance for financial data</div>
+  </div>
+  <div class="comp-col">
+    <div class="comp-label">After — Sora geometric sans</div>
+    <div class="comp-num sora">$24,850</div>
+    <div class="comp-num sora" style="color:var(--positive);font-size:32px;">+$3,210</div>
+    <div class="comp-num sora" style="color:var(--negative);font-size:28px;">−$18,640</div>
+    <div class="comp-desc">Clean geometric — tabular numerals, consistent weight, instant legibility at any size</div>
+  </div>
+</div>
+
+<h2>Sora Number Showcase — All Sizes</h2>
+<div class="numbers-showcase">
+  <div class="ns-currency">$48,230</div>
+  <div style="display:flex;gap:40px;margin-top:12px;flex-wrap:wrap;">
+    <div>
+      <div style="font-family:var(--font-m);font-size:9px;color:var(--ink4);letter-spacing:.1em;margin-bottom:4px;">SAVINGS RATE</div>
+      <div class="ns-digits ns-pct">18.4%</div>
+    </div>
+    <div>
+      <div style="font-family:var(--font-m);font-size:9px;color:var(--ink4);letter-spacing:.1em;margin-bottom:4px;">EXPENSES</div>
+      <div class="ns-digits ns-neg">−$3,840</div>
+    </div>
+    <div>
+      <div style="font-family:var(--font-m);font-size:9px;color:var(--ink4);letter-spacing:.1em;margin-bottom:4px;">TRANSACTIONS</div>
+      <div class="ns-digits">4,553</div>
+    </div>
+  </div>
+</div>
+
+<h2>Dashboard KPI Cards — Forge Style</h2>
+<div class="row">
+  <div class="card" style="border-left-color:var(--negative)">
+    <div class="card-lbl">Total Expenses</div>
+    <div class="card-val neg">$48.2k</div>
+    <div class="card-sub">$4,020/mo avg</div>
+  </div>
+  <div class="card" style="border-left-color:var(--positive)">
+    <div class="card-lbl">Total Income</div>
+    <div class="card-val pos">$67.8k</div>
+    <div class="card-sub">$5,650/mo avg</div>
+  </div>
+  <div class="card" style="border-left-color:var(--positive)">
+    <div class="card-lbl">Net Savings</div>
+    <div class="card-val pos">+$19.6k</div>
+    <div class="card-sub">Rate: 28.9%</div>
+  </div>
+  <div class="card" style="border-left-color:var(--river)">
+    <div class="card-lbl">Transactions</div>
+    <div class="card-val" style="color:var(--river)">4,553</div>
+    <div class="card-sub">Across 13 accounts</div>
+  </div>
+</div>
+
+<h2>Gauge Hero — Big Net Savings Number</h2>
+<div class="gauge-hero">
+  <div class="gauge-eyebrow">The Gauge · Luka Family · 2024</div>
+  <div class="gauge-net">+$19,580</div>
+  <div class="gauge-label">net saved this year · 28.9% savings rate</div>
+</div>
+
+<h2>Analytics Insight Cards</h2>
+<div class="row">
+  <div class="insight">
+    <div class="insight-lbl">Avg Monthly</div>
+    <div class="insight-val">$4,020</div>
+    <div class="insight-delta">↑ 12% vs last yr</div>
+  </div>
+  <div class="insight">
+    <div class="insight-lbl">Top Category</div>
+    <div class="insight-val">$1,240</div>
+    <div class="insight-delta">Groceries · 31%</div>
+  </div>
+  <div class="insight">
+    <div class="insight-lbl">Savings Rate</div>
+    <div class="insight-val" style="color:var(--positive)">28.9%</div>
+    <div class="insight-delta">↑ 4.2pts vs last yr</div>
+  </div>
+</div>
+
+</body>
+</html>

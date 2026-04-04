@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Forge Black Screen Diagnostic</title>
+<style>
+body { background:#0E0E0E; color:#F2EFE9; font-family:sans-serif; margin:0; }
+.page { display:none; }
+.page.active { display:block; }
+#page-upload { padding:40px; }
+#page-dashboard { padding:40px; }
+.result { background:#1C1C1C; border:1px solid #2A2A2A; border-radius:8px; padding:20px; margin:10px 0; }
+</style>
+</head>
+<body>
+<div id="page-upload" class="page active">
+  <h2>Upload Page (visible on load)</h2>
+  <button onclick="runTest()">LOAD DEMO (click me)</button>
+  <div id="log" style="margin-top:20px;font-size:12px;color:#9E9890;"></div>
+</div>
+<div id="page-dashboard" class="page">
+  <h2 style="color:#F5A800;">Dashboard (should appear after Load Demo)</h2>
+  <div class="result">If you can read this, the mechanism works.</div>
+  <div id="dashContent"></div>
+</div>
+
+<script>
+function log(msg) {
+  document.getElementById('log').innerHTML += '<div>' + msg + '</div>';
+  console.log(msg);
+}
+
+function showPage(name) {
+  log('showPage(' + name + ') called');
+  document.querySelectorAll('.page').forEach(function(p) {
+    p.classList.remove('active');
+    p.style.display = 'none';
+  });
+  var pg = document.getElementById('page-' + name);
+  if (pg) {
+    pg.classList.add('active');
+    pg.style.display = 'block';
+    pg.style.opacity = '1';
+    pg.style.visibility = 'visible';
+    log('page-' + name + ' set to display:block');
+  } else {
+    log('ERROR: page-' + name + ' NOT FOUND');
+  }
+}
+
+function runTest() {
+  log('--- runTest() start ---');
+  log('upload display before: ' + document.getElementById('page-upload').style.display);
+  showPage('dashboard');
+  log('dashboard display after: ' + document.getElementById('page-dashboard').style.display);
+  document.getElementById('dashContent').innerHTML = '<div class="result">Rendered at: ' + new Date().toISOString() + '</div>';
+  log('--- runTest() done ---');
+}
+</script>
+</body>
+</html>

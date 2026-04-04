@@ -171,3 +171,66 @@ No changes to `forge-pulse.html` are needed when rotating the key.
 | Anthropic API | $5 prepaid credits | ~$0.50–$2.00/month for typical household use |
 
 Claude claude-sonnet-4-20250514 pricing (as of early 2026): $3/million input tokens, $15/million output tokens. A typical $id conversation uses ~2,000–4,000 tokens total. At that rate, $5 in credits covers hundreds of conversations.
+
+---
+
+## Smart Scan — AI-Powered File Extraction
+
+Smart Scan uses Claude to extract transactions from any file type: photos, PDFs, bank statements, W-2s, 1099s, handwritten notes, receipts, and investment statements. The same Cloudflare Worker handles both Sid chat and Smart Scan.
+
+### What Smart Scan can read
+
+| File type | Examples |
+|-----------|---------|
+| 📷 Photos | Receipt photos, handwritten expense lists, whiteboard summaries |
+| 📄 PDFs | Bank statements, investment statements, tax documents |
+| 🧾 Tax documents | W-2, 1099-INT, 1099-DIV, 1099-B, 1099-MISC |
+| 🏦 Bank statements | Any bank's monthly statement PDF or screenshot |
+| 📈 Investment statements | Brokerage, 401k, IRA quarterly statements |
+| 📝 Any CSV | Including formats parseCSV can't handle automatically |
+
+### Enabling Smart Scan
+
+1. **Deploy the updated worker** (`forge_worker_v2.js`) — this adds the `/scan` route. If you already have the original worker deployed, simply replace its code with `forge_worker_v2.js` and redeploy.
+
+2. **Set `WORKER_URL` in forge.html** — find line `const WORKER_URL = '';` near the top of the script and paste your worker URL:
+   ```javascript
+   const WORKER_URL = 'https://forge-sid.YOUR-SUBDOMAIN.workers.dev';
+   ```
+
+3. **That's it.** Once set, the Smart Scan zone on the upload page shows "✦ AI worker connected" and activates automatically.
+
+### How it works in the import pipeline
+
+Smart Scan is integrated at three points in `processAll()`:
+
+1. **Images and PDFs dropped in the main zone** → routed to Smart Scan immediately (no structured parser attempted)
+2. **Unknown file extensions** (`.xlsx`, `.xls`, etc.) → Smart Scan attempted if worker is configured
+3. **CSV/QIF/OFX that parse to zero rows** → Smart Scan attempted as automatic fallback
+
+The Smart Scan zone (below the main drop zone on the upload page) is a dedicated drop area for photos and documents that bypass the structured parser entirely.
+
+### Worker route reference
+
+| Route | Purpose | Max tokens |
+|-------|---------|------------|
+| `POST /chat` | Sid AI financial assistant chat | 1,500 |
+| `POST /scan` | Smart Scan transaction extraction | 4,096 |
+
+### Accuracy notes
+
+- **High confidence**: typed bank statements, typed CSVs, clear receipt photos
+- **Medium confidence**: slightly blurry photos, non-standard statement layouts
+- **Low confidence**: handwritten notes (legibility-dependent), very compressed images
+
+Always review imported transactions after a Smart Scan import. The confidence level is shown in the result card.
+
+### Cost estimate
+
+Smart Scan uses claude-sonnet-4 with up to 4,096 output tokens. Estimated cost per scan:
+- Single receipt photo: ~$0.002
+- Full bank statement PDF (10 pages): ~$0.01–0.03
+- W-2 or 1099: ~$0.003
+
+These are billed to your Anthropic account via the worker's API key.
+
