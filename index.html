@@ -51,6 +51,7 @@
   /* UI: DM Sans — clean, friendly, highly readable */
   /* Mono: Fira Code — elegant, precise */
   --font-d:    'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --font-num:  'Sora', 'Outfit', system-ui, sans-serif;
   --font-ui:   'DM Sans', 'Inter', system-ui, sans-serif;
   --font-m:    'Fira Code', 'JetBrains Mono', monospace;
 
@@ -78,13 +79,16 @@
   box-sizing: border-box;
   margin: 0; padding: 0;
 }
-html { scroll-behavior: smooth; }
+html { }
 
 body {
   font-family: var(--font-ui);
   background: var(--bg);
   color: var(--ink);
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   font-size: 14px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -101,12 +105,13 @@ body::after {
 
 .app {
   display: flex;
-  min-height: 100vh;
-  position: relative;
+  flex: 1;
+  min-height: 0;
 }
 
 .forge-header {
-  position: sticky; top: 0; z-index: 200;
+  flex-shrink: 0;
+  z-index: 200;
   background: rgba(8, 8, 8, 0.92);
   backdrop-filter: blur(20px) saturate(1.5);
   -webkit-backdrop-filter: blur(20px) saturate(1.5);
@@ -214,8 +219,8 @@ nav {
   width: 228px; flex-shrink: 0;
   background: var(--void);
   border-right: 1px solid var(--line);
-  position: sticky; top: 60px;
-  height: calc(100vh - 60px);
+  height: 100%;
+  min-height: 0;
   overflow-y: auto; overflow-x: hidden;
   display: flex; flex-direction: column;
   z-index: 10;
@@ -326,12 +331,15 @@ nav::-webkit-scrollbar-thumb:hover { background: var(--border2); }
 
 main {
   flex: 1;
+  min-height: 0;
   padding: 28px 32px 60px;
   overflow-y: auto;
-  max-width: 1400px;
-  min-width: 0;
+  overflow-x: hidden;
+  overflow-anchor: none;
   position: relative;
   z-index: 1;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
 }
 
 .page { display: none; }
@@ -381,10 +389,11 @@ main {
 }
 
 .gauge-net {
-  font-family: var(--font-d);
-  font-size: 72px; font-weight: 600; line-height: 1;
+  font-family: var(--font-num);
+  font-size: 68px; font-weight: 700; line-height: 1;
   color: var(--ink); margin-bottom: 8px;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
 }
 .gauge-net.pos { color: var(--positive); }
 .gauge-net.neg { color: var(--negative); }
@@ -422,10 +431,10 @@ main {
   margin-bottom: 10px;
 }
 .card-val {
-  font-family: var(--font-d);
-  font-size: 28px; font-weight: 600;
-  line-height: 1.1; margin-bottom: 5px;
-  color: var(--ink); letter-spacing: -0.01em;
+  font-family: var(--font-num);
+  font-size: 28px; font-weight: 700;
+  line-height: 1.05; margin-bottom: 5px;
+  color: var(--ink); letter-spacing: -0.02em;
 }
 .card-sub  { font-size: 12.5px; color: var(--ink3); line-height: 1.55; }
 .card-delta { font-size: 12px; font-weight: 500; margin-top: 5px; }
@@ -439,6 +448,7 @@ main {
   padding: 24px 26px;
   box-shadow: var(--shadow);
 }
+.chart-card canvas { display: block; }
 .chart-hdr {
   display: flex; align-items: flex-start;
   justify-content: space-between; margin-bottom: 20px;
@@ -753,15 +763,95 @@ select option { background: var(--float); color: var(--ink2); }
 .confluence-entry.exit { animation: cfExit var(--dur-slow) var(--ease) forwards; }
 @keyframes cfExit { to { opacity: 0.01; pointer-events: none; } }
 
-.confluence-rivers { position: relative; width: 100px; height: 70px; margin-bottom: 28px; }
-.river-line { position: absolute; height: 1.5px; background: var(--gold); transform-origin: right center; border-radius: 1px; }
-.r1 { width: 56px; top: 16px; right: 44%; transform: rotate(22deg); animation: rFlow .9s var(--ease) .4s both; }
-.r2 { width: 56px; top: 35px; right: 44%; transform: rotate(0deg);  animation: rFlow .9s var(--ease) .6s both; }
-.r3 { width: 56px; top: 54px; right: 44%; transform: rotate(-22deg);animation: rFlow .9s var(--ease) .8s both; }
-.river-point { position: absolute; right: 0; top: 50%; transform: translate(50%,-50%); width: 8px; height: 8px; background: var(--gold); border-radius: 50%; animation: ptPulse 2s ease-in-out 1.4s infinite; }
-@keyframes rFlow { from { width:0; opacity: 0.01; } to { opacity:1; } }
-@keyframes ptPulse { 0%,100%{transform:translate(50%,-50%) scale(1);} 50%{transform:translate(50%,-50%) scale(1.4);box-shadow:0 0 12px var(--gold-glow);} }
+.confluence-rivers {
+  position: relative;
+  width: 320px;
+  height: 200px;
+  margin-bottom: 24px;
+}
+.conf-svg {
+  width: 320px;
+  height: 200px;
+  overflow: visible;
+  filter: drop-shadow(0 0 8px rgba(245,168,0,0.2));
+}
 
+/* River draw animations */
+.conf-allegheny {
+  stroke-dasharray: 260;
+  stroke-dashoffset: 260;
+  animation: confDraw 1.1s cubic-bezier(0.16,1,0.3,1) 0.2s forwards;
+}
+.conf-mon {
+  stroke-dasharray: 270;
+  stroke-dashoffset: 270;
+  animation: confDraw 1.2s cubic-bezier(0.16,1,0.3,1) 0.5s forwards;
+}
+.conf-ohio {
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+  animation: confDraw 0.7s cubic-bezier(0.16,1,0.3,1) 1.4s forwards;
+}
+@keyframes confDraw { to { stroke-dashoffset: 0; } }
+
+/* River glow pulses after drawing */
+.conf-allegheny, .conf-mon, .conf-ohio {
+  filter: drop-shadow(0 0 3px rgba(245,168,0,0.4));
+}
+
+/* Three Sisters appear after rivers */
+.conf-sisters {
+  opacity: 0;
+  animation: confFadeIn 0.7s ease 1.7s forwards;
+}
+@keyframes confFadeIn { to { opacity: 1; } }
+
+/* LED shimmer on bridge chains */
+.conf-led-strip {
+  stroke-dasharray: 5 8;
+  stroke-dashoffset: 0;
+  opacity: 0;
+  animation: confFadeIn 0.4s ease 2.2s forwards, ledScroll 2s linear 2.6s infinite;
+}
+.conf-led-strip-2 { animation-delay: 2.4s, 2.8s; }
+.conf-led-strip-3 { animation-delay: 2.6s, 3.0s; }
+@keyframes ledScroll { to { stroke-dashoffset: -26; } }
+
+/* Steelers tetrahedron at The Point */
+.conf-tet {
+  opacity: 0;
+  transform-origin: 88px 108px;
+  animation: tetAppear 0.6s cubic-bezier(0.34,1.56,0.64,1) 1.5s forwards;
+}
+@keyframes tetAppear {
+  from { opacity: 0; transform: scale(0) rotate(-30deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.conf-tet-glow {
+  opacity: 0;
+  animation: tetGlow 2s ease-in-out 2.1s infinite;
+}
+@keyframes tetGlow {
+  0%,100% { opacity: 0; r: 0; }
+  50%     { opacity: 0.5; r: 10; }
+}
+
+/* Point fountain ring */
+.conf-fountain-ring {
+  opacity: 0;
+  animation: fountainRing 2.5s ease-in-out 2.0s infinite;
+}
+@keyframes fountainRing {
+  0%   { opacity: 0.6; r: 4; stroke-width: 2; }
+  100% { opacity: 0;   r: 18; stroke-width: 0.5; }
+}
+
+/* River labels */
+.conf-label {
+  opacity: 0;
+  animation: confFadeIn 0.5s ease 1.9s forwards;
+  font-family: 'Fira Code', monospace;
+}
 .confluence-title { font-family: var(--font-d); font-size: 36px; font-weight: 600; color: var(--ink); opacity:0; animation: fadeUp .6s var(--ease) 1.5s forwards; letter-spacing: 0.02em; }
 .confluence-sub { font-family: var(--font-m); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink4); margin-top: 8px; opacity:0; animation: fadeUp .6s var(--ease) 1.9s forwards; }
 .confluence-begin { margin-top: 36px; padding: 13px 36px; background: var(--gold); color: #000; font-family: var(--font-ui); font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; border: none; border-radius: var(--r-sm); cursor: pointer; opacity:0; animation: fadeUp .5s var(--ease) 2.4s forwards; transition: all var(--dur-fast); }
@@ -1083,11 +1173,14 @@ select option { background: var(--float); color: var(--ink2); }
   margin-bottom: 6px;
 }
 .ana-insight-val {
+  font-family: var(--font-num);
   font-size: 22px;
   font-weight: 700;
   color: var(--ink);
   line-height: 1;
   margin-bottom: 4px;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 .ana-insight-delta {
   font-size: 11px;
@@ -1150,7 +1243,7 @@ select option { background: var(--float); color: var(--ink2); }
   .ana-controls { flex-direction: column; }
 }
 
-canvas { display: block; max-width: 100%; height: auto; }
+
 
 .smart-scan-zone {
   border: 2px dashed rgba(167,139,250,.4);
@@ -1210,10 +1303,238 @@ canvas { display: block; max-width: 100%; height: auto; }
   margin-top: 4px; letter-spacing: .02em;
 }
 
+
+/* Nav bridge LED animation — glowing eyebar chains */
+.nav-bridge-svg circle {
+  animation: ledGlow 3s ease-in-out infinite alternate;
+}
+.nav-bridge-svg circle:nth-child(odd) {
+  animation-delay: 0.5s;
+}
+@keyframes ledGlow {
+  0%   { opacity: 0.5; }
+  100% { opacity: 1; filter: drop-shadow(0 0 2px #F5A800); }
+}
+/* Nav bridge opacity on hover — reveal more detail */
+.nav-bridge:hover .nav-bridge-svg {
+  opacity: 0.2 !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   LUKALAB — AI-Powered Creativity Incubator
+   ══════════════════════════════════════════════════════ */
+.lukalab-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+  cursor: default;
+  user-select: none;
+}
+.lukalab-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.lukalab-text {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  line-height: 1.2;
+}
+.lukalab-text strong {
+  display: block;
+  color: var(--ink3);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+}
+.lukalab-text span {
+  font-size: 7.5px;
+  opacity: 0.65;
+  letter-spacing: 0.1em;
+}
+/* Nav sidebar variant */
+.lukalab-nav {
+  padding: 14px 16px 10px;
+  border-top: 1px solid var(--line);
+  margin-top: auto;
+}
+.lukalab-nav .lukalab-text { color: var(--ink4); }
+
+/* Footer/page variant — subtle watermark */
+.lukalab-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.35;
+  transition: opacity 0.2s;
+}
+.lukalab-footer:hover { opacity: 0.65; }
+
+/* Upload page attribution */
+.lukalab-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  background: rgba(245,168,0,.06);
+  border: 1px solid rgba(245,168,0,.12);
+  font-size: 9px;
+  font-family: var(--font-m);
+  letter-spacing: 0.12em;
+  color: var(--ink4);
+  text-transform: uppercase;
+}
+.lukalab-badge svg { flex-shrink: 0; }
+
+/* Confluence overlay — prominent placement */
+.lukalab-confluence {
+  margin-top: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  animation: fadeUp .5s var(--ease) 3.0s forwards;
+}
+
+/* Persistent river mark in page headers */
+.forge-rivers-mini {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 8px;
+  opacity: 0.5;
+}
+
+/* Steelers-style tetrahedron at The Point */
+.conf-tetra {
+  opacity: 0;
+  transform-origin: center;
+  animation: tetraAppear 0.7s cubic-bezier(.34,1.56,.64,1) 1.9s forwards;
+}
+@keyframes tetraAppear {
+  0%   { opacity: 0; transform: scale(0) rotate(-30deg); }
+  60%  { opacity: 1; transform: scale(1.15) rotate(5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.conf-tetra-pulse {
+  opacity: 0;
+  animation: tetraPulse 2.5s ease-in-out 2.7s infinite;
+}
+@keyframes tetraPulse {
+  0%,100% { opacity: 0; r: 6; }
+  40%     { opacity: 0.3; r: 14; }
+  70%     { opacity: 0.1; r: 20; }
+}
+/* River label fade */
+.conf-label {
+  opacity: 0;
+  animation: labelFade 0.8s ease 2.2s forwards;
+}
+.conf-label-2 { animation-delay: 2.35s; }
+.conf-label-3 { animation-delay: 2.5s; }
+
+/* ── LUKA LAB BRANDING ──────────────────────────────────────── */
+.lukalab-mark {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+.lukalab-mark:hover { opacity: 0.85; }
+.lukalab-svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.lukalab-text {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  line-height: 1.3;
+}
+.lukalab-text strong {
+  display: block;
+  color: var(--ink3);
+  letter-spacing: 0.22em;
+  font-weight: 500;
+}
+.lukalab-text span {
+  font-size: 7.5px;
+  opacity: 0.7;
+}
+/* Inline credit variant */
+.lukalab-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-m);
+  font-size: 9px;
+  color: var(--ink4);
+  opacity: 0.45;
+  letter-spacing: 0.1em;
+}
+.lukalab-credit svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ── Pittsburgh page-header accent marks ─────────────────── */
+.pgh-mark {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.pgh-rivers-mini {
+  width: 32px;
+  height: 24px;
+  opacity: 0.18;
+  flex-shrink: 0;
+  transition: opacity 0.25s;
+}
+.pgh-rivers-mini:hover { opacity: 0.45; }
+
+/* Confluence float watermark — right side of page content area */
+.pgh-watermark {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 140px;
+  height: 100px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.035;
+}
+/* LukaLab inline page credit */
+.lukalab-page-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-m);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  color: var(--ink4);
+  opacity: 0.4;
+  text-transform: uppercase;
+}
+.lukalab-page-credit svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap">
 </head>
 <body>
 
@@ -1222,14 +1543,25 @@ canvas { display: block; max-width: 100%; height: auto; }
   <div class="forge-wordmark">
     <!-- Confluence mark: three rivers, refined geometric -->
     <svg class="forge-mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M6 10 C 10 10, 14 16, 26 16" stroke="#F5A800" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-      <path d="M6 16 C 10 16, 14 16, 26 16" stroke="#F5A800" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-      <path d="M6 22 C 10 22, 14 16, 26 16" stroke="#F5A800" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-      <circle cx="26" cy="16" r="2" fill="#F5A800"/>
+      <!-- Allegheny: upper-right to Point (left-center) -->
+      <path d="M31 8 C 22 8, 14 12, 5 17" stroke="#F5A800" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+      <!-- Monongahela: lower-right curves UP to Point -->
+      <path d="M31 26 C 22 26, 16 24, 5 17" stroke="#F5A800" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+      <!-- Ohio: exits northwest -->
+      <path d="M5 17 L 1 14" stroke="#F5A800" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+      <!-- Steelers tetrahedron at The Point -->
+      <!-- Diamond: 4 triangles, black/gold/white/navy = Steelers colors; simplified as gold diamond -->
+      <polygon points="5,13 8,17 5,21 2,17" fill="#F5A800" opacity="0.15"/>
+      <polygon points="5,13 8,17 5,17" fill="#F5A800"/>
+      <polygon points="8,17 5,21 5,17" fill="#F5A800" opacity="0.55"/>
+      <!-- Three Sisters: 3 tiny arches above Allegheny -->
+      <path d="M14 8 Q16 5 18 8" stroke="#F5A800" stroke-width="0.7" fill="none" opacity="0.7"/>
+      <path d="M19 8 Q21 5 23 8" stroke="#F5A800" stroke-width="0.7" fill="none" opacity="0.7"/>
+      <path d="M24 8 Q26 5 28 8" stroke="#F5A800" stroke-width="0.7" fill="none" opacity="0.7"/>
     </svg>
     <div class="forge-logotype">
       <div class="forge-name">F<span class="f-gold">O</span>RGE</div>
-      <div class="forge-location">Pittsburgh · Est. 2025 · <span style="font-family:var(--font-m);color:var(--gold);opacity:.7;font-size:9px;letter-spacing:.08em;">#30 · #87</span></div>
+      <div class="forge-location">Pittsburgh · Est. 2026 · <span style="font-family:var(--font-m);color:var(--gold);opacity:.7;font-size:9px;letter-spacing:.08em;">#30 · #87</span></div>
     </div>
   </div>
   <div class="header-right">
@@ -1303,23 +1635,110 @@ canvas { display: block; max-width: 100%; height: auto; }
 
   <!-- Pittsburgh bridge watermark -->
   <div class="nav-bridge">
-    <svg class="nav-bridge-svg" viewBox="0 0 180 50" fill="none">
-      <line x1="0" y1="46" x2="180" y2="46" stroke="#FFB612" stroke-width="2"/>
-      <line x1="10" y1="37" x2="170" y2="37" stroke="#FFB612" stroke-width="1.5"/>
-      <rect x="42" y="8" width="6" height="29" fill="#FFB612"/>
-      <rect x="132" y="8" width="6" height="29" fill="#FFB612"/>
-      <line x1="45" y1="8" x2="10" y2="37" stroke="#FFB612" stroke-width=".8"/>
-      <line x1="45" y1="8" x2="30" y2="37" stroke="#FFB612" stroke-width=".8"/>
-      <line x1="45" y1="8" x2="60" y2="37" stroke="#FFB612" stroke-width=".8"/>
-      <line x1="45" y1="8" x2="75" y2="37" stroke="#FFB612" stroke-width=".8"/>
-      <line x1="135" y1="8" x2="170" y2="37" stroke="#FFB612" stroke-width=".8"/>
-      <line x1="135" y1="8" x2="150" y2="37" stroke="#FFB612" stroke-width=".8"/>
-      <line x1="135" y1="8" x2="120" y2="37" stroke="#FFB612" stroke-width=".8"/>
-      <line x1="135" y1="8" x2="105" y2="37" stroke="#FFB612" stroke-width=".8"/>
-      <path d="M45 8 Q90 1 135 8" stroke="#FFB612" stroke-width=".8" fill="none"/>
+    <svg class="nav-bridge-svg" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- River surface (Allegheny) -->
+      <rect x="0" y="46" width="200" height="14" fill="#F5A800" opacity="0.04"/>
+      <line x1="0" y1="46" x2="200" y2="46" stroke="#F5A800" stroke-width="0.5" opacity="0.15"/>
+
+      <!-- BRIDGE 1: Rachel Carson (leftmost, 9th St) -->
+      <!-- Road deck -->
+      <line x1="8" y1="44" x2="62" y2="44" stroke="#F5A800" stroke-width="1.5"/>
+      <!-- Left tower -->
+      <rect x="20" y="20" width="3" height="24" fill="#F5A800" opacity="0.8"/>
+      <!-- Right tower -->
+      <rect x="47" y="20" width="3" height="24" fill="#F5A800" opacity="0.8"/>
+      <!-- Catenary chains (eyebar) — two per side -->
+      <path d="M21.5 20 Q35 10 48.5 20" stroke="#F5A800" stroke-width="1" fill="none" opacity="0.7"/>
+      <path d="M21.5 23 Q35 14 48.5 23" stroke="#F5A800" stroke-width="0.6" fill="none" opacity="0.45"/>
+      <!-- Suspenders from chain to deck -->
+      <line x1="26" y1="17" x2="26" y2="44" stroke="#F5A800" stroke-width="0.5" opacity="0.4"/>
+      <line x1="30" y1="14.5" x2="30" y2="44" stroke="#F5A800" stroke-width="0.5" opacity="0.4"/>
+      <line x1="35" y1="13" x2="35" y2="44" stroke="#F5A800" stroke-width="0.5" opacity="0.4"/>
+      <line x1="40" y1="14.5" x2="40" y2="44" stroke="#F5A800" stroke-width="0.5" opacity="0.4"/>
+      <line x1="44" y1="17" x2="44" y2="44" stroke="#F5A800" stroke-width="0.5" opacity="0.4"/>
+      <!-- LED dots on chain (eyebar pins) -->
+      <circle cx="26" cy="17" r="1" fill="#F5A800" opacity="0.9"/>
+      <circle cx="30" cy="14.5" r="1" fill="#F5A800" opacity="0.9"/>
+      <circle cx="35" cy="13" r="1.2" fill="#F5A800"/>
+      <circle cx="40" cy="14.5" r="1" fill="#F5A800" opacity="0.9"/>
+      <circle cx="44" cy="17" r="1" fill="#F5A800" opacity="0.9"/>
+      <!-- Pylon caps (LED) -->
+      <circle cx="22" cy="19" r="1.2" fill="#F5A800"/>
+      <circle cx="49" cy="19" r="1.2" fill="#F5A800"/>
+
+      <!-- BRIDGE 2: Andy Warhol (center, 7th St) -->
+      <line x1="74" y1="44" x2="128" y2="44" stroke="#F5A800" stroke-width="1.5"/>
+      <rect x="86" y="20" width="3" height="24" fill="#F5A800" opacity="0.8"/>
+      <rect x="113" y="20" width="3" height="24" fill="#F5A800" opacity="0.8"/>
+      <path d="M87.5 20 Q101 10 114.5 20" stroke="#F5A800" stroke-width="1" fill="none" opacity="0.7"/>
+      <path d="M87.5 23 Q101 14 114.5 23" stroke="#F5A800" stroke-width="0.6" fill="none" opacity="0.45"/>
+      <line x1="92" y1="17" x2="92" y2="44" stroke="#F5A800" stroke-width="0.5" opacity="0.4"/>
+      <line x1="96" y1="14.5" x2="96" y2="44" stroke="#F5A800" stroke-width="0.5" opacity="0.4"/>
+      <line x1="101" y1="13" x2="101" y2="44" stroke="#F5A800" stroke-width="0.5" opacity="0.4"/>
+      <line x1="106" y1="14.5" x2="106" y2="44" stroke="#F5A800" stroke-width="0.5" opacity="0.4"/>
+      <line x1="110" y1="17" x2="110" y2="44" stroke="#F5A800" stroke-width="0.5" opacity="0.4"/>
+      <circle cx="92" cy="17" r="1" fill="#F5A800" opacity="0.9"/>
+      <circle cx="96" cy="14.5" r="1" fill="#F5A800" opacity="0.9"/>
+      <circle cx="101" cy="13" r="1.2" fill="#F5A800"/>
+      <circle cx="106" cy="14.5" r="1" fill="#F5A800" opacity="0.9"/>
+      <circle cx="110" cy="17" r="1" fill="#F5A800" opacity="0.9"/>
+      <circle cx="88" cy="19" r="1.2" fill="#F5A800"/>
+      <circle cx="115" cy="19" r="1.2" fill="#F5A800"/>
+
+      <!-- BRIDGE 3: Roberto Clemente (rightmost, 6th St) -->
+      <line x1="140" y1="44" x2="194" y2="44" stroke="#F5A800" stroke-width="1.5"/>
+      <rect x="152" y="20" width="3" height="24" fill="#F5A800" opacity="0.8"/>
+      <rect x="179" y="20" width="3" height="24" fill="#F5A800" opacity="0.8"/>
+      <path d="M153.5 20 Q167 10 180.5 20" stroke="#F5A800" stroke-width="1" fill="none" opacity="0.7"/>
+      <path d="M153.5 23 Q167 14 180.5 23" stroke="#F5A800" stroke-width="0.6" fill="none" opacity="0.45"/>
+      <line x1="158" y1="17" x2="158" y2="44" stroke="#F5A800" stroke-width="0.5" opacity="0.4"/>
+      <line x1="162" y1="14.5" x2="162" y2="44" stroke="#F5A800" stroke-width="0.5" opacity="0.4"/>
+      <line x1="167" y1="13" x2="167" y2="44" stroke="#F5A800" stroke-width="0.5" opacity="0.4"/>
+      <line x1="172" y1="14.5" x2="172" y2="44" stroke="#F5A800" stroke-width="0.5" opacity="0.4"/>
+      <line x1="176" y1="17" x2="176" y2="44" stroke="#F5A800" stroke-width="0.5" opacity="0.4"/>
+      <circle cx="158" cy="17" r="1" fill="#F5A800" opacity="0.9"/>
+      <circle cx="162" cy="14.5" r="1" fill="#F5A800" opacity="0.9"/>
+      <circle cx="167" cy="13" r="1.2" fill="#F5A800"/>
+      <circle cx="172" cy="14.5" r="1" fill="#F5A800" opacity="0.9"/>
+      <circle cx="176" cy="17" r="1" fill="#F5A800" opacity="0.9"/>
+      <circle cx="154" cy="19" r="1.2" fill="#F5A800"/>
+      <circle cx="181" cy="19" r="1.2" fill="#F5A800"/>
     </svg>
+    <div class="lukalab-nav" style="padding:10px 16px 8px;border-top:1px solid var(--line);margin-top:8px;">
+      <div class="lukalab-mark">
+        <svg class="lukalab-icon" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="9,1 16,9 9,17 2,9" stroke="#F5A800" stroke-width="1.2" fill="rgba(245,168,0,0.07)"/>
+          <circle cx="9" cy="9" r="2.2" fill="#F5A800" opacity="0.9"/>
+          <line x1="9" y1="3" x2="9" y2="6.8" stroke="#F5A800" stroke-width="0.9" opacity="0.5"/>
+          <line x1="9" y1="11.2" x2="9" y2="15" stroke="#F5A800" stroke-width="0.9" opacity="0.5"/>
+          <line x1="4" y1="9" x2="6.8" y2="9" stroke="#F5A800" stroke-width="0.9" opacity="0.5"/>
+          <line x1="11.2" y1="9" x2="14" y2="9" stroke="#F5A800" stroke-width="0.9" opacity="0.5"/>
+          <circle cx="9" cy="3" r="0.9" fill="#60A5FA" opacity="0.7"/>
+          <circle cx="9" cy="15" r="0.9" fill="#2DD4BF" opacity="0.7"/>
+        </svg>
+        <div class="lukalab-text">
+          <strong>LukaLab</strong>
+          <span>AI Creativity Incubator</span>
+        </div>
+      </div>
+    </div>
     <div class="nav-tagline">Pittsburgh · Built to last</div>
-    <div class="nav-tagline" style="font-size:8.5px;opacity:.45;margin-top:2px;letter-spacing:.12em;">$KENES · $ID · BLACK &amp; GOLD</div>
+    <div class="nav-tagline" style="font-size:8.5px;opacity:.45;margin-top:2px;letter-spacing:.12em;">$KENES · $ID · 3 RIVERS · 446 BRIDGES</div>
+    <div class="lukalab-mark" style="padding:10px 14px 6px;">
+      <svg class="lukalab-svg" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 3 L3 14 L14 14" stroke="#F5A800" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9"/>
+        <path d="M19 19 L19 8 L8 8" stroke="#F5A800" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9"/>
+        <circle cx="3" cy="3" r="1.5" fill="#F5A800"/>
+        <circle cx="14" cy="14" r="1.5" fill="#F5A800"/>
+        <circle cx="19" cy="19" r="1.5" fill="#F5A800"/>
+        <circle cx="8" cy="8" r="1.5" fill="#F5A800"/>
+        <circle cx="11" cy="11" r="1" fill="#F5A800" opacity="0.5"/>
+      </svg>
+      <div class="lukalab-text">
+        <strong>LukaLab</strong>
+        <span>AI incubator · 2026</span>
+      </div>
+    </div>
     <div class="nav-stripe"></div>
   </div>
 </nav>
@@ -1615,7 +2034,14 @@ canvas { display: block; max-width: 100%; height: auto; }
     <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);" onclick="showPage('upload')">Import Real Data</button>
   </div>
   <div class="page-hdr">
-    <div><div class="page-title">The Gauge</div><div class="page-sub" id="dashSub">Your financial picture at a glance</div></div>
+    <div><div class="page-title" style="display:flex;align-items:center;gap:10px;">The Gauge <svg width="28" height="20" viewBox="0 0 40 30" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.2;flex-shrink:0;">
+  <path d="M40 5 C30 5 20 10 8 16" stroke="#60A5FA" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <path d="M40 26 C30 26 20 22 8 16" stroke="#2DD4BF" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.65"/>
+  <path d="M8 16 L1 13" stroke="#F5A800" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.85"/>
+  <polygon points="8,12 11,16 8,20 5,16" fill="#F5A800" opacity="0.15"/>
+  <polygon points="8,12 11,16 8,16" fill="#F5A800"/>
+  <polygon points="11,16 8,20 8,16" fill="#F5A800" opacity="0.55"/>
+</svg></div><div class="page-sub" id="dashSub">Your financial picture at a glance</div></div>
     <div class="range-tabs" id="dashRange">
       <button class="rtab" onclick="setRange('3m',this)">3M</button>
       <button class="rtab" onclick="setRange('6m',this)">6M</button>
@@ -1625,8 +2051,8 @@ canvas { display: block; max-width: 100%; height: auto; }
   </div>
   <div class="cards-4" id="dashCards"></div>
   <div class="grid-2-1">
-    <div class="chart-card"><div class="chart-hdr"><div><div class="chart-title">Monthly Cash Flow</div><div class="chart-sub">Income vs. Expenses</div></div></div><canvas id="cfChart" height="210"></canvas></div>
-    <div class="chart-card"><div class="chart-hdr"><div><div class="chart-title">Spending by Category</div></div></div><canvas id="catDonut" height="210"></canvas></div>
+    <div class="chart-card"><div class="chart-hdr"><div><div class="chart-title">Monthly Cash Flow</div><div class="chart-sub">Income vs. Expenses</div></div></div><div style="position:relative;height:210px;"><canvas id="cfChart"></canvas></div></div>
+    <div class="chart-card"><div class="chart-hdr"><div><div class="chart-title">Spending by Category</div></div></div><div style="position:relative;height:210px;"><canvas id="catDonut"></canvas></div></div>
   </div>
   <div class="grid-2">
     <div class="tbl-card"><div class="tbl-hdr"><div class="tbl-title">Top Merchants by Spend</div></div><table><thead><tr><th>#</th><th>Merchant</th><th>Txns</th><th style="text-align:right">Total</th></tr></thead><tbody id="dashMerch"></tbody></table></div>
@@ -1635,8 +2061,28 @@ canvas { display: block; max-width: 100%; height: auto; }
 </div>
 
 <!-- ══ INTELLIGENCE ══ -->
-<div id="page-intelligence" class="page">
-  <div class="page-hdr"><div><div class="page-title">The Bullpen</div><div class="page-sub">Proactive alerts, trends, and recommendations &nbsp;·&nbsp; <span style="font-family:var(--font-m);font-size:10px;color:var(--gold);opacity:.6;">#30</span></div></div>
+<div id="page-intelligence" class="page" style="position:relative;">
+  <div class="page-hdr"><div><div class="page-title" style="display:flex;align-items:center;gap:10px;">The Bullpen <svg width="44" height="16" viewBox="0 0 60 22" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.2;flex-shrink:0;">
+  <line x1="0" y1="18" x2="60" y2="18" stroke="#F5A800" stroke-width="1.2"/>
+  <rect x="6" y="6" width="2" height="12" fill="#F5A800" opacity="0.8"/>
+  <rect x="18" y="6" width="2" height="12" fill="#F5A800" opacity="0.8"/>
+  <path d="M7 6 Q13 1 19 6" stroke="#F5A800" stroke-width="1.2" fill="none"/>
+  <circle cx="7" cy="5.5" r="1.2" fill="#F5A800"/>
+  <circle cx="13" cy="2.5" r="1.2" fill="#F5A800"/>
+  <circle cx="19" cy="5.5" r="1.2" fill="#F5A800"/>
+  <rect x="26" y="6" width="2" height="12" fill="#F5A800" opacity="0.8"/>
+  <rect x="38" y="6" width="2" height="12" fill="#F5A800" opacity="0.8"/>
+  <path d="M27 6 Q33 1 39 6" stroke="#F5A800" stroke-width="1.2" fill="none"/>
+  <circle cx="27" cy="5.5" r="1.2" fill="#F5A800"/>
+  <circle cx="33" cy="2.5" r="1.2" fill="#F5A800"/>
+  <circle cx="39" cy="5.5" r="1.2" fill="#F5A800"/>
+  <rect x="46" y="6" width="2" height="12" fill="#F5A800" opacity="0.8"/>
+  <rect x="58" y="6" width="2" height="12" fill="#F5A800" opacity="0.8"/>
+  <path d="M47 6 Q53 1 59 6" stroke="#F5A800" stroke-width="1.2" fill="none"/>
+  <circle cx="47" cy="5.5" r="1.2" fill="#F5A800"/>
+  <circle cx="53" cy="2.5" r="1.2" fill="#F5A800"/>
+  <circle cx="59" cy="5.5" r="1.2" fill="#F5A800"/>
+</svg></div><div class="page-sub">Proactive alerts, trends, and recommendations &nbsp;·&nbsp; <span style="font-family:var(--font-m);font-size:10px;color:var(--gold);opacity:.6;">#30</span></div></div>
     <div class="range-tabs" id="intelRange">
       <button class="rtab" onclick="setIntelRange('3m',this)">3M</button>
       <button class="rtab active" onclick="setIntelRange('6m',this)">6M</button>
@@ -1655,7 +2101,7 @@ canvas { display: block; max-width: 100%; height: auto; }
 
   <div class="tab-pane active" id="itab-alerts"><div id="intelAlerts"></div></div>
   <div class="tab-pane" id="itab-trends">
-    <div class="grid-2" style="margin-bottom:20px;"><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Category Acceleration — 3M vs Prior 3M</div></div><canvas id="trendBarChart" height="260"></canvas></div><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Spending Velocity (Monthly Δ)</div></div><canvas id="velocityChart" height="260"></canvas></div></div>
+    <div class="grid-2" style="margin-bottom:20px;"><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Category Acceleration — 3M vs Prior 3M</div></div><div style="position:relative;height:260px;"><canvas id="trendBarChart"></canvas></div></div><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Spending Velocity (Monthly Δ)</div></div><div style="position:relative;height:260px;"><canvas id="velocityChart"></canvas></div></div></div>
     <div id="trendDetails"></div>
   </div>
   <div class="tab-pane" id="itab-budget">
@@ -1665,14 +2111,14 @@ canvas { display: block; max-width: 100%; height: auto; }
   <div class="tab-pane" id="itab-anomalies">
     <div class="cards-3" id="anomSummaryCards"></div>
     <div class="grid-2">
-      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Transaction Size Distribution</div><div class="chart-sub">Outliers shown in red</div></div><canvas id="anomHist" height="240"></canvas></div>
+      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Transaction Size Distribution</div><div class="chart-sub">Outliers shown in red</div></div><div style="position:relative;height:240px;"><canvas id="anomHist"></canvas></div></div>
       <div class="tbl-card" style="margin-bottom:0;"><div class="tbl-hdr"><div class="tbl-title">Statistical Outliers (>2σ)</div></div><div id="anomList" style="padding:0 18px;"></div></div>
     </div>
   </div>
   <div class="tab-pane" id="itab-seasonal">
     <div class="grid-2" style="margin-bottom:20px;">
       <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Monthly Spending Heatmap (by Year)</div><div class="chart-sub">Darker = higher spend relative to your annual average</div></div><div id="heatmap"></div></div>
-      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Average Spend by Month</div><div class="chart-sub">Across all years in your data</div></div><canvas id="seasonalBar" height="240"></canvas></div>
+      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Average Spend by Month</div><div class="chart-sub">Across all years in your data</div></div><div style="position:relative;height:240px;"><canvas id="seasonalBar"></canvas></div></div>
     </div>
     <div id="seasonalInsights"></div>
   </div>
@@ -1681,32 +2127,73 @@ canvas { display: block; max-width: 100%; height: auto; }
 
 <!-- ══ CASH FLOW ══ -->
 <div id="page-cashflow" class="page">
-  <div class="page-hdr"><div><div class="page-title">Cash Flow</div><div class="page-sub">Monthly income and expense trends</div></div></div>
+  <div class="page-hdr"><div><div class="page-title" style="display:flex;align-items:center;gap:10px;">Cash Flow <svg width="28" height="20" viewBox="0 0 40 30" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.2;flex-shrink:0;">
+  <path d="M40 5 C30 5 20 10 8 16" stroke="#60A5FA" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <path d="M40 26 C30 26 20 22 8 16" stroke="#2DD4BF" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.65"/>
+  <path d="M8 16 L1 13" stroke="#F5A800" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.85"/>
+  <polygon points="8,12 11,16 8,20 5,16" fill="#F5A800" opacity="0.15"/>
+  <polygon points="8,12 11,16 8,16" fill="#F5A800"/>
+  <polygon points="11,16 8,20 8,16" fill="#F5A800" opacity="0.55"/>
+</svg></div><div class="page-sub">Monthly income and expense trends</div></div></div>
   <div class="filters">
     <span class="filter-lbl">Account:</span><select id="cfAcct" onchange="renderCF()"></select>
     <span class="filter-lbl">Year:</span><select id="cfYear" onchange="renderCF()"></select>
   </div>
-  <div class="chart-card" style="margin-bottom:20px;"><div class="chart-hdr"><div class="chart-title">Income vs Expenses — Monthly</div></div><canvas id="cfBarChart" height="180"></canvas></div>
+  <div class="chart-card" style="margin-bottom:20px;"><div class="chart-hdr"><div class="chart-title">Income vs Expenses — Monthly</div></div><div style="position:relative;height:180px;"><canvas id="cfBarChart"></canvas></div></div>
   <div class="cards-3" id="cfCards"></div>
-  <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Net Savings Trend</div></div><canvas id="cfNetChart" height="130"></canvas></div>
+  <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Net Savings Trend</div></div><div style="position:relative;height:130px;"><canvas id="cfNetChart"></canvas></div></div>
 </div>
 
 <!-- ══ CATEGORIES ══ -->
 <div id="page-categories" class="page">
-  <div class="page-hdr"><div><div class="page-title">Categories</div><div class="page-sub">Where your money goes</div></div>
+  <div class="page-hdr"><div><div class="page-title" style="display:flex;align-items:center;gap:10px;">Categories <svg width="44" height="16" viewBox="0 0 60 22" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.2;flex-shrink:0;">
+  <line x1="0" y1="18" x2="60" y2="18" stroke="#F5A800" stroke-width="1.2"/>
+  <rect x="6" y="6" width="2" height="12" fill="#F5A800" opacity="0.8"/>
+  <rect x="18" y="6" width="2" height="12" fill="#F5A800" opacity="0.8"/>
+  <path d="M7 6 Q13 1 19 6" stroke="#F5A800" stroke-width="1.2" fill="none"/>
+  <circle cx="7" cy="5.5" r="1.2" fill="#F5A800"/>
+  <circle cx="13" cy="2.5" r="1.2" fill="#F5A800"/>
+  <circle cx="19" cy="5.5" r="1.2" fill="#F5A800"/>
+  <rect x="26" y="6" width="2" height="12" fill="#F5A800" opacity="0.8"/>
+  <rect x="38" y="6" width="2" height="12" fill="#F5A800" opacity="0.8"/>
+  <path d="M27 6 Q33 1 39 6" stroke="#F5A800" stroke-width="1.2" fill="none"/>
+  <circle cx="27" cy="5.5" r="1.2" fill="#F5A800"/>
+  <circle cx="33" cy="2.5" r="1.2" fill="#F5A800"/>
+  <circle cx="39" cy="5.5" r="1.2" fill="#F5A800"/>
+  <rect x="46" y="6" width="2" height="12" fill="#F5A800" opacity="0.8"/>
+  <rect x="58" y="6" width="2" height="12" fill="#F5A800" opacity="0.8"/>
+  <path d="M47 6 Q53 1 59 6" stroke="#F5A800" stroke-width="1.2" fill="none"/>
+  <circle cx="47" cy="5.5" r="1.2" fill="#F5A800"/>
+  <circle cx="53" cy="2.5" r="1.2" fill="#F5A800"/>
+  <circle cx="59" cy="5.5" r="1.2" fill="#F5A800"/>
+</svg></div><div class="page-sub">Where your money goes</div></div>
     <div class="range-tabs" id="catRange"><button class="rtab" onclick="setCatR('3m',this)">3M</button><button class="rtab" onclick="setCatR('6m',this)">6M</button><button class="rtab active" onclick="setCatR('1y',this)">1Y</button><button class="rtab" onclick="setCatR('all',this)">All</button></div>
   </div>
   <div class="filters"><span class="filter-lbl">Account:</span><select id="catAcct" onchange="renderCats()"></select></div>
   <div class="grid-2" style="margin-bottom:20px;">
-    <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Distribution</div></div><canvas id="catBigDonut" height="260"></canvas></div>
-    <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Top Categories</div></div><canvas id="catBarH" height="260"></canvas></div>
+    <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Distribution</div></div><div style="position:relative;height:260px;"><canvas id="catBigDonut"></canvas></div></div>
+    <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Top Categories</div></div><div style="position:relative;height:260px;"><canvas id="catBarH"></canvas></div></div>
   </div>
   <div class="tbl-card"><div class="tbl-hdr"><div class="tbl-title">All Categories</div></div><table><thead><tr><th>Category</th><th>Ledger Room</th><th>Avg/Month</th><th>YoY Change</th><th style="text-align:right">Total</th><th style="text-align:right">% of Spend</th></tr></thead><tbody id="catTbl"></tbody></table></div>
 </div>
 
 <!-- ══ MERCHANTS ══ -->
 <div id="page-merchants" class="page">
-  <div class="page-hdr"><div><div class="page-title">Merchants</div><div class="page-sub">Top payees and vendors</div></div>
+  <div class="page-hdr"><div><div class="page-title" style="display:flex;align-items:center;gap:10px;">Merchants <svg width="44" height="16" viewBox="0 0 60 22" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:"0.2";flex-shrink:0;vertical-align:middle;">
+  <line x1="0" y1="18" x2="60" y2="18" stroke="#F5A800" stroke-width="1.2"/>
+  <rect x="6" y="6" width="2" height="12" fill="#F5A800"/>
+  <rect x="18" y="6" width="2" height="12" fill="#F5A800"/>
+  <path d="M7 6 Q13 1 19 6" stroke="#F5A800" stroke-width="1.2" fill="none"/>
+  <circle cx="7" cy="5.5" r="1.2" fill="#F5A800"/><circle cx="13" cy="2.5" r="1.2" fill="#F5A800"/><circle cx="19" cy="5.5" r="1.2" fill="#F5A800"/>
+  <rect x="26" y="6" width="2" height="12" fill="#F5A800"/>
+  <rect x="38" y="6" width="2" height="12" fill="#F5A800"/>
+  <path d="M27 6 Q33 1 39 6" stroke="#F5A800" stroke-width="1.2" fill="none"/>
+  <circle cx="27" cy="5.5" r="1.2" fill="#F5A800"/><circle cx="33" cy="2.5" r="1.2" fill="#F5A800"/><circle cx="39" cy="5.5" r="1.2" fill="#F5A800"/>
+  <rect x="46" y="6" width="2" height="12" fill="#F5A800"/>
+  <rect x="58" y="6" width="2" height="12" fill="#F5A800"/>
+  <path d="M47 6 Q53 1 59 6" stroke="#F5A800" stroke-width="1.2" fill="none"/>
+  <circle cx="47" cy="5.5" r="1.2" fill="#F5A800"/><circle cx="53" cy="2.5" r="1.2" fill="#F5A800"/><circle cx="59" cy="5.5" r="1.2" fill="#F5A800"/>
+</svg></div><div class="page-sub">Top payees and vendors</div></div>
     <div class="range-tabs" id="mchRange"><button class="rtab" onclick="setMchR('3m',this)">3M</button><button class="rtab" onclick="setMchR('6m',this)">6M</button><button class="rtab active" onclick="setMchR('1y',this)">1Y</button><button class="rtab" onclick="setMchR('all',this)">All</button></div>
   </div>
   <div class="filters"><span class="filter-lbl">Category:</span><select id="mchCat" onchange="renderMch()"></select></div>
@@ -1725,10 +2212,10 @@ canvas { display: block; max-width: 100%; height: auto; }
     <div id="amzFlags"></div>
     <div class="tab-strip"><button class="tab-btn active" onclick="switchTab('amz','overview')">Overview</button><button class="tab-btn" onclick="switchTab('amz','categories')">By Category</button><button class="tab-btn" onclick="switchTab('amz','items')">All Items</button><button class="tab-btn" onclick="switchTab('amz','purchaser')">👤 By Purchaser</button><button class="tab-btn" onclick="switchTab('amz','compare')">vs. Total Spend</button></div>
     <div class="tab-pane active" id="amztab-overview">
-      <div class="grid-2-1"><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Monthly Detail Spend</div></div><canvas id="amzMonthly" height="210"></canvas></div><div class="chart-card"><div class="chart-hdr"><div class="chart-title">By Category</div></div><canvas id="amzCatDonut" height="210"></canvas></div></div>
+      <div class="grid-2-1"><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Monthly Detail Spend</div></div><div style="position:relative;height:210px;"><canvas id="amzMonthly"></canvas></div></div><div class="chart-card"><div class="chart-hdr"><div class="chart-title">By Category</div></div><div style="position:relative;height:210px;"><canvas id="amzCatDonut"></canvas></div></div></div>
     </div>
     <div class="tab-pane" id="amztab-categories">
-      <div class="grid-2"><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Spend by Category</div></div><canvas id="amzCatBar" height="260"></canvas></div><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Impulse Score by Category</div></div><canvas id="amzImpBar" height="260"></canvas></div></div>
+      <div class="grid-2"><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Spend by Category</div></div><div style="position:relative;height:260px;"><canvas id="amzCatBar"></canvas></div></div><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Impulse Score by Category</div></div><div style="position:relative;height:260px;"><canvas id="amzImpBar"></canvas></div></div></div>
       <div class="tbl-card"><div class="tbl-hdr"><div class="tbl-title">Spending by Category</div></div><table><thead><tr><th>Category</th><th>Items</th><th>Avg Price</th><th>Impulse Score</th><th style="text-align:right">Total</th></tr></thead><tbody id="amzCatTbl"></tbody></table></div>
     </div>
     <div class="tab-pane" id="amztab-purchaser"></div>
@@ -1738,8 +2225,8 @@ canvas { display: block; max-width: 100%; height: auto; }
     </div>
     <div class="tab-pane" id="amztab-compare">
       <div class="cards-3" id="amzCmpCards"></div>
-      <div class="chart-card" style="margin-bottom:18px;"><div class="chart-hdr"><div class="chart-title">Detail Lens vs All Other Spending</div></div><canvas id="amzCmpChart" height="170"></canvas></div>
-      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Detail Lens as % of Monthly Spend</div></div><canvas id="amzPctChart" height="120"></canvas></div>
+      <div class="chart-card" style="margin-bottom:18px;"><div class="chart-hdr"><div class="chart-title">Detail Lens vs All Other Spending</div></div><div style="position:relative;height:170px;"><canvas id="amzCmpChart"></canvas></div></div>
+      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Detail Lens as % of Monthly Spend</div></div><div style="position:relative;height:120px;"><canvas id="amzPctChart"></canvas></div></div>
     </div>
   </div>
 </div>
@@ -1750,7 +2237,13 @@ canvas { display: block; max-width: 100%; height: auto; }
   <!-- Header -->
   <div class="ana-header">
     <div>
-      <div class="ana-logo">⚾ <span>Analytics</span> Studio</div>
+      <div class="ana-logo" style="display:flex;align-items:center;gap:10px;">⚾ <span>Analytics</span> Studio <svg width="28" height="20" viewBox="0 0 40 30" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.25;flex-shrink:0;vertical-align:middle;">
+  <path d="M40 5 C30 5 20 10 8 16" stroke="#60A5FA" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <path d="M40 26 C30 26 20 22 8 16" stroke="#2DD4BF" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.65"/>
+  <path d="M8 16 L1 13" stroke="#F5A800" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <polygon points="8,12 11,16 8,16" fill="#F5A800"/>
+  <polygon points="11,16 8,20 8,16" fill="#F5A800" opacity="0.55"/>
+</svg></div>
       <div class="ana-sub">$kenes · #30 · Self-Service Intelligence</div>
     </div>
     <div style="text-align:right;">
@@ -1885,7 +2378,13 @@ canvas { display: block; max-width: 100%; height: auto; }
 
 <!-- ══ TRANSACTIONS ══ -->
 <div id="page-transactions" class="page">
-  <div class="page-hdr"><div><div class="page-title">Ledger Room</div><div class="page-sub" id="txnSub"></div></div></div>
+  <div class="page-hdr"><div><div class="page-title" style="display:flex;align-items:center;gap:10px;">Ledger Room <svg width="28" height="20" viewBox="0 0 40 30" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:"0.2";flex-shrink:0;vertical-align:middle;">
+  <path d="M40 5 C30 5 20 10 8 16" stroke="#60A5FA" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <path d="M40 26 C30 26 20 22 8 16" stroke="#2DD4BF" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.65"/>
+  <path d="M8 16 L1 13" stroke="#F5A800" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <polygon points="8,12 11,16 8,16" fill="#F5A800"/>
+  <polygon points="11,16 8,20 8,16" fill="#F5A800" opacity="0.55"/>
+</svg></div><div class="page-sub" id="txnSub"></div></div></div>
   <div class="filters">
     <input type="text" id="txnQ" placeholder="Search payee or memo..." oninput="renderTxns()" style="width:200px;">
     <span class="filter-lbl">Account:</span><select id="txnAcct" onchange="renderTxns()"></select>
@@ -1898,7 +2397,22 @@ canvas { display: block; max-width: 100%; height: auto; }
 <div id="page-family" class="page">
 
   <!-- Hero Banner -->
-  <div class="fbr-hero">
+  <div class="fbr-hero" style="position:relative;">
+      <svg width="44" height="16" viewBox="0 0 60 22" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.06;flex-shrink:0;vertical-align:middle;">
+  <line x1="0" y1="18" x2="60" y2="18" stroke="#F5A800" stroke-width="1.2"/>
+  <rect x="6" y="6" width="2" height="12" fill="#F5A800"/>
+  <rect x="18" y="6" width="2" height="12" fill="#F5A800"/>
+  <path d="M7 6 Q13 1 19 6" stroke="#F5A800" stroke-width="1.2" fill="none"/>
+  <circle cx="7" cy="5.5" r="1.2" fill="#F5A800"/><circle cx="13" cy="2.5" r="1.2" fill="#F5A800"/><circle cx="19" cy="5.5" r="1.2" fill="#F5A800"/>
+  <rect x="26" y="6" width="2" height="12" fill="#F5A800"/>
+  <rect x="38" y="6" width="2" height="12" fill="#F5A800"/>
+  <path d="M27 6 Q33 1 39 6" stroke="#F5A800" stroke-width="1.2" fill="none"/>
+  <circle cx="27" cy="5.5" r="1.2" fill="#F5A800"/><circle cx="33" cy="2.5" r="1.2" fill="#F5A800"/><circle cx="39" cy="5.5" r="1.2" fill="#F5A800"/>
+  <rect x="46" y="6" width="2" height="12" fill="#F5A800"/>
+  <rect x="58" y="6" width="2" height="12" fill="#F5A800"/>
+  <path d="M47 6 Q53 1 59 6" stroke="#F5A800" stroke-width="1.2" fill="none"/>
+  <circle cx="47" cy="5.5" r="1.2" fill="#F5A800"/><circle cx="53" cy="2.5" r="1.2" fill="#F5A800"/><circle cx="59" cy="5.5" r="1.2" fill="#F5A800"/>
+</svg>
     <div style="position:relative;z-index:1;">
       <div class="fbr-month" id="fbrMonthTitle">Monthly The Confluence</div>
       <div class="fbr-tagline">A structured conversation about where we are, where we're going, and what matters.</div>
@@ -2320,6 +2834,16 @@ canvas { display: block; max-width: 100%; height: auto; }
   </div><!-- end settings-grid -->
 
   <div class="save-bar">
+    <div class="lukalab-page-credit">
+      <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M3 3 L3 14 L14 14" stroke="#F5A800" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M19 19 L19 8 L8 8" stroke="#F5A800" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="3" cy="3" r="1.5" fill="#F5A800"/>
+  <circle cx="14" cy="14" r="1.5" fill="#F5A800"/>
+  <circle cx="19" cy="19" r="1.5" fill="#F5A800"/>
+  <circle cx="8" cy="8" r="1.5" fill="#F5A800"/>
+</svg> LukaLab · Forge 2026
+    </div>
     <div class="save-status" id="save-status">All changes auto-save to your browser</div>
     <div style="display:flex;gap:10px;">
       <button class="btn btn-ghost btn-sm" onclick="resetSettings()">Reset to Defaults</button>
@@ -2370,13 +2894,134 @@ function showConfluenceEntry() {
   overlay.id = 'confluence-overlay';
   overlay.innerHTML = `
     <div class="confluence-rivers">
-      <div class="river-line r1"></div>
-      <div class="river-line r2"></div>
-      <div class="river-line r3"></div>
-      <div class="river-point"></div>
+      <svg class="conf-svg" viewBox="0 0 320 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+        <!-- ── RIVER LABELS (appear after draw) ── -->
+        <text class="conf-label" x="230" y="26" font-size="8" fill="#60A5FA" opacity="0.7" letter-spacing="1">ALLEGHENY</text>
+        <text class="conf-label" x="220" y="186" font-size="8" fill="#2DD4BF" opacity="0.7" letter-spacing="1">MONONGAHELA</text>
+        <text class="conf-label" x="4" y="76" font-size="8" fill="#F5A800" opacity="0.7" letter-spacing="1">OHIO</text>
+
+        <!-- ── THREE SISTERS BRIDGES (on Allegheny, north side) ── -->
+        <!-- Span the Allegheny at x≈185, 203, 221; towers at y≈20 and y≈55 (approx river banks) -->
+        <g class="conf-sisters">
+          <!-- Bridge 1: Roberto Clemente (6th St) — closest to Point -->
+          <line x1="185" y1="20" x2="185" y2="55" stroke="#F5A800" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="200" y1="20" x2="200" y2="55" stroke="#F5A800" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M185 20 Q192.5 9 200 20" stroke="#F5A800" stroke-width="1.8" fill="none"/>
+          <line x1="188" y1="17" x2="188" y2="55" stroke="#F5A800" stroke-width="0.9" opacity="0.6"/>
+          <line x1="191" y1="14" x2="191" y2="55" stroke="#F5A800" stroke-width="0.9" opacity="0.6"/>
+          <line x1="192.5" y1="13" x2="192.5" y2="55" stroke="#F5A800" stroke-width="0.9" opacity="0.6"/>
+          <line x1="194" y1="14" x2="194" y2="55" stroke="#F5A800" stroke-width="0.9" opacity="0.6"/>
+          <line x1="197" y1="17" x2="197" y2="55" stroke="#F5A800" stroke-width="0.9" opacity="0.6"/>
+          <!-- Eyebar LED pins -->
+          <circle cx="188" cy="17" r="1.8" fill="#F5A800"/>
+          <circle cx="191" cy="14" r="1.8" fill="#F5A800"/>
+          <circle cx="192.5" cy="13" r="2.2" fill="#F5A800"/>
+          <circle cx="194" cy="14" r="1.8" fill="#F5A800"/>
+          <circle cx="197" cy="17" r="1.8" fill="#F5A800"/>
+          <circle cx="185" cy="19" r="2.5" fill="#F5A800"/>
+          <circle cx="200" cy="19" r="2.5" fill="#F5A800"/>
+          <!-- LED chain shimmer -->
+          <path d="M185 20 Q192.5 9 200 20" stroke="#FFD700" stroke-width="1.2" fill="none" opacity="0" stroke-dasharray="5 8" class="conf-led-strip"/>
+          <!-- Road deck -->
+          <line x1="183" y1="55" x2="202" y2="55" stroke="#F5A800" stroke-width="1.2" opacity="0.5"/>
+
+          <!-- Bridge 2: Andy Warhol (7th St) -->
+          <line x1="205" y1="20" x2="205" y2="55" stroke="#F5A800" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="220" y1="20" x2="220" y2="55" stroke="#F5A800" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M205 20 Q212.5 9 220 20" stroke="#F5A800" stroke-width="1.8" fill="none"/>
+          <line x1="208" y1="17" x2="208" y2="55" stroke="#F5A800" stroke-width="0.9" opacity="0.6"/>
+          <line x1="211" y1="14" x2="211" y2="55" stroke="#F5A800" stroke-width="0.9" opacity="0.6"/>
+          <line x1="212.5" y1="13" x2="212.5" y2="55" stroke="#F5A800" stroke-width="0.9" opacity="0.6"/>
+          <line x1="214" y1="14" x2="214" y2="55" stroke="#F5A800" stroke-width="0.9" opacity="0.6"/>
+          <line x1="217" y1="17" x2="217" y2="55" stroke="#F5A800" stroke-width="0.9" opacity="0.6"/>
+          <circle cx="208" cy="17" r="1.8" fill="#F5A800"/>
+          <circle cx="211" cy="14" r="1.8" fill="#F5A800"/>
+          <circle cx="212.5" cy="13" r="2.2" fill="#F5A800"/>
+          <circle cx="214" cy="14" r="1.8" fill="#F5A800"/>
+          <circle cx="217" cy="17" r="1.8" fill="#F5A800"/>
+          <circle cx="205" cy="19" r="2.5" fill="#F5A800"/>
+          <circle cx="220" cy="19" r="2.5" fill="#F5A800"/>
+          <path d="M205 20 Q212.5 9 220 20" stroke="#FFD700" stroke-width="1.2" fill="none" opacity="0" stroke-dasharray="5 8" class="conf-led-strip conf-led-strip-2"/>
+          <line x1="203" y1="55" x2="222" y2="55" stroke="#F5A800" stroke-width="1.2" opacity="0.5"/>
+
+          <!-- Bridge 3: Rachel Carson (9th St) -->
+          <line x1="225" y1="20" x2="225" y2="55" stroke="#F5A800" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="240" y1="20" x2="240" y2="55" stroke="#F5A800" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M225 20 Q232.5 9 240 20" stroke="#F5A800" stroke-width="1.8" fill="none"/>
+          <line x1="228" y1="17" x2="228" y2="55" stroke="#F5A800" stroke-width="0.9" opacity="0.6"/>
+          <line x1="231" y1="14" x2="231" y2="55" stroke="#F5A800" stroke-width="0.9" opacity="0.6"/>
+          <line x1="232.5" y1="13" x2="232.5" y2="55" stroke="#F5A800" stroke-width="0.9" opacity="0.6"/>
+          <line x1="234" y1="14" x2="234" y2="55" stroke="#F5A800" stroke-width="0.9" opacity="0.6"/>
+          <line x1="237" y1="17" x2="237" y2="55" stroke="#F5A800" stroke-width="0.9" opacity="0.6"/>
+          <circle cx="228" cy="17" r="1.8" fill="#F5A800"/>
+          <circle cx="231" cy="14" r="1.8" fill="#F5A800"/>
+          <circle cx="232.5" cy="13" r="2.2" fill="#F5A800"/>
+          <circle cx="234" cy="14" r="1.8" fill="#F5A800"/>
+          <circle cx="237" cy="17" r="1.8" fill="#F5A800"/>
+          <circle cx="225" cy="19" r="2.5" fill="#F5A800"/>
+          <circle cx="240" cy="19" r="2.5" fill="#F5A800"/>
+          <path d="M225 20 Q232.5 9 240 20" stroke="#FFD700" stroke-width="1.2" fill="none" opacity="0" stroke-dasharray="5 8" class="conf-led-strip conf-led-strip-3"/>
+          <line x1="223" y1="55" x2="242" y2="55" stroke="#F5A800" stroke-width="1.2" opacity="0.5"/>
+        </g>
+
+        <!-- ── ALLEGHENY RIVER (blue) ── enters upper-right, flows WSW to Point -->
+        <!-- North bank ~y=35, south bank ~y=55; river center y≈45 -->
+        <!-- Enters from right at y≈40 (between bridges and top), curves slightly south to Point -->
+        <path class="conf-allegheny"
+          d="M320 40 C 270 40, 200 55, 150 72 C 130 80, 110 92, 88 108"
+          stroke="#60A5FA" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.75"/>
+
+        <!-- ── MONONGAHELA RIVER (teal) ── enters lower-right, curves NORTH to Point -->
+        <!-- Mon comes from SE, makes a notable northward curve approaching downtown -->
+        <path class="conf-mon"
+          d="M320 168 C 270 168, 220 160, 180 148 C 150 138, 120 126, 88 108"
+          stroke="#2DD4BF" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.7"/>
+
+        <!-- ── OHIO RIVER (gold) ── exits slightly northwest -->
+        <path class="conf-ohio"
+          d="M88 108 C 70 105, 40 95, 0 80"
+          stroke="#F5A800" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.85"/>
+
+        <!-- ── STEELERS TETRAHEDRON at The Point (88,108) ── -->
+        <!-- A diamond/tetrahedron shape: Pittsburgh Steelers helmet logo inspiration -->
+        <!-- Four triangles: gold, black, white, navy (simplified as gold+dark) -->
+        <g class="conf-tet">
+          <!-- Top triangle (gold) -->
+          <polygon points="88,96 100,108 88,108" fill="#F5A800"/>
+          <!-- Right triangle (dark gold) -->
+          <polygon points="100,108 88,120 88,108" fill="#C8880A"/>
+          <!-- Bottom triangle (near-black) -->
+          <polygon points="88,120 76,108 88,108" fill="#1A1A1A"/>
+          <!-- Left triangle (gold, lighter) -->
+          <polygon points="76,108 88,96 88,108" fill="#FFD060"/>
+          <!-- Center dot -->
+          <circle cx="88" cy="108" r="2" fill="#F5A800"/>
+        </g>
+        <!-- Fountain pulse ring from The Point -->
+        <circle class="conf-fountain-ring" cx="88" cy="108" r="4" stroke="#F5A800" stroke-width="2" fill="none"/>
+        <!-- Glow halo -->
+        <circle class="conf-tet-glow" cx="88" cy="108" r="0" fill="#F5A800" opacity="0"/>
+
+      </svg>
     </div>
     <div class="confluence-title">The Confluence</div>
     <div class="confluence-sub">Monthly Family Review</div>
+    <div class="lukalab-confluence">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- LukaLab mark: diamond (tetrahedron) with neural node -->
+          <polygon points="8,1 14,8 8,15 2,8" stroke="#F5A800" stroke-width="1" fill="rgba(245,168,0,0.08)"/>
+          <circle cx="8" cy="8" r="2" fill="#F5A800"/>
+          <line x1="8" y1="3" x2="8" y2="6" stroke="#F5A800" stroke-width="0.8" opacity="0.6"/>
+          <line x1="8" y1="10" x2="8" y2="13" stroke="#F5A800" stroke-width="0.8" opacity="0.6"/>
+          <line x1="4" y1="8" x2="6" y2="8" stroke="#F5A800" stroke-width="0.8" opacity="0.6"/>
+          <line x1="10" y1="8" x2="12" y2="8" stroke="#F5A800" stroke-width="0.8" opacity="0.6"/>
+        </svg>
+      <div style="font-family:var(--font-m);font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink4);">
+        <strong style="color:var(--ink3);font-size:9px;">LukaLab</strong><br>
+        <span style="opacity:0.55;">AI Creativity Incubator</span>
+      </div>
+    </div>
     <button class="confluence-begin" onclick="closeConfluence()">Open The Meeting →</button>
   `;
   document.body.appendChild(overlay);
@@ -4224,34 +4869,34 @@ function renderMainChart(keys, values, metric, palette, isNegativeOk) {
     bar: {
       type: 'bar',
       data: { labels: keys, datasets: [{ data:values, backgroundColor:barColors, borderRadius:5, borderSkipped:false }] },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+      options: { responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
     },
     hbar: {
       type: 'bar',
       data: { labels: keys.slice().reverse(), datasets:[{ data:values.slice().reverse(), backgroundColor:barColors.slice().reverse(), borderRadius:5, borderSkipped:false }] },
-      options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{callback:yFmt}}} }
+      options: { indexAxis:'y', responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{callback:yFmt}}} }
     },
     line: {
       type: 'line',
       data: { labels:keys, datasets:[{ data:values, borderColor:'var(--gold)', backgroundColor:'rgba(245,168,0,.08)', tension:.35, pointRadius:3, pointBackgroundColor:'var(--gold)', fill:false }] },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+      options: { responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
     },
     area: {
       type: 'line',
       data: { labels:keys, datasets:[{ data:values, borderColor:'#60A5FA', backgroundColor:'rgba(96,165,250,.15)', tension:.35, pointRadius:2, fill:true }] },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+      options: { responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
     },
     donut: {
       type: 'doughnut',
       data: { labels:keys, datasets:[{ data:values.map(Math.abs), backgroundColor:palette.slice(0,keys.length).map(c=>c+'CC'), borderWidth:2, borderColor:'rgba(255,255,255,.05)', hoverOffset:8 }] },
-      options: { responsive:true, maintainAspectRatio:false, cutout:'58%', plugins:{ legend:{ position:'right', labels:{ font:{size:10}, boxWidth:10, color:'#9E9890' }}} }
+      options: { responsive:true,maintainAspectRatio:false, cutout:'58%', plugins:{ legend:{ position:'right', labels:{ font:{size:10}, boxWidth:10, color:'#9E9890' }}} }
     },
     scatter: {
       type: 'scatter',
       data: { datasets:[{ data: keys.map((k,i)=>({x:i, y:values[i], label:k})), backgroundColor:palette.slice(0,keys.length).map(c=>c+'CC'), pointRadius:7, pointHoverRadius:10 }] },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${keys[ctx.parsed.x]}: ${yFmt(ctx.parsed.y)}`}}}, scales:{x:{display:false}, y:{ticks:{callback:yFmt}}} }
+      options: { responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${keys[ctx.parsed.x]}: ${yFmt(ctx.parsed.y)}`}}}, scales:{x:{display:false}, y:{ticks:{callback:yFmt}}} }
     },
-    waterfall: { type:'bar', data:{labels:keys, datasets:[{data:values, backgroundColor:'rgba(45,212,191,.8)', borderRadius:3}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}}} },
+    waterfall: { type:'bar', data:{labels:keys, datasets:[{data:values, backgroundColor:'rgba(45,212,191,.8)', borderRadius:3}]}, options:{responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}}} },
   };
 
   // Build waterfall config properly (lazy — only when needed)
@@ -4262,7 +4907,7 @@ function renderMainChart(keys, values, metric, palette, isNegativeOk) {
     chartConfigs.waterfall = {
       type:'bar',
       data:{ labels:keys, datasets:[{ data:wfData.map(d=>[Math.min(d.start,d.end),Math.max(d.start,d.end)]), backgroundColor:wfColors, borderRadius:3, borderSkipped:false }] },
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+      options:{ responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
     };
   }
   const config = chartConfigs[anaChartType] || chartConfigs.bar;
@@ -4350,7 +4995,7 @@ function renderMiniStack(filtered) {
         { label:'Income', data:inc, backgroundColor:'rgba(45,212,191,.7)', borderRadius:3, stack:'a' },
         { label:'Spending', data:exp, backgroundColor:'rgba(248,113,113,.6)', borderRadius:3, stack:'b' }
       ]},
-      options:{ responsive:true, maintainAspectRatio:false, animation:{duration:300},
+      options:{ responsive:true,maintainAspectRatio:false, animation:{duration:300},
         plugins:{legend:{labels:{font:{size:9},boxWidth:10,color:'#9E9890'}}},
         scales:{y:{ticks:{callback:v=>fmtK(v),color:'#6E6A65'},grid:{color:'rgba(255,255,255,.04)'}},
                 x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
@@ -4401,7 +5046,7 @@ function renderMiniDow(filtered) {
     anaMiniDowChart = new Chart(ctx, {
       type:'bar',
       data:{ labels:days, datasets:[{ data:avgs, backgroundColor:days.map((_,i)=>CAT_COLORS[i]+'CC'), borderRadius:4, borderSkipped:false }] },
-      options:{ responsive:true, maintainAspectRatio:false, animation:{duration:300},
+      options:{ responsive:true,maintainAspectRatio:false, animation:{duration:300},
         plugins:{legend:{display:false}},
         scales:{y:{ticks:{callback:v=>fmtK(v),color:'#6E6A65'},grid:{color:'rgba(255,255,255,.04)'}},
                 x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
@@ -4430,7 +5075,7 @@ function renderMiniPurchaser() {
       anaMiniPurchaserChart = new Chart(ctx, {
         type:'doughnut',
         data:{ labels:sorted.map(([s])=>s), datasets:[{ data:sorted.map(([,v])=>v), backgroundColor:['rgba(245,168,0,.8)','rgba(167,139,250,.8)','rgba(96,165,250,.8)','rgba(45,212,191,.8)'], borderWidth:1 }] },
-        options:{ responsive:true, maintainAspectRatio:false, animation:{duration:300}, cutout:'50%',
+        options:{ responsive:true,maintainAspectRatio:false, animation:{duration:300}, cutout:'50%',
           plugins:{legend:{position:'right', labels:{font:{size:9},boxWidth:8,color:'#9E9890'}}}
         }
       });
@@ -4455,7 +5100,7 @@ function renderMiniPurchaser() {
         { label:'Quicken', data:pData.map(d=>d.qkn), backgroundColor:'rgba(245,168,0,.75)', borderRadius:4, stack:'a' },
         { label:'Detail', data:pData.map(d=>d.det), backgroundColor:'rgba(167,139,250,.75)', borderRadius:4, stack:'a' },
       ]},
-      options:{ responsive:true, maintainAspectRatio:false, animation:{duration:300},
+      options:{ responsive:true,maintainAspectRatio:false, animation:{duration:300},
         plugins:{legend:{labels:{font:{size:9},boxWidth:10,color:'#9E9890'}}},
         scales:{y:{ticks:{callback:v=>fmtK(v),color:'#6E6A65'},grid:{color:'rgba(255,255,255,.04)'}},
                 x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
@@ -4512,6 +5157,14 @@ function initApp() {
     showPage('dashboard');
     try { runIntelligence(); } catch(e) { console.warn('runIntelligence:', e); }
     try { applySettingsLive(); } catch(e) { console.warn('applySettingsLive:', e); }
+    // Resize charts after first render — two frames to guarantee layout is complete
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        Object.values(charts).forEach(function(c) {
+          try { if(c && c.resize) c.resize(); } catch(e) {}
+        });
+      });
+    });
   } catch(e) {
     console.error('initApp fatal:', e);
     // Fallback: at least show the upload page
@@ -4610,11 +5263,29 @@ function showPage(name) {
   if(name==='merchants'&&txns.length) safe(()=>renderMch(),'merchants');
   if(name==='amazon') safe(()=>renderAmazon(),'amazon');
   if(name==='transactions'&&txns.length) safe(()=>renderTxns(),'transactions');
-  if(name==='analytics'&&txns.length) safe(()=>{ loadSettings(); renderAnalytics(); },'analytics');
+  if(name==='analytics'&&txns.length) {
+    // Analytics charts MUST render after display:block is applied, otherwise Chart.js reads clientHeight=0
+    requestAnimationFrame(function() { requestAnimationFrame(function() {
+      safe(()=>{ loadSettings(); renderAnalytics(); },'analytics');
+    }); });
+  }
   if(name==='dashboard'&&isDemoMode){
     const db=document.getElementById('demoBanner');
     if(db) db.style.display='flex';
   }
+  // Double-RAF: first frame lets the browser lay out display:block,
+  // second frame fires after paint so chart.resize() reads real dimensions.
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      Object.values(charts).forEach(function(c) {
+        try { if(c && c.resize) c.resize(); } catch(e) {}
+      });
+      // Also resize analytics charts
+      [anaChart,anaMiniStackChart,anaMiniDonutChart,anaMiniDowChart,anaMiniPurchaserChart].forEach(function(c) {
+        try { if(c && c.resize) c.resize(); } catch(e) {}
+      });
+    });
+  });
 }
 
 function switchTab(ns, tab) {
@@ -4665,7 +5336,7 @@ function renderDashboard() {
 
   const md=getMonthlyData(filtered);
   destroyChart('cfChart');
-  try { charts['cfChart']=new Chart(document.getElementById('cfChart'),{type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.7)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.7)',borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:true,labels:{boxWidth:12,font:{size:11}}}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  try { charts['cfChart']=new Chart(document.getElementById('cfChart'),{type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.7)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.7)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{boxWidth:12,font:{size:11}}}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
 
 } catch(e){ console.warn("cfChart:",e); }
   const cats={};
@@ -4915,7 +5586,7 @@ function renderTrends() {
   charts['trendBarChart']=new Chart(document.getElementById('trendBarChart'),{
     type:'bar',
     data:{labels:sorted.map(s=>s.c),datasets:[{data:sorted.map(s=>s.pct),backgroundColor:sorted.map(s=>s.pct>0?'rgba(200,75,47,.75)':'rgba(47,168,122,.75)'),borderRadius:4}]},
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>v+'%'},title:{display:true,text:'3M vs Prior 3M'}}}}
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>v+'%'},title:{display:true,text:'3M vs Prior 3M'}}}}
   });
 
   // Velocity chart — month-over-month total expense change
@@ -4926,7 +5597,7 @@ function renderTrends() {
   charts['velocityChart']=new Chart(document.getElementById('velocityChart'),{
     type:'bar',
     data:{labels:mdV.labels,datasets:[{data:velocity,backgroundColor:velocity.map(v=>v>0?'rgba(200,75,47,.7)':'rgba(47,168,122,.7)'),borderRadius:4}]},
-    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v+'%'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v+'%'}}}}
   });
 
   // Trend detail cards
@@ -4997,7 +5668,7 @@ function renderAnomalies() {
   for(let i=0;i<buckets;i++){const mid=(i+.5)*bktSize;histColors.push((mid-mean)/std>=2?'rgba(200,75,47,.85)':'rgba(47,107,200,.65)');}
   const histLabels=Array.from({length:buckets},(_,i)=>fmtK((i+.5)*bktSize));
   destroyChart('anomHist');
-  charts['anomHist']=new Chart(document.getElementById('anomHist'),{type:'bar',data:{labels:histLabels,datasets:[{data:hist,backgroundColor:histColors,borderRadius:2}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{title:([i])=>`~${i.label}`,label:i=>`${i.raw} transactions`}}},scales:{x:{ticks:{maxTicksLimit:6}},y:{ticks:{stepSize:1}}}}});
+  charts['anomHist']=new Chart(document.getElementById('anomHist'),{type:'bar',data:{labels:histLabels,datasets:[{data:hist,backgroundColor:histColors,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:([i])=>`~${i.label}`,label:i=>`${i.raw} transactions`}}},scales:{x:{ticks:{maxTicksLimit:6}},y:{ticks:{stepSize:1}}}}});
 
   document.getElementById('anomList').innerHTML=anomalyData.slice(0,10).map(a=>`
     <div class="anomaly-row">
@@ -5029,7 +5700,7 @@ function renderSeasonal() {
   charts['seasonalBar']=new Chart(document.getElementById('seasonalBar'),{
     type:'bar',
     data:{labels:MONTHS,datasets:[{data:avgByMonth,backgroundColor:avgByMonth.map(v=>v>overallAvg*1.1?'rgba(200,75,47,.75)':v<overallAvg*0.9?'rgba(47,168,122,.7)':'rgba(47,107,200,.65)'),borderRadius:4},{type:'line',data:Array(12).fill(overallAvg),borderColor:'rgba(200,147,47,.8)',borderDash:[4,2],pointRadius:0,label:'Average'}]},
-    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}
   });
 
   // Seasonal insights
@@ -5105,7 +5776,7 @@ function renderCF() {
   t=byAcct(t,ac); if(yr!=='all')t=t.filter(x=>x.date.startsWith(yr));
   const md=getMonthlyData(t);
   destroyChart('cfBarChart');
-  charts['cfBarChart']=new Chart(document.getElementById('cfBarChart'),{type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.75)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.75)',borderRadius:4}]},options:{responsive:true,scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  charts['cfBarChart']=new Chart(document.getElementById('cfBarChart'),{type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.75)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.75)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
   const ti=md.income.reduce((a,b)=>a+b,0),te=md.expenses.reduce((a,b)=>a+b,0),tn=ti-te,mo=md.labels.length||1;
   document.getElementById('cfCards').innerHTML=`
     <div class="card card-al g"><div class="card-lbl">Total Income</div><div class="card-val">${fmtK(ti)}</div><div class="card-sub">${fmt(ti/mo)}/mo</div></div>
@@ -5114,7 +5785,7 @@ function renderCF() {
   `;
   const netArr=md.income.map((v,i)=>v-md.expenses[i]);
   destroyChart('cfNetChart');
-  charts['cfNetChart']=new Chart(document.getElementById('cfNetChart'),{type:'line',data:{labels:md.labels,datasets:[{data:netArr,borderColor:'#2f6bc8',backgroundColor:'rgba(47,107,200,.1)',fill:true,tension:.3,pointRadius:2}]},options:{responsive:true,scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  charts['cfNetChart']=new Chart(document.getElementById('cfNetChart'),{type:'line',data:{labels:md.labels,datasets:[{data:netArr,borderColor:'#2f6bc8',backgroundColor:'rgba(47,107,200,.1)',fill:true,tension:.3,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
 
   } catch(e) { console.error("Forge renderCF error:", e); }
 }
@@ -5143,10 +5814,10 @@ function renderCats() {
 
   const top10=sorted.slice(0,10);
   destroyChart('catBigDonut');
-  charts['catBigDonut']=new Chart(document.getElementById('catBigDonut'),{type:'doughnut',data:{labels:top10.map(([l])=>l),datasets:[{data:top10.map(([,v])=>v.total),backgroundColor:CAT_COLORS.slice(0,top10.length),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}});
+  charts['catBigDonut']=new Chart(document.getElementById('catBigDonut'),{type:'doughnut',data:{labels:top10.map(([l])=>l),datasets:[{data:top10.map(([,v])=>v.total),backgroundColor:CAT_COLORS.slice(0,top10.length),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}});
   const top8=sorted.slice(0,8).reverse();
   destroyChart('catBarH');
-  charts['catBarH']=new Chart(document.getElementById('catBarH'),{type:'bar',data:{labels:top8.map(([l])=>l),datasets:[{data:top8.map(([,v])=>v.total),backgroundColor:CAT_COLORS.slice(0,top8.length).reverse(),borderRadius:4}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtK(v)}}}}});
+  charts['catBarH']=new Chart(document.getElementById('catBarH'),{type:'bar',data:{labels:top8.map(([l])=>l),datasets:[{data:top8.map(([,v])=>v.total),backgroundColor:CAT_COLORS.slice(0,top8.length).reverse(),borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtK(v)}}}}});
 
   document.getElementById('catTbl').innerHTML=sorted.map(([l,d],i)=>{
     const yoy=lyC[l]&&cyC[l]?((cyC[l]-lyC[l])/lyC[l])*100:null;
@@ -5226,20 +5897,20 @@ function renderAmazon() {
   const byMo={};amzItems.forEach(i=>{const k=monthKey(i.date);byMo[k]=(byMo[k]||0)+i.total;});
   const moKeys=Object.keys(byMo).sort();
   destroyChart('amzMonthly');
-  charts['amzMonthly']=new Chart(document.getElementById('amzMonthly'),{type:'bar',data:{labels:moKeys.map(monthLabel),datasets:[{data:moKeys.map(k=>byMo[k]),backgroundColor:'rgba(255,153,0,.75)',borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  charts['amzMonthly']=new Chart(document.getElementById('amzMonthly'),{type:'bar',data:{labels:moKeys.map(monthLabel),datasets:[{data:moKeys.map(k=>byMo[k]),backgroundColor:'rgba(255,153,0,.75)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
   const catS={};amzItems.forEach(i=>catS[i.category]=(catS[i.category]||0)+i.total);
   const topC=Object.entries(catS).sort((a,b)=>b[1]-a[1]).slice(0,10);
   destroyChart('amzCatDonut');
-  charts['amzCatDonut']=new Chart(document.getElementById('amzCatDonut'),{type:'doughnut',data:{labels:topC.map(([l])=>l),datasets:[{data:topC.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topC.length),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}});
+  charts['amzCatDonut']=new Chart(document.getElementById('amzCatDonut'),{type:'doughnut',data:{labels:topC.map(([l])=>l),datasets:[{data:topC.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topC.length),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}});
 
   // Categories tab
   const top8=Object.entries(catS).sort((a,b)=>b[1]-a[1]).slice(0,8).reverse();
   destroyChart('amzCatBar');
-  charts['amzCatBar']=new Chart(document.getElementById('amzCatBar'),{type:'bar',data:{labels:top8.map(([l])=>l),datasets:[{data:top8.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,top8.length).reverse(),borderRadius:4}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtK(v)}}}}});
+  charts['amzCatBar']=new Chart(document.getElementById('amzCatBar'),{type:'bar',data:{labels:top8.map(([l])=>l),datasets:[{data:top8.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,top8.length).reverse(),borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtK(v)}}}}});
   const catImp={};amzItems.forEach(i=>{const c=i.category;if(!catImp[c])catImp[c]=[];catImp[c].push(scoreImpulse(i));});
   const top8imp=top8.map(([l])=>({label:l,score:Math.round(catImp[l]?catImp[l].reduce((a,b)=>a+b,0)/catImp[l].length:0)}));
   destroyChart('amzImpBar');
-  charts['amzImpBar']=new Chart(document.getElementById('amzImpBar'),{type:'bar',data:{labels:top8imp.map(c=>c.label),datasets:[{data:top8imp.map(c=>c.score),backgroundColor:top8imp.map(c=>c.score>=60?'rgba(198,40,40,.7)':c.score>=30?'rgba(230,81,0,.7)':'rgba(46,125,50,.7)'),borderRadius:4}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{max:100}}}});
+  charts['amzImpBar']=new Chart(document.getElementById('amzImpBar'),{type:'bar',data:{labels:top8imp.map(c=>c.label),datasets:[{data:top8imp.map(c=>c.score),backgroundColor:top8imp.map(c=>c.score>=60?'rgba(198,40,40,.7)':c.score>=30?'rgba(230,81,0,.7)':'rgba(46,125,50,.7)'),borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{max:100}}}});
 
   const sortedCats=Object.entries(catS).sort((a,b)=>b[1]-a[1]);
   document.getElementById('amzCatTbl').innerHTML=sortedCats.map(([c,v],i)=>{
@@ -5267,9 +5938,9 @@ function renderAmazon() {
       <div class="card card-al"><div class="card-lbl">Detail Share</div><div class="card-val">${pct}%</div><div class="card-sub" style="margin-top:8px;"><div style="height:8px;border-radius:4px;background:var(--lift);overflow:hidden;display:flex;"><div style="width:${pct}%;background:#ff9900;"></div><div style="flex:1;background:var(--river);"></div></div></div></div>
     `;
     destroyChart('amzCmpChart');
-    charts['amzCmpChart']=new Chart(document.getElementById('amzCmpChart'),{type:'bar',data:{labels:allMos.map(monthLabel),datasets:[{label:'Detail',data:amzVals,backgroundColor:'rgba(255,153,0,.8)',borderRadius:4,stack:'a'},{label:'Other Spending',data:otherVals,backgroundColor:'rgba(47,107,200,.6)',borderRadius:4,stack:'a'}]},options:{responsive:true,scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)}},x:{stacked:true}}}});
+    charts['amzCmpChart']=new Chart(document.getElementById('amzCmpChart'),{type:'bar',data:{labels:allMos.map(monthLabel),datasets:[{label:'Detail',data:amzVals,backgroundColor:'rgba(255,153,0,.8)',borderRadius:4,stack:'a'},{label:'Other Spending',data:otherVals,backgroundColor:'rgba(47,107,200,.6)',borderRadius:4,stack:'a'}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)}},x:{stacked:true}}}});
     destroyChart('amzPctChart');
-    charts['amzPctChart']=new Chart(document.getElementById('amzPctChart'),{type:'line',data:{labels:allMos.map(monthLabel),datasets:[{data:pctVals,borderColor:'#ff9900',backgroundColor:'rgba(255,153,0,.1)',fill:true,tension:.3,pointRadius:2}]},options:{responsive:true,scales:{y:{ticks:{callback:v=>v+'%'},max:100}}}});
+    charts['amzPctChart']=new Chart(document.getElementById('amzPctChart'),{type:'line',data:{labels:allMos.map(monthLabel),datasets:[{data:pctVals,borderColor:'#ff9900',backgroundColor:'rgba(255,153,0,.1)',fill:true,tension:.3,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>v+'%'},max:100}}}});
   }
 
   populateAmzFilters();
@@ -6097,7 +6768,7 @@ const SETTINGS_KEY = 'forge_settings_v1';
 const FBR_KEY      = 'ledger_fbr_v2';
 // ── AI Smart Scan proxy URL — set this to your deployed Cloudflare Worker URL
 // Example: 'https://forge-sid.YOUR-SUBDOMAIN.workers.dev'
-const WORKER_URL   = 'forge-sid.luka731chris.workers.dev';  // ← paste your Worker URL here
+const WORKER_URL   = '';  // ← paste your Worker URL here
 
 const DEFAULT_SETTINGS = {
   familyName: 'Luka',
