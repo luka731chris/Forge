@@ -14,7 +14,8 @@ A personal finance platform for families who want real clarity — not another s
 |-|------|-------------|
 | ⚾ | `index.html` — **Forge Desktop** | **$kenes · #30** · reads the scouting report |
 | 🏒 | `forge-pulse.html` — **Forge Pulse** (mobile PWA) | **$id · #87** · reads the play |
-| ⚙️ | `forge_worker.js` — Cloudflare Worker | Secure API proxy for $id |
+| ⚙️ | `forge_worker.js` — Cloudflare Worker | $id chat proxy (original) |
+| ⚙️ | `forge_worker_v2.js` — Cloudflare Worker v2 | $id chat + Smart Scan `/scan` endpoint |
 | ⚙️ | `wrangler.jsonc` — Worker config | |
 
 ---
@@ -164,13 +165,15 @@ From that point, The Bullpen will surface per-person Quicken trends and $id will
 
 | File | Size | Description |
 |------|------|-------------|
-| `index.html` | 286 KB | Forge Desktop — complete single-file app |
-| `forge-pulse.html` | 61 KB | Forge Pulse — mobile PWA |
-| `forge_worker.js` | 2.2 KB | Cloudflare Worker — $id proxy |
+| `index.html` | 397 KB | Forge Desktop — complete single-file app |
+| `forge-pulse.html` | 83 KB | Forge Pulse — mobile PWA |
+| `forge_worker.js` | 6.2 KB | Cloudflare Worker — $id chat proxy (original) |
+| `forge_worker_v2.js` | 5.9 KB | Cloudflare Worker v2 — $id chat + Smart Scan `/scan` |
 | `wrangler.jsonc` | — | Worker configuration |
+| `forge_module.js` | — | Auto-extracted functions for test harness; rebuild after any index.html change |
 | `README.md` | — | This file |
 | `IMPORT-GUIDE.md` | — | Quicken + Detail file import, purchaser tagging |
-| `SID-SETUP.md` | — | Cloudflare Worker and API key setup |
+| `SID-SETUP.md` | — | Cloudflare Worker and API key setup, Smart Scan activation |
 | `TESTING.md` | — | Test suite documentation, bug fix log, suite index |
 | `TECHNICAL.md` | — | Architecture, data model, parser reference |
 | `CONTRIBUTING.md` | — | Dev setup, testing, deployment |
@@ -199,13 +202,13 @@ No npm. No build step. No framework. No server. Open `index.html` and it works.
 ## Testing
 
 ```bash
-node forge_tests.js       # 434 tests across 39 suites — parsers, formatters, dedup
-node forge_tests_v2.js    # 434 tests (285 new + 149 original) — Apple Card, analytics, purchaser, edge cases
-node forge_sid_tests.js   # 96 tests  — $id AI layer
-# 530 total · 100% pass rate
+node forge_tests.js       # 149 tests across 14 suites — parsers, formatters, dedup
+node forge_tests_v2.js    # 325 tests across 26 suites — Apple Card, analytics, purchaser, edge cases, CSV blank columns
+node forge_sid_tests.js   # 98 tests  — $id AI layer
+# 572 total · 100% pass rate
 ```
 
-All three suites must pass before pushing any update. The test harness extracts functions from `forge.html` into `forge_module.js` — run any extraction script after changing `forge.html`.
+All three suites must pass before pushing any update. The test harness extracts functions from `index.html` into `forge_module.js` — run any extraction script after changing `index.html`.
 
 ---
 

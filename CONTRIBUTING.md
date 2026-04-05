@@ -142,9 +142,9 @@ To add a new per-person analytic:
 
 ```bash
 node forge_tests.js       # 149 tests — original parsers, formatters, dedup
-node forge_tests_v2.js    # 285 tests — Apple Card, analytics, purchaser, edge cases
-node forge_sid_tests.js   # 96 tests  — $id AI layer, context, error handling
-# Total: 530 tests · 100% pass rate required before any commit
+node forge_tests_v2.js    # 325 tests — Apple Card, analytics, purchaser, edge cases, blank CSV columns (Suite 26)
+node forge_sid_tests.js   # 98 tests  — $id AI layer, context, error handling
+# Total: 572 tests · 100% pass rate required before any commit
 ```
 
 Both must pass at 100% before any commit. The test harness extracts functions from `index.html` at runtime — no separate test build needed.
@@ -159,6 +159,28 @@ test('parseAppleCard: handles payment rows', ()=>{
   );
   eq(result.length, 0, 'payment rows should be filtered out');
 });
+```
+
+---
+
+## Adding a New Smart Scan File Type
+
+Smart Scan (`processAll()` → `smartScan()`) sends files to the Cloudflare Worker `/scan` endpoint. The Worker passes the file content to Claude with a standard extraction prompt. No code changes are needed in `index.html` to support new file types — Claude reads any readable file.
+
+To influence how Claude interprets a specific file type, update the system prompt in `forge_worker_v2.js`:
+
+```javascript
+// In forge_worker_v2.js, the scan handler system prompt:
+const systemPrompt = `Extract all financial transactions from this file...`;
+```
+
+If you want structured post-processing of Smart Scan results (e.g., routing tax documents to a separate ledger), add a post-scan handler in `processAll()` after the `smartScan()` call:
+
+```javascript
+const scanResult = await smartScan(file);
+if (scanResult.ok && isW2(scanResult)) {
+  // custom routing
+}
 ```
 
 ---

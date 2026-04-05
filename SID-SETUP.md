@@ -95,7 +95,7 @@ The key is now stored encrypted inside Cloudflare. It will not appear in any das
 
 ---
 
-## Step 5 — Connect Forge Pulse
+## Step 5 — Connect Forge Pulse to $id
 
 1. Open `forge-pulse.html` in a text editor on your computer
 2. Press **Ctrl+F** (Windows) or **⌘+F** (Mac) to open Find
@@ -113,12 +113,39 @@ The key is now stored encrypted inside Cloudflare. It will not appear in any das
 
 ---
 
-## Testing $id
+## Step 5b — Connect Forge Desktop (Smart Scan)
 
+Forge Desktop (`index.html`) uses a **separate** Worker URL constant for Smart Scan. This is distinct from the `SID_PROXY_URL` in Forge Pulse — both point to the same Worker, but they are declared independently.
+
+1. Open `index.html` in a text editor
+2. Search for: `const WORKER_URL`
+3. You will find this line (around line 6771):
+   ```javascript
+   const WORKER_URL = '';  // ← paste your Worker URL here
+   ```
+4. Replace the empty string with your Worker URL:
+   ```javascript
+   const WORKER_URL = 'https://forge-sid.YOURSUBDOMAIN.workers.dev';
+   ```
+5. Save and upload `index.html` to GitHub
+
+> **Note:** Smart Scan requires `forge_worker_v2.js` to be deployed (not the original `forge_worker.js`). The v2 worker adds the `/scan` endpoint. The `/chat` endpoint used by $id works on both versions, so upgrading to v2 is safe and backwards-compatible.
+
+---
+
+## Testing $id and Smart Scan
+
+**$id (Forge Pulse):**
 1. Open Forge Pulse on your phone or in a browser
 2. Tap the **Ask $id** tab (bottom right)
 3. If you have imported data, $id will greet you with a monthly snapshot
 4. Try asking: *"What is my savings rate this month?"*
+
+**Smart Scan (Forge Desktop):**
+1. Open `index.html` in a browser
+2. Go to **The Pour** (import page)
+3. If `WORKER_URL` is set, the Smart Scan zone shows **"✦ AI worker connected"**
+4. Drop a receipt photo or PDF bank statement — Forge will extract and import transactions automatically
 
 ---
 
@@ -126,12 +153,13 @@ The key is now stored encrypted inside Cloudflare. It will not appear in any das
 
 | What you see | What it means | What to do |
 |---|---|---|
-| $id's setup instructions appear | `SID_PROXY_URL` was not updated | Repeat Step 5 — make sure you saved the file and re-uploaded it to GitHub |
-| "API key issue..." | The `ANTHROPIC_API_KEY` secret is wrong or missing | Go to Cloudflare → forge-sid Worker → Settings → Variables and Secrets → verify or re-add the key |
-| "Can't reach the server..." | The Worker URL in `SID_PROXY_URL` is wrong | Check the URL starts with `https://` and ends with `.workers.dev` |
-| "That took too long..." | Anthropic's servers were slow | Wait a few seconds and try again. Shorter questions respond faster. |
+| $id's setup instructions appear | `SID_PROXY_URL` was not updated in `forge-pulse.html` | Repeat Step 5 — make sure you saved and re-uploaded |
+| Smart Scan zone shows no "AI worker connected" badge | `WORKER_URL` was not set in `index.html` | Repeat Step 5b |
+| "API key issue..." | The `ANTHROPIC_API_KEY` secret is wrong or missing | Go to Cloudflare → forge-sid → Settings → Variables and Secrets → verify or re-add the key |
+| "Can't reach the server..." | The Worker URL is wrong in either constant | Check the URL starts with `https://` and ends with `.workers.dev` |
+| "That took too long..." | Anthropic's servers were slow | Wait a few seconds and try again |
 | "Rate limit hit..." | Too many requests in a short window | Wait 30 seconds and try again |
-| "Something went wrong..." | Unexpected error | Check the Cloudflare Worker logs: dash.cloudflare.com → forge-sid → Logs tab |
+| "Something went wrong..." | Unexpected error | Check Cloudflare Worker logs: dash.cloudflare.com → forge-sid → Logs tab |
 
 ---
 
@@ -193,7 +221,7 @@ Smart Scan uses Claude to extract transactions from any file type: photos, PDFs,
 
 1. **Deploy the updated worker** (`forge_worker_v2.js`) — this adds the `/scan` route. If you already have the original worker deployed, simply replace its code with `forge_worker_v2.js` and redeploy.
 
-2. **Set `WORKER_URL` in forge.html** — find line `const WORKER_URL = '';` near the top of the script and paste your worker URL:
+2. **Set `WORKER_URL` in index.html** — find line `const WORKER_URL = '';` near the top of the script and paste your worker URL:
    ```javascript
    const WORKER_URL = 'https://forge-sid.YOUR-SUBDOMAIN.workers.dev';
    ```

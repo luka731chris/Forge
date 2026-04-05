@@ -1,8 +1,8 @@
-# Forge v3.2 — Testing Report
+# Forge v3.12 — Testing Report
 
-**Test run date:** March 2026  
-**Total tests:** 530 across three suites  
-**Pass rate:** 530/530 (100%)
+**Test run date:** April 2026
+**Total tests:** 572 across three suites
+**Pass rate:** 572/572 (100%)
 
 ---
 
@@ -31,9 +31,9 @@
 
 ---
 
-### Suite B — v3.2 Exhaustive (`forge_tests_v2.js`)
+### Suite B — v3.4 Exhaustive (`forge_tests_v2.js`)
 
-**285 tests · 25 suites** — Written specifically for v3.2 new features
+**325 tests · 26 suites** — Written for v3.2–v3.4 new features and edge cases
 
 | Suite | Tests | Coverage |
 |-------|-------|----------|
@@ -62,12 +62,13 @@
 | 23 · DEFAULT_SETTINGS schema | 21 | All settings keys, correct defaults, kids array structure, Pittsburgh family |
 | 24 · parseQIF | 6 | Standard bank type, all record types, empty |
 | 25 · Edge cases & regression | 18 | 2-digit years, CRLF, BOM, undefined fields, large numbers, NaN safety |
+| 26 · Blank Columns & CSV Edge Cases | 39 | Blank header cols, quoted blanks, whitespace-only, comma-only rows, `sep=,` strip, BOM, semicolon/pipe delimiters, European decimal, mid-file repeated headers, `N/A`/`--` amounts, truncated rows |
 
 ---
 
 ### Suite C — AI / $id Layer (`forge_sid_tests.js`)
 
-**96 tests · 8 suites**
+**98 tests · 8 suites**
 
 | Suite | Tests | Coverage |
 |-------|-------|----------|
@@ -125,7 +126,7 @@ Five code defects were identified by the test suite and fixed in the production 
 
 **Edge case philosophy:** Every parser has a corresponding "train wreck" test: empty string, null, whitespace-only, header-only (no data rows), missing required columns, and zero-value rows. All must return `[]` or `null` without throwing.
 
-**Regression anchoring:** The 149 existing tests in `forge_tests.js` serve as a regression baseline. Running all three suites in sequence confirms no regressions from v3.2 additions.
+**Regression anchoring:** The 149 existing tests in `forge_tests.js` serve as a regression baseline. Running all three suites in sequence confirms no regressions from v3.2–v3.12 additions.
 
 ---
 
@@ -147,7 +148,55 @@ The following items were structurally verified in `forge-pulse.html`:
 
 ---
 
-## Desktop App — Structural Verification
+## v3.4 – v3.12 Structural Verification
+
+The following items were verified across development sessions v3.4 through v3.12:
+
+### v3.12 — Dead Code Audit
+
+- ✅ 11 dead functions confirmed absent from `index.html` via full-file string search: `buildSidSystemPrompt`, `calcAgeInYears`, `getAmzSensitivityThreshold`, `getAnaFiltered`, `getCategoryBudget`, `getFamilyReportHeader`, `getFamilyReportSubtitle`, `getLargePurchaseThreshold`, `getSavingsRateTarget`, `isTextFile`, `refreshKidAge`
+- ✅ 22 unused CSS class selectors confirmed absent; 12 unused CSS custom properties confirmed absent
+- ✅ Duplicate `@keyframes pop-in` definition removed — one definition remains, referenced by active animations
+- ✅ All `-webkit-` vendor prefixes retained (Safari/iOS compatibility required)
+- ✅ All remaining `@keyframes` definitions confirmed referenced by active animations
+- ✅ Forge Pulse: 3 unused classes and 3 unused variables removed; all active selectors retained
+
+### v3.11 — Analytics Chart Guards
+
+- ✅ `Chart.getChart(canvasEl)` guard present before every chart creation in `renderMiniStack`, `renderMiniDow`, `renderMiniPurchaserChart`, `renderMainChart`
+- ✅ Waterfall config is lazy — only computed when `anaChartType === 'waterfall'`
+- ✅ Analytics page navigable multiple times without blank charts
+
+### v3.10 — HTML Structure Integrity
+
+- ✅ `<div id="page-upload">` has matching closing `</div>` immediately before `<!-- ══ DASHBOARD ══ -->`
+- ✅ All page divs confirmed siblings (not nested); verified by offsetHeight > 0 in browser
+- ✅ Total open/close div balance confirmed even
+
+### v3.9 — Smart Scan Integration
+
+- ✅ `smartScan()` function present in `index.html`
+- ✅ `WORKER_URL` constant present (line ~6771); defaults to empty string
+- ✅ Three integration points in `processAll()`: images/PDFs, unknown extensions, zero-row CSV fallback
+- ✅ `forge_worker_v2.js` handles both `POST /chat` and `POST /scan` routes
+- ✅ Scan zone renders "✦ AI worker connected" when `WORKER_URL` is set
+
+### v3.8 / v3.4 — CSV Parser
+
+- ✅ `parseCSV` header scanner loops first 30 lines for date + amount column pair
+- ✅ Preamble rows (report title, date range) naturally skipped by column test
+- ✅ Blank header columns, BOM, `sep=,`, semicolon/pipe delimiters, European decimal all handled
+- ✅ `sniffFile()` skips `sep=`, `#` comments, and BOM before reading format detection line
+
+### v3.6 / v3.5 — Boot Sequence Integrity
+
+- ✅ No `Chart.defaults.*` assignments at top level of script; all inside `applyChartDefaults()`
+- ✅ `applyChartDefaults()` called from `DOMContentLoaded` only
+- ✅ No orphaned CSS `to { }` fragments; CSS brace count balanced
+- ✅ `showPage()` sets visibility via inline style (`display`, `opacity`, `visibility`); CSS class is fallback
+- ✅ `document.body.style.opacity = '1'` is first instruction in `DOMContentLoaded`
+- ✅ All 14 render functions have outer `try/catch`
+- ✅ Pulse `go()` sets `display:block` via inline style, not CSS class alone
 
 - ✅ 11 page IDs all have matching nav IDs (10 nav items + upload page with no nav)
 - ✅ `showPage('analytics')` renders correctly and calls `loadSettings()` first

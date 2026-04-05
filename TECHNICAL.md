@@ -9,9 +9,9 @@ Architecture, data model, parser documentation, purchaser attribution system, an
 Forge is a zero-dependency static web application. All logic lives in two HTML files. No build step, no package manager, no transpilation.
 
 ```
-index.html (286 KB)
-├── Embedded CSS (~1,900 lines) — design system, layout, components
-└── Embedded JavaScript (~175,000 chars, 130+ functions)
+index.html (397 KB)
+├── Embedded CSS (~1,900 lines, audited and stripped of unused rules in v3.12) — design system, layout, components
+└── Embedded JavaScript (~175,000 chars, 130+ functions, dead code removed in v3.12)
     ├── Constants & state
     ├── Persistence (saveData, loadData, saveSettings, loadSettings)
     ├── File handling (handleFiles, renderFileList, processAll)
@@ -117,6 +117,61 @@ settings.accountOwners = {
   'Fidelity Brokerage':      'Chris',
 };
 ```
+
+---
+
+## Bug Fix and Architecture History (v3.4 – v3.12)
+
+### v3.12 — Codebase Audit and Cleanup
+
+11 dead functions removed from `index.html` (confirmed never called): `buildSidSystemPrompt`, `calcAgeInYears`, `getAmzSensitivityThreshold`, `getAnaFiltered`, `getCategoryBudget`, `getFamilyReportHeader`, `getFamilyReportSubtitle`, `getLargePurchaseThreshold`, `getSavingsRateTarget`, `isTextFile`, `refreshKidAge`.
+
+22 unused CSS classes removed: `.badge-gold`, `.btn-xs`, `.confidence-high/medium/low`, `.dollar-brand`, `.forge-moment` (+3 variants), `.furnace-icon/sub/title`, `.g-chip`, `.gauge-chips/eyebrow/label`, `.gc-gold/muted/negative/positive/river`, `.jersey-badge`, `.nav-badge`, `.nav-footer`.
+
+12 unused CSS custom properties removed: `--accent` (×4), `--cream`, `--forge-dark`, `--r`, `--r-xl`, `--slate`, `--surface`, `--text`, `--text2`. Duplicate `@keyframes pop-in` definition removed.
+
+From `forge-pulse.html`: 3 unused CSS classes (`.chip-blu`, `.chip-muted`, `.gold-star`) and 3 unused CSS variables (`--caution`, `--hover`, `--purple`) removed.
+
+### v3.11 — Analytics and Cash Flow blank sections
+
+**Canvas-already-in-use:** Every analytics chart renderer (`renderMiniStack`, `renderMiniDow`, `renderMiniPurchaserChart`, `renderMainChart`) was calling `element.getContext('2d')` without checking for an active Chart.js instance. On repeat navigation or filter change, Chart.js threw "Canvas is already in use by chart with id X" — silently swallowed, leaving the chart blank. Fix: `Chart.getChart(canvasEl)` guard before every chart creation; destroy if found before creating new.
+
+**Waterfall IIFE:** The waterfall config in `renderMainChart` was built as an IIFE on every call regardless of selected chart type, causing edge-case throws. Fixed by making waterfall config lazy — only built when `anaChartType === 'waterfall'`.
+
+### v3.10 — Black Screen: True Root Cause
+
+One missing `</div>` in the upload page HTML. The Smart Scan zone insertion left `<div id="page-upload">` unclosed. `<div id="page-dashboard">` sat **inside** the unclosed div as a child, not a sibling. When `showPage('dashboard')` ran, the upload page got `display:none`, and the dashboard inherited it — `offsetHeight: 0` despite real content. Fix: one `</div>` added immediately before `<!-- ══ DASHBOARD ══ -->`.
+
+### v3.9 — Smart Scan
+
+AI-powered universal extraction fallback using Claude. Handles receipt photos, PDF bank statements, W-2s/1099s, unknown CSVs. Integrated at three points in `processAll()`: images/PDFs bypass structured parsers entirely; unknown extensions attempt Smart Scan; CSVs that parse to zero rows fall back automatically. Requires `WORKER_URL` set in `index.html` and `forge_worker_v2.js` deployed to Cloudflare.
+
+`forge_worker_v2.js` adds the `/scan` endpoint alongside the existing `/chat` endpoint:
+
+| Route | Purpose | Max tokens |
+|-------|---------|------------|
+| `POST /chat` | $id AI financial assistant | 1,500 |
+| `POST /scan` | Smart Scan transaction extraction | 4,096 |
+
+### v3.8 — Quicken CSV Preamble Detection
+
+`parseCSV` header scanner now loops through the first 30 lines and picks the first one containing both a date-like and amount-like column name. Preamble rows (report title, date range) are naturally skipped. Confirmed: `QuickenExportAll_260329.csv` (7,440 lines) → 7,420 transactions parsed.
+
+### v3.7 — Black Screen: Orphaned CSS `to {}` Fragments
+
+Removing `@keyframes bodyReveal` and `@keyframes pageReveal` in a prior session left orphaned `to { opacity: 1; }` and `to { transform: translateY(0); }` closing fragments at the top level of the stylesheet. These corrupted the cascade for rules that followed — `.page { display:none }` and `.page.active { display:block }` were misapplied. Fix: both orphaned fragments removed. CSS brace count: 403 open / 403 closed.
+
+### v3.6 — Black Screen: Chart.defaults at Parse Time
+
+`Chart.defaults.*` assignments ran at the top level of the script — outside any function, before `DOMContentLoaded`. If Chart.js had not fully parsed yet, `TypeError` killed the entire script silently. All Chart.defaults assignments moved into `applyChartDefaults()`, called from `DOMContentLoaded`.
+
+### v3.5 — Black Screen: JS Syntax Error (Orphan `}`)
+
+A prior session's partial replacement left an orphan `}` on line 25 of the main script — hard syntax error, browser refused to parse the script entirely. Also eliminated in this pass: `body { animation: bodyReveal }` with `both` fill-mode holding body near-invisible; page and Pulse animations replaced with inline-style visibility control exclusively. `showPage()` now sets `display`, `opacity`, and `visibility` via inline style; CSS class is fallback only.
+
+### v3.4 — CSV Import Comprehensive Rewrite
+
+Complete rewrite of `parseCSV()`. Blank column handling, `sep=,` stripping, BOM stripping, semicolon/pipe delimiter detection, European decimal format, mixed CRLF+LF, `N/A`/`--` amount guards, mid-file repeated header skipping. Suite 26 added to `forge_tests_v2.js` (39 tests, 26 suites total).
 
 ---
 
@@ -444,9 +499,9 @@ Three test suites cover all parser, analytics, and AI logic. Run with Node.js �
 
 ```bash
 node forge_tests.js       # 149 tests — parsers, formatters, dedup (original suite)
-node forge_tests_v2.js    # 285 tests — Apple Card, analytics, purchaser, edge cases
-node forge_sid_tests.js   # 96 tests  — $id AI layer, context, alerts, error routing
-# Total: 530 tests
+node forge_tests_v2.js    # 325 tests — Apple Card, analytics, purchaser, edge cases, blank CSV columns (Suite 26)
+node forge_sid_tests.js   # 98 tests  — $id AI layer, context, alerts, error routing
+# Total: 572 tests
 ```
 
 ### Test framework
@@ -455,15 +510,50 @@ Micro-framework defined inside each test file: `suite(name)`, `test(name, fn)`, 
 
 ### forge_module.js (auto-generated)
 
-The test harness requires functions extracted from `forge.html` into `forge_module.js`. Rebuild whenever `forge.html` changes:
+The test harness requires functions extracted from `index.html` into `forge_module.js`. Rebuild whenever `index.html` changes:
 
 ```javascript
-// Extract functions from forge.html and write to forge_module.js
+// Extract functions from index.html and write to forge_module.js
 // Run: node forge_docs_v2.js  (this also rebuilds Word docs)
 // Or run the Python extraction script in forge_tests.js comments
 ```
 
 The extractor uses a depth-counting parser to find function boundaries and a top-level guard to avoid extracting `const` declarations from inside function bodies.
+
+---
+
+## Smart Scan — AI-Powered Universal Extraction
+
+Added in v3.9. Claude reads any file Forge's structured parsers cannot handle.
+
+### Supported Input Types
+
+| Source type | How it works |
+|-------------|-------------|
+| Photos of receipts | Base64 image → Claude reads amounts, dates, merchant |
+| Photos of bank statements | Same — Claude reads any layout |
+| PDF bank/investment statements | Native PDF block → Claude reads the full document |
+| W-2 / 1099 forms | Extracted as a single income transaction dated Dec 31 of tax year |
+| Unknown CSV formats | Text sent to Claude as fallback when parser returns 0 rows |
+
+### Integration Points in `processAll()`
+
+1. **Images and PDFs** dropped in the main zone → routed to Smart Scan immediately (no structured parser attempted)
+2. **Unknown extensions** (`.xlsx`, `.xls`, etc.) → Smart Scan attempted if `WORKER_URL` is configured
+3. **CSV/QIF/OFX that parse to zero rows** → Smart Scan attempted automatically as fallback
+
+### Configuration
+
+Set `WORKER_URL` in `index.html` (line ~6771):
+```javascript
+const WORKER_URL = 'https://forge-sid.YOURSUBDOMAIN.workers.dev';
+```
+
+`forge_worker_v2.js` must be deployed (not the original `forge_worker.js`) — it adds the `/scan` endpoint. The `/chat` endpoint for $id works on both versions.
+
+### Cost
+
+~$0.001–0.005 per file (Claude Sonnet). Billed to the Anthropic account via the Worker's API key.
 
 ---
 
