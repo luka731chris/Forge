@@ -38,8 +38,8 @@
   --safe-top:  env(safe-area-inset-top, 44px);
   --safe-bot:  env(safe-area-inset-bottom, 34px);
   --tab-h:     62px;
-  --card: var(--float); --bg: var(--base); --border: var(--line); --muted: var(--ink3);
-  --mono: 'Fira Code', monospace; --serif: 'Cormorant Garamond', Georgia, serif;
+  --card:var(--float);--bg:var(--base);--border:var(--line);--muted:var(--ink3);
+  --mono:'Fira Code',monospace;--serif:'Cormorant Garamond',Georgia,serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -61,9 +61,7 @@ body {
 .status-fill { position: fixed; top: 0; left: 0; right: 0; height: var(--safe-top); background: var(--void); z-index: 300; }
 .shell { flex: 1; position: relative; overflow: hidden; }
 .page { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; display: none; background: var(--base); }
-.page::-webkit-scrollbar { width: 4px; }
-.page::-webkit-scrollbar-track { background: transparent; }
-.page::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
+.page::-webkit-scrollbar{width:4px}.page::-webkit-scrollbar-track{background:transparent}.page::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
 .page.active { display: block;  }
 @keyframes pgIn { from { transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
 
@@ -333,6 +331,7 @@ body {
   height: 13px;
   flex-shrink: 0;
 }
+[style*="position:relative"] > canvas { display:block; width:100%; height:100%; }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -619,14 +618,7 @@ function go(tab) {
   if (tab==='snapshot') safe(function(){ renderSnapshot(); }, 'snapshot');
   if (tab==='alerts')   safe(function(){ renderAlerts(); }, 'alerts');
   if (tab==='amazon')   safe(function(){ renderAmazon(); }, 'amazon');
-  if (tab==='analytics') {
-    safe(function(){ renderPulseAnalytics(); }, 'analytics');
-    requestAnimationFrame(function(){ requestAnimationFrame(function(){
-      document.querySelectorAll('#pg-analytics canvas').forEach(function(c){
-        try { var ch=Chart.getChart(c); if(ch) ch.resize(); } catch(e){}
-      });
-    }); });
-  }
+  if (tab==='analytics') safe(function(){ renderPulseAnalytics(); }, 'analytics');
   if (tab==='chat' && !chatReady) { chatReady=true; safe(function(){ sendWelcome(); }, 'welcome'); }
 }
 
@@ -1206,6 +1198,14 @@ function destroyPulseAna() {
   pCatChart=pTrendChart=pPurchaserChart=pDowChart=pSavRateChart=null;
 }
 
+
+function setH(canvas) {
+  if (!canvas) return;
+  const par = canvas.parentElement;
+  if (!par) return;
+  const m = (par.style.height || '').match(/^(\d+)px$/);
+  if (m) { canvas.style.height = m[0]; canvas.style.width = '100%'; }
+}
 function renderPulseAnalytics() {
   if (!txns.length) return;
   destroyPulseAna();
@@ -1217,7 +1217,7 @@ function renderPulseAnalytics() {
 }
 
 function renderPulseCategories() {
-  const ctx = document.getElementById('p-cat-chart')?.getContext('2d');
+  const _c_p_cat_chart = document.getElementById('p-cat-chart'); setH(_c_p_cat_chart); const ctx = _c_p_cat_chart?.getContext('2d');
   if (!ctx) return;
   if (pCatChart) { try { pCatChart.destroy(); } catch(e) {} }
   const since = getPulseSince(pCatRange);
@@ -1245,7 +1245,7 @@ function renderPulseCategories() {
 }
 
 function renderPulseTrend() {
-  const ctx = document.getElementById('p-trend-chart')?.getContext('2d');
+  const _c_p_trend_chart = document.getElementById('p-trend-chart'); setH(_c_p_trend_chart); const ctx = _c_p_trend_chart?.getContext('2d');
   if (!ctx) return;
   const mos = [];
   for (let i=11;i>=0;i--) { const d=new Date(); d.setMonth(d.getMonth()-i); mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`); }
@@ -1268,7 +1268,7 @@ function renderPulseTrend() {
 }
 
 function renderPulsePurchaser() {
-  const ctx = document.getElementById('p-purchaser-chart')?.getContext('2d');
+  const _c_p_purchaser_chart = document.getElementById('p-purchaser-chart'); setH(_c_p_purchaser_chart); const ctx = _c_p_purchaser_chart?.getContext('2d');
   if (!ctx) return;
   if (pPurchaserChart) { try { pPurchaserChart.destroy(); } catch(e) {} }
   const since = getPulseSince(pPurchaserRange);
@@ -1301,7 +1301,7 @@ function renderPulsePurchaser() {
 }
 
 function renderPulseDow() {
-  const ctx = document.getElementById('p-dow-chart')?.getContext('2d');
+  const _c_p_dow_chart = document.getElementById('p-dow-chart'); setH(_c_p_dow_chart); const ctx = _c_p_dow_chart?.getContext('2d');
   if (!ctx) return;
   const since = new Date(); since.setFullYear(since.getFullYear()-1);
   const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -1326,7 +1326,7 @@ function renderPulseDow() {
 }
 
 function renderPulseSavRate() {
-  const ctx = document.getElementById('p-savrate-chart')?.getContext('2d');
+  const _c_p_savrate_chart = document.getElementById('p-savrate-chart'); setH(_c_p_savrate_chart); const ctx = _c_p_savrate_chart?.getContext('2d');
   if (!ctx) return;
   const mos=[];
   for(let i=11;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
