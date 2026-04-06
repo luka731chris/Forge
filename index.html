@@ -73,6 +73,11 @@
   --r-lg:  14px;
 
   /* ── Legacy aliases (backward compat) ── */
+  --r-md:      8px;
+  --dim:       var(--ink4);
+  --furnace:   #F87171;   /* budget over-limit — same as --negative */
+  --amber:     #FBBF24;   /* budget watch — same as --caution */
+  --gauge:     #2DD4BF;   /* budget ok — same as --positive */
 }
 
 *, *::before, *::after {
@@ -1024,7 +1029,11 @@ select option { background: var(--float); color: var(--ink2); }
   .grid-2-1, .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .settings-grid { grid-template-columns: 1fr; }
   .cards-4, .cards-5 { grid-template-columns: repeat(2,1fr); }
+  .nav-hamburger { display: inline-flex !important; }
 }
+
+/* Hamburger hidden by default (desktop), shown on mobile */
+.nav-hamburger { display: none; }
 
 /* $ sign in brand names: same font-size, gold, slightly tighter */
 
@@ -1570,8 +1579,15 @@ select option { background: var(--float); color: var(--ink2); }
     <button class="btn btn-ghost btn-sm" onclick="showPage('upload')">+ The Pour</button>
     <button class="btn btn-ghost btn-sm" id="demoBtn" onclick="loadDemo()">Load Demo</button>
     <button class="btn btn-ghost btn-sm" id="clearBtn" style="display:none;" onclick="clearAll()">Clear</button>
+    <button class="btn btn-ghost btn-sm nav-hamburger" id="navHamburger" onclick="toggleMobileNav()" aria-label="Menu" title="Menu">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
   </div>
 </header>
+
+<!-- Mobile nav overlay (shown at ≤900px) -->
+<div id="mobileNavOverlay" onclick="closeMobileNav()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:190;backdrop-filter:blur(2px);"></div>
+<nav id="mobileNav" style="display:none;position:fixed;top:60px;left:0;bottom:0;width:260px;z-index:195;transform:translateX(-100%);transition:transform .25s cubic-bezier(0.16,1,0.3,1);overflow-y:auto;overflow-x:hidden;background:var(--void);border-right:1px solid var(--line);"></nav>
 
 <div class="app">
 <nav>
@@ -2018,7 +2034,7 @@ select option { background: var(--float); color: var(--ink2); }
     <div id="scanResult" style="display:none;margin-top:10px;"></div>
     <div id="scanWorkerNote" style="display:none;margin-top:10px;padding:12px 16px;background:rgba(167,139,250,.04);border:1px solid rgba(167,139,250,.12);border-radius:var(--r-sm);font-size:12px;color:var(--ink4);line-height:1.65;">
       <strong style="color:var(--purple);">Smart Scan requires the AI Worker.</strong>
-      Set <code style="font-family:var(--font-m);font-size:11px;color:var(--ink3);">WORKER_URL</code> in index.html to your deployed Cloudflare Worker URL. See SID-SETUP.md for setup.
+      Set <code style="font-family:var(--font-m);font-size:11px;color:var(--ink3);">WORKER_URL</code> in forge.html to your deployed Cloudflare Worker URL. See SID-SETUP.md for setup.
     </div>
   </div>
 
@@ -3627,7 +3643,7 @@ function imageMime(fname) {
 
 async function callSmartScan(file) {
   if (!WORKER_URL) {
-    return { ok: false, reason: 'Smart Scan requires the AI worker URL. Set WORKER_URL in index.html or ask your admin.' };
+    return { ok: false, reason: 'Smart Scan requires the AI worker URL. Set WORKER_URL in forge.html or ask your admin.' };
   }
 
   try {
@@ -3919,7 +3935,7 @@ function initSmartScan() {
     if (note) note.style.display = 'none';
   } else {
     if (status) {
-      status.textContent = '⚠ Worker URL not set — add to index.html';
+      status.textContent = '⚠ Worker URL not set — add to forge.html';
       status.style.color = 'var(--gold)';
     }
     if (note) note.style.display = 'block';
@@ -6892,15 +6908,6 @@ function saveSettings() {
       } else if (el.style) { el.style.borderColor = ''; }
     });
     if (_dobBad.length) { showToast(_dobBad[0], 'warn', 6000); return; }
-    var _dobBad = [];
-    document.querySelectorAll('.kid-dob-input').forEach(function(el, i) {
-      var v = (el.value||'').trim();
-      if (v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) {
-        _dobBad.push('Kid ' + (i+1) + ' date "' + v + '" — use YYYY-MM-DD (e.g. 2014-06-22)');
-        if (el.style) el.style.borderColor = 'var(--negative)';
-      } else if (el.style) { el.style.borderColor = ''; }
-    });
-    if (_dobBad.length) { showToast(_dobBad[0], 'warn', 6000); return; }
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     showSaveStatus('✓ Saved', true);
     showToast(`Settings saved · Welcome, ${settings.familyName} family`);
@@ -7390,6 +7397,79 @@ function updateAgeBadge(dobId, badgeId, isParent = false) {
 // Override savings rate target for badge display
 
 // Override Amazon sensitivity
+
+// ════════════════════════════════════════════════════
+// MOBILE NAV — hamburger menu for ≤900px viewports
+// ════════════════════════════════════════════════════
+function toggleMobileNav() {
+  const overlay = document.getElementById('mobileNavOverlay');
+  const mobileNav = document.getElementById('mobileNav');
+  const desktopNav = document.querySelector('nav:not(#mobileNav)');
+  if (!mobileNav || !overlay) return;
+
+  // Populate mobileNav with clone of desktop nav content on first open
+  if (!mobileNav._populated && desktopNav) {
+    mobileNav.innerHTML = desktopNav.innerHTML;
+    mobileNav._populated = true;
+    // Re-wire nav-item clicks to also close the panel
+    mobileNav.querySelectorAll('.nav-item').forEach(function(item) {
+      item.addEventListener('click', function() { closeMobileNav(); });
+    });
+  }
+
+  const isOpen = mobileNav.style.transform === 'translateX(0px)' || mobileNav.style.transform === 'translateX(0)';
+  if (isOpen) {
+    closeMobileNav();
+  } else {
+    mobileNav.style.display = 'flex';
+    mobileNav.style.flexDirection = 'column';
+    overlay.style.display = 'block';
+    // Force reflow then animate in
+    mobileNav.offsetHeight;
+    mobileNav.style.transform = 'translateX(0)';
+  }
+}
+
+function closeMobileNav() {
+  const overlay = document.getElementById('mobileNavOverlay');
+  const mobileNav = document.getElementById('mobileNav');
+  if (!mobileNav || !overlay) return;
+  mobileNav.style.transform = 'translateX(-100%)';
+  overlay.style.display = 'none';
+  setTimeout(function() {
+    if (mobileNav.style.transform === 'translateX(-100%)') mobileNav.style.display = 'none';
+  }, 260);
+}
+
+// Sync active state to mobile nav on page change
+(function() {
+  const _orig = window.showPage;
+  if (typeof _orig === 'function') {
+    // Patch is applied after showPage is defined — update mobile nav active state
+    const _patchMobileNav = function(name) {
+      const mobileNav = document.getElementById('mobileNav');
+      if (!mobileNav || mobileNav.style.display === 'none') return;
+      mobileNav.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+      const mn = mobileNav.querySelector('#nav-' + name);
+      if (mn) mn.classList.add('active');
+    };
+    // We hook via a MutationObserver on the desktop nav instead of wrapping showPage
+    // (showPage is called before this IIFE in some paths)
+    const desktopNav = document.querySelector('nav:not(#mobileNav)');
+    if (desktopNav) {
+      new MutationObserver(function() {
+        const mobileNav = document.getElementById('mobileNav');
+        if (!mobileNav || !mobileNav._populated) return;
+        const active = desktopNav.querySelector('.nav-item.active');
+        if (active) {
+          mobileNav.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+          const id = active.id;
+          if (id) { const m = mobileNav.querySelector('#' + id); if (m) m.classList.add('active'); }
+        }
+      }).observe(desktopNav, { attributes: true, subtree: true, attributeFilter: ['class'] });
+    }
+  }
+})();
 
 </script>
 </body>

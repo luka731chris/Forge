@@ -38,6 +38,13 @@
   --safe-top:  env(safe-area-inset-top, 44px);
   --safe-bot:  env(safe-area-inset-bottom, 34px);
   --tab-h:     62px;
+  /* ── Alias vars used in Analytics tab and inline styles ── */
+  --card:      var(--float);
+  --bg:        var(--base);
+  --border:    var(--line);
+  --muted:     var(--ink3);
+  --mono:      'Fira Code', monospace;
+  --serif:     'Cormorant Garamond', Georgia, serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -475,14 +482,7 @@ body {
     Ask $id
   </button>
 </div>
-<div class="toast" id="toast">  <!-- LukaLab attribution -->
-  <div id="ll-attr" style="text-align:center;padding:6px 0 2px;opacity:0.3;">
-    <span class="ll-badge">
-      <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><polygon points="8,1 14,8 8,15 2,8" stroke="#F5A800" stroke-width="1.5" fill="none"/><circle cx="8" cy="8" r="2.2" fill="#F5A800"/></svg>
-      LukaLab · AI Creativity Lab
-    </span>
-  </div>
-</div>
+<div class="toast" id="toast"></div>
 
 <script>
 // ════════════════════════════════════════════
