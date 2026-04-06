@@ -38,13 +38,8 @@
   --safe-top:  env(safe-area-inset-top, 44px);
   --safe-bot:  env(safe-area-inset-bottom, 34px);
   --tab-h:     62px;
-  /* ── Alias vars used in Analytics tab and inline styles ── */
-  --card:      var(--float);
-  --bg:        var(--base);
-  --border:    var(--line);
-  --muted:     var(--ink3);
-  --mono:      'Fira Code', monospace;
-  --serif:     'Cormorant Garamond', Georgia, serif;
+  --card: var(--float); --bg: var(--base); --border: var(--line); --muted: var(--ink3);
+  --mono: 'Fira Code', monospace; --serif: 'Cormorant Garamond', Georgia, serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -66,6 +61,10 @@ body {
 .status-fill { position: fixed; top: 0; left: 0; right: 0; height: var(--safe-top); background: var(--void); z-index: 300; }
 .shell { flex: 1; position: relative; overflow: hidden; }
 .page { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; display: none; background: var(--base); }
+.page::-webkit-scrollbar { width: 4px; }
+.page::-webkit-scrollbar-track { background: transparent; }
+.page::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
+.page::-webkit-scrollbar-thumb:hover { background: var(--line); }
 .page.active { display: block;  }
 @keyframes pgIn { from { transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
 
@@ -1201,6 +1200,24 @@ function destroyPulseAna() {
   pCatChart=pTrendChart=pPurchaserChart=pDowChart=pSavRateChart=null;
 }
 
+
+function pulseSafeChart(id, config, h) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return null;
+  const existing = Chart.getChart ? Chart.getChart(canvas) : null;
+  if (existing) { try { existing.destroy(); } catch(e) {} }
+  if (!h || h <= 0) h = 180;
+  canvas.width = 800; canvas.height = h;
+  canvas.style.width = '100%'; canvas.style.maxWidth = '100%';
+  canvas.style.height = h + 'px'; canvas.style.display = 'block';
+  if (!config.options) config.options = {};
+  config.options.responsive = false; config.options.maintainAspectRatio = false;
+  try {
+    const chart = new Chart(canvas, config);
+    chart.resize(800, h);
+    return chart;
+  } catch(e) { console.warn('pulseSafeChart('+id+'):', e.message); return null; }
+}
 function renderPulseAnalytics() {
   if (!txns.length) return;
   destroyPulseAna();
@@ -1212,9 +1229,6 @@ function renderPulseAnalytics() {
 }
 
 function renderPulseCategories() {
-  const ctx = document.getElementById('p-cat-chart')?.getContext('2d');
-  if (!ctx) return;
-  if (pCatChart) { try { pCatChart.destroy(); } catch(e) {} }
   const since = getPulseSince(pCatRange);
   const cats = {};
   txns.filter(t=>new Date(t.date)>=since&&t.amount<0).forEach(t=>cats[t.category]=(cats[t.category]||0)+Math.abs(t.amount));
@@ -1222,12 +1236,12 @@ function renderPulseCategories() {
   const total = sorted.reduce((s,[,v])=>s+v, 0);
   const labels = sorted.map(([c])=>c), values = sorted.map(([,v])=>v);
   try {
-    pCatChart = new Chart(ctx, {
+    pCatChart = pulseSafeChart('p-cat-chart', {
       type:'doughnut',
       data:{labels, datasets:[{data:values, backgroundColor:['#F5A800','#60A5FA','#A78BFA','#2DD4BF','#F87171','#34D399','#FBBF24','#FB923C'].map(c=>c+'CC'), borderWidth:1, borderColor:'rgba(0,0,0,.2)', hoverOffset:6}]},
-      options:{responsive:true, maintainAspectRatio:false, animation:{duration:300}, cutout:'52%',
+      options:{ animation:{duration:300}, cutout:'52%',
         plugins:{legend:{position:'bottom', labels:{font:{size:9},boxWidth:8, color:'rgba(255,255,255,.5)',padding:6}}}}
-    });
+    }, 180)
   } catch(e) {}
   // Insights
   const top = sorted[0];
@@ -1240,32 +1254,27 @@ function renderPulseCategories() {
 }
 
 function renderPulseTrend() {
-  const ctx = document.getElementById('p-trend-chart')?.getContext('2d');
-  if (!ctx) return;
   const mos = [];
   for (let i=11;i>=0;i--) { const d=new Date(); d.setMonth(d.getMonth()-i); mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`); }
   const inc = mos.map(m=>txns.filter(t=>t.date.startsWith(m)&&t.amount>0).reduce((s,t)=>s+t.amount,0));
   const exp = mos.map(m=>txns.filter(t=>t.date.startsWith(m)&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0));
   try {
-    pTrendChart = new Chart(ctx, {
+    pTrendChart = pulseSafeChart('p-trend-chart', {
       type:'bar',
       data:{labels:mos.map(m=>m.slice(5)), datasets:[
         {label:'Income',data:inc,backgroundColor:'rgba(45,212,191,.7)',borderRadius:3,stack:'a'},
         {label:'Spending',data:exp,backgroundColor:'rgba(248,113,113,.6)',borderRadius:3,stack:'b'},
       ]},
-      options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
+      options:{ animation:{duration:300},
         plugins:{legend:{labels:{font:{size:9},boxWidth:8,color:'rgba(255,255,255,.4)',padding:6}}},
         scales:{y:{ticks:{callback:v=>fmtK(v),color:'rgba(255,255,255,.3)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
                 x:{ticks:{color:'rgba(255,255,255,.3)',font:{size:9}},grid:{display:false}}}
       }
-    });
+    }, 180)
   } catch(e) {}
 }
 
 function renderPulsePurchaser() {
-  const ctx = document.getElementById('p-purchaser-chart')?.getContext('2d');
-  if (!ctx) return;
-  if (pPurchaserChart) { try { pPurchaserChart.destroy(); } catch(e) {} }
   const since = getPulseSince(pPurchaserRange);
   const people = [...new Set([...Object.values(family.accountOwners||{}), ...amzItems.map(i=>i.purchaser).filter(Boolean)])];
   const card = document.getElementById('p-purchaser-card');
@@ -1280,24 +1289,22 @@ function renderPulsePurchaser() {
   }).sort((a,b)=>(b.qkn+b.det)-(a.qkn+a.det));
 
   try {
-    pPurchaserChart = new Chart(ctx, {
+    pPurchaserChart = pulseSafeChart('p-purchaser-chart', {
       type:'bar',
       data:{labels:data.map(d=>d.p), datasets:[
         {label:'Accounts',data:data.map(d=>d.qkn),backgroundColor:'rgba(245,168,0,.75)',borderRadius:4,stack:'a'},
         {label:'Detail',data:data.map(d=>d.det),backgroundColor:'rgba(167,139,250,.75)',borderRadius:4,stack:'a'},
       ]},
-      options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
+      options:{ animation:{duration:300},
         plugins:{legend:{labels:{font:{size:9},boxWidth:8,color:'rgba(255,255,255,.4)'}}},
         scales:{y:{ticks:{callback:v=>fmtK(v),color:'rgba(255,255,255,.3)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
                 x:{ticks:{color:'rgba(255,255,255,.3)',font:{size:9}},grid:{display:false}}}
       }
-    });
+    }, 180)
   } catch(e) {}
 }
 
 function renderPulseDow() {
-  const ctx = document.getElementById('p-dow-chart')?.getContext('2d');
-  if (!ctx) return;
   const since = new Date(); since.setFullYear(since.getFullYear()-1);
   const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const totals={}, counts={};
@@ -1308,21 +1315,19 @@ function renderPulseDow() {
   });
   const avgs=days.map(d=>counts[d]>0?parseFloat((totals[d]/counts[d]).toFixed(2)):0);
   try {
-    pDowChart = new Chart(ctx, {
+    pDowChart = pulseSafeChart('p-dow-chart', {
       type:'bar',
       data:{labels:days, datasets:[{data:avgs, backgroundColor:['#F5A800','#60A5FA','#A78BFA','#2DD4BF','#F87171','#34D399','#FBBF24'].map(c=>c+'CC'), borderRadius:4, borderSkipped:false}]},
-      options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
+      options:{ animation:{duration:300},
         plugins:{legend:{display:false}},
         scales:{y:{ticks:{callback:v=>fmtK(v),color:'rgba(255,255,255,.3)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
                 x:{ticks:{color:'rgba(255,255,255,.3)',font:{size:9}},grid:{display:false}}}
       }
-    });
+    }, 180)
   } catch(e) {}
 }
 
 function renderPulseSavRate() {
-  const ctx = document.getElementById('p-savrate-chart')?.getContext('2d');
-  if (!ctx) return;
   const mos=[];
   for(let i=11;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
   const rates = mos.map(m => {
@@ -1332,18 +1337,18 @@ function renderPulseSavRate() {
   });
   const target = family.savingsTarget || 20;
   try {
-    pSavRateChart = new Chart(ctx, {
+    pSavRateChart = pulseSafeChart('p-savrate-chart', {
       type:'line',
       data:{labels:mos.map(m=>m.slice(5)), datasets:[
         {label:'Savings Rate',data:rates, borderColor:'#F5A800', backgroundColor:'rgba(245,168,0,.08)', tension:.35, pointRadius:3, pointBackgroundColor:'#F5A800', fill:true},
         {label:`Target ${target}%`, data:mos.map(()=>target), borderColor:'rgba(255,255,255,.2)', borderDash:[4,4], pointRadius:0, tension:0},
       ]},
-      options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
+      options:{ animation:{duration:300},
         plugins:{legend:{labels:{font:{size:9},boxWidth:8,color:'rgba(255,255,255,.4)'}}},
         scales:{y:{ticks:{callback:v=>v+'%',color:'rgba(255,255,255,.3)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
                 x:{ticks:{color:'rgba(255,255,255,.3)',font:{size:9}},grid:{display:false}}}
       }
-    });
+    }, 180)
   } catch(e) {}
 }
 

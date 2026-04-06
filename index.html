@@ -73,11 +73,11 @@
   --r-lg:  14px;
 
   /* ── Legacy aliases (backward compat) ── */
-  --r-md:      8px;
-  --dim:       var(--ink4);
-  --furnace:   #F87171;   /* budget over-limit — same as --negative */
-  --amber:     #FBBF24;   /* budget watch — same as --caution */
-  --gauge:     #2DD4BF;   /* budget ok — same as --positive */
+  --r-md: 8px;
+  --dim: var(--ink4);
+  --furnace: #F87171;
+  --amber: #FBBF24;
+  --gauge: #2DD4BF;
 }
 
 *, *::before, *::after {
@@ -346,6 +346,10 @@ main {
   scrollbar-width: thin;
   scrollbar-color: var(--line2) transparent;
 }
+main::-webkit-scrollbar { width: 6px; }
+main::-webkit-scrollbar-track { background: transparent; }
+main::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 3px; }
+main::-webkit-scrollbar-thumb:hover { background: var(--border2); }
 
 .page { display: none; }
 .page.active {
@@ -859,7 +863,7 @@ select option { background: var(--float); color: var(--ink2); }
 }
 .confluence-title { font-family: var(--font-d); font-size: 36px; font-weight: 600; color: var(--ink); opacity:0; animation: fadeUp .6s var(--ease) 1.5s forwards; letter-spacing: 0.02em; }
 .confluence-sub { font-family: var(--font-m); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink4); margin-top: 8px; opacity:0; animation: fadeUp .6s var(--ease) 1.9s forwards; }
-.confluence-begin { margin-top: 36px; padding: 13px 36px; background: var(--gold); color: #000; font-family: var(--font-ui); font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; border: none; border-radius: var(--r-sm); cursor: pointer; opacity:0; animation: fadeUp .5s var(--ease) 2.4s forwards; transition: all var(--dur-fast); }
+.confluence-begin { margin-top: 36px; padding: 13px 32px; background: var(--gold); color: #000; font-family: var(--font-ui); font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; border: none; border-radius: var(--r-sm); cursor: pointer; opacity:0; animation: fadeUp .5s var(--ease) 2.4s forwards; transition: all var(--dur-fast); }
 .confluence-begin:hover { background: var(--gold-lt); box-shadow: 0 0 24px var(--gold-glow); }
 @keyframes fadeUp { from{opacity: 0.01;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
 
@@ -977,7 +981,7 @@ select option { background: var(--float); color: var(--ink2); }
 .slider-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--ink4); font-family: var(--font-m); margin-top: 5px; }
 .slider-wrap   { display: flex; gap: 11px; align-items: center; flex: 1; }
 
-.save-bar { position: sticky; bottom: 0; background: rgba(14,14,14,.95); backdrop-filter: blur(12px); border-top: 1px solid var(--line); padding: 13px 36px; display: flex; align-items: center; justify-content: space-between; margin: 0 -36px -40px; }
+.save-bar { position: sticky; bottom: 0; background: rgba(14,14,14,.95); backdrop-filter: blur(12px); border-top: 1px solid var(--line); padding: 13px 36px; display: flex; align-items: center; justify-content: space-between; margin: 0 -32px -60px; }
 .save-status { font-size: 12px; color: var(--ink4); font-family: var(--font-m); letter-spacing: 0.04em; }
 .save-status.saved { color: var(--positive); }
 
@@ -1031,8 +1035,6 @@ select option { background: var(--float); color: var(--ink2); }
   .cards-4, .cards-5 { grid-template-columns: repeat(2,1fr); }
   .nav-hamburger { display: inline-flex !important; }
 }
-
-/* Hamburger hidden by default (desktop), shown on mobile */
 .nav-hamburger { display: none; }
 
 /* $ sign in brand names: same font-size, gold, slightly tighter */
@@ -1056,8 +1058,8 @@ select option { background: var(--float); color: var(--ink2); }
 .ana-header {
   background: linear-gradient(135deg, var(--float) 0%, var(--lift) 100%);
   border-bottom: 1px solid var(--line);
-  padding: 22px 28px 20px;
-  margin: -28px -28px 24px;
+  padding: 22px 32px 20px;
+  margin: -28px -32px 24px;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -1579,15 +1581,13 @@ select option { background: var(--float); color: var(--ink2); }
     <button class="btn btn-ghost btn-sm" onclick="showPage('upload')">+ The Pour</button>
     <button class="btn btn-ghost btn-sm" id="demoBtn" onclick="loadDemo()">Load Demo</button>
     <button class="btn btn-ghost btn-sm" id="clearBtn" style="display:none;" onclick="clearAll()">Clear</button>
-    <button class="btn btn-ghost btn-sm nav-hamburger" id="navHamburger" onclick="toggleMobileNav()" aria-label="Menu" title="Menu">
+    <button class="btn btn-ghost btn-sm nav-hamburger" id="navHamburger" onclick="toggleMobileNav()" aria-label="Menu">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
   </div>
 </header>
-
-<!-- Mobile nav overlay (shown at ≤900px) -->
-<div id="mobileNavOverlay" onclick="closeMobileNav()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:190;backdrop-filter:blur(2px);"></div>
-<nav id="mobileNav" style="display:none;position:fixed;top:60px;left:0;bottom:0;width:260px;z-index:195;transform:translateX(-100%);transition:transform .25s cubic-bezier(0.16,1,0.3,1);overflow-y:auto;overflow-x:hidden;background:var(--void);border-right:1px solid var(--line);"></nav>
+<div id="mobileNavOverlay" onclick="closeMobileNav()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:190;"></div>
+<nav id="mobileNav" style="display:none;position:fixed;top:60px;left:0;bottom:0;width:260px;z-index:195;transform:translateX(-100%);transition:transform .25s;overflow-y:auto;background:var(--void);border-right:1px solid var(--line);"></nav>
 
 <div class="app">
 <nav>
@@ -2882,7 +2882,7 @@ window.addEventListener('DOMContentLoaded', function() {
   // Step 1: Force body visible — no CSS animation can override inline style
   document.body.style.opacity = '1';
   document.body.style.visibility = 'visible';
-  document.body.style.display = 'block';
+  // body stays display:flex — do NOT override
 
   // Step 2: Apply Chart.js theme defaults (safe — Chart must be loaded by now)
   try { applyChartDefaults(); } catch(e) { console.warn('Chart defaults:', e); }
@@ -3090,6 +3090,62 @@ function applyChartDefaults() {
   Chart.defaults.plugins.tooltip.borderWidth = 1;
   Chart.defaults.scale.grid = { color:'rgba(255,255,255,0.04)' };
   Chart.defaults.scale.ticks = { color:'#555' };
+}
+
+// ══ safeChart — the only correct way to create a Chart.js chart in Forge ══
+// Uses responsive:false with explicit pixel dimensions so Chart.js never
+// installs a ResizeObserver and never overrides canvas dimensions.
+// A single window resize handler calls chart.resize() on all active charts.
+function safeChart(canvasId, config, h) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return null;
+  const existing = Chart.getChart ? Chart.getChart(canvas) : null;
+  if (existing) { try { existing.destroy(); } catch(e) {} }
+  if (!h || h <= 0) h = 220;
+  // Set canvas IDL attributes so Chart.js has non-zero dimensions at construction.
+  // We use a fixed 800px internal width; CSS width:100% + max-width:100% makes it
+  // fill the container visually regardless of rendered pixel width.
+  canvas.width  = 800;
+  canvas.height = h;
+  canvas.style.width    = '100%';
+  canvas.style.maxWidth = '100%';
+  canvas.style.height   = h + 'px';
+  canvas.style.display  = 'block';
+  if (!config.options) config.options = {};
+  config.options.responsive          = false;
+  config.options.maintainAspectRatio = false;
+  try {
+    const chart = new Chart(canvas, config);
+    // Immediately resize after construction — this bypasses Chart.js's internal
+    // getMaximumSize() which reads container.clientWidth (0 on hidden pages)
+    // and directly stamps canvas dimensions. This is the only reliable method
+    // across all layout states: hidden pages, iframes, sandboxed previews.
+    chart.resize(800, h);
+    if (!window._forgeCharts) window._forgeCharts = [];
+    window._forgeCharts.push({ chart, canvasId, h });
+    return chart;
+  } catch(e) {
+    console.warn('safeChart(' + canvasId + '):', e.message);
+    return null;
+  }
+}
+// Global resize handler — fires 100ms after window resize settles
+if (!window._forgeResizeAttached) {
+  window._forgeResizeAttached = true;
+  let _rTimer;
+  window.addEventListener('resize', function() {
+    clearTimeout(_rTimer);
+    _rTimer = setTimeout(function() {
+      (window._forgeCharts || []).forEach(function(entry) {
+        try {
+          const canvas = document.getElementById(entry.canvasId);
+          if (!canvas || !canvas.parentElement) return;
+          const w = canvas.parentElement.clientWidth || 600;
+          entry.chart.resize(w, entry.h);
+        } catch(e) {}
+      });
+    }, 100);
+  });
 }
 const IMPULSE_CATS = new Set(['Health & Beauty','Toys & Games','Books','Electronics Accessories','Home','Kitchen','Sports','Pet Supplies','Arts Crafts & Sewing','Clothing','Shoes','Beauty','Grocery & Gourmet Food']);
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -4866,12 +4922,7 @@ function renderAnalytics() {
 function renderMainChart(keys, values, metric, palette, isNegativeOk) {
   const canvasEl = document.getElementById('anaMainChart');
   if (!canvasEl) return;
-  // Destroy any existing Chart.js instance on this canvas
-  const existingChart = Chart.getChart ? Chart.getChart(canvasEl) : null;
-  if (existingChart) existingChart.destroy();
-  const ctx = canvasEl.getContext('2d');
-  if (!ctx) return;
-  const isMoney = !['txncount','savings_rate'].includes(metric);
+    const isMoney = !['txncount','savings_rate'].includes(metric);
   const yFmt = v => isMoney ? fmtK(v) : (metric==='savings_rate' ? v.toFixed(0)+'%' : v.toLocaleString());
 
   const positiveColor = 'rgba(245,168,0,.8)';
@@ -4885,34 +4936,34 @@ function renderMainChart(keys, values, metric, palette, isNegativeOk) {
     bar: {
       type: 'bar',
       data: { labels: keys, datasets: [{ data:values, backgroundColor:barColors, borderRadius:5, borderSkipped:false }] },
-      options: { responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+      options: {  plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
     },
     hbar: {
       type: 'bar',
       data: { labels: keys.slice().reverse(), datasets:[{ data:values.slice().reverse(), backgroundColor:barColors.slice().reverse(), borderRadius:5, borderSkipped:false }] },
-      options: { indexAxis:'y', responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{callback:yFmt}}} }
+      options: { indexAxis:'y',  plugins:{legend:{display:false}}, scales:{x:{ticks:{callback:yFmt}}} }
     },
     line: {
       type: 'line',
       data: { labels:keys, datasets:[{ data:values, borderColor:'var(--gold)', backgroundColor:'rgba(245,168,0,.08)', tension:.35, pointRadius:3, pointBackgroundColor:'var(--gold)', fill:false }] },
-      options: { responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+      options: {  plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
     },
     area: {
       type: 'line',
       data: { labels:keys, datasets:[{ data:values, borderColor:'#60A5FA', backgroundColor:'rgba(96,165,250,.15)', tension:.35, pointRadius:2, fill:true }] },
-      options: { responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+      options: {  plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
     },
     donut: {
       type: 'doughnut',
       data: { labels:keys, datasets:[{ data:values.map(Math.abs), backgroundColor:palette.slice(0,keys.length).map(c=>c+'CC'), borderWidth:2, borderColor:'rgba(255,255,255,.05)', hoverOffset:8 }] },
-      options: { responsive:true,maintainAspectRatio:false, cutout:'58%', plugins:{ legend:{ position:'right', labels:{ font:{size:10}, boxWidth:10, color:'#9E9890' }}} }
+      options: {  cutout:'58%', plugins:{ legend:{ position:'right', labels:{ font:{size:10}, boxWidth:10, color:'#9E9890' }}} }
     },
     scatter: {
       type: 'scatter',
       data: { datasets:[{ data: keys.map((k,i)=>({x:i, y:values[i], label:k})), backgroundColor:palette.slice(0,keys.length).map(c=>c+'CC'), pointRadius:7, pointHoverRadius:10 }] },
-      options: { responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${keys[ctx.parsed.x]}: ${yFmt(ctx.parsed.y)}`}}}, scales:{x:{display:false}, y:{ticks:{callback:yFmt}}} }
+      options: {  plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${keys[ctx.parsed.x]}: ${yFmt(ctx.parsed.y)}`}}}, scales:{x:{display:false}, y:{ticks:{callback:yFmt}}} }
     },
-    waterfall: { type:'bar', data:{labels:keys, datasets:[{data:values, backgroundColor:'rgba(45,212,191,.8)', borderRadius:3}]}, options:{responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}}} },
+    waterfall: { type:'bar', data:{labels:keys, datasets:[{data:values, backgroundColor:'rgba(45,212,191,.8)', borderRadius:3}]}, options:{ plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}}} },
   };
 
   // Build waterfall config properly (lazy — only when needed)
@@ -4923,7 +4974,7 @@ function renderMainChart(keys, values, metric, palette, isNegativeOk) {
     chartConfigs.waterfall = {
       type:'bar',
       data:{ labels:keys, datasets:[{ data:wfData.map(d=>[Math.min(d.start,d.end),Math.max(d.start,d.end)]), backgroundColor:wfColors, borderRadius:3, borderSkipped:false }] },
-      options:{ responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+      options:{  plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
     };
   }
   const config = chartConfigs[anaChartType] || chartConfigs.bar;
@@ -4937,7 +4988,7 @@ function renderMainChart(keys, values, metric, palette, isNegativeOk) {
     });
   }
 
-  try { anaChart = new Chart(ctx, config); } catch(e) { console.warn('ana chart:', e); }
+  anaChart = safeChart('anaMainChart', config, 320);
 }
 
 // ── Heatmap renderer (month × day-of-week) ───────────────────
@@ -4988,12 +5039,7 @@ function renderHeatmap(groups, wrap, metric) {
 function renderMiniStack(filtered) {
   const canvasEl = document.getElementById('anaMiniStack');
   if (!canvasEl) return;
-  // Destroy any existing Chart.js instance on this canvas
-  const existingChart = Chart.getChart ? Chart.getChart(canvasEl) : null;
-  if (existingChart) existingChart.destroy();
-  const ctx = canvasEl.getContext('2d');
-  if (!ctx) return;
-  // Last 12 months income vs spending stacked
+    // Last 12 months income vs spending stacked
   const since = new Date(); since.setFullYear(since.getFullYear()-1);
   const mos = [];
   for (let i=11; i>=0; i--) {
@@ -5005,52 +5051,42 @@ function renderMiniStack(filtered) {
   // Validate we have data
   if (!inc.some(v=>v>0) && !exp.some(v=>v>0)) { return; }
   try {
-    anaMiniStackChart = new Chart(ctx, {
+    anaMiniStackChart = safeChart('anaMiniStack', {
       type:'bar',
       data:{ labels:mos.map(m=>m.slice(5)), datasets:[
         { label:'Income', data:inc, backgroundColor:'rgba(45,212,191,.7)', borderRadius:3, stack:'a' },
         { label:'Spending', data:exp, backgroundColor:'rgba(248,113,113,.6)', borderRadius:3, stack:'b' }
       ]},
-      options:{ responsive:true,maintainAspectRatio:false, animation:{duration:300},
+      options:{  animation:{duration:300},
         plugins:{legend:{labels:{font:{size:9},boxWidth:10,color:'#9E9890'}}},
         scales:{y:{ticks:{callback:v=>fmtK(v),color:'#6E6A65'},grid:{color:'rgba(255,255,255,.04)'}},
                 x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
       }
-    });
+    }, 180)
   } catch(e) { console.error("renderMiniStack:", e.message); }
 }
 
 function renderMiniDonut(filtered) {
   const canvasEl = document.getElementById('anaMiniDonut');
   if (!canvasEl) return;
-  // Destroy any existing Chart.js instance on this canvas
-  const existingChart = Chart.getChart ? Chart.getChart(canvasEl) : null;
-  if (existingChart) existingChart.destroy();
-  const ctx = canvasEl.getContext('2d');
-  if (!ctx) return;
-  const cats = {};
+    const cats = {};
   filtered.filter(t=>t.amount<0).forEach(t=>cats[t.category]=(cats[t.category]||0)+Math.abs(t.amount));
   const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,8);
   try {
-    anaMiniDonutChart = new Chart(ctx, {
+    anaMiniDonutChart = safeChart('anaMiniDonut', {
       type:'doughnut',
       data:{ labels:sorted.map(([c])=>c), datasets:[{ data:sorted.map(([,v])=>v), backgroundColor:CAT_COLORS.slice(0,8).map(c=>c+'CC'), borderWidth:1, borderColor:'rgba(255,255,255,.05)' }] },
-      options:{ responsive:true, maintainAspectRatio:false, animation:{duration:300}, cutout:'50%',
+      options:{  animation:{duration:300}, cutout:'50%',
         plugins:{legend:{position:'right', labels:{font:{size:9},boxWidth:8,color:'#9E9890',padding:4}}}
       }
-    });
+    }, 180)
   } catch(e) { console.error("renderMiniDonut:", e.message); }
 }
 
 function renderMiniDow(filtered) {
   const canvasEl = document.getElementById('anaMiniDow');
   if (!canvasEl) return;
-  // Destroy any existing Chart.js instance on this canvas
-  const existingChart = Chart.getChart ? Chart.getChart(canvasEl) : null;
-  if (existingChart) existingChart.destroy();
-  const ctx = canvasEl.getContext('2d');
-  if (!ctx) return;
-  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const totals = Object.fromEntries(days.map(d=>[d,0]));
   const counts = Object.fromEntries(days.map(d=>[d,0]));
   filtered.filter(t=>t.amount<0).forEach(t=>{
@@ -5059,27 +5095,22 @@ function renderMiniDow(filtered) {
   });
   const avgs = days.map(d=>counts[d]>0?parseFloat((totals[d]/counts[d]).toFixed(2)):0);
   try {
-    anaMiniDowChart = new Chart(ctx, {
+    anaMiniDowChart = safeChart('anaMiniDow', {
       type:'bar',
       data:{ labels:days, datasets:[{ data:avgs, backgroundColor:days.map((_,i)=>CAT_COLORS[i]+'CC'), borderRadius:4, borderSkipped:false }] },
-      options:{ responsive:true,maintainAspectRatio:false, animation:{duration:300},
+      options:{  animation:{duration:300},
         plugins:{legend:{display:false}},
         scales:{y:{ticks:{callback:v=>fmtK(v),color:'#6E6A65'},grid:{color:'rgba(255,255,255,.04)'}},
                 x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
       }
-    });
+    }, 180)
   } catch(e) { console.error("renderMiniDow:", e.message); }
 }
 
 function renderMiniPurchaser() {
   const canvasEl = document.getElementById('anaMiniPurchaser');
   if (!canvasEl) return;
-  // Destroy any existing Chart.js instance on this canvas
-  const existingChart = Chart.getChart ? Chart.getChart(canvasEl) : null;
-  if (existingChart) existingChart.destroy();
-  const ctx = canvasEl.getContext('2d');
-  if (!ctx) return;
-  // Combine Quicken account owners + detail file purchasers
+    // Combine Quicken account owners + detail file purchasers
   const people = [...new Set([...Object.values(settings.accountOwners||{}), ...amzItems.map(i=>i.purchaser).filter(Boolean)])];
   if (!people.length) {
     // Show source breakdown instead
@@ -5088,13 +5119,13 @@ function renderMiniPurchaser() {
     amzItems.forEach(i=>srcs[i.source||'Amazon']=(srcs[i.source||'Amazon']||0)+i.total);
     const sorted = Object.entries(srcs).sort((a,b)=>b[1]-a[1]);
     try {
-      anaMiniPurchaserChart = new Chart(ctx, {
+      anaMiniPurchaserChart = safeChart('anaMiniPurchaser', {
         type:'doughnut',
         data:{ labels:sorted.map(([s])=>s), datasets:[{ data:sorted.map(([,v])=>v), backgroundColor:['rgba(245,168,0,.8)','rgba(167,139,250,.8)','rgba(96,165,250,.8)','rgba(45,212,191,.8)'], borderWidth:1 }] },
-        options:{ responsive:true,maintainAspectRatio:false, animation:{duration:300}, cutout:'50%',
+        options:{  animation:{duration:300}, cutout:'50%',
           plugins:{legend:{position:'right', labels:{font:{size:9},boxWidth:8,color:'#9E9890'}}}
         }
-      });
+      }, 180)
     } catch(e) { console.error("renderMiniPurchaser:", e.message); }
     return;
   }
@@ -5109,20 +5140,18 @@ function renderMiniPurchaser() {
     return { p, total: qkn + det, qkn, det };
   }).sort((a,b)=>b.total-a.total);
 
-  try {
-    anaMiniPurchaserChart = new Chart(ctx, {
-      type:'bar',
-      data:{ labels:pData.map(d=>d.p), datasets:[
-        { label:'Quicken', data:pData.map(d=>d.qkn), backgroundColor:'rgba(245,168,0,.75)', borderRadius:4, stack:'a' },
-        { label:'Detail', data:pData.map(d=>d.det), backgroundColor:'rgba(167,139,250,.75)', borderRadius:4, stack:'a' },
-      ]},
-      options:{ responsive:true,maintainAspectRatio:false, animation:{duration:300},
-        plugins:{legend:{labels:{font:{size:9},boxWidth:10,color:'#9E9890'}}},
-        scales:{y:{ticks:{callback:v=>fmtK(v),color:'#6E6A65'},grid:{color:'rgba(255,255,255,.04)'}},
-                x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
-      }
-    });
-  } catch(e) { console.error("renderMiniPurchaser:", e.message); }
+  anaMiniPurchaserChart = safeChart('anaMiniPurchaser', {
+    type:'bar',
+    data:{ labels:pData.map(d=>d.p), datasets:[
+      { label:'Quicken', data:pData.map(d=>d.qkn), backgroundColor:'rgba(245,168,0,.75)', borderRadius:4, stack:'a' },
+      { label:'Detail', data:pData.map(d=>d.det), backgroundColor:'rgba(167,139,250,.75)', borderRadius:4, stack:'a' },
+    ]},
+    options:{ animation:{duration:300},
+      plugins:{legend:{labels:{font:{size:9},boxWidth:10,color:'#9E9890'}}},
+      scales:{y:{ticks:{callback:v=>fmtK(v),color:'#6E6A65'},grid:{color:'rgba(255,255,255,.04)'}},
+              x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
+    }
+  }, 180);
 }
 
 // ── Data table ───────────────────────────────────────────────
@@ -5273,18 +5302,14 @@ function showPage(name) {
   if(name==='settings') safe(()=>renderSettingsPage(),'settings');
   if(name==='upload') safe(()=>initSmartScan(),'initSmartScan');
   if(name==='dashboard'&&txns.length) safe(()=>renderDashboard(),'dashboard');
+  if(name==='dashboard'&&isDemoMode){ const db=document.getElementById('demoBanner'); if(db) db.style.display='flex'; }
   if(name==='intelligence'&&txns.length) safe(()=>renderIntelligence(),'intelligence');
   if(name==='cashflow'&&txns.length) safe(()=>renderCF(),'cashflow');
   if(name==='categories'&&txns.length) safe(()=>renderCats(),'categories');
   if(name==='merchants'&&txns.length) safe(()=>renderMch(),'merchants');
   if(name==='amazon') safe(()=>renderAmazon(),'amazon');
   if(name==='transactions'&&txns.length) safe(()=>renderTxns(),'transactions');
-  if(name==='analytics'&&txns.length) {
-    // Analytics charts MUST render after display:block is applied, otherwise Chart.js reads clientHeight=0
-    requestAnimationFrame(function() { requestAnimationFrame(function() {
-      safe(()=>{ loadSettings(); renderAnalytics(); },'analytics');
-    }); });
-  }
+  if(name==='analytics'&&txns.length) { safe(()=>{ loadSettings(); renderAnalytics(); },'analytics'); }
   if(name==='dashboard'&&isDemoMode){
     const db=document.getElementById('demoBanner');
     if(db) db.style.display='flex';
@@ -5309,7 +5334,6 @@ function switchTab(ns, tab) {
   const prefix=ns==='intel'?'itab-':'amztab-';
   document.querySelectorAll(`[id^="${prefix}"]`).forEach(p=>p.classList.remove('active'));
   const el=document.getElementById(prefix+tab); if(el)el.classList.add('active');
-  // Update tab buttons in the right strip
   const strips=document.querySelectorAll('.tab-strip');
   strips.forEach(strip=>{
     strip.querySelectorAll('.tab-btn').forEach(b=>{
@@ -5319,6 +5343,15 @@ function switchTab(ns, tab) {
       else b.classList.remove('active');
     });
   });
+  if (ns==='intel' && txns.length) {
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      try {
+        if (tab==='trends')    { destroyChart('trendBarChart'); destroyChart('velocityChart'); renderTrends(); }
+        if (tab==='anomalies') { destroyChart('anomHist'); renderAnomalies(); }
+        if (tab==='seasonal')  { destroyChart('seasonalBar'); renderSeasonal(); }
+      } catch(e) {}
+    }); });
+  }
 }
 
 // ════════════════════════════════════════════════════
@@ -5352,14 +5385,14 @@ function renderDashboard() {
 
   const md=getMonthlyData(filtered);
   destroyChart('cfChart');
-  try { charts['cfChart']=new Chart(document.getElementById('cfChart'),{type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.7)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.7)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{boxWidth:12,font:{size:11}}}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  try { charts['cfChart']=safeChart('cfChart', {type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.7)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.7)',borderRadius:4}]},options:{plugins:{legend:{display:true,labels:{boxWidth:12,font:{size:11}}}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}}, 210)
 
 } catch(e){ console.warn("cfChart:",e); }
   const cats={};
   exp.forEach(t=>{const c=t.category||'Uncategorized';cats[c]=(cats[c]||0)+Math.abs(t.amount);});
   const topCats=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,9);
   destroyChart('catDonut');
-  try{charts['catDonut']=new Chart(document.getElementById('catDonut'),{type:'doughnut',data:{labels:topCats.map(([l])=>l),datasets:[{data:topCats.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topCats.length),borderWidth:1,borderColor:'rgba(255,255,255,.06)'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:8,color:'#9E9890',padding:5}}},cutout:'58%'}});}catch(e){console.warn('catDonut',e);}
+  try{charts['catDonut']=safeChart('catDonut', {type:'doughnut',data:{labels:topCats.map(([l])=>l),datasets:[{data:topCats.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topCats.length),borderWidth:1,borderColor:'rgba(255,255,255,.06)'}]},options:{plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:8,color:'#9E9890',padding:5}}},cutout:'58%'}}, 210)}catch(e){console.warn('catDonut',e);}
 
   // Merchants
   const merch={};
@@ -5411,11 +5444,9 @@ function renderIntelligence() {
 
   runIntelligence();
   renderAlerts();
-  renderTrends();
   renderBudgetDrift();
-  renderAnomalies();
-  renderSeasonal();
   renderActions();
+  // renderTrends/Anomalies/Seasonal deferred to switchTab (hidden tab-pane canvases)
 
   } catch(e) { console.error("Forge renderIntelligence error:", e); }
 }
@@ -5599,22 +5630,22 @@ function renderTrends() {
   const sorted=cats.map((c,i)=>({c,pct:pcts[i]})).sort((a,b)=>b.pct-a.pct);
 
   destroyChart('trendBarChart');
-  charts['trendBarChart']=new Chart(document.getElementById('trendBarChart'),{
+  charts['trendBarChart']=safeChart('trendBarChart', {
     type:'bar',
     data:{labels:sorted.map(s=>s.c),datasets:[{data:sorted.map(s=>s.pct),backgroundColor:sorted.map(s=>s.pct>0?'rgba(200,75,47,.75)':'rgba(47,168,122,.75)'),borderRadius:4}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>v+'%'},title:{display:true,text:'3M vs Prior 3M'}}}}
-  });
+    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>v+'%'},title:{display:true,text:'3M vs Prior 3M'}}}}
+  }, 260)
 
   // Velocity chart — month-over-month total expense change
   const filtV=txns.filter(t=>inRange(t,intelR)&&t.amount<0);
   const mdV=getMonthlyData(filtV);
   const velocity=mdV.expenses.map((v,i)=>i===0?0:parseFloat(((v-mdV.expenses[i-1])/(mdV.expenses[i-1]||1)*100).toFixed(1)));
   destroyChart('velocityChart');
-  charts['velocityChart']=new Chart(document.getElementById('velocityChart'),{
+  charts['velocityChart']=safeChart('velocityChart', {
     type:'bar',
     data:{labels:mdV.labels,datasets:[{data:velocity,backgroundColor:velocity.map(v=>v>0?'rgba(200,75,47,.7)':'rgba(47,168,122,.7)'),borderRadius:4}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v+'%'}}}}
-  });
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v+'%'}}}}
+  }, 260)
 
   // Trend detail cards
   document.getElementById('trendDetails').innerHTML=`<div class="intel-grid">
@@ -5684,7 +5715,7 @@ function renderAnomalies() {
   for(let i=0;i<buckets;i++){const mid=(i+.5)*bktSize;histColors.push((mid-mean)/std>=2?'rgba(200,75,47,.85)':'rgba(47,107,200,.65)');}
   const histLabels=Array.from({length:buckets},(_,i)=>fmtK((i+.5)*bktSize));
   destroyChart('anomHist');
-  charts['anomHist']=new Chart(document.getElementById('anomHist'),{type:'bar',data:{labels:histLabels,datasets:[{data:hist,backgroundColor:histColors,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:([i])=>`~${i.label}`,label:i=>`${i.raw} transactions`}}},scales:{x:{ticks:{maxTicksLimit:6}},y:{ticks:{stepSize:1}}}}});
+  charts['anomHist']=safeChart('anomHist', {type:'bar',data:{labels:histLabels,datasets:[{data:hist,backgroundColor:histColors,borderRadius:2}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{title:([i])=>`~${i.label}`,label:i=>`${i.raw} transactions`}}},scales:{x:{ticks:{maxTicksLimit:6}},y:{ticks:{stepSize:1}}}}}, 240)
 
   document.getElementById('anomList').innerHTML=anomalyData.slice(0,10).map(a=>`
     <div class="anomaly-row">
@@ -5713,11 +5744,11 @@ function renderSeasonal() {
 
   // Seasonal bar
   destroyChart('seasonalBar');
-  charts['seasonalBar']=new Chart(document.getElementById('seasonalBar'),{
+  charts['seasonalBar']=safeChart('seasonalBar', {
     type:'bar',
     data:{labels:MONTHS,datasets:[{data:avgByMonth,backgroundColor:avgByMonth.map(v=>v>overallAvg*1.1?'rgba(200,75,47,.75)':v<overallAvg*0.9?'rgba(47,168,122,.7)':'rgba(47,107,200,.65)'),borderRadius:4},{type:'line',data:Array(12).fill(overallAvg),borderColor:'rgba(200,147,47,.8)',borderDash:[4,2],pointRadius:0,label:'Average'}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}
-  });
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}
+  }, 240)
 
   // Seasonal insights
   const high=avgByMonth.map((v,i)=>({m:i,v,r:v/overallAvg})).sort((a,b)=>b.r-a.r);
@@ -5792,7 +5823,7 @@ function renderCF() {
   t=byAcct(t,ac); if(yr!=='all')t=t.filter(x=>x.date.startsWith(yr));
   const md=getMonthlyData(t);
   destroyChart('cfBarChart');
-  charts['cfBarChart']=new Chart(document.getElementById('cfBarChart'),{type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.75)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.75)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  charts['cfBarChart']=safeChart('cfBarChart', {type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.75)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.75)',borderRadius:4}]},options:{scales:{y:{ticks:{callback:v=>fmtK(v)}}}}}, 180)
   const ti=md.income.reduce((a,b)=>a+b,0),te=md.expenses.reduce((a,b)=>a+b,0),tn=ti-te,mo=md.labels.length||1;
   document.getElementById('cfCards').innerHTML=`
     <div class="card card-al g"><div class="card-lbl">Total Income</div><div class="card-val">${fmtK(ti)}</div><div class="card-sub">${fmt(ti/mo)}/mo</div></div>
@@ -5801,7 +5832,7 @@ function renderCF() {
   `;
   const netArr=md.income.map((v,i)=>v-md.expenses[i]);
   destroyChart('cfNetChart');
-  charts['cfNetChart']=new Chart(document.getElementById('cfNetChart'),{type:'line',data:{labels:md.labels,datasets:[{data:netArr,borderColor:'#2f6bc8',backgroundColor:'rgba(47,107,200,.1)',fill:true,tension:.3,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  charts['cfNetChart']=safeChart('cfNetChart', {type:'line',data:{labels:md.labels,datasets:[{data:netArr,borderColor:'#2f6bc8',backgroundColor:'rgba(47,107,200,.1)',fill:true,tension:.3,pointRadius:2}]},options:{scales:{y:{ticks:{callback:v=>fmtK(v)}}}}}, 130)
 
   } catch(e) { console.error("Forge renderCF error:", e); }
 }
@@ -5830,10 +5861,10 @@ function renderCats() {
 
   const top10=sorted.slice(0,10);
   destroyChart('catBigDonut');
-  charts['catBigDonut']=new Chart(document.getElementById('catBigDonut'),{type:'doughnut',data:{labels:top10.map(([l])=>l),datasets:[{data:top10.map(([,v])=>v.total),backgroundColor:CAT_COLORS.slice(0,top10.length),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}});
+  charts['catBigDonut']=safeChart('catBigDonut', {type:'doughnut',data:{labels:top10.map(([l])=>l),datasets:[{data:top10.map(([,v])=>v.total),backgroundColor:CAT_COLORS.slice(0,top10.length),borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}}, 260)
   const top8=sorted.slice(0,8).reverse();
   destroyChart('catBarH');
-  charts['catBarH']=new Chart(document.getElementById('catBarH'),{type:'bar',data:{labels:top8.map(([l])=>l),datasets:[{data:top8.map(([,v])=>v.total),backgroundColor:CAT_COLORS.slice(0,top8.length).reverse(),borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtK(v)}}}}});
+  charts['catBarH']=safeChart('catBarH', {type:'bar',data:{labels:top8.map(([l])=>l),datasets:[{data:top8.map(([,v])=>v.total),backgroundColor:CAT_COLORS.slice(0,top8.length).reverse(),borderRadius:4}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtK(v)}}}}}, 260)
 
   document.getElementById('catTbl').innerHTML=sorted.map(([l,d],i)=>{
     const yoy=lyC[l]&&cyC[l]?((cyC[l]-lyC[l])/lyC[l])*100:null;
@@ -5913,20 +5944,20 @@ function renderAmazon() {
   const byMo={};amzItems.forEach(i=>{const k=monthKey(i.date);byMo[k]=(byMo[k]||0)+i.total;});
   const moKeys=Object.keys(byMo).sort();
   destroyChart('amzMonthly');
-  charts['amzMonthly']=new Chart(document.getElementById('amzMonthly'),{type:'bar',data:{labels:moKeys.map(monthLabel),datasets:[{data:moKeys.map(k=>byMo[k]),backgroundColor:'rgba(255,153,0,.75)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  charts['amzMonthly']=safeChart('amzMonthly', {type:'bar',data:{labels:moKeys.map(monthLabel),datasets:[{data:moKeys.map(k=>byMo[k]),backgroundColor:'rgba(255,153,0,.75)',borderRadius:4}]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}}, 210)
   const catS={};amzItems.forEach(i=>catS[i.category]=(catS[i.category]||0)+i.total);
   const topC=Object.entries(catS).sort((a,b)=>b[1]-a[1]).slice(0,10);
   destroyChart('amzCatDonut');
-  charts['amzCatDonut']=new Chart(document.getElementById('amzCatDonut'),{type:'doughnut',data:{labels:topC.map(([l])=>l),datasets:[{data:topC.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topC.length),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}});
+  charts['amzCatDonut']=safeChart('amzCatDonut', {type:'doughnut',data:{labels:topC.map(([l])=>l),datasets:[{data:topC.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topC.length),borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}}, 210)
 
   // Categories tab
   const top8=Object.entries(catS).sort((a,b)=>b[1]-a[1]).slice(0,8).reverse();
   destroyChart('amzCatBar');
-  charts['amzCatBar']=new Chart(document.getElementById('amzCatBar'),{type:'bar',data:{labels:top8.map(([l])=>l),datasets:[{data:top8.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,top8.length).reverse(),borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtK(v)}}}}});
+  charts['amzCatBar']=safeChart('amzCatBar', {type:'bar',data:{labels:top8.map(([l])=>l),datasets:[{data:top8.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,top8.length).reverse(),borderRadius:4}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtK(v)}}}}}, 260)
   const catImp={};amzItems.forEach(i=>{const c=i.category;if(!catImp[c])catImp[c]=[];catImp[c].push(scoreImpulse(i));});
   const top8imp=top8.map(([l])=>({label:l,score:Math.round(catImp[l]?catImp[l].reduce((a,b)=>a+b,0)/catImp[l].length:0)}));
   destroyChart('amzImpBar');
-  charts['amzImpBar']=new Chart(document.getElementById('amzImpBar'),{type:'bar',data:{labels:top8imp.map(c=>c.label),datasets:[{data:top8imp.map(c=>c.score),backgroundColor:top8imp.map(c=>c.score>=60?'rgba(198,40,40,.7)':c.score>=30?'rgba(230,81,0,.7)':'rgba(46,125,50,.7)'),borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{max:100}}}});
+  charts['amzImpBar']=safeChart('amzImpBar', {type:'bar',data:{labels:top8imp.map(c=>c.label),datasets:[{data:top8imp.map(c=>c.score),backgroundColor:top8imp.map(c=>c.score>=60?'rgba(198,40,40,.7)':c.score>=30?'rgba(230,81,0,.7)':'rgba(46,125,50,.7)'),borderRadius:4}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{max:100}}}}, 260)
 
   const sortedCats=Object.entries(catS).sort((a,b)=>b[1]-a[1]);
   document.getElementById('amzCatTbl').innerHTML=sortedCats.map(([c,v],i)=>{
@@ -5954,9 +5985,9 @@ function renderAmazon() {
       <div class="card card-al"><div class="card-lbl">Detail Share</div><div class="card-val">${pct}%</div><div class="card-sub" style="margin-top:8px;"><div style="height:8px;border-radius:4px;background:var(--lift);overflow:hidden;display:flex;"><div style="width:${pct}%;background:#ff9900;"></div><div style="flex:1;background:var(--river);"></div></div></div></div>
     `;
     destroyChart('amzCmpChart');
-    charts['amzCmpChart']=new Chart(document.getElementById('amzCmpChart'),{type:'bar',data:{labels:allMos.map(monthLabel),datasets:[{label:'Detail',data:amzVals,backgroundColor:'rgba(255,153,0,.8)',borderRadius:4,stack:'a'},{label:'Other Spending',data:otherVals,backgroundColor:'rgba(47,107,200,.6)',borderRadius:4,stack:'a'}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)}},x:{stacked:true}}}});
+    charts['amzCmpChart']=safeChart('amzCmpChart', {type:'bar',data:{labels:allMos.map(monthLabel),datasets:[{label:'Detail',data:amzVals,backgroundColor:'rgba(255,153,0,.8)',borderRadius:4,stack:'a'},{label:'Other Spending',data:otherVals,backgroundColor:'rgba(47,107,200,.6)',borderRadius:4,stack:'a'}]},options:{scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)}},x:{stacked:true}}}}, 170)
     destroyChart('amzPctChart');
-    charts['amzPctChart']=new Chart(document.getElementById('amzPctChart'),{type:'line',data:{labels:allMos.map(monthLabel),datasets:[{data:pctVals,borderColor:'#ff9900',backgroundColor:'rgba(255,153,0,.1)',fill:true,tension:.3,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>v+'%'},max:100}}}});
+    charts['amzPctChart']=safeChart('amzPctChart', {type:'line',data:{labels:allMos.map(monthLabel),datasets:[{data:pctVals,borderColor:'#ff9900',backgroundColor:'rgba(255,153,0,.1)',fill:true,tension:.3,pointRadius:2}]},options:{scales:{y:{ticks:{callback:v=>v+'%'},max:100}}}}, 120)
   }
 
   populateAmzFilters();
@@ -7395,81 +7426,9 @@ function updateAgeBadge(dobId, badgeId, isParent = false) {
 }
 
 // Override savings rate target for badge display
-
 // Override Amazon sensitivity
-
-// ════════════════════════════════════════════════════
-// MOBILE NAV — hamburger menu for ≤900px viewports
-// ════════════════════════════════════════════════════
-function toggleMobileNav() {
-  const overlay = document.getElementById('mobileNavOverlay');
-  const mobileNav = document.getElementById('mobileNav');
-  const desktopNav = document.querySelector('nav:not(#mobileNav)');
-  if (!mobileNav || !overlay) return;
-
-  // Populate mobileNav with clone of desktop nav content on first open
-  if (!mobileNav._populated && desktopNav) {
-    mobileNav.innerHTML = desktopNav.innerHTML;
-    mobileNav._populated = true;
-    // Re-wire nav-item clicks to also close the panel
-    mobileNav.querySelectorAll('.nav-item').forEach(function(item) {
-      item.addEventListener('click', function() { closeMobileNav(); });
-    });
-  }
-
-  const isOpen = mobileNav.style.transform === 'translateX(0px)' || mobileNav.style.transform === 'translateX(0)';
-  if (isOpen) {
-    closeMobileNav();
-  } else {
-    mobileNav.style.display = 'flex';
-    mobileNav.style.flexDirection = 'column';
-    overlay.style.display = 'block';
-    // Force reflow then animate in
-    mobileNav.offsetHeight;
-    mobileNav.style.transform = 'translateX(0)';
-  }
-}
-
-function closeMobileNav() {
-  const overlay = document.getElementById('mobileNavOverlay');
-  const mobileNav = document.getElementById('mobileNav');
-  if (!mobileNav || !overlay) return;
-  mobileNav.style.transform = 'translateX(-100%)';
-  overlay.style.display = 'none';
-  setTimeout(function() {
-    if (mobileNav.style.transform === 'translateX(-100%)') mobileNav.style.display = 'none';
-  }, 260);
-}
-
-// Sync active state to mobile nav on page change
-(function() {
-  const _orig = window.showPage;
-  if (typeof _orig === 'function') {
-    // Patch is applied after showPage is defined — update mobile nav active state
-    const _patchMobileNav = function(name) {
-      const mobileNav = document.getElementById('mobileNav');
-      if (!mobileNav || mobileNav.style.display === 'none') return;
-      mobileNav.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
-      const mn = mobileNav.querySelector('#nav-' + name);
-      if (mn) mn.classList.add('active');
-    };
-    // We hook via a MutationObserver on the desktop nav instead of wrapping showPage
-    // (showPage is called before this IIFE in some paths)
-    const desktopNav = document.querySelector('nav:not(#mobileNav)');
-    if (desktopNav) {
-      new MutationObserver(function() {
-        const mobileNav = document.getElementById('mobileNav');
-        if (!mobileNav || !mobileNav._populated) return;
-        const active = desktopNav.querySelector('.nav-item.active');
-        if (active) {
-          mobileNav.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
-          const id = active.id;
-          if (id) { const m = mobileNav.querySelector('#' + id); if (m) m.classList.add('active'); }
-        }
-      }).observe(desktopNav, { attributes: true, subtree: true, attributeFilter: ['class'] });
-    }
-  }
-})();
+function toggleMobileNav(){const o=document.getElementById('mobileNavOverlay'),n=document.getElementById('mobileNav'),d=document.querySelector('nav:not(#mobileNav)');if(!n||!o)return;if(!n._p&&d){n.innerHTML=d.innerHTML;n._p=true;n.querySelectorAll('.nav-item').forEach(i=>i.addEventListener('click',closeMobileNav));}const open=n.style.transform==='translateX(0px)'||n.style.transform==='translateX(0)';if(open){closeMobileNav();return;}n.style.display='flex';n.style.flexDirection='column';o.style.display='block';n.offsetHeight;n.style.transform='translateX(0)';}
+function closeMobileNav(){const o=document.getElementById('mobileNavOverlay'),n=document.getElementById('mobileNav');if(!n||!o)return;n.style.transform='translateX(-100%)';o.style.display='none';setTimeout(()=>{if(n.style.transform==='translateX(-100%)')n.style.display='none';},260);}
 
 </script>
 </body>
