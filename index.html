@@ -2133,7 +2133,7 @@ select option { background: var(--float); color: var(--ink2); }
   </div>
   <div class="tab-pane" id="itab-seasonal">
     <div class="grid-2" style="margin-bottom:20px;">
-      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Monthly Spending Heatmap (by Year)</div><div class="chart-sub">Darker = higher spend relative to your annual average</div></div><div id="heatmap"></div></div>
+      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Monthly Spending Heatmap (by Year)</div><div class="chart-sub">Darker = higher spend relative to your annual average</div></div><div id="heatmap" style="max-height:260px;overflow:auto;"></div></div>
       <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Average Spend by Month</div><div class="chart-sub">Across all years in your data</div></div><div style="position:relative;height:240px;"><canvas id="seasonalBar"></canvas></div></div>
     </div>
     <div id="seasonalInsights"></div>
@@ -2348,7 +2348,7 @@ select option { background: var(--float); color: var(--ink2); }
     </div>
     <div id="ana-chart-wrap" style="position:relative;height:320px;">
       <canvas id="anaMainChart"></canvas>
-      <div id="ana-heatmap-wrap" style="display:none;width:100%;"></div>
+      <div id="ana-heatmap-wrap" style="display:none;width:100%;max-height:320px;overflow:auto;"></div>
     </div>
   </div>
 
@@ -3076,24 +3076,54 @@ const CAT_COLORS = ['#FFB612','#4a9eff','#3ecf8e','#f97316','#a78bfa','#f43f5e',
 const ACCT_COLORS = ['#FFB612','#4a9eff','#3ecf8e','#f97316','#a78bfa','#f43f5e','#06b6d4','#eab308','#8b5cf6','#10b981','#fb923c','#60a5fa'];
 
 
-// setH: stamp inline canvas height so Chart.js reads the correct dimension.
-// Chart.js reads element.style.height (inline style), NOT getComputedStyle.
-// Without this, it reads 0 from container.clientHeight and renders legend-only.
+// setH: force canvas dimensions before Chart.js construction.
+// Uses responsive:false approach — sets IDL attributes (canvas.width/height)
+// which Chart.js reads BEFORE any layout-dependent path.
+// Also sets inline style.height so the CSS chain is consistent.
 function setH(el) {
   if (!el) return;
-  // Try parent inline height first (position:relative;height:Xpx containers)
   const par = el.parentElement;
-  const fromParent = par && (par.style.height||'').match(/^(\d+)px$/);
-  if (fromParent) { el.style.height = fromParent[0]; el.style.width = '100%'; return; }
-  // Try grandparent (some charts nested one level deeper)
-  const gpar = par && par.parentElement;
-  const fromGpar = gpar && (gpar.style.height||'').match(/^(\d+)px$/);
-  if (fromGpar) { el.style.height = fromGpar[0]; el.style.width = '100%'; }
+  // Get explicit px height from parent inline style
+  const mPar = par && (par.style.height||'').match(/^(\d+)px$/);
+  const h = mPar ? parseInt(mPar[1]) : (par && par.offsetHeight > 0 ? par.offsetHeight : 220);
+  const w = (par && par.offsetWidth > 0) ? par.offsetWidth : 600;
+  // Set IDL attributes — these are what Chart.js uses as final fallback
+  el.width  = w;
+  el.height = h;
+  // Also set inline style (Chart.js reads this first)
+  el.style.height = h + 'px';
+  el.style.width  = '100%';
+  el.style.display = 'block';
 }
+
+
+// Manual resize handler for responsive:false charts
+window.addEventListener('resize', function() {
+  clearTimeout(window._forgeResizeTimer);
+  window._forgeResizeTimer = setTimeout(function() {
+    document.querySelectorAll('canvas').forEach(function(canvas) {
+      const ch = Chart.getChart ? Chart.getChart(canvas) : null;
+      if (!ch) return;
+      const par = canvas.parentElement;
+      if (!par) return;
+      const m = (par.style.height||'').match(/^(\d+)px$/);
+      const h = m ? parseInt(m[1]) : (par.offsetHeight || 220);
+      const w = par.offsetWidth || 600;
+      canvas.width = w;
+      canvas.height = h;
+      try { ch.resize(w, h); } catch(e) {}
+    });
+  }, 150);
+});
 // ── Pittsburgh dark theme for all Chart.js charts ──
 // Chart.js defaults — guarded: only set if Chart is loaded
 function applyChartDefaults() {
   if (typeof Chart === 'undefined') return;
+  // Force responsive:false globally — prevents ResizeObserver from zeroing canvas height
+  // when charts are constructed on pages that haven't fully laid out yet.
+  // Each chart's explicit size comes from setH() stamping canvas.width/height before construction.
+  Chart.defaults.responsive = false;
+  Chart.defaults.maintainAspectRatio = false;
   Chart.defaults.color = '#666';
   Chart.defaults.borderColor = '#2a2a2a';
   Chart.defaults.backgroundColor = '#161616';
@@ -4941,34 +4971,34 @@ function renderMainChart(keys, values, metric, palette, isNegativeOk) {
     bar: {
       type: 'bar',
       data: { labels: keys, datasets: [{ data:values, backgroundColor:barColors, borderRadius:5, borderSkipped:false }] },
-      options: { responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+      options: {  plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
     },
     hbar: {
       type: 'bar',
       data: { labels: keys.slice().reverse(), datasets:[{ data:values.slice().reverse(), backgroundColor:barColors.slice().reverse(), borderRadius:5, borderSkipped:false }] },
-      options: { indexAxis:'y', responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{callback:yFmt}}} }
+      options: { indexAxis:'y',  plugins:{legend:{display:false}}, scales:{x:{ticks:{callback:yFmt}}} }
     },
     line: {
       type: 'line',
       data: { labels:keys, datasets:[{ data:values, borderColor:'var(--gold)', backgroundColor:'rgba(245,168,0,.08)', tension:.35, pointRadius:3, pointBackgroundColor:'var(--gold)', fill:false }] },
-      options: { responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+      options: {  plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
     },
     area: {
       type: 'line',
       data: { labels:keys, datasets:[{ data:values, borderColor:'#60A5FA', backgroundColor:'rgba(96,165,250,.15)', tension:.35, pointRadius:2, fill:true }] },
-      options: { responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+      options: {  plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
     },
     donut: {
       type: 'doughnut',
       data: { labels:keys, datasets:[{ data:values.map(Math.abs), backgroundColor:palette.slice(0,keys.length).map(c=>c+'CC'), borderWidth:2, borderColor:'rgba(255,255,255,.05)', hoverOffset:8 }] },
-      options: { responsive:true,maintainAspectRatio:false, cutout:'58%', plugins:{ legend:{ position:'right', labels:{ font:{size:10}, boxWidth:10, color:'#9E9890' }}} }
+      options: {  cutout:'58%', plugins:{ legend:{ position:'right', labels:{ font:{size:10}, boxWidth:10, color:'#9E9890' }}} }
     },
     scatter: {
       type: 'scatter',
       data: { datasets:[{ data: keys.map((k,i)=>({x:i, y:values[i], label:k})), backgroundColor:palette.slice(0,keys.length).map(c=>c+'CC'), pointRadius:7, pointHoverRadius:10 }] },
-      options: { responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${keys[ctx.parsed.x]}: ${yFmt(ctx.parsed.y)}`}}}, scales:{x:{display:false}, y:{ticks:{callback:yFmt}}} }
+      options: {  plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${keys[ctx.parsed.x]}: ${yFmt(ctx.parsed.y)}`}}}, scales:{x:{display:false}, y:{ticks:{callback:yFmt}}} }
     },
-    waterfall: { type:'bar', data:{labels:keys, datasets:[{data:values, backgroundColor:'rgba(45,212,191,.8)', borderRadius:3}]}, options:{responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}}} },
+    waterfall: { type:'bar', data:{labels:keys, datasets:[{data:values, backgroundColor:'rgba(45,212,191,.8)', borderRadius:3}]}, options:{ plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}}} },
   };
 
   // Build waterfall config properly (lazy — only when needed)
@@ -4979,7 +5009,7 @@ function renderMainChart(keys, values, metric, palette, isNegativeOk) {
     chartConfigs.waterfall = {
       type:'bar',
       data:{ labels:keys, datasets:[{ data:wfData.map(d=>[Math.min(d.start,d.end),Math.max(d.start,d.end)]), backgroundColor:wfColors, borderRadius:3, borderSkipped:false }] },
-      options:{ responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
+      options:{  plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
     };
   }
   const config = chartConfigs[anaChartType] || chartConfigs.bar;
@@ -5057,8 +5087,9 @@ function renderMiniStack(filtered) {
     const d = new Date(); d.setMonth(d.getMonth()-i);
     mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
   }
-  const inc = mos.map(m => txns.filter(t=>t.date.startsWith(m)&&t.amount>0).reduce((s,t)=>s+t.amount,0));
-  const exp = mos.map(m => txns.filter(t=>t.date.startsWith(m)&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0));
+  const spendable = getSpendable(txns);
+  const inc = mos.map(m => spendable.filter(t=>t.date.startsWith(m)&&t.amount>0).reduce((s,t)=>s+t.amount,0));
+  const exp = mos.map(m => spendable.filter(t=>t.date.startsWith(m)&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0));
   // Validate we have data
   if (!inc.some(v=>v>0) && !exp.some(v=>v>0)) { return; }
   try {
@@ -5068,7 +5099,7 @@ function renderMiniStack(filtered) {
         { label:'Income', data:inc, backgroundColor:'rgba(45,212,191,.7)', borderRadius:3, stack:'a' },
         { label:'Spending', data:exp, backgroundColor:'rgba(248,113,113,.6)', borderRadius:3, stack:'b' }
       ]},
-      options:{ responsive:true,maintainAspectRatio:false, animation:{duration:300},
+      options:{  animation:{duration:300},
         plugins:{legend:{labels:{font:{size:9},boxWidth:10,color:'#9E9890'}}},
         scales:{y:{ticks:{callback:v=>fmtK(v),color:'#6E6A65'},grid:{color:'rgba(255,255,255,.04)'}},
                 x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
@@ -5093,7 +5124,7 @@ function renderMiniDonut(filtered) {
     anaMiniDonutChart = new Chart(ctx, {
       type:'doughnut',
       data:{ labels:sorted.map(([c])=>c), datasets:[{ data:sorted.map(([,v])=>v), backgroundColor:CAT_COLORS.slice(0,8).map(c=>c+'CC'), borderWidth:1, borderColor:'rgba(255,255,255,.05)' }] },
-      options:{ responsive:true, maintainAspectRatio:false, animation:{duration:300}, cutout:'50%',
+      options:{  animation:{duration:300}, cutout:'50%',
         plugins:{legend:{position:'right', labels:{font:{size:9},boxWidth:8,color:'#9E9890',padding:4}}}
       }
     });
@@ -5121,7 +5152,7 @@ function renderMiniDow(filtered) {
     anaMiniDowChart = new Chart(ctx, {
       type:'bar',
       data:{ labels:days, datasets:[{ data:avgs, backgroundColor:days.map((_,i)=>CAT_COLORS[i]+'CC'), borderRadius:4, borderSkipped:false }] },
-      options:{ responsive:true,maintainAspectRatio:false, animation:{duration:300},
+      options:{  animation:{duration:300},
         plugins:{legend:{display:false}},
         scales:{y:{ticks:{callback:v=>fmtK(v),color:'#6E6A65'},grid:{color:'rgba(255,255,255,.04)'}},
                 x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
@@ -5151,7 +5182,7 @@ function renderMiniPurchaser() {
       anaMiniPurchaserChart = new Chart(ctx, {
         type:'doughnut',
         data:{ labels:sorted.map(([s])=>s), datasets:[{ data:sorted.map(([,v])=>v), backgroundColor:['rgba(245,168,0,.8)','rgba(167,139,250,.8)','rgba(96,165,250,.8)','rgba(45,212,191,.8)'], borderWidth:1 }] },
-        options:{ responsive:true,maintainAspectRatio:false, animation:{duration:300}, cutout:'50%',
+        options:{  animation:{duration:300}, cutout:'50%',
           plugins:{legend:{position:'right', labels:{font:{size:9},boxWidth:8,color:'#9E9890'}}}
         }
       });
@@ -5163,7 +5194,7 @@ function renderMiniPurchaser() {
   const pData = people.map(p => {
     // Quicken spending via accountOwners
     const ownedAccts = Object.entries(settings.accountOwners||{}).filter(([,v])=>v===p).map(([k])=>k);
-    const qkn = Math.abs(txns.filter(t=>new Date(t.date)>=since&&t.amount<0&&ownedAccts.includes(t.account)).reduce((s,t)=>s+t.amount,0));
+    const qkn = Math.abs(getSpendable(txns).filter(t=>new Date(t.date)>=since&&t.amount<0&&ownedAccts.includes(t.account)).reduce((s,t)=>s+t.amount,0));
     // Detail spending
     const det = amzItems.filter(i=>i.purchaser===p&&new Date(i.date)>=since).reduce((s,i)=>s+i.total,0);
     return { p, total: qkn + det, qkn, det };
@@ -5176,7 +5207,7 @@ function renderMiniPurchaser() {
         { label:'Quicken', data:pData.map(d=>d.qkn), backgroundColor:'rgba(245,168,0,.75)', borderRadius:4, stack:'a' },
         { label:'Detail', data:pData.map(d=>d.det), backgroundColor:'rgba(167,139,250,.75)', borderRadius:4, stack:'a' },
       ]},
-      options:{ responsive:true,maintainAspectRatio:false, animation:{duration:300},
+      options:{  animation:{duration:300},
         plugins:{legend:{labels:{font:{size:9},boxWidth:10,color:'#9E9890'}}},
         scales:{y:{ticks:{callback:v=>fmtK(v),color:'#6E6A65'},grid:{color:'rgba(255,255,255,.04)'}},
                 x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
@@ -5421,7 +5452,7 @@ function renderDashboard() {
   const md=getMonthlyData(filtered);
   destroyChart('cfChart');
   setH(document.getElementById('cfChart'));
-  setH(document.getElementById('cfChart')); try { setH(document.getElementById('cfChart')); charts['cfChart']=new Chart(document.getElementById('cfChart'),{type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.7)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.7)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{boxWidth:12,font:{size:11}}}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  setH(document.getElementById('cfChart')); try { setH(document.getElementById('cfChart')); charts['cfChart']=new Chart(document.getElementById('cfChart'), {type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.7)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.7)',borderRadius:4}]},options:{plugins:{legend:{display:true,labels:{boxWidth:12,font:{size:11}}}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
 
 } catch(e){ console.warn("cfChart:",e); }
   const cats={};
@@ -5429,7 +5460,7 @@ function renderDashboard() {
   const topCats=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,9);
   destroyChart('catDonut');
   setH(document.getElementById('catDonut'));
-  setH(document.getElementById('catDonut')); try{setH(document.getElementById('catDonut')); charts['catDonut']=new Chart(document.getElementById('catDonut'),{type:'doughnut',data:{labels:topCats.map(([l])=>l),datasets:[{data:topCats.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topCats.length),borderWidth:1,borderColor:'rgba(255,255,255,.06)'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:8,color:'#9E9890',padding:5}}},cutout:'58%'}});}catch(e){console.warn('catDonut',e);}
+  setH(document.getElementById('catDonut')); try{setH(document.getElementById('catDonut')); charts['catDonut']=new Chart(document.getElementById('catDonut'), {type:'doughnut',data:{labels:topCats.map(([l])=>l),datasets:[{data:topCats.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topCats.length),borderWidth:1,borderColor:'rgba(255,255,255,.06)'}]},options:{plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:8,color:'#9E9890',padding:5}}},cutout:'58%'}});}catch(e){console.warn('catDonut',e);}
 
   // Merchants
   const merch={};
@@ -5492,7 +5523,8 @@ function renderIntelligence() {
 function detectTrendAlerts() {
   const now=new Date();
   // Last 3 months vs prior 3 months
-  const cur3=txns.filter(t=>{const d=new Date(t.date);return d>=new Date(now.getFullYear(),now.getMonth()-2,1)&&t.amount<0;});
+  const _sp=getSpendable(txns);
+  const cur3=_sp.filter(t=>{const d=new Date(t.date);return d>=new Date(now.getFullYear(),now.getMonth()-2,1)&&t.amount<0;});
   const prv3=txns.filter(t=>{const d=new Date(t.date);return d>=new Date(now.getFullYear(),now.getMonth()-5,1)&&d<new Date(now.getFullYear(),now.getMonth()-2,1)&&t.amount<0;});
   const curCats={},prvCats={};
   cur3.forEach(t=>curCats[t.category]=(curCats[t.category]||0)+Math.abs(t.amount));
@@ -5671,7 +5703,7 @@ function renderTrends() {
   setH(document.getElementById('trendBarChart')); charts['trendBarChart']=new Chart(document.getElementById('trendBarChart'),{
     type:'bar',
     data:{labels:sorted.map(s=>s.c),datasets:[{data:sorted.map(s=>s.pct),backgroundColor:sorted.map(s=>s.pct>0?'rgba(200,75,47,.75)':'rgba(47,168,122,.75)'),borderRadius:4}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>v+'%'},title:{display:true,text:'3M vs Prior 3M'}}}}
+    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>v+'%'},title:{display:true,text:'3M vs Prior 3M'}}}}
   });
 
   // Velocity chart — month-over-month total expense change
@@ -5683,7 +5715,7 @@ function renderTrends() {
   setH(document.getElementById('velocityChart')); charts['velocityChart']=new Chart(document.getElementById('velocityChart'),{
     type:'bar',
     data:{labels:mdV.labels,datasets:[{data:velocity,backgroundColor:velocity.map(v=>v>0?'rgba(200,75,47,.7)':'rgba(47,168,122,.7)'),borderRadius:4}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v+'%'}}}}
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v+'%'}}}}
   });
 
   // Trend detail cards
@@ -5755,7 +5787,7 @@ function renderAnomalies() {
   const histLabels=Array.from({length:buckets},(_,i)=>fmtK((i+.5)*bktSize));
   destroyChart('anomHist');
   setH(document.getElementById('anomHist'));
-  setH(document.getElementById('anomHist')); charts['anomHist']=new Chart(document.getElementById('anomHist'),{type:'bar',data:{labels:histLabels,datasets:[{data:hist,backgroundColor:histColors,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:([i])=>`~${i.label}`,label:i=>`${i.raw} transactions`}}},scales:{x:{ticks:{maxTicksLimit:6}},y:{ticks:{stepSize:1}}}}});
+  setH(document.getElementById('anomHist')); charts['anomHist']=new Chart(document.getElementById('anomHist'), {type:'bar',data:{labels:histLabels,datasets:[{data:hist,backgroundColor:histColors,borderRadius:2}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{title:([i])=>`~${i.label}`,label:i=>`${i.raw} transactions`}}},scales:{x:{ticks:{maxTicksLimit:6}},y:{ticks:{stepSize:1}}}}});
 
   document.getElementById('anomList').innerHTML=anomalyData.slice(0,10).map(a=>`
     <div class="anomaly-row">
@@ -5788,7 +5820,7 @@ function renderSeasonal() {
   setH(document.getElementById('seasonalBar')); charts['seasonalBar']=new Chart(document.getElementById('seasonalBar'),{
     type:'bar',
     data:{labels:MONTHS,datasets:[{data:avgByMonth,backgroundColor:avgByMonth.map(v=>v>overallAvg*1.1?'rgba(200,75,47,.75)':v<overallAvg*0.9?'rgba(47,168,122,.7)':'rgba(47,107,200,.65)'),borderRadius:4},{type:'line',data:Array(12).fill(overallAvg),borderColor:'rgba(200,147,47,.8)',borderDash:[4,2],pointRadius:0,label:'Average'}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}
   });
 
   // Seasonal insights
@@ -5865,7 +5897,7 @@ function renderCF() {
   const md=getMonthlyData(t);
   destroyChart('cfBarChart');
   setH(document.getElementById('cfBarChart'));
-  setH(document.getElementById('cfBarChart')); charts['cfBarChart']=new Chart(document.getElementById('cfBarChart'),{type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.75)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.75)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  setH(document.getElementById('cfBarChart')); charts['cfBarChart']=new Chart(document.getElementById('cfBarChart'), {type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.75)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.75)',borderRadius:4}]},options:{scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
   const ti=md.income.reduce((a,b)=>a+b,0),te=md.expenses.reduce((a,b)=>a+b,0),tn=ti-te,mo=md.labels.length||1;
   document.getElementById('cfCards').innerHTML=`
     <div class="card card-al g"><div class="card-lbl">Total Income</div><div class="card-val">${fmtK(ti)}</div><div class="card-sub">${fmt(ti/mo)}/mo</div></div>
@@ -5875,7 +5907,7 @@ function renderCF() {
   const netArr=md.income.map((v,i)=>v-md.expenses[i]);
   destroyChart('cfNetChart');
   setH(document.getElementById('cfNetChart'));
-  setH(document.getElementById('cfNetChart')); charts['cfNetChart']=new Chart(document.getElementById('cfNetChart'),{type:'line',data:{labels:md.labels,datasets:[{data:netArr,borderColor:'#2f6bc8',backgroundColor:'rgba(47,107,200,.1)',fill:true,tension:.3,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  setH(document.getElementById('cfNetChart')); charts['cfNetChart']=new Chart(document.getElementById('cfNetChart'), {type:'line',data:{labels:md.labels,datasets:[{data:netArr,borderColor:'#2f6bc8',backgroundColor:'rgba(47,107,200,.1)',fill:true,tension:.3,pointRadius:2}]},options:{scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
 
   } catch(e) { console.error("Forge renderCF error:", e); }
 }
@@ -5905,11 +5937,11 @@ function renderCats() {
   const top10=sorted.slice(0,10);
   destroyChart('catBigDonut');
   setH(document.getElementById('catBigDonut'));
-  setH(document.getElementById('catBigDonut')); charts['catBigDonut']=new Chart(document.getElementById('catBigDonut'),{type:'doughnut',data:{labels:top10.map(([l])=>l),datasets:[{data:top10.map(([,v])=>v.total),backgroundColor:CAT_COLORS.slice(0,top10.length),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}});
+  setH(document.getElementById('catBigDonut')); charts['catBigDonut']=new Chart(document.getElementById('catBigDonut'), {type:'doughnut',data:{labels:top10.map(([l])=>l),datasets:[{data:top10.map(([,v])=>v.total),backgroundColor:CAT_COLORS.slice(0,top10.length),borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}});
   const top8=sorted.slice(0,8).reverse();
   destroyChart('catBarH');
   setH(document.getElementById('catBarH'));
-  setH(document.getElementById('catBarH')); charts['catBarH']=new Chart(document.getElementById('catBarH'),{type:'bar',data:{labels:top8.map(([l])=>l),datasets:[{data:top8.map(([,v])=>v.total),backgroundColor:CAT_COLORS.slice(0,top8.length).reverse(),borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtK(v)}}}}});
+  setH(document.getElementById('catBarH')); charts['catBarH']=new Chart(document.getElementById('catBarH'), {type:'bar',data:{labels:top8.map(([l])=>l),datasets:[{data:top8.map(([,v])=>v.total),backgroundColor:CAT_COLORS.slice(0,top8.length).reverse(),borderRadius:4}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtK(v)}}}}});
 
   document.getElementById('catTbl').innerHTML=sorted.map(([l,d],i)=>{
     const yoy=lyC[l]&&cyC[l]?((cyC[l]-lyC[l])/lyC[l])*100:null;
@@ -5990,23 +6022,23 @@ function renderAmazon() {
   const moKeys=Object.keys(byMo).sort();
   destroyChart('amzMonthly');
   setH(document.getElementById('amzMonthly'));
-  setH(document.getElementById('amzMonthly')); charts['amzMonthly']=new Chart(document.getElementById('amzMonthly'),{type:'bar',data:{labels:moKeys.map(monthLabel),datasets:[{data:moKeys.map(k=>byMo[k]),backgroundColor:'rgba(255,153,0,.75)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  setH(document.getElementById('amzMonthly')); charts['amzMonthly']=new Chart(document.getElementById('amzMonthly'), {type:'bar',data:{labels:moKeys.map(monthLabel),datasets:[{data:moKeys.map(k=>byMo[k]),backgroundColor:'rgba(255,153,0,.75)',borderRadius:4}]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
   const catS={};amzItems.forEach(i=>catS[i.category]=(catS[i.category]||0)+i.total);
   const topC=Object.entries(catS).sort((a,b)=>b[1]-a[1]).slice(0,10);
   destroyChart('amzCatDonut');
   setH(document.getElementById('amzCatDonut'));
-  setH(document.getElementById('amzCatDonut')); charts['amzCatDonut']=new Chart(document.getElementById('amzCatDonut'),{type:'doughnut',data:{labels:topC.map(([l])=>l),datasets:[{data:topC.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topC.length),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}});
+  setH(document.getElementById('amzCatDonut')); charts['amzCatDonut']=new Chart(document.getElementById('amzCatDonut'), {type:'doughnut',data:{labels:topC.map(([l])=>l),datasets:[{data:topC.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topC.length),borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}});
 
   // Categories tab
   const top8=Object.entries(catS).sort((a,b)=>b[1]-a[1]).slice(0,8).reverse();
   destroyChart('amzCatBar');
   setH(document.getElementById('amzCatBar'));
-  setH(document.getElementById('amzCatBar')); charts['amzCatBar']=new Chart(document.getElementById('amzCatBar'),{type:'bar',data:{labels:top8.map(([l])=>l),datasets:[{data:top8.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,top8.length).reverse(),borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtK(v)}}}}});
+  setH(document.getElementById('amzCatBar')); charts['amzCatBar']=new Chart(document.getElementById('amzCatBar'), {type:'bar',data:{labels:top8.map(([l])=>l),datasets:[{data:top8.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,top8.length).reverse(),borderRadius:4}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtK(v)}}}}});
   const catImp={};amzItems.forEach(i=>{const c=i.category;if(!catImp[c])catImp[c]=[];catImp[c].push(scoreImpulse(i));});
   const top8imp=top8.map(([l])=>({label:l,score:Math.round(catImp[l]?catImp[l].reduce((a,b)=>a+b,0)/catImp[l].length:0)}));
   destroyChart('amzImpBar');
   setH(document.getElementById('amzImpBar'));
-  setH(document.getElementById('amzImpBar')); charts['amzImpBar']=new Chart(document.getElementById('amzImpBar'),{type:'bar',data:{labels:top8imp.map(c=>c.label),datasets:[{data:top8imp.map(c=>c.score),backgroundColor:top8imp.map(c=>c.score>=60?'rgba(198,40,40,.7)':c.score>=30?'rgba(230,81,0,.7)':'rgba(46,125,50,.7)'),borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{max:100}}}});
+  setH(document.getElementById('amzImpBar')); charts['amzImpBar']=new Chart(document.getElementById('amzImpBar'), {type:'bar',data:{labels:top8imp.map(c=>c.label),datasets:[{data:top8imp.map(c=>c.score),backgroundColor:top8imp.map(c=>c.score>=60?'rgba(198,40,40,.7)':c.score>=30?'rgba(230,81,0,.7)':'rgba(46,125,50,.7)'),borderRadius:4}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{max:100}}}});
 
   const sortedCats=Object.entries(catS).sort((a,b)=>b[1]-a[1]);
   document.getElementById('amzCatTbl').innerHTML=sortedCats.map(([c,v],i)=>{
@@ -6035,10 +6067,10 @@ function renderAmazon() {
     `;
     destroyChart('amzCmpChart');
     setH(document.getElementById('amzCmpChart'));
-    setH(document.getElementById('amzCmpChart')); charts['amzCmpChart']=new Chart(document.getElementById('amzCmpChart'),{type:'bar',data:{labels:allMos.map(monthLabel),datasets:[{label:'Detail',data:amzVals,backgroundColor:'rgba(255,153,0,.8)',borderRadius:4,stack:'a'},{label:'Other Spending',data:otherVals,backgroundColor:'rgba(47,107,200,.6)',borderRadius:4,stack:'a'}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)}},x:{stacked:true}}}});
+    setH(document.getElementById('amzCmpChart')); charts['amzCmpChart']=new Chart(document.getElementById('amzCmpChart'), {type:'bar',data:{labels:allMos.map(monthLabel),datasets:[{label:'Detail',data:amzVals,backgroundColor:'rgba(255,153,0,.8)',borderRadius:4,stack:'a'},{label:'Other Spending',data:otherVals,backgroundColor:'rgba(47,107,200,.6)',borderRadius:4,stack:'a'}]},options:{scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)}},x:{stacked:true}}}});
     destroyChart('amzPctChart');
     setH(document.getElementById('amzPctChart'));
-    setH(document.getElementById('amzPctChart')); charts['amzPctChart']=new Chart(document.getElementById('amzPctChart'),{type:'line',data:{labels:allMos.map(monthLabel),datasets:[{data:pctVals,borderColor:'#ff9900',backgroundColor:'rgba(255,153,0,.1)',fill:true,tension:.3,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>v+'%'},max:100}}}});
+    setH(document.getElementById('amzPctChart')); charts['amzPctChart']=new Chart(document.getElementById('amzPctChart'), {type:'line',data:{labels:allMos.map(monthLabel),datasets:[{data:pctVals,borderColor:'#ff9900',backgroundColor:'rgba(255,153,0,.1)',fill:true,tension:.3,pointRadius:2}]},options:{scales:{y:{ticks:{callback:v=>v+'%'},max:100}}}});
   }
 
   populateAmzFilters();
