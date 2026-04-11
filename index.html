@@ -548,8 +548,18 @@ input:focus { border-color:var(--gold); }
 
     <div id="fileList" style="margin-bottom:16px;"></div>
 
-    <div id="importActions" style="display:none;margin-bottom:24px;">
-      <button class="btn btn-gold" onclick="processFiles()" id="importBtn">Begin Forging →</button>
+    <div id="importActions" style="display:none;margin-bottom:24px;display:none;">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-gold" onclick="processFiles()" id="importBtn">Begin Forging →</button>
+        <button class="btn btn-ghost" onclick="diagnoseFiles()" style="font-size:11px;">🔍 Preview File Structure</button>
+      </div>
+    </div>
+    <div id="fileDiagnostic" style="display:none;margin-bottom:20px;background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:12px;font-weight:600;color:var(--ink2);">File Structure Preview</div>
+        <button onclick="document.getElementById('fileDiagnostic').style.display='none'" style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:16px;">✕</button>
+      </div>
+      <div id="fileDiagnosticContent" style="padding:14px;overflow-x:auto;max-height:380px;overflow-y:auto;"></div>
     </div>
 
     <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:16px 18px;">
@@ -1360,6 +1370,162 @@ function updateHeader() {
 // ════════════════════════════════════════════════
 function showAudit() { showPage('validate'); } // legacy shim
 
+
+// ════════════════════════════════════════════════
+// FILE DIAGNOSTIC — shows what Forge sees in each file
+// ════════════════════════════════════════════════
+async function diagnoseFiles() {
+  const el = document.getElementById('fileDiagnosticContent');
+  const panel = document.getElementById('fileDiagnostic');
+  if (!el || !pendingFiles.length) return;
+  panel.style.display = 'block';
+  el.innerHTML = '<div style="color:var(--ink4);font-size:12px;">Reading files…</div>';
+
+  let html = '';
+  for (const f of pendingFiles) {
+    try {
+      const text = await readFile(f);
+      const ext  = f.name.split('.').pop().toLowerCase();
+      const lines = text.replace(/^\uFEFF/,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+      const nonBlank = lines.filter(l=>l.trim());
+
+      html += '<div style="margin-bottom:20px;">';
+      html += '<div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:8px;">📄 ' + f.name + ' — ' + (f.size/1024).toFixed(1) + ' KB · ' + nonBlank.length + ' lines</div>';
+
+      if (ext === 'qif') {
+        // Show QIF structure
+        const acctLine = lines.find(l=>l.startsWith('!Account') || l.startsWith('!Type'));
+        const recordCount = (text.match(/^\^/gm)||[]).length;
+        html += '<div style="font-size:11px;color:var(--positive);margin-bottom:6px;">✓ QIF format detected · ' + recordCount + ' records</div>';
+        html += '<pre style="font-size:10px;color:var(--ink3);background:var(--void);padding:10px;border-radius:4px;overflow-x:auto;">' + lines.slice(0,12).join('\n') + '</pre>';
+      } else if (ext === 'qfx' || ext === 'ofx') {
+        const txnCount = (text.match(/<STMTTRN>/gi)||[]).length;
+        html += '<div style="font-size:11px;color:var(--positive);margin-bottom:6px;">✓ OFX/QFX format detected · ' + txnCount + ' transactions</div>';
+        html += '<pre style="font-size:10px;color:var(--ink3);background:var(--void);padding:10px;border-radius:4px;overflow-x:auto;">' + lines.slice(0,8).join('\n') + '</pre>';
+      } else {
+        // CSV — show header detection result
+        let headerIdx = -1;
+        for (let i = 0; i < Math.min(nonBlank.length, 30); i++) {
+          const lc = nonBlank[i].toLowerCase();
+          if (lc.includes('date') && (lc.includes('amount') || lc.includes('payee') || lc.includes('description'))) {
+            headerIdx = i; break;
+          }
+        }
+
+        if (headerIdx < 0) {
+          html += '<div style="font-size:11px;color:var(--negative);margin-bottom:6px;">⚠ Could not detect CSV header row — no line containing both "date" and "amount"/"payee"/"description" found in first 30 lines</div>';
+        } else {
+          const headerLine = nonBlank[headerIdx];
+          const headers = csvRow(headerLine).map(h=>h.replace(/['"]/g,'').trim());
+
+          // Show what columns we found
+          const dateC  = findCol(headers.map(h=>h.toLowerCase()), 'date', 'transaction date', 'trans date');
+          const payeeC = findCol(headers.map(h=>h.toLowerCase()), 'payee', 'description', 'name', 'memo');
+          const amtC   = findCol(headers.map(h=>h.toLowerCase()), 'amount', 'transaction amount');
+          const catC   = findCol(headers.map(h=>h.toLowerCase()), 'category', 'tag', 'type');
+          const acctC  = findCol(headers.map(h=>h.toLowerCase()), 'account', 'account name');
+          const debC   = findCol(headers.map(h=>h.toLowerCase()), 'debit', 'withdrawal');
+          const creC   = findCol(headers.map(h=>h.toLowerCase()), 'credit', 'deposit');
+
+          html += '<div style="font-size:11px;color:var(--positive);margin-bottom:4px;">✓ CSV header found at line ' + (headerIdx+1) + '</div>';
+
+          // Column mapping table
+          html += '<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:8px;">';
+          html += '<thead><tr style="border-bottom:1px solid var(--line);">' +
+            '<th style="padding:4px 8px;text-align:left;color:var(--ink4);">Field</th>' +
+            '<th style="padding:4px 8px;text-align:left;color:var(--ink4);">Column</th>' +
+            '<th style="padding:4px 8px;text-align:left;color:var(--ink4);">Header Name</th>' +
+            '<th style="padding:4px 8px;text-align:left;color:var(--ink4);">Sample Value</th>' +
+            '</tr></thead><tbody>';
+
+          const sampleRow = nonBlank[headerIdx+1] ? csvRow(nonBlank[headerIdx+1]) : [];
+
+          [
+            ['Date',     dateC,  '⚠ MISSING — parser will fail'],
+            ['Payee',    payeeC, '⚠ MISSING — using filename'],
+            ['Amount',   amtC,   debC>=0||creC>=0?'Using Debit/Credit columns instead':'⚠ MISSING'],
+            ['Category', catC,   '(optional)'],
+            ['Account',  acctC,  '(optional — using filename if missing)'],
+          ].forEach(([field, col, fallback]) => {
+            const found = col >= 0;
+            const headerName = found ? headers[col] : '—';
+            const sample = found && sampleRow[col] ? sampleRow[col].replace(/"/g,'') : (found?'(blank)':fallback);
+            html += '<tr style="border-bottom:1px solid rgba(255,255,255,.04);">' +
+              '<td style="padding:4px 8px;font-weight:600;color:' + (found||field==='Category'||field==='Account'?'var(--ink2)':'var(--negative)') + ';">' + field + '</td>' +
+              '<td style="padding:4px 8px;font-family:var(--font-m);">' + (found ? col : '—') + '</td>' +
+              '<td style="padding:4px 8px;color:var(--ink3);">' + headerName + '</td>' +
+              '<td style="padding:4px 8px;color:' + (found?'var(--positive)':'var(--ink4)') + ';">' + sample + '</td>' +
+              '</tr>';
+          });
+
+          // Show debit/credit columns if amount not found
+          if (amtC < 0 && (debC >= 0 || creC >= 0)) {
+            html += '<tr style="border-bottom:1px solid rgba(255,255,255,.04);">' +
+              '<td style="padding:4px 8px;color:var(--positive);">Debit/Credit</td>' +
+              '<td style="padding:4px 8px;font-family:var(--font-m);">' + debC + '/' + creC + '</td>' +
+              '<td style="padding:4px 8px;color:var(--ink3);">' + (debC>=0?headers[debC]:'—') + ' / ' + (creC>=0?headers[creC]:'—') + '</td>' +
+              '<td style="padding:4px 8px;color:var(--positive);">✓ will be used</td></tr>';
+          }
+          html += '</tbody></table>';
+
+          // Transfer detection check
+          if (catC >= 0 && sampleRow.length > 0) {
+            const catSamples = nonBlank.slice(headerIdx+1, headerIdx+6)
+              .map(l => csvRow(l)[catC] || '')
+              .filter(Boolean);
+            const xferCount = catSamples.filter(c => /^\[.+\]$/.test(c.trim())).length;
+            if (xferCount > 0) {
+              html += '<div style="font-size:11px;color:var(--positive);margin-bottom:4px;">✓ ' + xferCount + ' transfer-format categories detected in first 5 rows ([Account] style)</div>';
+            }
+          }
+        }
+
+        // Raw first 6 non-blank lines
+        html += '<div style="font-size:10px;color:var(--ink4);margin-bottom:4px;">Raw file content (first 6 non-blank lines):</div>';
+        html += '<pre style="font-size:10px;color:var(--ink3);background:var(--void);padding:10px;border-radius:4px;overflow-x:auto;white-space:pre;">' +
+          nonBlank.slice(0,6).map((l,i) => (i===0?'[HEADER] ':'[ROW '+i+'  ] ') + l.slice(0,120)).join('\n') + '</pre>';
+
+        // Quick parse test
+        const testParsed = parseCSV(text, f.name);
+        const testXfers  = testParsed.filter(t=>t.isTransfer).length;
+        const testSp     = testParsed.length - testXfers;
+
+        if (testParsed.length > 0) {
+          html += '<div style="font-size:11px;color:var(--positive);margin-top:6px;">✓ Parser result: <strong>' + testParsed.length + '</strong> total · <strong>' + testSp + '</strong> spendable · <strong>' + testXfers + '</strong> transfers</div>';
+          if (testXfers === testParsed.length) {
+            html += '<div style="font-size:11px;color:var(--negative);margin-top:4px;">⚠ ALL transactions are flagged as transfers — this means the category column may be incorrectly detected. Check the Category column above.</div>';
+          }
+          // Show 3 sample parsed transactions
+          if (testParsed.length > 0) {
+            html += '<div style="font-size:10px;color:var(--ink4);margin-top:8px;margin-bottom:4px;">Sample parsed transactions:</div>';
+            html += '<table style="font-size:10px;width:100%;border-collapse:collapse;">';
+            html += '<tr style="color:var(--ink4);"><th style="padding:3px 6px;text-align:left;">Date</th><th style="padding:3px 6px;text-align:left;">Payee</th><th style="padding:3px 6px;text-align:right;">Amount</th><th style="padding:3px 6px;text-align:left;">Category</th><th style="padding:3px 6px;text-align:left;">Account</th><th style="padding:3px 6px;text-align:left;">Transfer?</th></tr>';
+            testParsed.slice(0,5).forEach(t => {
+              html += '<tr style="border-top:1px solid rgba(255,255,255,.05);">' +
+                '<td style="padding:3px 6px;color:var(--ink4);">' + t.date + '</td>' +
+                '<td style="padding:3px 6px;">' + (t.payee||'').slice(0,24) + '</td>' +
+                '<td style="padding:3px 6px;text-align:right;color:' + (t.amount>=0?'var(--positive)':'var(--gold)') + ';">' + (t.amount>=0?'+':'') + t.amount.toFixed(2) + '</td>' +
+                '<td style="padding:3px 6px;color:var(--ink4);">' + (t.category||'').slice(0,20) + '</td>' +
+                '<td style="padding:3px 6px;color:var(--ink4);">' + (t.account||'').slice(0,18) + '</td>' +
+                '<td style="padding:3px 6px;color:' + (t.isTransfer?'var(--river)':'var(--ink4)') + ';">' + (t.isTransfer?'✓ yes':'no') + '</td>' +
+                '</tr>';
+            });
+            html += '</table>';
+          }
+        } else {
+          html += '<div style="font-size:11px;color:var(--negative);margin-top:6px;">✗ Parser returned 0 rows — see column detection above to diagnose</div>';
+        }
+      }
+
+      html += '</div>'; // end file section
+    } catch(e) {
+      html += '<div style="color:var(--negative);font-size:12px;">✗ Error reading ' + f.name + ': ' + e.message + '</div>';
+    }
+  }
+
+  el.innerHTML = html || '<div style="color:var(--ink4);font-size:12px;">No files to diagnose</div>';
+}
+
 // ════════════════════════════════════════════════
 // DATA VALIDATION PAGE
 // The single source of truth reconciliation tool.
@@ -1807,10 +1973,22 @@ async function processFiles() {
       if (ext==='qif') parsed = parseQIF(text, f.name);
       else if (ext==='qfx'||ext==='ofx') parsed = parseOFX(text, f.name);
       else parsed = parseCSV(text, f.name);
-      parsed.forEach(t => { acctSet.add(t.account); newTxns.push(t); });
-      toast(`✓ ${f.name} — ${parsed.length} transactions`);
+
+      if (parsed.length === 0) {
+        const preview = text.replace(/^\uFEFF/,'').split('\n').slice(0,3).join(' | ').slice(0,140);
+        toast('⚠ ' + f.name + ' — 0 rows parsed. File preview: ' + preview);
+        console.warn('[Forge] 0 rows from ' + f.name);
+        console.warn('[Forge] First 4 lines:', text.split('\n').slice(0,4));
+      } else {
+        const xfers  = parsed.filter(t => t.isTransfer).length;
+        const spndbl = parsed.length - xfers;
+        const accts  = [...new Set(parsed.map(t => t.account))];
+        parsed.forEach(t => { acctSet.add(t.account); newTxns.push(t); });
+        toast('✓ ' + f.name + ' — ' + parsed.length + ' txns (' + spndbl + ' spendable, ' + xfers + ' transfers, ' + accts.length + ' accounts)');
+      }
     } catch(e) {
-      toast(`✗ Error reading ${f.name}: ${e.message}`);
+      console.error('[Forge] parse error', f.name, e);
+      toast('✗ ' + f.name + ' — ' + e.message);
     }
   }
 
@@ -1856,102 +2034,174 @@ function readFile(f) {
 }
 
 // ════════════════════════════════════════════════
-// CSV PARSER
+// CSV PARSER — handles all known Quicken export formats
 // ════════════════════════════════════════════════
-function parseCSV(text, fname) {
-  const acctName = fname.replace(/\.[^.]+$/,'');
-  // Remove BOM and handle line endings
-  const clean = text.replace(/^\uFEFF/,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
-  // Skip Quicken preamble lines
-  const rawLines = clean.split('\n');
-  let startIdx = 0;
-  for (let i=0;i<Math.min(rawLines.length,30);i++) {
-    if (/date|amount|payee|transaction/i.test(rawLines[i])) { startIdx=i; break; }
-  }
-  const lines = rawLines.slice(startIdx).filter(l=>l.trim());
-  if (!lines.length) return [];
 
-  // Parse header
-  const headers = csvRow(lines[0]).map(h=>h.trim().toLowerCase());
-  const col = n => {
-    const idx = headers.findIndex(h=>h.includes(n));
-    return idx;
-  };
-  const dateC  = col('date');
-  const payeeC = Math.max(col('payee'),col('description'),col('name'));
-  const amtC   = Math.max(col('amount'),col('transaction'));
-  const catC   = Math.max(col('category'),col('categor'));
-  const acctC  = Math.max(col('account'),col('acct'));
-  const memoC  = col('memo');
-  const debC   = col('debit'); // some exports use debit/credit columns
-  const creC   = col('credit');
-
-  if (dateC < 0) return [];
-
-  const results = [];
-  for (let i=1;i<lines.length;i++) {
-    const row = csvRow(lines[i]);
-    if (!row.length || !row[dateC]) continue;
-
-    const rawDate = row[dateC].trim().replace(/"/g,'');
-    const date = parseDate(rawDate);
-    if (!date) continue;
-
-    let amount;
-    if (amtC>=0) {
-      amount = parseAmt(row[amtC]);
-    } else if (debC>=0||creC>=0) {
-      const d = debC>=0 ? parseAmt(row[debC]) : NaN;
-      const c = creC>=0 ? parseAmt(row[creC]) : NaN;
-      if (!isNaN(d)&&d!==0) amount = -Math.abs(d);
-      else if (!isNaN(c)&&c!==0) amount = Math.abs(c);
-      else continue;
-    } else continue;
-
-    if (isNaN(amount)) continue;
-
-    const rawCat = catC>=0 ? (row[catC]||'').replace(/"/g,'').trim() : '';
-    const cat    = rawCat.replace(/^\[|\]$/g,'').trim() || 'Uncategorized';
-    const xfer   = /^\[.*\]$/.test(rawCat) || /^transfer$/i.test(rawCat);
-    const payee  = payeeC>=0 ? (row[payeeC]||'').replace(/"/g,'').trim() : 'Unknown';
-    const account= acctC>=0  ? (row[acctC]||'').replace(/"/g,'').trim() : acctName;
-    const memo   = memoC>=0  ? (row[memoC]||'').replace(/"/g,'').trim() : '';
-
-    results.push({ date, payee, amount, category:cat, account:account||acctName, memo, isTransfer:xfer });
-  }
-  return results;
-}
-
+// Split a single CSV line respecting quoted fields
 function csvRow(line) {
-  // Handle quoted fields
-  const out = []; let cur='', inQ=false;
-  for (let i=0;i<line.length;i++) {
-    const c=line[i];
-    if (c==='"') { if (inQ&&line[i+1]==='"') { cur+='"'; i++; } else inQ=!inQ; }
-    else if (c===','&&!inQ) { out.push(cur); cur=''; }
-    else cur+=c;
+  const out = []; let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++; }  // escaped quote
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) { out.push(cur.trim()); cur = ''; }
+    else cur += c;
   }
-  out.push(cur);
+  out.push(cur.trim());
   return out;
 }
 
+// Parse any common date format Quicken exports
 function parseDate(s) {
   if (!s) return null;
-  s = s.trim().replace(/["']/g,'');
-  // Try ISO: YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
-  // Try M/D/YYYY or M-D-YYYY
-  const m1 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-  if (m1) return `${m1[3]}-${m1[1].padStart(2,'0')}-${m1[2].padStart(2,'0')}`;
-  // Try M/D/YY
-  const m2 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/);
-  if (m2) { const yr=parseInt(m2[3]); return `${yr>50?'19':'20'}${m2[3]}-${m2[1].padStart(2,'0')}-${m2[2].padStart(2,'0')}`; }
+  s = String(s).trim().replace(/^["'\s]+|["'\s]+$/g, '');
+  if (!s) return null;
+  // ISO: 2026-01-15
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // M/D/YYYY or M-D-YYYY
+  let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
+  // M/D/YY
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/);
+  if (m) { const yr = parseInt(m[3]); return `${yr < 50 ? '20' : '19'}${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`; }
+  // YYYY/M/D
+  m = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
   return null;
 }
 
+// Parse amount — handles $1,234.56 and (1,234.56) (parentheses = negative)
 function parseAmt(s) {
-  if (s===undefined||s===null) return NaN;
-  return parseFloat(String(s).replace(/[^0-9.\-]/g,''));
+  if (s === undefined || s === null) return NaN;
+  s = String(s).trim().replace(/^["'\s]+|["'\s]+$/g, '');
+  if (!s) return NaN;
+  const negative = s.startsWith('(') && s.endsWith(')');  // accounting format
+  const cleaned  = s.replace(/[^0-9.\-]/g, '');
+  const val = parseFloat(cleaned);
+  if (isNaN(val)) return NaN;
+  return negative ? -Math.abs(val) : val;
+}
+
+// Find column index by matching any of several header name variants
+function findCol(headers, ...names) {
+  for (const name of names) {
+    const idx = headers.findIndex(h => h === name || h.includes(name));
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+function parseCSV(text, fname) {
+  const acctName = fname.replace(/\.[^.]+$/, '');
+
+  // Normalize line endings and strip BOM
+  const clean = text
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n');
+
+  const rawLines = clean.split('\n');
+
+  // Find the header row — scan first 30 lines for one that looks like a header.
+  // A header row contains at least 'date' AND one of 'amount'/'payee'/'description'.
+  let startIdx = -1;
+  for (let i = 0; i < Math.min(rawLines.length, 30); i++) {
+    const lc = rawLines[i].toLowerCase();
+    if (lc.includes('date') && (lc.includes('amount') || lc.includes('payee') || lc.includes('description'))) {
+      startIdx = i;
+      break;
+    }
+  }
+  if (startIdx < 0) {
+    // Fallback: first non-blank line
+    startIdx = rawLines.findIndex(l => l.trim().length > 0);
+  }
+  if (startIdx < 0) return [];
+
+  // Filter out blank lines and Quicken footer lines ("Balance:", totals, etc.)
+  const lines = rawLines.slice(startIdx).filter(l => {
+    const t = l.trim();
+    if (!t) return false;
+    if (/^balance[:\s]/i.test(t)) return false;
+    if (/^\s*,,/.test(l) && l.replace(/,/g,'').trim()==='') return false;  // all-comma blank rows
+    if (/^total[:\s]/i.test(t)) return false;
+    return true;
+  });
+  if (lines.length < 2) return [];
+
+  // Parse header
+  const headers = csvRow(lines[0]).map(h => h.toLowerCase().replace(/['"]/g, '').trim());
+
+  // Map columns — try many possible Quicken column name variants
+  const dateC  = findCol(headers, 'date', 'transaction date', 'trans date', 'posted date');
+  const payeeC = findCol(headers, 'payee', 'description', 'name', 'memo', 'payee/description');
+  const amtC   = findCol(headers, 'amount', 'transaction amount', 'debit amount');
+  const catC   = findCol(headers, 'category', 'tag', 'type');
+  const acctC  = findCol(headers, 'account', 'account name');
+  const memoC  = findCol(headers, 'memo', 'notes', 'note');
+  const debC   = findCol(headers, 'debit', 'withdrawal');
+  const creC   = findCol(headers, 'credit', 'deposit');
+  const numC   = findCol(headers, 'num', 'check #', 'ref');
+
+  if (dateC < 0) {
+    console.warn('[Forge] CSV parse failed: no date column found in', headers);
+    return [];
+  }
+
+  // If payee column not found, use the first non-date, non-amount text column
+  const effectivePayeeC = payeeC >= 0 ? payeeC : headers.findIndex((h, i) => i !== dateC && i !== amtC && i !== catC && i !== acctC);
+
+  const results = [];
+  let skipped = 0;
+
+  for (let i = 1; i < lines.length; i++) {
+    const row = csvRow(lines[i]);
+    if (!row.length) continue;
+
+    // Date
+    const rawDate = row[dateC] || '';
+    const date = parseDate(rawDate);
+    if (!date) { skipped++; continue; }
+
+    // Amount — try primary amount column, then debit/credit split columns
+    let amount;
+    if (amtC >= 0 && row[amtC] !== undefined && row[amtC] !== '') {
+      amount = parseAmt(row[amtC]);
+    } else if (debC >= 0 || creC >= 0) {
+      const dVal = debC >= 0 ? parseAmt(row[debC]) : NaN;
+      const cVal = creC >= 0 ? parseAmt(row[creC]) : NaN;
+      if (!isNaN(dVal) && dVal !== 0) amount = -Math.abs(dVal);      // debit = outflow
+      else if (!isNaN(cVal) && cVal !== 0) amount = Math.abs(cVal);  // credit = inflow
+      else { skipped++; continue; }
+    } else { skipped++; continue; }
+
+    if (isNaN(amount) || amount === 0) { skipped++; continue; }
+
+    // Category — this drives transfer detection
+    const rawCat = catC >= 0 ? (row[catC] || '') : '';
+    const cat    = rawCat.replace(/^["'\s]+|["'\s]+$/g, '').replace(/^\[|\]$/g, '').trim() || 'Uncategorized';
+    // Only mark as transfer if the category is EXPLICITLY in Quicken bracket format [AccountName]
+    // Do NOT mark "Transfer" category as transfer — some budgets use "Transfer" as a real category
+    const isTransfer = /^\[.+\]$/.test(rawCat.trim());
+
+    // Payee
+    const rawPayee = effectivePayeeC >= 0 ? (row[effectivePayeeC] || '') : '';
+    const payee = rawPayee.replace(/^["'\s]+|["'\s]+$/g, '') || 'Unknown';
+
+    // Account — from column if available, else filename
+    const rawAcct = acctC >= 0 ? (row[acctC] || '') : '';
+    const account = rawAcct.replace(/^["'\s]+|["'\s]+$/g, '') || acctName;
+
+    // Memo
+    const rawMemo = memoC >= 0 ? (row[memoC] || '') : '';
+    const memo = rawMemo.replace(/^["'\s]+|["'\s]+$/g, '');
+
+    results.push({ date, payee, amount, category: cat, account: account || acctName, memo, isTransfer });
+  }
+
+  if (skipped > 0) console.log(`[Forge] CSV ${fname}: ${results.length} parsed, ${skipped} rows skipped (no date or amount)`);
+  return results;
 }
 
 // ════════════════════════════════════════════════
@@ -2162,49 +2412,116 @@ function toast(msg) {
 // If Quicken already categorized it, we trust that completely.
 
 const QUICKEN_CAT_MAP = {
-  // Common Quicken built-in categories → our buckets
-  'salary':         'paycheck', 'wages':           'paycheck', 'paycheck':       'paycheck',
-  'bonus':          'paycheck', 'commission':      'paycheck',
-  'interest income':'other_inc','dividend income': 'other_inc','investment income':'other_inc',
-  'rental income':  'other_inc','freelance':       'other_inc','consulting':      'other_inc',
-  // Savings/transfers
-  'savings':        'auto_save','transfer to savings':'auto_save',
-  '401k':           'auto_save','403b':            'auto_save','ira':             'auto_save',
-  'roth':           'auto_save','hsa':             'auto_save','529':             'auto_save',
-  // Fixed
-  'housing':        'mortgage', 'mortgage':        'mortgage', 'rent':            'mortgage',
-  'hoa':            'mortgage',
-  'auto':           'car',      'auto insurance':  'car',      'car insurance':   'car',
-  'auto loan':      'car',      'car payment':     'car',
-  'education':      'education','tuition':         'education','student loan':    'education',
-  'insurance':      'insurance','health insurance':'insurance','life insurance':  'insurance',
-  'childcare':      'childcare','daycare':         'childcare',
-  // Utilities
-  'utilities':      'electric', 'electric':        'electric', 'gas & electric':  'electric',
-  'natural gas':    'gas_util', 'heating':         'gas_util',
-  'water':          'water',
-  'telephone':      'cell',     'cell phone':      'cell',     'mobile phone':    'cell',
-  'internet':       'internet', 'cable tv':        'internet', 'cable & internet':'internet',
-  // Food
-  'groceries':      'groceries','food':            'groceries','supermarket':     'groceries',
-  'dining':         'restaurants','food & dining': 'restaurants','restaurant':    'restaurants',
-  'fast food':      'restaurants','coffee':        'restaurants',
-  // Transport
-  'gasoline':       'gas_car',  'auto fuel':       'gas_car',  'gas':             'gas_car',
-  'parking':        'transit',  'tolls':           'transit',  'transit':         'transit',
-  'rideshare':      'transit',
-  // Health
-  'healthcare':     'healthcare','medical':        'healthcare','pharmacy':       'healthcare',
-  'dental':         'healthcare','vision':         'healthcare','fitness':        'healthcare',
-  // Discretionary
-  'entertainment':  'entertainment','recreation':  'entertainment','hobbies':     'entertainment',
-  'movies':         'entertainment','concerts':    'entertainment',
-  'shopping':       'household', 'amazon':         'household', 'home improvement':'household',
-  'personal care':  'personal',  'hair care':      'personal',  'beauty':         'personal',
-  'clothing':       'clothing',  'shoes':          'clothing',
-  'travel':         'travel',    'vacation':       'travel',    'airline':        'travel',
-  'subscriptions':  'subscriptions','streaming':   'subscriptions',
-  'gifts':          'gifts',     'charity':        'gifts',     'donations':      'gifts',
+  // ── Income ──────────────────────────────────────────────────────
+  'net salary':                    'paycheck',
+  'salary':                        'paycheck',
+  'wages':                         'paycheck',
+  'paycheck':                      'paycheck',
+  'bonus':                         'paycheck',
+  'other inc':                     'other_inc',
+  'interest inc':                  'other_inc',
+  '_divinc':                       'other_inc',   // Quicken dividend income
+  '_rlzdgain':                     'other_inc',   // Quicken realized gain
+  'interest income':               'other_inc',
+  'dividend income':               'other_inc',
+  'rental income':                 'other_inc',
+  'freelance':                     'other_inc',
+  'consulting':                    'other_inc',
+  'fees & charges:bank fee':       'other_inc',   // reimbursements sometimes coded here
+
+  // ── Fixed ────────────────────────────────────────────────────────
+  'home:mortgage':                 'mortgage',
+  'mortgage':                      'mortgage',
+  'home:rent':                     'mortgage',
+  'rent':                          'mortgage',
+  'hoa':                           'mortgage',
+  'auto & transport:auto payment': 'car',
+  'auto & transport:auto insurance':'car',
+  'auto & transport:registration': 'car',
+  'financial:life insurance':      'insurance',
+  'financial':                     'insurance',
+  'insurance':                     'insurance',
+  'education:tuition':             'education',
+  'education':                     'education',
+  'kids:kids activities':          'childcare',
+  'kids':                          'childcare',
+  'kids:toys':                     'childcare',
+
+  // ── Utilities ────────────────────────────────────────────────────
+  'bills & utilities:utilities':   'electric',
+  'bills & utilities':             'electric',
+  'bills & utilities:mobile phone':'cell',
+  'bills & utilities:credit card payment': 'other', // not a real expense category
+
+  // ── Food ─────────────────────────────────────────────────────────
+  'food & dining:groceries':       'groceries',
+  'food & dining:restaurants':     'restaurants',
+  'food & dining:fast food':       'restaurants',
+  'food & dining:coffee shops':    'restaurants',
+  'food & dining:alcohol & bars':  'restaurants',
+  'food & dining':                 'groceries',
+
+  // ── Transport ────────────────────────────────────────────────────
+  'auto & transport:gas & fuel':   'gas_car',
+  'auto & transport:parking':      'transit',
+  'auto & transport:tolls':        'transit',
+  'auto & transport:rental car & taxi':'transit',
+  'auto & transport:car wash':     'transit',
+  'auto & transport:service & parts':'car',
+  'auto & transport':              'gas_car',
+
+  // ── Health ───────────────────────────────────────────────────────
+  'health & fitness:pharmacy':     'healthcare',
+  'health & fitness:doctor':       'healthcare',
+  'health & fitness:dentist':      'healthcare',
+  'health & fitness:eyecare':      'healthcare',
+  'health & fitness:gym':          'personal',
+  'health & fitness:sports':       'entertainment',
+  'health & fitness':              'healthcare',
+
+  // ── Discretionary ────────────────────────────────────────────────
+  'entertainment':                 'entertainment',
+  'entertainment:amusement':       'entertainment',
+  'entertainment:movies & dvds':   'entertainment',
+  'entertainment:music':           'subscriptions',
+  'entertainment:arts':            'entertainment',
+  'media subscriptions':           'subscriptions',
+  'shopping':                      'household',
+  'shopping:clothing':             'clothing',
+  'shopping:electronics & software':'household',
+  'shopping:books':                'household',
+  'shopping:sporting goods':       'entertainment',
+  'shopping:hobbies':              'entertainment',
+  'shopping:clothing:jewelry insurance':'clothing',
+  'home:home supplies':            'household',
+  'home:home improvement':         'household',
+  'home:home services':            'household',
+  'home:furnishings':              'household',
+  'home:lawn & garden':            'household',
+  'personal care':                 'personal',
+  'personal care:hair':            'personal',
+  'personal care:spa & massage':   'personal',
+  'kira self care':                'personal',
+  'chris self care':               'personal',
+  'gifts & donations:gift':        'gifts',
+  'gifts & donations:charity':     'gifts',
+  'gifts & donations':             'gifts',
+  'travel':                        'travel',
+  'travel:hotel':                  'travel',
+  'travel:air travel':             'travel',
+  'travel:vacation':               'travel',
+  'travel:rental car & taxi':      'transit',
+  'pets:vet':                      'healthcare',
+  'pets:pet food & supplies':      'household',
+  'shipping':                      'household',
+  'cash & atm':                    'other',
+  'fees & charges':                'other',
+  'fees & charges:trade commissions':'other_inc',
+  'dues':                          'other',
+  'tax:fed':                       'other',
+  'tax:state':                     'other',
+  '--split--':                     'other',
+  'transfer':                      'other',
 };
 
 // Keyword matching (fallback when Quicken category doesn't match above)
@@ -2248,20 +2565,45 @@ function classifyTxn(t) {
   const cat  = (t.category || '').toLowerCase().trim();
   const pay  = (t.payee    || '').toLowerCase().trim();
 
-  // 1. Direct Quicken category match (highest trust)
+  // 1. Direct Quicken category match — highest trust, exact or substring
   if (QUICKEN_CAT_MAP[cat]) return QUICKEN_CAT_MAP[cat];
 
-  // 2. Partial Quicken category match
+  // 2. Partial match: Quicken subcategory hierarchy (e.g. "Food & Dining:Restaurants" matches "food & dining")
   for (const [qcat, bucket] of Object.entries(QUICKEN_CAT_MAP)) {
-    if (cat.includes(qcat) || qcat.includes(cat)) return bucket;
+    if (cat.includes(qcat)) return bucket;
   }
 
-  // 3. Payee keyword match (very reliable for known merchants)
+  // 3. Special handling for Quicken --Split-- transactions.
+  //    Quicken uses --Split-- when a single payment is split across multiple
+  //    categories (e.g. mortgage = principal + interest + escrow).
+  //    The checking outflow is the FULL payment — exactly what we want for the IS.
+  //    We classify by payee name since the category is lost.
+  if (cat === '--split--') {
+    // Mortgage payments
+    if (/house loan|rocket mortgage|mortgage|pmi|escrow/i.test(pay)) return 'mortgage';
+    // Car loan payments (car payment split across principal + interest)
+    if (/palisade|hyundai|auto loan|car loan|hmf|chevrolet/i.test(pay)) return 'car';
+    // Investment account splits (retirement fund rebalancing — $0 entries, but just in case)
+    if (/retirement|fidelity|vanguard|401k|ira|lifepath|blackrock|dodge|t rowe/i.test(pay)) return 'auto_save';
+    // 529 college contributions
+    if (/529|college|sam college|whitney college|will college/i.test(pay)) return 'auto_save';
+    // ATM withdrawals (cash)
+    if (/atm/i.test(pay)) return 'other';
+    // Salary splits (sometimes payroll is split into take-home + deductions)
+    if (/upmc|highmark|employer|payroll|direct dep/i.test(pay)) return 'paycheck';
+    // Fall through to payee keyword match below
+    for (const [bucket, keywords] of KW_MAP) {
+      if (keywords.some(kw => pay.includes(kw))) return bucket;
+    }
+    return 'other';
+  }
+
+  // 4. Payee keyword match
   for (const [bucket, keywords] of KW_MAP) {
     if (keywords.some(kw => pay.includes(kw) || cat.includes(kw))) return bucket;
   }
 
-  // 4. Income heuristic: positive, unknown, non-transfer
+  // 5. Income heuristic
   if (t.amount > 0) return 'other_inc';
 
   return 'other';
@@ -2285,7 +2627,7 @@ const WATERFALL = [
   },
   {
     id: 'fixed', label: 'Fixed Living Expenses', type: 'expense',
-    sub: 'Mortgage, car, insurance, education, childcare — obligations you cannot easily change',
+    sub: 'Mortgage (full payment incl. principal+interest+escrow), car loans, insurance, education, childcare',
     color: '#60A5FA', sign: '−',
     buckets: ['mortgage','car','education','insurance','childcare'],
   },
@@ -2319,7 +2661,7 @@ const BUCKET_META = {
   paycheck:      { label:'Payroll & Wages',               icon:'💵' },
   other_inc:     { label:'Other Income',                  icon:'💰' },
   auto_save:     { label:'Auto-Savings & Retirement',     icon:'🏦' },
-  mortgage:      { label:'Mortgage / Rent',               icon:'🏠' },
+  mortgage:      { label:'Mortgage & Housing',             icon:'🏠' },
   car:           { label:'Car Payments & Insurance',      icon:'🚗' },
   education:     { label:'Education & Tuition',           icon:'🎓' },
   insurance:     { label:'Health & Life Insurance',       icon:'🛡️' },
@@ -2578,14 +2920,27 @@ function renderIncomeStatement() {
             const isXfer = t._xferTo;
             const amtColor = t.amount > 0 ? 'var(--positive)' : 'var(--ink3)';
             const amtSign  = t.amount > 0 ? '+' : '−';
+            // Clean up display names for known split transactions
+            let displayPayee = t.payee || (isXfer ? '→ '+t._xferTo : '') || '—';
+            let displayNote  = t.category && t.category !== 'Uncategorized' ? t.category : '';
+            if ((t.category||'').toLowerCase() === '--split--') {
+              // This is a Quicken split — the amount is the full payment, show a note
+              if (/house loan|rocket mortgage/i.test(t.payee)) {
+                displayPayee = 'Mortgage Payment (Rocket Mortgage)';
+                displayNote  = 'Full payment: principal + interest + escrow · ' + (t.account||'');
+              } else if (/palisade|hyundai|auto loan|car loan/i.test(t.payee)) {
+                displayPayee = t.payee + ' — Full Payment';
+                displayNote  = 'Principal + interest included · ' + (t.account||'');
+              } else {
+                displayNote  = 'Split transaction · ' + (t.account||'');
+              }
+            }
             out += '<div style="display:grid;grid-template-columns:90px 1fr auto auto auto;gap:0;padding:7px 16px 7px 60px;border-bottom:1px solid rgba(255,255,255,.025);background:rgba(0,0,0,.15);">';
             out += '<div style="font-family:var(--font-m);font-size:10px;color:var(--ink4);">'+t.date+'</div>';
             out += '<div>';
-            out += '<div style="font-size:12px;color:var(--ink2);">'+( t.payee || (isXfer?'→ '+t._xferTo:'') || '—')+'</div>';
-            if (t.category && t.category !== 'Uncategorized') {
-              out += '<div style="font-size:10px;color:var(--ink4);">'+t.category+(t.account?' · '+t.account:'')+'</div>';
-            } else if (t.account) {
-              out += '<div style="font-size:10px;color:var(--ink4);">'+t.account+'</div>';
+            out += '<div style="font-size:12px;color:var(--ink2);">'+displayPayee+'</div>';
+            if (displayNote || t.account) {
+              out += '<div style="font-size:10px;color:var(--ink4);">'+(displayNote||t.account)+'</div>';
             }
             out += '</div>';
             out += '<div style="min-width:100px;text-align:right;font-family:var(--font-m);font-size:12px;font-weight:600;color:'+amtColor+';">'+amtSign+fmt(Math.abs(t.amount))+'</div>';
