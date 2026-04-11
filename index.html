@@ -200,6 +200,7 @@ main::-webkit-scrollbar-thumb { background:var(--line); border-radius:3px; }
 }
 .kpi.positive .kpi-val { color: var(--positive); }
 .kpi.gold .kpi-val { color: var(--gold); }
+.is-row:hover { background: rgba(255,255,255,.04) !important; }
 
 /* ── Chart cards ────────────────────────────────────────── */
 .chart-grid-2 {
@@ -502,6 +503,14 @@ input:focus { border-color:var(--gold); }
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
       Transactions
     </div>
+    <div class="nav-item" onclick="showPage('income')" id="nav-income">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Income Statement
+    </div>
+    <div class="nav-item" onclick="showPage('creditflow')" id="nav-creditflow">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Credit Card Flow
+    </div>
   </div>
   <div class="nav-section">
     <div class="nav-label">Tools</div>
@@ -509,9 +518,9 @@ input:focus { border-color:var(--gold); }
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       Import Data
     </div>
-    <div class="nav-item" onclick="showAudit()" id="nav-audit">
+    <div class="nav-item" onclick="showPage('validate')" id="nav-validate">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      Audit Report
+      Data Validation
     </div>
   </div>
 </nav>
@@ -681,6 +690,48 @@ input:focus { border-color:var(--gold); }
   <div id="txnPager" style="padding:12px 0;display:flex;gap:8px;align-items:center;font-size:12px;color:var(--ink4);"></div>
 </div>
 
+
+<!-- ══ CREDIT CARD FLOW ══ -->
+<div id="page-creditflow" class="page">
+  <div class="page-hdr">
+    <div>
+      <div class="page-title">Credit Card Cash Flow</div>
+      <div class="page-sub">What's accumulating on each card · when you'll need cash · how to prepare</div>
+    </div>
+  </div>
+  <div id="creditFlowContent"></div>
+</div>
+
+
+<!-- ══ DATA VALIDATION ══ -->
+<div id="page-validate" class="page">
+  <div class="page-hdr">
+    <div>
+      <div class="page-title">Data Validation</div>
+      <div class="page-sub">Reconcile every imported file against your Quicken register · trust but verify</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn btn-ghost" onclick="renderValidation()" style="font-size:11px;padding:6px 12px;">↻ Refresh</button>
+    </div>
+  </div>
+  <div id="validateContent"></div>
+</div>
+
+<!-- ══ INCOME STATEMENT ══ -->
+<div id="page-income" class="page">
+  <div class="page-hdr">
+    <div>
+      <div class="page-title">Monthly Income Statement</div>
+      <div class="page-sub">Your household P&amp;L — plain English</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:11px;color:var(--ink4);font-family:var(--font-m);">Month:</span>
+      <select id="isMonth" onchange="renderIncomeStatement()" style="font-size:12px;padding:5px 10px;"></select>
+    </div>
+  </div>
+  <div id="incomeStatement"></div>
+</div>
+
 </main>
 </div>
 
@@ -693,7 +744,7 @@ input:focus { border-color:var(--gold); }
 
 // ── Storage ──────────────────────────────────────
 const DB_KEY  = 'forge_lean_v1';
-const BUILD   = 'lean_1.0';
+const BUILD   = 'lean_2.0';  // bump to clear stale storage
 const BLD_KEY = 'forge_build';
 
 // Auto-clear stale storage on every load
@@ -711,6 +762,7 @@ const BLD_KEY = 'forge_build';
 // ── State ─────────────────────────────────────────
 let txns     = [];   // all parsed transactions
 let accounts = [];   // unique account names
+let acctMeta = {};   // { acctName: { type:'checking'|'credit'|'savings'|'investment', isCreditCard:bool } }
 let isDemoMode = false;
 let range    = '1y';
 let catRange = '1y';
@@ -719,6 +771,7 @@ const PAGE_SZ = 100;
 let pendingFiles = [];
 let donutDash = null;
 let donutCat  = null;
+let surplusTargets = { emergency:0, investments:0, college:0, other:0 };  // monthly $ targets
 
 // ── Colours ───────────────────────────────────────
 const COLORS = [
@@ -728,10 +781,29 @@ const COLORS = [
 ];
 
 // ════════════════════════════════════════════════
-// TRANSFER DETECTION
-// Quicken marks account transfers with [AccountName] in category.
-// These are CC payments, savings moves — NOT real expenses.
+// ACCOUNT CLASSIFICATION
 // ════════════════════════════════════════════════
+// Detect account type from name — used to handle CC payments correctly
+function detectAcctType(name) {
+  const n = (name || '').toLowerCase();
+  if (/credit|visa|mastercard|amex|american express|discover|card|cc|sapphire|freedom|venture|cash back|rewards|platinum/.test(n)) return 'credit';
+  if (/savings|save|marcus|ally|high.yield|money.market/.test(n)) return 'savings';
+  if (/401k|403b|ira|roth|brokerage|fidelity|vanguard|schwab|investment|retirement|hsa/.test(n)) return 'investment';
+  return 'checking';
+}
+
+function isCreditAcct(acctName) {
+  const meta = acctMeta[acctName];
+  if (meta) return meta.isCreditCard;
+  return detectAcctType(acctName) === 'credit';
+}
+
+// ════════════════════════════════════════════════
+// TRANSFER DETECTION
+// ════════════════════════════════════════════════
+// A transfer is an internal move between accounts — NOT a real expense.
+// Quicken marks these with [AccountName] bracket syntax in the category.
+// CC payments from checking to CC account = transfer (the CC charges are the real expenses).
 function isTransfer(t) {
   if (t.isTransfer) return true;
   const cat = (t.category || '').trim();
@@ -740,8 +812,61 @@ function isTransfer(t) {
   return false;
 }
 
+// "Spendable" = transactions that represent real money flowing to/from the outside world.
+// Excludes internal transfers. This is the accrual view:
+// CC charges on the CC account = real expenses (dated to purchase)
+// CC payment from checking = transfer (excluded)
+// So each dollar is counted exactly once, at the time of purchase.
 function spendable(arr) {
   return (arr || []).filter(t => !isTransfer(t));
+}
+
+// Income = non-transfer positive transactions (payroll, freelance, dividends, etc.)
+function incomeOnly(arr) {
+  return spendable(arr).filter(t => t.amount > 0);
+}
+
+// Expenses = non-transfer negative transactions across ALL accounts
+// This gives the true accrual picture: what did we actually spend this month?
+function expensesOnly(arr) {
+  return spendable(arr).filter(t => t.amount < 0);
+}
+
+// ════════════════════════════════════════════════
+// CC CASH FLOW INTELLIGENCE
+// ════════════════════════════════════════════════
+// For each credit card account, compute:
+//   - Total charges in last 30 days (spending velocity)
+//   - Estimated balance (rolling 60-day net)
+//   - Projected next bill amount
+function getCCProjections() {
+  const now = new Date();
+  const results = [];
+
+  Object.entries(acctMeta).forEach(([acct, meta]) => {
+    if (!meta.isCreditCard) return;
+    const acctTxns = txns.filter(t => t.account === acct);
+
+    // Last 30 days of charges on this card
+    const cutoff30 = new Date(now); cutoff30.setDate(cutoff30.getDate() - 30);
+    const last30   = acctTxns.filter(t => new Date(t.date) >= cutoff30 && t.amount < 0 && !isTransfer(t));
+    const vel30    = last30.reduce((s,t) => s + Math.abs(t.amount), 0);
+
+    // Last 60 days net (charges minus payments received)
+    const cutoff60 = new Date(now); cutoff60.setDate(cutoff60.getDate() - 60);
+    const last60charges  = acctTxns.filter(t => new Date(t.date) >= cutoff60 && t.amount < 0 && !isTransfer(t)).reduce((s,t) => s+Math.abs(t.amount), 0);
+    const last60payments = acctTxns.filter(t => new Date(t.date) >= cutoff60 && t.amount > 0 && !isTransfer(t)).reduce((s,t) => s+t.amount, 0);  // credits/refunds
+    const estBalance = last60charges - last60payments;
+
+    // Spending by category on this card (last 30 days)
+    const byCat = {};
+    last30.forEach(t => { byCat[t.category||'Other'] = (byCat[t.category||'Other']||0) + Math.abs(t.amount); });
+    const topCats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,3);
+
+    results.push({ acct, vel30, estBalance, topCats, chargeCount: last30.length });
+  });
+
+  return results.sort((a,b) => b.vel30 - a.vel30);
 }
 
 // ════════════════════════════════════════════════
@@ -987,6 +1112,9 @@ function showPage(name) {
     if (name === 'cashflow'     && txns.length) renderCashFlow();
     if (name === 'categories'   && txns.length) renderCategories();
     if (name === 'transactions' && txns.length) renderTxns();
+    if (name === 'income'        && txns.length) renderIncomeStatement();
+    if (name === 'creditflow'    && txns.length) renderCreditFlow();
+    if (name === 'validate'      ) renderValidation();
     if (name === 'upload')                      renderUploadStatus();
   });
 }
@@ -1210,7 +1338,7 @@ function renderUploadStatus() {
     ${xf ? ` · <span style="color:var(--ink4)">${xf} transfers excluded</span>` : ''}
   </div>
   <div style="display:flex;gap:8px;">
-    <button class="btn btn-ghost" onclick="showAudit()" style="font-size:11px;padding:5px 10px;">Audit Report</button>
+    <button class="btn btn-ghost" onclick="showPage('validate')" style="font-size:11px;padding:5px 10px;">Validate Data</button>
     <button class="btn btn-danger" onclick="clearAll()" style="font-size:11px;padding:5px 10px;">Clear All</button>
   </div>`;
 }
@@ -1230,138 +1358,412 @@ function updateHeader() {
 // ════════════════════════════════════════════════
 // AUDIT REPORT
 // ════════════════════════════════════════════════
-function showAudit() {
-  if (!txns.length) { toast('No data loaded'); return; }
+function showAudit() { showPage('validate'); } // legacy shim
+
+// ════════════════════════════════════════════════
+// DATA VALIDATION PAGE
+// The single source of truth reconciliation tool.
+// Every number here should be verifiable against your Quicken register.
+// ════════════════════════════════════════════════
+function renderValidation() {
+  const el = document.getElementById('validateContent');
+  if (!el) return;
+
+  if (!txns.length) {
+    el.innerHTML = `<div style="padding:60px;text-align:center;color:var(--ink4);">
+      <div style="font-size:40px;margin-bottom:12px;">📋</div>
+      <div style="font-size:16px;margin-bottom:6px;">No data loaded</div>
+      <div style="font-size:12px;">Import your Quicken files to begin validation</div>
+      <button class="btn btn-gold" onclick="showPage('upload')" style="margin-top:16px;">Go to Import</button>
+    </div>`;
+    return;
+  }
+
   const sp  = spendable(txns);
   const xf  = txns.filter(t => isTransfer(t));
-  const inc = sp.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
-  const exp = sp.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
-  const earliest = txns[txns.length-1]?.date||'';
-  const latest   = txns[0]?.date||'';
+  const earliest = txns[txns.length-1]?.date || '';
+  const latest   = txns[0]?.date || '';
 
-  // Dedup check
-  const keys = sp.map(t=>`${t.date}|${t.payee}|${t.amount}|${t.account}`);
-  const dups  = keys.length - new Set(keys).size;
+  // ── Dedup analysis ─────────────────────────────────────────────
+  // Key: date|payee|amount|account — exact match = definite duplicate
+  const dupKey  = t => t.date + '|' + t.payee + '|' + t.amount + '|' + t.account;
+  const allKeys = txns.map(dupKey);
+  const keyCount = {};
+  allKeys.forEach(k => { keyCount[k] = (keyCount[k]||0)+1; });
+  const dupKeys = Object.entries(keyCount).filter(([,n])=>n>1);
+  const dupTxns = dupKeys.flatMap(([k]) => txns.filter(t => dupKey(t)===k));
 
-  // By account
-  const byAcct = {};
-  sp.forEach(t => {
-    if (!byAcct[t.account]) byAcct[t.account] = {n:0,inc:0,exp:0,first:t.date,last:t.date};
-    const a = byAcct[t.account]; a.n++;
-    if (t.amount>0) a.inc+=t.amount; else a.exp+=Math.abs(t.amount);
-    if (t.date<a.first) a.first=t.date;
-    if (t.date>a.last)  a.last=t.date;
+  // Near-duplicate analysis: same date+amount, different payee/account (possible import overlap)
+  const nearKey  = t => t.date + '|' + Math.abs(t.amount).toFixed(2);
+  const nearCount = {};
+  txns.forEach(t => { const k=nearKey(t); if(!nearCount[k])nearCount[k]=[]; nearCount[k].push(t); });
+  const nearDups = Object.values(nearCount).filter(arr => arr.length > 1 && new Set(arr.map(t=>t.account)).size > 1);
+
+  // ── By-account reconciliation ──────────────────────────────────
+  const acctStats = {};
+  txns.forEach(t => {
+    if (!acctStats[t.account]) acctStats[t.account] = {
+      n:0, inc:0, exp:0, xfer:0, first:t.date, last:t.date,
+      type: (acctMeta[t.account]||{}).type || detectAcctType(t.account),
+      isCreditCard: isCreditAcct(t.account),
+    };
+    const a = acctStats[t.account];
+    a.n++;
+    if (isTransfer(t)) { a.xfer += Math.abs(t.amount); }
+    else if (t.amount > 0) { a.inc += t.amount; }
+    else { a.exp += Math.abs(t.amount); }
+    if (t.date < a.first) a.first = t.date;
+    if (t.date > a.last)  a.last  = t.date;
   });
 
-  // Monthly
-  const mo = {};
+  // ── Monthly totals ─────────────────────────────────────────────
+  const monthMap = {};
   sp.forEach(t => {
     const k = t.date.slice(0,7);
-    if (!mo[k]) mo[k]={n:0,inc:0,exp:0};
-    mo[k].n++;
-    if (t.amount>0) mo[k].inc+=t.amount; else mo[k].exp+=Math.abs(t.amount);
+    if (!monthMap[k]) monthMap[k] = {inc:0, exp:0, xfer:0, n:0};
+    monthMap[k].n++;
+    if (t.amount>0) monthMap[k].inc+=t.amount; else monthMap[k].exp+=Math.abs(t.amount);
   });
-  const moKeys = Object.keys(mo).sort().reverse().slice(0,36);
+  xf.forEach(t => {
+    const k = t.date.slice(0,7);
+    if (!monthMap[k]) monthMap[k]={inc:0,exp:0,xfer:0,n:0};
+    monthMap[k].xfer += Math.abs(t.amount);
+  });
+  const monthKeys = Object.keys(monthMap).sort().reverse();
 
-  const thS = 'padding:8px 12px;font-family:var(--font-m);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);border-bottom:1px solid var(--line);background:var(--lift);text-align:';
+  // ── Category coverage ─────────────────────────────────────────
+  const catMap = {};
+  sp.filter(t=>t.amount<0).forEach(t => {
+    const c = t.category || 'Uncategorized';
+    if (!catMap[c]) catMap[c] = {n:0, total:0, bucket: classifyTxn(t)};
+    catMap[c].n++;
+    catMap[c].total += Math.abs(t.amount);
+  });
+  const uncat = Object.entries(catMap).filter(([c,d])=>d.bucket==='other');
+  const uncatTotal = uncat.reduce((s,[,d])=>s+d.total,0);
+  const totalExp = sp.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+  const catCoverage = totalExp > 0 ? ((totalExp-uncatTotal)/totalExp*100) : 100;
 
-  const acctRows = Object.entries(byAcct).sort((a,b)=>b[1].n-a[1].n).map(([ac,d]) => {
-    const net = d.inc - d.exp;
-    return `<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
-      <td style="padding:8px 12px;font-size:12px">${ac}</td>
-      <td style="padding:8px 12px;font-family:var(--font-m);font-size:10px;color:var(--ink4)">${d.first}→${d.last}</td>
-      <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-size:11px">${d.n}</td>
-      <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--positive)">${fmt(d.inc)}</td>
-      <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--gold)">${fmt(d.exp)}</td>
-      <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:${net>=0?'var(--positive)':'var(--negative)'}">${net>=0?'+':''}${fmt(net)}</td>
-    </tr>`;
-  }).join('');
+  // ── Overall health score ───────────────────────────────────────
+  // Simple scoring: no dups = +40, no near-dups = +20, high cat coverage = +40
+  const healthScore = Math.round(
+    (dupKeys.length===0?40:Math.max(0,40-dupKeys.length*5)) +
+    (nearDups.length===0?20:Math.max(0,20-nearDups.length*3)) +
+    (catCoverage/100*40)
+  );
+  const healthColor = healthScore>=85?'var(--positive)':healthScore>=65?'var(--gold)':'var(--negative)';
+  const healthLabel = healthScore>=85?'Healthy':healthScore>=65?'Review Needed':'Action Required';
 
-  const moRows = moKeys.map(k => {
-    const d = mo[k]; const net = d.inc-d.exp;
-    return `<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
-      <td style="padding:6px 12px;font-family:var(--font-m);font-size:11px;color:var(--ink3)">${k}</td>
-      <td style="padding:6px 12px;text-align:right;font-family:var(--font-m);font-size:11px">${d.n}</td>
-      <td style="padding:6px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--positive)">${fmt(d.inc)}</td>
-      <td style="padding:6px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--gold)">${fmt(d.exp)}</td>
-      <td style="padding:6px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:${net>=0?'var(--positive)':'var(--negative)'}">${net>=0?'+':''}${fmt(net)}</td>
-    </tr>`;
-  }).join('');
+  // ── Build HTML ─────────────────────────────────────────────────
+  const th = 'padding:8px 12px;font-family:var(--font-m);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);border-bottom:1px solid var(--line);background:var(--lift);text-align:';
+  let out = '';
 
-  const bg = document.createElement('div');
-  bg.className = 'modal-bg';
-  bg.innerHTML = `<div class="modal">
-    <div class="modal-hdr">
-      <div>
-        <div class="modal-title">Data Audit Report</div>
-        <div style="font-size:11px;color:var(--ink4);font-family:var(--font-m);margin-top:4px">${earliest} → ${latest} · Generated ${new Date().toLocaleDateString()}</div>
-      </div>
-      <button class="modal-close" onclick="this.closest('.modal-bg').remove()">✕ Close</button>
+  // ── Health summary banner ──────────────────────────────────────
+  out += `<div style="display:grid;grid-template-columns:auto 1fr;gap:0;background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">
+    <div style="padding:24px 28px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:140px;">
+      <div style="font-size:52px;font-weight:700;color:${healthColor};line-height:1;font-family:var(--font-d);">${healthScore}</div>
+      <div style="font-size:11px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:${healthColor};margin-top:4px;">${healthLabel}</div>
+      <div style="font-size:10px;color:var(--ink4);margin-top:2px;">Data Quality Score</div>
     </div>
-    <div class="modal-body">
-
-      <!-- Summary -->
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">
-        ${[
-          ['All Txns',    txns.length.toLocaleString(), 'var(--ink)'],
-          ['Spendable',   sp.length.toLocaleString(),   'var(--ink)'],
-          ['Transfers',   xf.length.toLocaleString(),   'var(--ink4)'],
-          ['Income',      fmtK(inc),                    'var(--positive)'],
-          ['Expense',     fmtK(exp),                    'var(--gold)'],
-        ].map(([l,v,c])=>`<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px">
-          <div style="font-size:9px;color:var(--ink4);font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">${l}</div>
-          <div style="font-size:20px;font-weight:700;color:${c}">${v}</div>
-        </div>`).join('')}
-      </div>
-
-      <!-- Dedup status -->
-      <div style="padding:10px 14px;border-radius:var(--r-sm);margin-bottom:16px;background:${dups===0?'rgba(45,212,191,.05)':'rgba(248,113,113,.05)'};border:1px solid ${dups===0?'rgba(45,212,191,.2)':'rgba(248,113,113,.25)'}">
-        <span style="font-size:12px;color:${dups===0?'var(--positive)':'var(--negative)'}">
-          ${dups===0?'✓ No duplicates — all records have unique date·payee·amount·account':'⚠ '+dups+' duplicate records — check for overlapping export date ranges'}
-        </span>
-        ${xf.length?`<span style="font-size:11px;color:var(--ink4);margin-left:16px">${xf.length} internal transfers excluded from Income/Expense totals</span>`:''}
-      </div>
-
-      <!-- By account -->
-      <div style="margin-bottom:16px">
-        <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px">By Account — Reconcile to Quicken</div>
-        <div style="font-size:11px;color:var(--ink4);margin-bottom:10px">Compare each row to your Quicken account register for the same date range. Transfers excluded.</div>
-        <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse">
-            <thead><tr>
-              <th style="${thS}left">Account</th><th style="${thS}left">Range</th>
-              <th style="${thS}right">Txns</th><th style="${thS}right">Income</th>
-              <th style="${thS}right">Expense</th><th style="${thS}right">Net</th>
-            </tr></thead>
-            <tbody>${acctRows}</tbody>
-            <tfoot><tr style="background:var(--lift);border-top:2px solid var(--line2)">
-              <td colspan="2" style="padding:8px 12px;font-size:12px;font-weight:700">TOTAL</td>
-              <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-weight:700">${sp.length.toLocaleString()}</td>
-              <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-weight:700;color:var(--positive)">${fmt(inc)}</td>
-              <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-weight:700;color:var(--gold)">${fmt(exp)}</td>
-              <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-weight:700;color:${inc-exp>=0?'var(--positive)':'var(--negative)'}">${inc-exp>=0?'+':''}${fmt(inc-exp)}</td>
-            </tr></tfoot>
-          </table>
-        </div>
-      </div>
-
-      <!-- Monthly ledger -->
-      <div>
-        <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px">Monthly Ledger — Most Recent 36 Months</div>
-        <div style="overflow-y:auto;max-height:280px">
-          <table style="width:100%;border-collapse:collapse">
-            <thead style="position:sticky;top:0"><tr>
-              <th style="${thS}left">Month</th><th style="${thS}right">Txns</th>
-              <th style="${thS}right">Income</th><th style="${thS}right">Expense</th><th style="${thS}right">Net</th>
-            </tr></thead>
-            <tbody>${moRows}</tbody>
-          </table>
-        </div>
-      </div>
+    <div style="padding:20px 24px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:center;">
+      ${[
+        ['Total Transactions', txns.length.toLocaleString(), 'all imported', 'var(--ink)'],
+        ['Spendable', sp.length.toLocaleString(), 'excl. '+xf.length+' transfers', 'var(--ink)'],
+        ['Date Range', earliest, '→ '+latest, 'var(--ink3)'],
+        ['Category Coverage', catCoverage.toFixed(0)+'%', uncatTotal>0?fmt(uncatTotal)+' uncategorized':'fully categorized', catCoverage>=90?'var(--positive)':catCoverage>=70?'var(--gold)':'var(--negative)'],
+      ].map(([l,v,sub,c]) => `<div>
+        <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">${l}</div>
+        <div style="font-size:18px;font-weight:700;color:${c};">${v}</div>
+        <div style="font-size:10px;color:var(--ink4);">${sub}</div>
+      </div>`).join('')}
     </div>
   </div>`;
-  bg.addEventListener('click', e => { if(e.target===bg) bg.remove(); });
-  document.body.appendChild(bg);
+
+  // ── Check list ─────────────────────────────────────────────────
+  const checks = [
+    {
+      pass: dupKeys.length === 0,
+      label: 'No exact duplicate transactions',
+      detail: dupKeys.length === 0
+        ? 'All ' + txns.length.toLocaleString() + ' transactions have unique date·payee·amount·account keys'
+        : dupKeys.length + ' duplicate record' + (dupKeys.length>1?'s':'') + ' found — likely from overlapping export date ranges',
+      action: dupKeys.length > 0 ? 'Re-export Quicken with non-overlapping date ranges, then re-import' : null,
+    },
+    {
+      pass: nearDups.length === 0,
+      label: 'No cross-account amount conflicts',
+      detail: nearDups.length === 0
+        ? 'No transactions share the same date and amount across different accounts'
+        : nearDups.length + ' date+amount match' + (nearDups.length>1?'es':'') + ' found across different accounts — verify these are not double-counted',
+      action: nearDups.length > 0 ? 'Review flagged transactions below — they may be CC charges + checking payment for same amount' : null,
+    },
+    {
+      pass: catCoverage >= 90,
+      label: 'Category coverage ≥ 90%',
+      detail: catCoverage.toFixed(1) + '% of expense dollars are classified (' + fmt(totalExp-uncatTotal) + ' of ' + fmt(totalExp) + ')',
+      action: catCoverage < 90 ? 'Review uncategorized transactions in Quicken and assign categories, then re-export' : null,
+    },
+    {
+      pass: xf.length > 0,
+      label: 'Internal transfers detected',
+      detail: xf.length > 0
+        ? xf.length + ' transfer' + (xf.length>1?'s':'') + ' identified and excluded from income/expense totals (CC payments, account moves)'
+        : 'No transfers found — if you pay credit cards from checking, ensure the CC account is included in your export',
+      action: xf.length === 0 && Object.values(acctStats).some(a=>a.isCreditCard) ? 'Include all account exports so CC payments and charges both appear' : null,
+    },
+    {
+      pass: accounts.length > 1,
+      label: 'Multiple accounts imported',
+      detail: accounts.length + ' account' + (accounts.length>1?'s':'') + ' loaded: ' + accounts.slice(0,3).join(', ') + (accounts.length>3?' + '+(accounts.length-3)+' more':''),
+      action: accounts.length <= 1 ? 'Export all Quicken accounts together for complete picture — checking + all credit cards' : null,
+    },
+    {
+      pass: Object.values(acctStats).some(a=>a.isCreditCard),
+      label: 'Credit card accounts present',
+      detail: Object.values(acctStats).some(a=>a.isCreditCard)
+        ? Object.entries(acctStats).filter(([,a])=>a.isCreditCard).map(([n])=>n).join(', ')
+        : 'No credit card accounts detected — expenses may be understated if CC charges are missing',
+      action: !Object.values(acctStats).some(a=>a.isCreditCard) ? 'Export and import your credit card accounts from Quicken' : null,
+    },
+  ];
+
+  out += `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">
+    <div style="padding:12px 16px;background:var(--lift);border-bottom:1px solid var(--line);">
+      <div style="font-size:13px;font-weight:600;color:var(--ink2);">Validation Checks</div>
+      <div style="font-size:10px;color:var(--ink4);">Run these against your Quicken register before trusting the analytics</div>
+    </div>
+    ${checks.map(c => `
+    <div style="display:grid;grid-template-columns:24px 1fr;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);align-items:start;">
+      <div style="margin-top:1px;font-size:16px;">${c.pass?'✅':'⚠️'}</div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:${c.pass?'var(--ink2)':'var(--ink)'};">${c.label}</div>
+        <div style="font-size:11px;color:var(--ink4);margin-top:2px;">${c.detail}</div>
+        ${c.action?'<div style="margin-top:5px;font-size:11px;color:var(--gold);font-style:italic;">→ '+c.action+'</div>':''}
+      </div>
+    </div>`).join('')}
+  </div>`;
+
+  // ── Per-account reconciliation table ───────────────────────────
+  // This is the key table to verify against Quicken register
+  out += `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">
+    <div style="padding:12px 16px;background:var(--lift);border-bottom:1px solid var(--line);">
+      <div style="font-size:13px;font-weight:600;color:var(--ink2);">Reconcile by Account</div>
+      <div style="font-size:11px;color:var(--ink4);margin-top:2px;">
+        Compare each row to your Quicken account register for the same date range.
+        Income + Expense + Transfers should account for all transactions in that account.
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th style="${th}left;">Account</th>
+          <th style="${th}left;">Type</th>
+          <th style="${th}left;">Date Range</th>
+          <th style="${th}right;">Txns</th>
+          <th style="${th}right;">Income</th>
+          <th style="${th}right;">Expenses</th>
+          <th style="${th}right;">Transfers</th>
+          <th style="${th}right;">Net (ex. Xfer)</th>
+        </tr></thead>
+        <tbody>`;
+
+  Object.entries(acctStats).sort((a,b)=>b[1].n-a[1].n).forEach(([acct,d]) => {
+    const net = d.inc - d.exp;
+    const typeLabel = d.isCreditCard ? '💳 Credit' : d.type==='savings'?'💰 Savings':d.type==='investment'?'📈 Invest':'🏦 Checking';
+    out += `<tr style="border-bottom:1px solid rgba(255,255,255,.04);" onclick="filterTxnsByAcct('${acct}')" style="cursor:pointer;">
+      <td style="padding:9px 12px;font-size:12px;font-weight:500;">${acct}</td>
+      <td style="padding:9px 12px;font-size:11px;color:var(--ink4);">${typeLabel}</td>
+      <td style="padding:9px 12px;font-family:var(--font-m);font-size:10px;color:var(--ink4);">${d.first} → ${d.last}</td>
+      <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;">${d.n}</td>
+      <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--positive);">${d.inc>0?'+'+fmt(d.inc):'—'}</td>
+      <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--gold);">${d.exp>0?fmt(d.exp):'—'}</td>
+      <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">${d.xfer>0?fmt(d.xfer):'—'}</td>
+      <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;font-weight:600;color:${net>=0?'var(--positive)':'var(--negative)'};">${net>=0?'+':''}${fmt(net)}</td>
+    </tr>`;
+  });
+
+  const totInc = Object.values(acctStats).reduce((s,a)=>s+a.inc,0);
+  const totExp = Object.values(acctStats).reduce((s,a)=>s+a.exp,0);
+  const totXfer= Object.values(acctStats).reduce((s,a)=>s+a.xfer,0);
+  const totNet = totInc - totExp;
+  out += `</tbody>
+        <tfoot><tr style="background:var(--lift);border-top:2px solid var(--line2);">
+          <td colspan="3" style="padding:9px 12px;font-size:12px;font-weight:700;">TOTAL IMPORTED</td>
+          <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;font-weight:700;">${txns.length}</td>
+          <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;font-weight:700;color:var(--positive);">+${fmt(totInc)}</td>
+          <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;font-weight:700;color:var(--gold);">${fmt(totExp)}</td>
+          <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;font-weight:700;color:var(--ink4);">${fmt(totXfer)}</td>
+          <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;font-weight:700;color:${totNet>=0?'var(--positive)':'var(--negative)'};">${totNet>=0?'+':''}${fmt(totNet)}</td>
+        </tr></tfoot>
+      </table>
+    </div>
+  </div>`;
+
+  // ── Monthly ledger — reconcile month by month ───────────────────
+  out += `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">
+    <div style="padding:12px 16px;background:var(--lift);border-bottom:1px solid var(--line);">
+      <div style="font-size:13px;font-weight:600;color:var(--ink2);">Monthly Ledger</div>
+      <div style="font-size:11px;color:var(--ink4);margin-top:2px;">
+        Verify each month totals against Quicken → Reports → Monthly Summary for the same period.
+        Transfers are shown separately — they should not appear in income or expense totals.
+      </div>
+    </div>
+    <div style="overflow-y:auto;max-height:360px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead style="position:sticky;top:0;z-index:1;"><tr>
+          <th style="${th}left;">Month</th>
+          <th style="${th}right;">Txns</th>
+          <th style="${th}right;">Income</th>
+          <th style="${th}right;">Expenses</th>
+          <th style="${th}right;">Transfers</th>
+          <th style="${th}right;">Net</th>
+          <th style="${th}right;">Running</th>
+        </tr></thead>
+        <tbody>`;
+
+  let running = 0;
+  const allMonthKeys = Object.keys(monthMap).sort();
+  allMonthKeys.forEach(k => {
+    const d   = monthMap[k];
+    const net = d.inc - d.exp;
+    running  += net;
+    const [yr,mo] = k.split('-');
+    const moLabel = new Date(yr,parseInt(mo)-1,1).toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+    out += `<tr style="border-bottom:1px solid rgba(255,255,255,.04);">
+      <td style="padding:7px 12px;font-family:var(--font-m);font-size:11px;color:var(--ink3);">${moLabel}</td>
+      <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;">${d.n}</td>
+      <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--positive);">${d.inc>0?'+'+fmt(d.inc):'—'}</td>
+      <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--gold);">${d.exp>0?fmt(d.exp):'—'}</td>
+      <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">${d.xfer>0?fmt(d.xfer):'—'}</td>
+      <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;font-weight:600;color:${net>=0?'var(--positive)':'var(--negative)'};">${net>=0?'+':''}${fmt(net)}</td>
+      <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:${running>=0?'var(--river)':'var(--negative)'};">${running>=0?'+':''}${fmt(running)}</td>
+    </tr>`;
+  });
+  out += `</tbody></table></div></div>`;
+
+  // ── Duplicate detail (if any) ───────────────────────────────────
+  if (dupTxns.length > 0) {
+    out += `<div style="background:rgba(248,113,113,.04);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">
+      <div style="padding:12px 16px;background:rgba(248,113,113,.08);border-bottom:1px solid rgba(248,113,113,.2);">
+        <div style="font-size:13px;font-weight:600;color:var(--negative);">⚠ Duplicate Transactions (${dupKeys.length} found)</div>
+        <div style="font-size:11px;color:var(--ink4);margin-top:2px;">These exact records appear more than once. Fix by re-exporting Quicken with non-overlapping date ranges.</div>
+      </div>
+      <div style="overflow-x:auto;max-height:240px;overflow-y:auto;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr>
+            <th style="${th}left;">Date</th><th style="${th}left;">Payee</th>
+            <th style="${th}left;">Account</th><th style="${th}right;">Amount</th><th style="${th}right;">Count</th>
+          </tr></thead>
+          <tbody>
+          ${dupKeys.slice(0,20).map(([k,n]) => {
+            const t = txns.find(t=>dupKey(t)===k);
+            return t ? `<tr style="border-bottom:1px solid rgba(255,255,255,.04);">
+              <td style="padding:7px 12px;font-family:var(--font-m);font-size:11px;">${t.date}</td>
+              <td style="padding:7px 12px;font-size:12px;">${t.payee}</td>
+              <td style="padding:7px 12px;font-size:11px;color:var(--ink4);">${t.account}</td>
+              <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;">${fmt(Math.abs(t.amount))}</td>
+              <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--negative);font-weight:600;">${n}×</td>
+            </tr>` : '';
+          }).join('')}
+          ${dupKeys.length>20?'<tr><td colspan="5" style="padding:8px 12px;font-size:11px;color:var(--ink4);">... and '+(dupKeys.length-20)+' more</td></tr>':''}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  // ── Near-duplicate detail ─────────────────────────────────────
+  if (nearDups.length > 0) {
+    out += `<div style="background:rgba(245,168,0,.04);border:1px solid rgba(245,168,0,.2);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">
+      <div style="padding:12px 16px;background:rgba(245,168,0,.06);border-bottom:1px solid rgba(245,168,0,.2);">
+        <div style="font-size:13px;font-weight:600;color:var(--gold);">⚠ Cross-Account Amount Matches (${nearDups.length} found)</div>
+        <div style="font-size:11px;color:var(--ink4);margin-top:2px;">Same date + amount in different accounts. Usually fine (CC charge + checking payment) — but verify none are double-counted.</div>
+      </div>
+      <div style="overflow-x:auto;max-height:240px;overflow-y:auto;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr>
+            <th style="${th}left;">Date</th><th style="${th}left;">Payee / Description</th>
+            <th style="${th}left;">Accounts</th><th style="${th}right;">Amount</th><th style="${th}left;">Status</th>
+          </tr></thead>
+          <tbody>
+          ${nearDups.slice(0,15).map(group => {
+            const date = group[0].date;
+            const amt  = Math.abs(group[0].amount);
+            const accts= [...new Set(group.map(t=>t.account))];
+            const payees=[...new Set(group.map(t=>t.payee))];
+            // Is one a transfer? If so, probably fine
+            const hasXfer = group.some(t=>isTransfer(t));
+            const statusColor = hasXfer ? 'var(--positive)' : 'var(--gold)';
+            const statusText  = hasXfer ? '✓ Transfer detected' : '⚠ Review manually';
+            return `<tr style="border-bottom:1px solid rgba(255,255,255,.04);">
+              <td style="padding:7px 12px;font-family:var(--font-m);font-size:11px;">${date}</td>
+              <td style="padding:7px 12px;font-size:12px;">${payees.join(' / ')}</td>
+              <td style="padding:7px 12px;font-size:11px;color:var(--ink4);">${accts.join(' ↔ ')}</td>
+              <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;">${fmt(amt)}</td>
+              <td style="padding:7px 12px;font-size:11px;color:${statusColor};">${statusText}</td>
+            </tr>`;
+          }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  // ── Uncategorized transactions ─────────────────────────────────
+  if (uncat.length > 0) {
+    const uncatTxns = sp.filter(t => t.amount<0 && classifyTxn(t)==='other')
+      .sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount)).slice(0,30);
+    out += `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">
+      <div style="padding:12px 16px;background:var(--lift);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--ink2);">Uncategorized Transactions</div>
+          <div style="font-size:11px;color:var(--ink4);margin-top:2px;">${uncatTotal>0?fmt(uncatTotal)+' across '+uncat.length+' categories':''} · Fix in Quicken → re-export to improve accuracy</div>
+        </div>
+        <button onclick="showPage('transactions')" class="btn btn-ghost" style="font-size:11px;padding:5px 10px;">View All →</button>
+      </div>
+      <div style="overflow-x:auto;max-height:300px;overflow-y:auto;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr>
+            <th style="${th}left;">Date</th><th style="${th}left;">Payee</th>
+            <th style="${th}left;">Quicken Category</th><th style="${th}left;">Account</th>
+            <th style="${th}right;">Amount</th>
+          </tr></thead>
+          <tbody>
+          ${uncatTxns.map(t => `<tr style="border-bottom:1px solid rgba(255,255,255,.04);">
+            <td style="padding:7px 12px;font-family:var(--font-m);font-size:11px;color:var(--ink4);">${t.date}</td>
+            <td style="padding:7px 12px;font-size:12px;">${t.payee||'—'}</td>
+            <td style="padding:7px 12px;font-size:11px;color:var(--ink4);">${t.category||'Uncategorized'}</td>
+            <td style="padding:7px 12px;font-size:11px;color:var(--ink4);">${t.account}</td>
+            <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--gold);">${fmt(Math.abs(t.amount))}</td>
+          </tr>`).join('')}
+          ${uncatTxns.length>=30?'<tr><td colspan="5" style="padding:8px 12px;font-size:11px;color:var(--ink4);">Showing top 30 by amount — go to Transactions to see all</td></tr>':''}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  // ── How to use this page ───────────────────────────────────────
+  out += `<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 18px;">
+    <div style="font-size:11px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">How to Reconcile</div>
+    <div style="font-size:12px;color:var(--ink3);line-height:2;">
+      <strong style="color:var(--ink2);">Step 1 — Match transaction counts:</strong> In Quicken, go to Reports → Transaction Report for each account and date range. The Txns column above should match.<br>
+      <strong style="color:var(--ink2);">Step 2 — Match income totals:</strong> For checking accounts, Quicken income should match the Income column. For credit cards, income = refunds/credits only.<br>
+      <strong style="color:var(--ink2);">Step 3 — Match expense totals:</strong> For credit cards, the Expense column = all charges. For checking, Expense = direct debits (non-CC purchases).<br>
+      <strong style="color:var(--ink2);">Step 4 — Transfers:</strong> CC payments from checking appear as Transfers — they are excluded from income/expense totals to prevent double-counting.<br>
+      <strong style="color:var(--ink2);">Step 5 — Fix discrepancies:</strong> If counts don't match, check for missing date ranges or accounts. If amounts differ, look for duplicate entries above.
+    </div>
+  </div>`;
+
+  el.innerHTML = out;
+}
+
+function filterTxnsByAcct(acct) {
+  showPage('transactions');
+  requestAnimationFrame(() => {
+    const sel = document.getElementById('txnAcct');
+    if (sel) { sel.value = acct; renderTxns(); }
+  });
 }
 
 // ════════════════════════════════════════════════
@@ -1426,6 +1828,12 @@ async function processFiles() {
   }).sort((a,b) => b.date.localeCompare(a.date));
 
   accounts = [...acctSet].sort();
+  // Classify each account type
+  acctMeta = {};
+  accounts.forEach(a => {
+    const type = detectAcctType(a);
+    acctMeta[a] = { type, isCreditCard: type === 'credit' };
+  });
   saveData();
   pendingFiles = [];
   renderFileList();
@@ -1611,7 +2019,7 @@ function parseOFX(text, fname) {
 // ════════════════════════════════════════════════
 function saveData() {
   try {
-    localStorage.setItem(DB_KEY, JSON.stringify({ txns, accounts, isDemoMode, savedAt:Date.now() }));
+    localStorage.setItem(DB_KEY, JSON.stringify({ txns, accounts, acctMeta, isDemoMode, surplusTargets, savedAt:Date.now() }));
   } catch(e) { toast('Storage full — data not saved'); }
 }
 
@@ -1620,15 +2028,25 @@ function loadData() {
     const raw = localStorage.getItem(DB_KEY);
     if (!raw) return false;
     const d = JSON.parse(raw);
-    txns      = d.txns      || [];
-    accounts  = d.accounts  || [];
-    isDemoMode= !!d.isDemoMode;
+    txns           = d.txns           || [];
+    accounts       = d.accounts       || [];
+    acctMeta       = d.acctMeta       || {};
+    isDemoMode     = !!d.isDemoMode;
+    surplusTargets = d.surplusTargets  || { emergency:0, investments:0, college:0, other:0 };
+    // Re-derive acctMeta for any accounts not already classified
+    accounts.forEach(a => {
+      if (!acctMeta[a]) {
+        const type = detectAcctType(a);
+        acctMeta[a] = { type, isCreditCard: type === 'credit' };
+      }
+    });
     return txns.length > 0;
   } catch(e) { return false; }
 }
 
 function clearAll() {
-  txns=[]; accounts=[]; isDemoMode=false;
+  txns=[]; accounts=[]; acctMeta={}; isDemoMode=false;
+  surplusTargets = { emergency:0, investments:0, college:0, other:0 };
   donutDash=null; donutCat=null;
   try { localStorage.removeItem(DB_KEY); } catch(e) {}
   document.getElementById('clearBtn').style.display='none';
@@ -1709,6 +2127,11 @@ function loadDemo() {
 
   txns.sort((a,b)=>b.date.localeCompare(a.date));
   accounts=[...new Set(txns.map(t=>t.account))].sort();
+  acctMeta = {};
+  accounts.forEach(a => {
+    const type = detectAcctType(a);
+    acctMeta[a] = { type, isCreditCard: type === 'credit' };
+  });
   saveData();
   updateHeader();
   renderUploadStatus();
@@ -1725,6 +2148,635 @@ function toast(msg) {
   el.textContent=msg; el.classList.add('show');
   clearTimeout(_toastTimer);
   _toastTimer=setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+
+
+
+// ════════════════════════════════════════════════════════════════
+// INCOME STATEMENT — ACCRUAL, DRILLABLE, PAYCHECK-REASSEMBLED
+// ════════════════════════════════════════════════════════════════
+
+// ── Classification ───────────────────────────────────────────────
+// Priority: 1) Quicken category exact match  2) payee keyword  3) category keyword
+// If Quicken already categorized it, we trust that completely.
+
+const QUICKEN_CAT_MAP = {
+  // Common Quicken built-in categories → our buckets
+  'salary':         'paycheck', 'wages':           'paycheck', 'paycheck':       'paycheck',
+  'bonus':          'paycheck', 'commission':      'paycheck',
+  'interest income':'other_inc','dividend income': 'other_inc','investment income':'other_inc',
+  'rental income':  'other_inc','freelance':       'other_inc','consulting':      'other_inc',
+  // Savings/transfers
+  'savings':        'auto_save','transfer to savings':'auto_save',
+  '401k':           'auto_save','403b':            'auto_save','ira':             'auto_save',
+  'roth':           'auto_save','hsa':             'auto_save','529':             'auto_save',
+  // Fixed
+  'housing':        'mortgage', 'mortgage':        'mortgage', 'rent':            'mortgage',
+  'hoa':            'mortgage',
+  'auto':           'car',      'auto insurance':  'car',      'car insurance':   'car',
+  'auto loan':      'car',      'car payment':     'car',
+  'education':      'education','tuition':         'education','student loan':    'education',
+  'insurance':      'insurance','health insurance':'insurance','life insurance':  'insurance',
+  'childcare':      'childcare','daycare':         'childcare',
+  // Utilities
+  'utilities':      'electric', 'electric':        'electric', 'gas & electric':  'electric',
+  'natural gas':    'gas_util', 'heating':         'gas_util',
+  'water':          'water',
+  'telephone':      'cell',     'cell phone':      'cell',     'mobile phone':    'cell',
+  'internet':       'internet', 'cable tv':        'internet', 'cable & internet':'internet',
+  // Food
+  'groceries':      'groceries','food':            'groceries','supermarket':     'groceries',
+  'dining':         'restaurants','food & dining': 'restaurants','restaurant':    'restaurants',
+  'fast food':      'restaurants','coffee':        'restaurants',
+  // Transport
+  'gasoline':       'gas_car',  'auto fuel':       'gas_car',  'gas':             'gas_car',
+  'parking':        'transit',  'tolls':           'transit',  'transit':         'transit',
+  'rideshare':      'transit',
+  // Health
+  'healthcare':     'healthcare','medical':        'healthcare','pharmacy':       'healthcare',
+  'dental':         'healthcare','vision':         'healthcare','fitness':        'healthcare',
+  // Discretionary
+  'entertainment':  'entertainment','recreation':  'entertainment','hobbies':     'entertainment',
+  'movies':         'entertainment','concerts':    'entertainment',
+  'shopping':       'household', 'amazon':         'household', 'home improvement':'household',
+  'personal care':  'personal',  'hair care':      'personal',  'beauty':         'personal',
+  'clothing':       'clothing',  'shoes':          'clothing',
+  'travel':         'travel',    'vacation':       'travel',    'airline':        'travel',
+  'subscriptions':  'subscriptions','streaming':   'subscriptions',
+  'gifts':          'gifts',     'charity':        'gifts',     'donations':      'gifts',
+};
+
+// Keyword matching (fallback when Quicken category doesn't match above)
+const KW_MAP = [
+  // paycheck income
+  ['paycheck',     ['direct deposit','payroll','employer','salary','wages','adp','gusto','paychex']],
+  ['other_inc',    ['interest','dividend','refund','reimbursement','rental','freelance','venmo','paypal','zelle']],
+  // savings
+  ['auto_save',    ['savings account','investment account','fidelity','vanguard','schwab','401k','ira','roth','hsa','529','college fund']],
+  // fixed
+  ['mortgage',     ['mortgage','rent ','hoa','association fee']],
+  ['car',          ['car payment','auto loan','gm financial','ally auto','ford credit','toyota financial','honda financial','auto insurance','geico','progressive','state farm auto']],
+  ['education',    ['tuition','student loan','sallie mae','navient','pitt ','cmu ','carnegie']],
+  ['insurance',    ['highmark','aetna','cigna','anthem','bcbs','upmc insurance','health plan','life insurance','disability ins']],
+  ['childcare',    ['daycare','childcare','babysit','nanny','preschool','after school','camp ']],
+  // utilities
+  ['electric',     ['duquesne','ppl electric','dominion light','con edison','pepco']],
+  ['gas_util',     ['peoples gas','equitable gas','national fuel','columbia gas','piedmont natural']],
+  ['water',        ['pwsa','water authority','municipal water','aqua pa']],
+  ['internet',     ['comcast','xfinity','spectrum','cox cable','verizon fios','at&t internet','directv','dish network']],
+  ['cell',         ['verizon wireless','at&t wireless','t-mobile','sprint','metro pcs','cricket wireless','boost mobile']],
+  // food
+  ['groceries',    ['giant eagle','whole foods','trader joe','aldi','costco','kroger','safeway','wegmans','market district','fresh market','sprouts','food lion']],
+  ['restaurants',  ['restaurant','doordash','grubhub','ubereats','seamless','chipotle','mcdonald','starbucks','panera','subway','chick-fil','taco bell','pizza','sushi','primanti','condado','noodlehead']],
+  // transport
+  ['gas_car',      ['shell ','bp ','gulf ','exxon','mobil ','sunoco','speedway','wawa','sheetz','marathon gas']],
+  ['transit',      ['uber ','lyft ','ezpass','parking ','port authority','amtrak','greyhound','airport ']],
+  // health
+  ['healthcare',   ['cvs ','walgreens','rite aid','pharmacy','upmc ','hospital','clinic','dental','orthodont','vision','optometrist','doctor ']],
+  // discretionary
+  ['entertainment',['movie','cinema','amc ','regal ','concert','ticketmaster','stubhub','pnc park','ppg arena','bowling','golf ','museum','zoo ','aquarium']],
+  ['household',    ['amazon','home depot','lowes ','target ','walmart','ikea','wayfair','bed bath','ace hardware','menards','container store']],
+  ['personal',     ['salon','barber','hair ','nail ','spa ','massage','sephora','ulta','planet fitness',"gold's gym",'anytime fitness','ymca']],
+  ['clothing',     ['nordstrom','macy','gap ','old navy','h&m','zara','tj maxx','ross ','marshalls','nike ','adidas ','lululemon','under armour']],
+  ['travel',       ['airbnb','vrbo','marriott','hilton','hyatt','expedia','booking.com','southwest air','united air','delta air','american air','frontier','spirit air','cruise','resort ']],
+  ['subscriptions',['netflix','hulu','disney+','disney plus','spotify','apple music','amazon prime','youtube premium','hbo','paramount+','peacock','apple icloud']],
+  ['gifts',        ['gift ','hallmark','1-800-flowers','donation','charity','church ','tithe','gofundme','npo ']],
+];
+
+function classifyTxn(t) {
+  const cat  = (t.category || '').toLowerCase().trim();
+  const pay  = (t.payee    || '').toLowerCase().trim();
+
+  // 1. Direct Quicken category match (highest trust)
+  if (QUICKEN_CAT_MAP[cat]) return QUICKEN_CAT_MAP[cat];
+
+  // 2. Partial Quicken category match
+  for (const [qcat, bucket] of Object.entries(QUICKEN_CAT_MAP)) {
+    if (cat.includes(qcat) || qcat.includes(cat)) return bucket;
+  }
+
+  // 3. Payee keyword match (very reliable for known merchants)
+  for (const [bucket, keywords] of KW_MAP) {
+    if (keywords.some(kw => pay.includes(kw) || cat.includes(kw))) return bucket;
+  }
+
+  // 4. Income heuristic: positive, unknown, non-transfer
+  if (t.amount > 0) return 'other_inc';
+
+  return 'other';
+}
+
+// ── Section definitions ──────────────────────────────────────────
+// Waterfall order: income → auto_save → fixed → variable → discretionary → surplus
+const WATERFALL = [
+  {
+    id: 'income', label: 'Total Household Income', type: 'income',
+    sub: 'All money coming in — payroll, freelance, interest, refunds',
+    color: 'var(--positive)', sign: '+',
+    buckets: ['paycheck','other_inc'],
+  },
+  {
+    id: 'auto_save', label: 'Pre-Committed Savings', type: 'saving',
+    sub: 'Auto-deposits to savings, 401k, IRA, HSA, 529 — money set aside before you spend',
+    color: '#34D399', sign: '−',
+    buckets: ['auto_save'],
+    note: 'These are intentional — they leave checking automatically on payday.',
+  },
+  {
+    id: 'fixed', label: 'Fixed Living Expenses', type: 'expense',
+    sub: 'Mortgage, car, insurance, education, childcare — obligations you cannot easily change',
+    color: '#60A5FA', sign: '−',
+    buckets: ['mortgage','car','education','insurance','childcare'],
+  },
+  {
+    id: 'utilities', label: 'Utilities & Communications', type: 'expense',
+    sub: 'Electric, gas, water, internet, cell — largely fixed month to month',
+    color: '#A78BFA', sign: '−',
+    buckets: ['electric','gas_util','water','internet','cell'],
+  },
+  {
+    id: 'necessities', label: 'Variable Necessities', type: 'expense',
+    sub: 'Groceries, gas, healthcare — must-haves but amounts vary by your choices',
+    color: '#F5A800', sign: '−',
+    buckets: ['groceries','gas_car','transit','healthcare'],
+  },
+  {
+    id: 'discretionary', label: 'Discretionary Spending', type: 'expense',
+    sub: 'Restaurants, entertainment, shopping, subscriptions, travel — your biggest lever for change',
+    color: '#E879F9', sign: '−',
+    buckets: ['restaurants','entertainment','household','personal','clothing','travel','subscriptions','gifts'],
+  },
+  {
+    id: 'other', label: 'Other / Uncategorized', type: 'expense',
+    sub: 'Review these — better Quicken categories will move them into the right section',
+    color: 'var(--ink4)', sign: '−',
+    buckets: ['other'],
+  },
+];
+
+const BUCKET_META = {
+  paycheck:      { label:'Payroll & Wages',               icon:'💵' },
+  other_inc:     { label:'Other Income',                  icon:'💰' },
+  auto_save:     { label:'Auto-Savings & Retirement',     icon:'🏦' },
+  mortgage:      { label:'Mortgage / Rent',               icon:'🏠' },
+  car:           { label:'Car Payments & Insurance',      icon:'🚗' },
+  education:     { label:'Education & Tuition',           icon:'🎓' },
+  insurance:     { label:'Health & Life Insurance',       icon:'🛡️' },
+  childcare:     { label:'Childcare & Activities',        icon:'👶' },
+  electric:      { label:'Electric',                      icon:'⚡' },
+  gas_util:      { label:'Gas / Heat',                    icon:'🔥' },
+  water:         { label:'Water & Sewer',                 icon:'💧' },
+  internet:      { label:'Internet / Cable',              icon:'📡' },
+  cell:          { label:'Cell Phones',                   icon:'📱' },
+  groceries:     { label:'Groceries',                     icon:'🛒' },
+  gas_car:       { label:'Vehicle Fuel',                  icon:'⛽' },
+  transit:       { label:'Parking, Tolls & Transit',      icon:'🚌' },
+  healthcare:    { label:'Healthcare & Pharmacy',         icon:'⚕️' },
+  restaurants:   { label:'Restaurants & Dining',          icon:'🍕' },
+  entertainment: { label:'Entertainment & Recreation',    icon:'🎭' },
+  household:     { label:'Household & Shopping',          icon:'🔧' },
+  personal:      { label:'Personal Care & Wellness',      icon:'💅' },
+  clothing:      { label:'Clothing & Accessories',        icon:'👕' },
+  travel:        { label:'Travel & Vacation',             icon:'✈️' },
+  subscriptions: { label:'Subscriptions & Streaming',    icon:'📺' },
+  gifts:         { label:'Gifts & Giving',               icon:'🎁' },
+  other:         { label:'Uncategorized',                 icon:'❓' },
+};
+
+// ── Drilldown state ──────────────────────────────────────────────
+let isDrillOpen = {};  // { sectionId: true/false }
+let isBucketOpen = {}; // { bucketKey: true/false }
+
+function toggleSection(id) {
+  isDrillOpen[id] = !isDrillOpen[id];
+  renderIncomeStatement();
+}
+
+function toggleBucket(key) {
+  isBucketOpen[key] = !isBucketOpen[key];
+  renderIncomeStatement();
+}
+
+// ── Main render ──────────────────────────────────────────────────
+function renderIncomeStatement() {
+  const el = document.getElementById('incomeStatement');
+  if (!el) return;
+
+  // Month selector
+  const moSel  = document.getElementById('isMonth');
+  const sp     = spendable(txns);
+  const months = [...new Set(sp.map(t=>t.date.slice(0,7)))].sort().reverse();
+
+  if (moSel.options.length === 0) {
+    months.forEach(m => {
+      const [yr,mo] = m.split('-');
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = new Date(yr,parseInt(mo)-1,1)
+        .toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      moSel.appendChild(opt);
+    });
+  }
+
+  const selMonth = moSel.value || months[0];
+  if (!selMonth) { el.innerHTML='<p style="color:var(--ink4);padding:20px">No data yet.</p>'; return; }
+  const [yr,mo] = selMonth.split('-');
+  const monthName = new Date(yr,parseInt(mo)-1,1)
+    .toLocaleDateString('en-US',{month:'long',year:'numeric'});
+
+  // ── Classify all transactions for this month ─────────────────
+  // Use ALL spendable txns (accrual = by purchase date)
+  const monthSp = sp.filter(t => t.date.startsWith(selMonth));
+
+  // Also capture savings transfers (auto-deposits on payday)
+  const monthXfers = txns.filter(t =>
+    t.date.startsWith(selMonth) && isTransfer(t) && t.amount < 0
+  );
+
+  // Build bucket → transactions map
+  const bucketTxns = {};
+  const addToBucket = (key, t) => {
+    if (!bucketTxns[key]) bucketTxns[key] = [];
+    bucketTxns[key].push(t);
+  };
+
+  monthSp.filter(t => t.amount > 0).forEach(t => addToBucket(classifyTxn(t), t));
+  monthSp.filter(t => t.amount < 0).forEach(t => addToBucket(classifyTxn(t), t));
+
+  // Savings transfers: classify by destination account
+  monthXfers.forEach(t => {
+    const destAcct = (t.category||'').replace(/^\[|\]$/g,'').trim();
+    const type = detectAcctType(destAcct);
+    if (type === 'savings' || type === 'investment') {
+      addToBucket('auto_save', { ...t, _xferTo: destAcct, amount: -Math.abs(t.amount) });
+    }
+    // Also check category keywords
+    else if (KW_MAP.find(([b,kws]) => b==='auto_save' && kws.some(kw=>destAcct.toLowerCase().includes(kw)))) {
+      addToBucket('auto_save', { ...t, _xferTo: destAcct, amount: -Math.abs(t.amount) });
+    }
+  });
+
+  // ── Compute section totals ───────────────────────────────────
+  let runningBalance = 0;
+  const sectionData = WATERFALL.map(sec => {
+    const txnMap = {};
+    let secTotal = 0;
+    sec.buckets.forEach(bk => {
+      const bTxns = bucketTxns[bk] || [];
+      const bTotal = bTxns.reduce((s,t) => s + Math.abs(t.amount), 0);
+      if (bTotal > 0.01) {
+        txnMap[bk] = { txns: bTxns, total: bTotal };
+        secTotal += bTotal;
+      }
+    });
+    if (sec.type === 'income') runningBalance = secTotal;
+    else runningBalance -= secTotal;
+    return { ...sec, bucketData: txnMap, total: secTotal, runningBalance };
+  });
+
+  const totalIncome  = sectionData.find(s=>s.id==='income')?.total || 0;
+  const autoSave     = sectionData.find(s=>s.id==='auto_save')?.total || 0;
+  const totalExp     = sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.total,0);
+  const netSurplus   = totalIncome - autoSave - totalExp;
+  const savingsPct   = totalIncome > 0 ? ((autoSave+Math.max(0,netSurplus))/totalIncome*100) : 0;
+  const checkingIn   = totalIncome - autoSave;  // what actually hits checking
+
+  // ── HTML builder helpers ─────────────────────────────────────
+  function fmtA(v, sign) {
+    const s = sign === '+' ? '+' : sign === '−' ? '−' : '';
+    return s + fmt(v);
+  }
+
+  function chevron(open) {
+    return open
+      ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>'
+      : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>';
+  }
+
+  function pctBar(v, color, of) {
+    const w = of > 0 ? Math.min(100, v/of*100) : 0;
+    return '<div style="height:3px;background:var(--lift);border-radius:2px;margin-top:4px;"><div style="height:100%;width:'+w.toFixed(1)+'%;background:'+color+';border-radius:2px;"></div></div>';
+  }
+
+  // ── Paycheck reassembly explainer ────────────────────────────
+  let out = '';
+
+  // Hero: two cards side by side
+  out += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">';
+
+  // Gross income
+  out += '<div style="background:var(--float);border:1px solid rgba(45,212,191,.3);border-radius:var(--r-lg);padding:18px 20px;">';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Gross Income · '+monthName+'</div>';
+  out += '<div style="font-size:34px;font-weight:700;color:var(--positive);line-height:1;font-family:var(--font-d);">'+fmt(totalIncome)+'</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">full take-home from all sources</div>';
+  out += '</div>';
+
+  // After auto-savings (available to spend)
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;">';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Available to Spend</div>';
+  out += '<div style="font-size:34px;font-weight:700;color:var(--river);line-height:1;font-family:var(--font-d);">'+fmt(checkingIn)+'</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">after '+fmt(autoSave)+' in auto-savings</div>';
+  out += '</div>';
+
+  // Net surplus
+  const surpColor = netSurplus>=0?'var(--positive)':'var(--negative)';
+  out += '<div style="background:var(--float);border:1px solid '+(netSurplus>=0?'rgba(45,212,191,.2)':'rgba(248,113,113,.2)')+';border-radius:var(--r-lg);padding:18px 20px;">';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">'+(netSurplus>=0?'Monthly Surplus':'Monthly Deficit')+'</div>';
+  out += '<div style="font-size:34px;font-weight:700;color:'+surpColor+';line-height:1;font-family:var(--font-d);">'+(netSurplus>=0?'+':'')+fmt(netSurplus)+'</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">total savings rate: <strong style="color:'+(savingsPct>=20?'var(--positive)':savingsPct>=10?'var(--gold)':'var(--negative)')+'">'+savingsPct.toFixed(1)+'%</strong></div>';
+  out += '</div>';
+
+  out += '</div>';
+
+  // Paycheck flow explainer (the "why am I short" insight)
+  if (autoSave > 0) {
+    out += '<div style="background:rgba(52,211,153,.04);border:1px solid rgba(52,211,153,.18);border-radius:var(--r-md);padding:12px 16px;margin-bottom:8px;font-size:12px;color:var(--ink3);line-height:1.7;">';
+    out += '💡 <strong style="color:#34D399;">Why you might feel short:</strong> ';
+    out += fmt(autoSave)+' left checking automatically for savings before you started spending. ';
+    out += 'Your real "spending budget" is <strong style="color:var(--ink);">'+fmt(checkingIn)+'</strong>, not '+fmt(totalIncome)+'. ';
+    out += 'If total expenses ('+fmt(totalExp)+') exceed that number, you&#39;ll need to pull from savings — which happened '+(totalExp>checkingIn?'<strong style="color:var(--negative);">this month</strong>.':'not this month ✓');
+    out += '</div>';
+  }
+
+  // ── Waterfall P&L table ─────────────────────────────────────
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
+
+  // Column headers
+  out += '<div style="display:grid;grid-template-columns:1fr auto auto;gap:0;padding:8px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Category</div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;min-width:110px;">Amount</div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;min-width:100px;">Running Balance</div>';
+  out += '</div>';
+
+  sectionData.forEach(sec => {
+    if (sec.id === 'other' && sec.total < 0.01) return;
+    const open = isDrillOpen[sec.id];
+    const hasBuckets = Object.keys(sec.bucketData).length > 0;
+    const cursor = hasBuckets ? 'cursor:pointer;' : '';
+    const opacity = sec.total < 0.01 ? 'opacity:.35;' : '';
+    const balColor = sec.runningBalance >= 0 ? 'var(--positive)' : 'var(--negative)';
+
+    // Section header row
+    out += '<div data-toggle-sec="true" data-sec-id="'+sec.id+'" style="'+cursor+opacity+'display:grid;grid-template-columns:1fr auto auto;gap:0;padding:12px 16px;border-bottom:1px solid var(--line);transition:background .15s;background:var(--lift);">';
+
+    // Label col
+    out += '<div style="display:flex;align-items:center;gap:8px;">';
+    if (hasBuckets) out += '<span style="color:var(--ink4);">'+chevron(open)+'</span>';
+    else out += '<span style="width:12px;display:inline-block;"></span>';
+    out += '<div>';
+    out += '<div style="font-size:13px;font-weight:600;color:var(--ink2);">'+sec.label+'</div>';
+    out += '<div style="font-size:10px;color:var(--ink4);">'+sec.sub+'</div>';
+    out += '</div></div>';
+
+    // Amount col
+    out += '<div style="text-align:right;min-width:110px;padding-left:16px;">';
+    if (sec.total > 0.01) {
+      out += '<div style="font-size:14px;font-weight:700;color:'+sec.color+';font-family:var(--font-m);">'+sec.sign+fmt(sec.total)+'</div>';
+      out += '<div style="font-size:9px;color:var(--ink4);">'+(totalIncome>0?(sec.total/totalIncome*100).toFixed(0)+'% of income':'')+'</div>';
+    } else {
+      out += '<div style="font-size:13px;color:var(--ink4);">—</div>';
+    }
+    out += '</div>';
+
+    // Running balance col
+    out += '<div style="text-align:right;min-width:100px;padding-left:16px;">';
+    out += '<div style="font-size:13px;font-weight:600;color:'+balColor+';font-family:var(--font-m);">'+(sec.runningBalance>=0?'+':'')+fmt(sec.runningBalance)+'</div>';
+    out += '</div>';
+
+    out += '</div>';  // section header row
+
+    // ── Bucket rows (drilldown level 1) ────────────────────────
+    if (open && hasBuckets) {
+      sec.buckets.forEach(bk => {
+        const bd = sec.bucketData[bk];
+        if (!bd) return;
+        const bMeta  = BUCKET_META[bk] || { label: bk, icon:'·' };
+        const bOpen  = isBucketOpen[bk];
+        const bColor = sec.color;
+
+        out += '<div data-toggle-bk="true" data-bk-id="'+bk+'" style="cursor:pointer;display:grid;grid-template-columns:1fr auto auto;gap:0;padding:9px 16px 9px 36px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.015);">';
+        out += '<div style="display:flex;align-items:center;gap:6px;">';
+        out += '<span style="color:var(--ink4);">'+chevron(bOpen)+'</span>';
+        out += '<span style="font-size:14px;">'+bMeta.icon+'</span>';
+        out += '<div>';
+        out += '<div style="font-size:12px;color:var(--ink2);">'+bMeta.label+'</div>';
+        out += '<div style="font-size:10px;color:var(--ink4);">'+bd.txns.length+' transaction'+(bd.txns.length!==1?'s':'')+'</div>';
+        out += '</div></div>';
+
+        out += '<div style="text-align:right;min-width:110px;padding-left:16px;">';
+        out += '<div style="font-size:13px;font-weight:600;color:'+bColor+';font-family:var(--font-m);">'+sec.sign+fmt(bd.total)+'</div>';
+        out += pctBar(bd.total, bColor, totalIncome);
+        out += '</div>';
+        out += '<div style="min-width:100px;"></div>';
+        out += '</div>';  // bucket row
+
+        // ── Transaction rows (drilldown level 2) ──────────────
+        if (bOpen) {
+          const sorted = [...bd.txns].sort((a,b) => b.date.localeCompare(a.date));
+          sorted.forEach(t => {
+            const isXfer = t._xferTo;
+            const amtColor = t.amount > 0 ? 'var(--positive)' : 'var(--ink3)';
+            const amtSign  = t.amount > 0 ? '+' : '−';
+            out += '<div style="display:grid;grid-template-columns:90px 1fr auto auto auto;gap:0;padding:7px 16px 7px 60px;border-bottom:1px solid rgba(255,255,255,.025);background:rgba(0,0,0,.15);">';
+            out += '<div style="font-family:var(--font-m);font-size:10px;color:var(--ink4);">'+t.date+'</div>';
+            out += '<div>';
+            out += '<div style="font-size:12px;color:var(--ink2);">'+( t.payee || (isXfer?'→ '+t._xferTo:'') || '—')+'</div>';
+            if (t.category && t.category !== 'Uncategorized') {
+              out += '<div style="font-size:10px;color:var(--ink4);">'+t.category+(t.account?' · '+t.account:'')+'</div>';
+            } else if (t.account) {
+              out += '<div style="font-size:10px;color:var(--ink4);">'+t.account+'</div>';
+            }
+            out += '</div>';
+            out += '<div style="min-width:100px;text-align:right;font-family:var(--font-m);font-size:12px;font-weight:600;color:'+amtColor+';">'+amtSign+fmt(Math.abs(t.amount))+'</div>';
+            out += '<div style="min-width:100px;"></div>';
+            out += '<div style="min-width:100px;"></div>';
+            out += '</div>';  // txn row
+          });
+        }
+      });
+
+      // Note for section (e.g. savings explainer)
+      if (sec.note) {
+        out += '<div style="padding:8px 16px 8px 36px;font-size:11px;color:var(--ink4);border-bottom:1px solid var(--line);font-style:italic;">'+sec.note+'</div>';
+      }
+    }
+  });
+
+  // Surplus row
+  out += '<div style="display:grid;grid-template-columns:1fr auto auto;gap:0;padding:14px 16px;background:'+(netSurplus>=0?'rgba(45,212,191,.06)':'rgba(248,113,113,.06)')+';border-top:2px solid '+(netSurplus>=0?'rgba(45,212,191,.3)':'rgba(248,113,113,.3)')+';">';
+  out += '<div style="font-size:14px;font-weight:700;color:'+(netSurplus>=0?'var(--positive)':'var(--negative)')+';">';
+  out += (netSurplus>=0?'✓ Net Surplus':'⚠ Net Deficit')+' <span style="font-size:11px;font-weight:400;color:var(--ink4);">· '+(netSurplus>=0?'available to deploy or add to savings':'spending exceeds available income')+'</span>';
+  out += '</div>';
+  out += '<div style="text-align:right;min-width:110px;font-size:16px;font-weight:700;color:'+(netSurplus>=0?'var(--positive)':'var(--negative)')+';font-family:var(--font-m);">'+(netSurplus>=0?'+':'')+fmt(netSurplus)+'</div>';
+  out += '<div style="min-width:100px;"></div>';
+  out += '</div>';
+
+  out += '</div>';  // waterfall table
+
+  // ── Surplus allocation ───────────────────────────────────────
+  if (netSurplus > 0) {
+    out += '<div style="margin-top:8px;background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;">';
+    out += '<div style="font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:4px;">💰 Deploy Your Surplus</div>';
+    out += '<div style="font-size:11px;color:var(--ink4);margin-bottom:14px;">You have '+fmt(netSurplus)+' unallocated this month. Here&#39;s one way to split it:</div>';
+    out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">';
+    [
+      ['Emergency Fund', .40, '3–6mo expenses goal'],
+      ['Investments',    .30, 'brokerage / index funds'],
+      ['College (529)',  .20, 'per-child contribution'],
+      ['Experience',     .10, 'travel, family memories'],
+    ].forEach(([lbl,pct,sub]) => {
+      const amt = netSurplus * pct;
+      out += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;">';
+      out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">'+lbl+'</div>';
+      out += '<div style="font-size:18px;font-weight:700;color:var(--positive);">'+fmt(amt)+'</div>';
+      out += '<div style="font-size:10px;color:var(--ink4);">'+sub+'</div>';
+      out += '</div>';
+    });
+    out += '</div></div>';
+  } else if (netSurplus < 0) {
+    // Deficit: show the gap and suggest top cuts
+    out += '<div style="margin-top:8px;background:rgba(248,113,113,.04);border:1px solid rgba(248,113,113,.18);border-radius:var(--r-lg);padding:18px 20px;">';
+    out += '<div style="font-size:13px;font-weight:600;color:var(--negative);margin-bottom:8px;">⚠ Closing the '+fmt(Math.abs(netSurplus))+' Gap</div>';
+    // Top discretionary buckets = best opportunities
+    const discSec = sectionData.find(s=>s.id==='discretionary');
+    if (discSec && discSec.total > 0) {
+      const topD = Object.entries(discSec.bucketData).sort((a,b)=>b[1].total-a[1].total).slice(0,3);
+      out += '<div style="font-size:12px;color:var(--ink3);line-height:1.9;">Your top discretionary categories this month:<br>';
+      topD.forEach(([bk,bd]) => {
+        const bm = BUCKET_META[bk];
+        out += bm.icon+' '+bm.label+' <strong style="color:var(--negative);">'+fmt(bd.total)+'</strong><br>';
+      });
+      out += '<br>A 20% reduction in discretionary spending would recover <strong style="color:var(--positive);">'+fmt(discSec.total*.2)+'</strong>/month.</div>';
+    }
+    out += '</div>';
+  }
+
+  el.innerHTML = out;
+}
+
+
+
+// ════════════════════════════════════════════════
+// CREDIT CARD CASH FLOW PAGE
+// Shows per-card: velocity, projected bill, when to have cash ready
+// ════════════════════════════════════════════════
+function renderCreditFlow() {
+  const el = document.getElementById('creditFlowContent');
+  if (!el) return;
+
+  const projections = getCCProjections();
+  if (!projections.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">No credit card accounts detected.<br><span style="font-size:12px;">Import Quicken data that includes credit card accounts (Chase Sapphire, Amex, etc.)</span></div>';
+    return;
+  }
+
+  const now    = new Date();
+  const mo     = now.getMonth();
+  const yr     = now.getFullYear();
+  const daysIn = new Date(yr,mo+1,0).getDate();
+  const today  = now.getDate();
+  const daysLeft = daysIn - today;
+
+  let out = '';
+
+  // Explainer
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:16px;">';
+  out += '<div style="font-size:12px;color:var(--ink3);line-height:1.8;">';
+  out += '<strong style="color:var(--ink2);">How to use this view:</strong> Your credit card charges are captured as actual expenses on the Income Statement (by purchase date). ';
+  out += 'This page shows the <em>cash flow reality</em> — when you need to have money ready in checking to pay each bill, and how much to expect based on your recent spending velocity.';
+  out += '</div></div>';
+
+  // Summary row
+  const totalVel30 = projections.reduce((s,p)=>s+p.vel30,0);
+  const totalEst   = projections.reduce((s,p)=>s+p.estBalance,0);
+  out += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">';
+  out += '<div class="kpi"><div class="kpi-label">30-Day CC Spend</div><div class="kpi-val" style="color:var(--gold);">'+fmt(totalVel30)+'</div><div class="kpi-sub">across all cards</div></div>';
+  out += '<div class="kpi"><div class="kpi-label">Avg Daily Spend</div><div class="kpi-val">'+fmt(totalVel30/30)+'</div><div class="kpi-sub">'+fmt(totalVel30/30*daysLeft)+' projected remaining month</div></div>';
+  out += '<div class="kpi"><div class="kpi-label">Est. Total Bills Due</div><div class="kpi-val" style="color:var(--negative);">'+fmt(totalEst)+'</div><div class="kpi-sub">estimated open balances</div></div>';
+  out += '</div>';
+
+  // Per-card cards
+  projections.forEach((p, idx) => {
+    const projRemaining = p.vel30/30*daysLeft;
+    const projBill      = p.vel30 + projRemaining;  // rough: last 30 days + projected rest of month
+    const color = COLORS[idx % COLORS.length];
+
+    out += '<div style="background:var(--float);border:1px solid var(--line);border-left:3px solid '+color+';border-radius:var(--r-lg);padding:20px 22px;margin-bottom:12px;">';
+
+    // Card header
+    out += '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;">';
+    out += '<div><div style="font-size:15px;font-weight:600;color:var(--ink);">'+p.acct+'</div>';
+    out += '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">'+p.chargeCount+' charges in last 30 days</div></div>';
+    out += '<div style="text-align:right;"><div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">30-Day Velocity</div>';
+    out += '<div style="font-size:22px;font-weight:700;color:'+color+';">'+fmt(p.vel30)+'</div></div>';
+    out += '</div>';
+
+    // Projection details
+    out += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">';
+    out += '<div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;">';
+    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Avg/Day</div>';
+    out += '<div style="font-size:16px;font-weight:600;color:var(--ink);">'+fmt(p.vel30/30)+'</div></div>';
+
+    out += '<div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;">';
+    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">'+daysLeft+'d Left in Month</div>';
+    out += '<div style="font-size:16px;font-weight:600;color:var(--gold);">+'+fmt(projRemaining)+' est.</div></div>';
+
+    out += '<div style="background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.15);border-radius:var(--r-sm);padding:10px 12px;">';
+    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--negative);margin-bottom:4px;">Have Ready to Pay</div>';
+    out += '<div style="font-size:16px;font-weight:700;color:var(--negative);">~'+fmt(p.vel30)+'</div></div>';
+    out += '</div>';
+
+    // Top categories on this card
+    if (p.topCats.length) {
+      out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Where you&#39;re spending on this card</div>';
+      out += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+      p.topCats.forEach(([cat,amt]) => {
+        out += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:4px;padding:4px 10px;font-size:11px;color:var(--ink3);">'+cat+' <strong style="color:var(--ink2);">'+fmt(amt)+'</strong></div>';
+      });
+      out += '</div>';
+    }
+
+    // Cash flow guidance
+    out += '<div style="margin-top:14px;padding:10px 14px;background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.12);border-radius:var(--r-sm);font-size:11px;color:var(--ink3);">';
+    out += '💡 <strong style="color:var(--river);">Cash flow tip:</strong> Based on last 30 days, have approximately <strong style="color:var(--positive);">'+fmt(p.vel30)+'</strong> ready in checking when this bill is due. ';
+    out += 'At your current pace, you&#39;ll spend roughly <strong>'+fmt(projRemaining)+'</strong> more on this card before month end.';
+    out += '</div>';
+    out += '</div>';
+  });
+
+  // Month spending timeline
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px 22px;margin-top:8px;">';
+  out += '<div style="font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:4px;">📅 This Month at a Glance</div>';
+  out += '<div style="font-size:11px;color:var(--ink4);margin-bottom:14px;">Day '+today+' of '+daysIn+' · '+daysLeft+' days remaining</div>';
+
+  // Build daily spend chart for current month
+  const thisMonth = yr+'-'+String(mo+1).padStart(2,'0');
+  const dailySpend = {};
+  spendable(txns).filter(t=>t.date.startsWith(thisMonth)&&t.amount<0).forEach(t=>{
+    const d=parseInt(t.date.slice(8,10));
+    dailySpend[d]=(dailySpend[d]||0)+Math.abs(t.amount);
+  });
+  const days = Array.from({length:daysIn},(_,i)=>i+1);
+  const dayVals = days.map(d=>dailySpend[d]||0);
+  const maxDay  = Math.max(...dayVals,1);
+  const barW    = Math.max(2, Math.floor(100/daysIn)-1);
+
+  out += '<div style="display:flex;align-items:flex-end;gap:1px;height:60px;margin-bottom:6px;">';
+  days.forEach((d,i) => {
+    const v   = dayVals[i];
+    const h   = v>0 ? Math.max(4,v/maxDay*56) : 0;
+    const isFuture = d > today;
+    const isToday  = d === today;
+    const color = isFuture ? 'var(--lift)' : isToday ? 'var(--gold)' : 'rgba(96,165,250,.6)';
+    out += '<div style="flex:1;height:'+h+'px;background:'+color+';border-radius:2px 2px 0 0;min-width:'+barW+'px;" title="Day '+d+': '+fmt(v)+'"></div>';
+  });
+  out += '</div>';
+  out += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--ink4);font-family:var(--font-m);">';
+  out += '<span>Day 1</span><span>Today (Day '+today+')</span><span>Day '+daysIn+'</span>';
+  out += '</div></div>';
+
+  el.innerHTML = out;
 }
 
 // ════════════════════════════════════════════════
