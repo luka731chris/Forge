@@ -1574,18 +1574,18 @@ select option { background: var(--float); color: var(--ink2); }
     <span id="demoTag" class="demo-badge" style="display:none;">● Demo</span>
     <button class="btn btn-ghost btn-sm" onclick="showPage('upload')">+ The Pour</button>
     <button class="btn btn-ghost btn-sm" id="clearBtn" style="display:none;" onclick="clearAll()">Clear</button>
-    <button class="btn btn-ghost btn-sm" id="demoBtn" onclick="toggleDemoPanel()" style="opacity:.5;font-size:10px;">Demo</button>
+    <button id="demoBtn" onclick="toggleDemoPanel()" style="font-size:10px;opacity:.45;background:none;border:1px solid var(--line);color:var(--ink4);padding:4px 10px;border-radius:var(--r-sm);cursor:pointer;font-family:var(--font-ui);">Demo</button>
   </div>
 </header>
-<div id="demoPanel" style="display:none;position:fixed;top:60px;right:12px;width:280px;background:var(--float);border:1px solid var(--line);border-top:2px solid var(--gold);border-radius:0 0 10px 10px;box-shadow:0 8px 32px rgba(0,0,0,.6);z-index:500;padding:16px 18px;">
+<div id="demoPnl" style="display:none;position:fixed;top:61px;right:12px;width:272px;background:var(--float);border:1px solid var(--line);border-top:2px solid var(--gold);border-radius:0 0 10px 10px;padding:16px 18px;z-index:500;box-shadow:0 8px 32px rgba(0,0,0,.6);">
   <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">⚾ Demo Mode</div>
-  <div style="font-size:12px;color:var(--ink3);line-height:1.65;margin-bottom:12px;">Loads 4 years of synthetic Pittsburgh family data. Importing real files completely replaces demo data.</div>
+  <div style="font-size:12px;color:var(--ink3);line-height:1.65;margin-bottom:12px;">4 years of synthetic Pittsburgh family data. Importing real files completely replaces demo data — nothing carries over.</div>
   <div style="display:flex;gap:8px;">
-    <button class="btn btn-forge" onclick="toggleDemoPanel();loadDemo();" style="flex:1;justify-content:center;font-size:11px;">Load Demo</button>
+    <button class="btn btn-forge" onclick="toggleDemoPanel();loadDemo();" style="flex:1;font-size:11px;justify-content:center;">Load Demo</button>
     <button class="btn btn-ghost" onclick="toggleDemoPanel();" style="font-size:11px;padding:6px 12px;">Cancel</button>
   </div>
 </div>
-<div id="demoPanelBg" onclick="toggleDemoPanel()" style="display:none;position:fixed;inset:0;z-index:499;"></div>
+<div id="demoPnlBg" onclick="toggleDemoPanel()" style="display:none;position:fixed;inset:0;z-index:499;"></div>
 <div class="app">
 <nav>
   <div class="nav-section">
@@ -1762,7 +1762,7 @@ select option { background: var(--float); color: var(--ink2); }
 <!-- ══ UPLOAD ══ -->
 <div id="page-upload" class="page active">
   <div style="max-width:720px;margin:0 auto;padding:16px 0 64px;">
-    <div id="uploadDataStatus" style="margin-bottom:20px;"></div>
+    <div id="uploadStatus" style="margin-bottom:20px;"></div>
 
     <!-- ── HERO ── -->
     <div style="margin-bottom:36px;">
@@ -2043,7 +2043,7 @@ select option { background: var(--float); color: var(--ink2); }
 <!-- ══ DASHBOARD ══ -->
 <div id="page-dashboard" class="page">
   <div id="demoBanner" class="demo-banner" style="display:none;">
-    <span style="font-size:12px;">⚾ <strong style="color:var(--gold);">Demo Mode</strong> — synthetic data only, not your finances</span>
+    <span style="font-size:12px;">⚾ <strong style="color:var(--gold);">Demo Mode</strong> · Synthetic data only</span>
     <div style="display:flex;gap:8px;flex-shrink:0;">
       <button class="btn btn-ghost btn-sm" onclick="clearAll()" style="font-size:11px;">Clear</button>
       <button class="btn btn-ghost btn-sm" onclick="showPage('upload')" style="font-size:11px;">Import Real Data →</button>
@@ -2067,7 +2067,7 @@ select option { background: var(--float); color: var(--ink2); }
   </div>
   <div class="cards-4" id="dashCards"></div>
   <div class="grid-2-1">
-    <div class="chart-card"><div class="chart-hdr"><div><div class="chart-title">Monthly Cash Flow</div><div class="chart-sub">Income vs. Expenses</div></div></div><div style="position:relative;height:210px;"><canvas id="cfChart"></canvas></div></div>
+    <div class="chart-card"><div class="chart-hdr"><div><div class="chart-title">Monthly Cash Flow</div><div class="chart-sub">Income vs. Expenses</div></div></div><div style="position:relative;height:210px;"><canvas id="cfChart" style="display:none;"></canvas></div></div>
     <div class="chart-card"><div class="chart-hdr"><div><div class="chart-title">Spending by Category</div></div></div><div style="position:relative;height:210px;"><canvas id="catDonut"></canvas></div></div>
   </div>
   <div class="grid-2">
@@ -2117,7 +2117,7 @@ select option { background: var(--float); color: var(--ink2); }
 
   <div class="tab-pane active" id="itab-alerts"><div id="intelAlerts"></div></div>
   <div class="tab-pane" id="itab-trends">
-    <div class="grid-2" style="margin-bottom:20px;"><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Category Acceleration — 3M vs Prior 3M</div></div><div style="position:relative;height:260px;"><canvas id="trendBarChart"></canvas></div></div><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Spending Velocity (Monthly Δ)</div></div><div style="position:relative;height:260px;"><canvas id="velocityChart"></canvas></div></div></div>
+    <div class="grid-2" style="margin-bottom:20px;"><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Category Acceleration — 3M vs Prior 3M</div></div><div style="position:relative;height:260px;"><canvas id="trendBarChart" style="display:none;"></canvas></div></div><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Spending Velocity (Monthly Δ)</div></div><div style="position:relative;height:260px;"><canvas id="velocityChart" style="display:none;"></canvas></div></div></div>
     <div id="trendDetails"></div>
   </div>
   <div class="tab-pane" id="itab-budget">
@@ -2127,14 +2127,14 @@ select option { background: var(--float); color: var(--ink2); }
   <div class="tab-pane" id="itab-anomalies">
     <div class="cards-3" id="anomSummaryCards"></div>
     <div class="grid-2">
-      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Transaction Size Distribution</div><div class="chart-sub">Outliers shown in red</div></div><div style="position:relative;height:240px;"><canvas id="anomHist"></canvas></div></div>
+      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Transaction Size Distribution</div><div class="chart-sub">Outliers shown in red</div></div><div style="position:relative;height:240px;"><canvas id="anomHist" style="display:none;"></canvas></div></div>
       <div class="tbl-card" style="margin-bottom:0;"><div class="tbl-hdr"><div class="tbl-title">Statistical Outliers (>2σ)</div></div><div id="anomList" style="padding:0 18px;"></div></div>
     </div>
   </div>
   <div class="tab-pane" id="itab-seasonal">
     <div class="grid-2" style="margin-bottom:20px;">
-      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Monthly Spending Heatmap (by Year)</div><div class="chart-sub">Darker = higher spend relative to your annual average</div></div><div id="heatmap" style="max-height:260px;overflow:auto;"></div></div>
-      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Average Spend by Month</div><div class="chart-sub">Across all years in your data</div></div><div style="position:relative;height:240px;"><canvas id="seasonalBar"></canvas></div></div>
+      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Monthly Spending Heatmap (by Year)</div><div class="chart-sub">Darker = higher spend relative to your annual average</div></div><div id="heatmap"></div></div>
+      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Average Spend by Month</div><div class="chart-sub">Across all years in your data</div></div><div style="position:relative;height:240px;"><canvas id="seasonalBar" style="display:none;"></canvas></div></div>
     </div>
     <div id="seasonalInsights"></div>
   </div>
@@ -2155,9 +2155,9 @@ select option { background: var(--float); color: var(--ink2); }
     <span class="filter-lbl">Account:</span><select id="cfAcct" onchange="renderCF()"></select>
     <span class="filter-lbl">Year:</span><select id="cfYear" onchange="renderCF()"></select>
   </div>
-  <div class="chart-card" style="margin-bottom:20px;"><div class="chart-hdr"><div class="chart-title">Income vs Expenses — Monthly</div></div><div style="position:relative;height:180px;"><canvas id="cfBarChart"></canvas></div></div>
+  <div class="chart-card" style="margin-bottom:20px;"><div class="chart-hdr"><div class="chart-title">Income vs Expenses — Monthly</div></div><div style="position:relative;height:180px;"><canvas id="cfBarChart" style="display:none;"></canvas></div></div>
   <div class="cards-3" id="cfCards"></div>
-  <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Net Savings Trend</div></div><div style="position:relative;height:130px;"><canvas id="cfNetChart"></canvas></div></div>
+  <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Net Savings Trend</div></div><div style="position:relative;height:130px;"><canvas id="cfNetChart" style="display:none;"></canvas></div></div>
 </div>
 
 <!-- ══ CATEGORIES ══ -->
@@ -2188,7 +2188,7 @@ select option { background: var(--float); color: var(--ink2); }
   <div class="filters"><span class="filter-lbl">Account:</span><select id="catAcct" onchange="renderCats()"></select></div>
   <div class="grid-2" style="margin-bottom:20px;">
     <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Distribution</div></div><div style="position:relative;height:260px;"><canvas id="catBigDonut"></canvas></div></div>
-    <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Top Categories</div></div><div style="position:relative;height:260px;"><canvas id="catBarH"></canvas></div></div>
+    <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Top Categories</div></div><div style="position:relative;height:260px;"><canvas id="catBarH" style="display:none;"></canvas></div></div>
   </div>
   <div class="tbl-card"><div class="tbl-hdr"><div class="tbl-title">All Categories</div></div><table><thead><tr><th>Category</th><th>Ledger Room</th><th>Avg/Month</th><th>YoY Change</th><th style="text-align:right">Total</th><th style="text-align:right">% of Spend</th></tr></thead><tbody id="catTbl"></tbody></table></div>
 </div>
@@ -2228,10 +2228,10 @@ select option { background: var(--float); color: var(--ink2); }
     <div id="amzFlags"></div>
     <div class="tab-strip"><button class="tab-btn active" onclick="switchTab('amz','overview')">Overview</button><button class="tab-btn" onclick="switchTab('amz','categories')">By Category</button><button class="tab-btn" onclick="switchTab('amz','items')">All Items</button><button class="tab-btn" onclick="switchTab('amz','purchaser')">👤 By Purchaser</button><button class="tab-btn" onclick="switchTab('amz','compare')">vs. Total Spend</button></div>
     <div class="tab-pane active" id="amztab-overview">
-      <div class="grid-2-1"><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Monthly Detail Spend</div></div><div style="position:relative;height:210px;"><canvas id="amzMonthly"></canvas></div></div><div class="chart-card"><div class="chart-hdr"><div class="chart-title">By Category</div></div><div style="position:relative;height:210px;"><canvas id="amzCatDonut"></canvas></div></div></div>
+      <div class="grid-2-1"><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Monthly Detail Spend</div></div><div style="position:relative;height:210px;"><canvas id="amzMonthly" style="display:none;"></canvas></div></div><div class="chart-card"><div class="chart-hdr"><div class="chart-title">By Category</div></div><div style="position:relative;height:210px;"><canvas id="amzCatDonut"></canvas></div></div></div>
     </div>
     <div class="tab-pane" id="amztab-categories">
-      <div class="grid-2"><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Spend by Category</div></div><div style="position:relative;height:260px;"><canvas id="amzCatBar"></canvas></div></div><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Impulse Score by Category</div></div><div style="position:relative;height:260px;"><canvas id="amzImpBar"></canvas></div></div></div>
+      <div class="grid-2"><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Spend by Category</div></div><div style="position:relative;height:260px;"><canvas id="amzCatBar" style="display:none;"></canvas></div></div><div class="chart-card"><div class="chart-hdr"><div class="chart-title">Impulse Score by Category</div></div><div style="position:relative;height:260px;"><canvas id="amzImpBar" style="display:none;"></canvas></div></div></div>
       <div class="tbl-card"><div class="tbl-hdr"><div class="tbl-title">Spending by Category</div></div><table><thead><tr><th>Category</th><th>Items</th><th>Avg Price</th><th>Impulse Score</th><th style="text-align:right">Total</th></tr></thead><tbody id="amzCatTbl"></tbody></table></div>
     </div>
     <div class="tab-pane" id="amztab-purchaser"></div>
@@ -2241,8 +2241,8 @@ select option { background: var(--float); color: var(--ink2); }
     </div>
     <div class="tab-pane" id="amztab-compare">
       <div class="cards-3" id="amzCmpCards"></div>
-      <div class="chart-card" style="margin-bottom:18px;"><div class="chart-hdr"><div class="chart-title">Detail Lens vs All Other Spending</div></div><div style="position:relative;height:170px;"><canvas id="amzCmpChart"></canvas></div></div>
-      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Detail Lens as % of Monthly Spend</div></div><div style="position:relative;height:120px;"><canvas id="amzPctChart"></canvas></div></div>
+      <div class="chart-card" style="margin-bottom:18px;"><div class="chart-hdr"><div class="chart-title">Detail Lens vs All Other Spending</div></div><div style="position:relative;height:170px;"><canvas id="amzCmpChart" style="display:none;"></canvas></div></div>
+      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Detail Lens as % of Monthly Spend</div></div><div style="position:relative;height:120px;"><canvas id="amzPctChart" style="display:none;"></canvas></div></div>
     </div>
   </div>
 </div>
@@ -2348,15 +2348,15 @@ select option { background: var(--float); color: var(--ink2); }
     </div>
     <div id="ana-chart-wrap" style="position:relative;height:320px;">
       <canvas id="anaMainChart"></canvas>
-      <div id="ana-heatmap-wrap" style="display:none;width:100%;max-height:320px;overflow:auto;"></div>
     </div>
+    <div id="ana-heatmap-wrap" style="display:none;width:100%;overflow:auto;border-radius:var(--r-sm);"></div>
   </div>
 
   <!-- Secondary charts row -->
   <div class="ana-secondary-grid">
     <div class="ana-mini-chart">
       <div class="ana-mini-title">Spending vs Income</div>
-      <div style="position:relative;height:180px;"><canvas id="anaMiniStack"></canvas></div>
+      <div style="position:relative;height:180px;"><canvas id="anaMiniStack" style="display:none;"></canvas></div>
     </div>
     <div class="ana-mini-chart">
       <div class="ana-mini-title">Top 8 Categories</div>
@@ -2368,11 +2368,11 @@ select option { background: var(--float); color: var(--ink2); }
   <div class="ana-secondary-grid">
     <div class="ana-mini-chart">
       <div class="ana-mini-title">Spending by Day of Week</div>
-      <div style="position:relative;height:180px;"><canvas id="anaMiniDow"></canvas></div>
+      <div style="position:relative;height:180px;"><canvas id="anaMiniDow" style="display:none;"></canvas></div>
     </div>
     <div class="ana-mini-chart">
       <div class="ana-mini-title" id="ana-mini-purchaser-title">Spend by Purchaser</div>
-      <div style="position:relative;height:180px;"><canvas id="anaMiniPurchaser"></canvas></div>
+      <div style="position:relative;height:180px;"><canvas id="anaMiniPurchaser" style="display:none;"></canvas></div>
     </div>
   </div>
 
@@ -2875,6 +2875,26 @@ select option { background: var(--float); color: var(--ink2); }
 
 <script>
 
+// ── Storage version guard ─────────────────────────────────────────
+// If stored data version doesn't match current build, wipe and start clean.
+// This auto-resolves poisoned storage without requiring manual DevTools work.
+const FORGE_BUILD = 'v3.14'; // increment this to force a storage wipe on next load
+const BUILD_KEY   = 'forge_build';
+(function() {
+  try {
+    const stored = localStorage.getItem(BUILD_KEY);
+    if (stored !== FORGE_BUILD) {
+      // Wipe all Forge storage keys
+      ['ledger_v3','forge_settings_v1','ledger_fbr_v2'].forEach(k => {
+        try { localStorage.removeItem(k); } catch(e) {}
+      });
+      localStorage.setItem(BUILD_KEY, FORGE_BUILD);
+      console.log('Forge: storage wiped for build ' + FORGE_BUILD);
+    }
+  } catch(e) {}
+})();
+
+
 // ════════════════════════════════════════════════════
 // FORGE BOOT — simple, no overlay
 // ════════════════════════════════════════════════════
@@ -2882,7 +2902,6 @@ window.addEventListener('DOMContentLoaded', function() {
   // Step 1: Force body visible — no CSS animation can override inline style
   document.body.style.opacity = '1';
   document.body.style.visibility = 'visible';
-  // body stays display:flex — do NOT set display:block (breaks scroll)
 
   // Step 2: Apply Chart.js theme defaults (safe — Chart must be loaded by now)
   try { applyChartDefaults(); } catch(e) { console.warn('Chart defaults:', e); }
@@ -3075,53 +3094,26 @@ const SID_PERSONA = {
 const CAT_COLORS = ['#FFB612','#4a9eff','#3ecf8e','#f97316','#a78bfa','#f43f5e','#06b6d4','#eab308','#8b5cf6','#10b981','#fb923c','#60a5fa','#34d399','#fbbf24','#c084fc','#fb7185','#38bdf8','#4ade80'];
 const ACCT_COLORS = ['#FFB612','#4a9eff','#3ecf8e','#f97316','#a78bfa','#f43f5e','#06b6d4','#eab308','#8b5cf6','#10b981','#fb923c','#60a5fa'];
 
-
-// setH: force canvas dimensions before Chart.js construction.
-// Uses responsive:false approach — sets IDL attributes (canvas.width/height)
-// which Chart.js reads BEFORE any layout-dependent path.
-// Also sets inline style.height so the CSS chain is consistent.
-function setH(el) {
+// ── Pittsburgh dark theme for all Chart.js charts ──
+// Chart.js defaults — guarded: only set if Chart is loaded
+// setH: stamp canvas IDL dimensions from parent inline height before Chart.js construction.
+// Chart.js with responsive:false reads canvas.width/canvas.height (IDL) directly.
+// These are unaffected by layout state, display:none, or ResizeObserver.
+function setH(el, fallbackH) {
   if (!el) return;
   const par = el.parentElement;
-  // Get explicit px height from parent inline style
-  const mPar = par && (par.style.height||'').match(/^(\d+)px$/);
-  const h = mPar ? parseInt(mPar[1]) : (par && par.offsetHeight > 0 ? par.offsetHeight : 220);
-  const w = (par && par.offsetWidth > 0) ? par.offsetWidth : 600;
-  // Set IDL attributes — these are what Chart.js uses as final fallback
-  el.width  = w;
+  const mH = par && (par.style.height || '').match(/^(\d+)px$/);
+  const h = mH ? parseInt(mH[1]) : (fallbackH || 220);
+  const w = (par && par.offsetWidth > 0) ? par.offsetWidth : 800;
+  el.width = w;
   el.height = h;
-  // Also set inline style (Chart.js reads this first)
   el.style.height = h + 'px';
-  el.style.width  = '100%';
+  el.style.width = '100%';
   el.style.display = 'block';
 }
 
-
-// Manual resize handler for responsive:false charts
-window.addEventListener('resize', function() {
-  clearTimeout(window._forgeResizeTimer);
-  window._forgeResizeTimer = setTimeout(function() {
-    document.querySelectorAll('canvas').forEach(function(canvas) {
-      const ch = Chart.getChart ? Chart.getChart(canvas) : null;
-      if (!ch) return;
-      const par = canvas.parentElement;
-      if (!par) return;
-      const m = (par.style.height||'').match(/^(\d+)px$/);
-      const h = m ? parseInt(m[1]) : (par.offsetHeight || 220);
-      const w = par.offsetWidth || 600;
-      canvas.width = w;
-      canvas.height = h;
-      try { ch.resize(w, h); } catch(e) {}
-    });
-  }, 150);
-});
-// ── Pittsburgh dark theme for all Chart.js charts ──
-// Chart.js defaults — guarded: only set if Chart is loaded
 function applyChartDefaults() {
   if (typeof Chart === 'undefined') return;
-  // Force responsive:false globally — prevents ResizeObserver from zeroing canvas height
-  // when charts are constructed on pages that haven't fully laid out yet.
-  // Each chart's explicit size comes from setH() stamping canvas.width/height before construction.
   Chart.defaults.responsive = false;
   Chart.defaults.maintainAspectRatio = false;
   Chart.defaults.color = '#666';
@@ -3136,23 +3128,163 @@ function applyChartDefaults() {
   Chart.defaults.scale.grid = { color:'rgba(255,255,255,0.04)' };
   Chart.defaults.scale.ticks = { color:'#555' };
 }
-
-// getSpendable: exclude internal transfers from analytics.
-// Transfers (CC payments, account-to-account moves) double-count money.
-// Always use this for financial totals — use raw txns only for ledger/audit views.
+// getSpendable: strip internal transfers from financial calculations.
+// Transfers (CC payments, account→account moves) double-count money.
 function getSpendable(arr) {
-  return arr.filter(t => !t.isTransfer);
+  return (arr||[]).filter(function(t) {
+    if (t.isTransfer) return false;
+    // Runtime check for old data without isTransfer field
+    if (/^\[.*\]$/.test((t.category||'').trim())) return false;
+    if (/^transfer$/i.test((t.category||'').trim())) return false;
+    return true;
+  });
 }
 
-// isTransferTxn: runtime check for transactions that may not have been tagged at parse time
-// (e.g. loaded from old localStorage without the isTransfer field)
-function looksLikeTransfer(t) {
-  if (t.isTransfer) return true;
-  // Quicken bracket-category = transfer
-  if (/^\[.*\]$/.test((t.category||'').trim())) return true;
-  if (/^transfer$/i.test((t.category||'').trim())) return true;
-  return false;
+
+// ══ SVG Chart Renderer ════════════════════════════════════════════
+// Renders bar and line charts as inline SVG — no external library,
+// no container size dependency, works in any layout state.
+// ═════════════════════════════════════════════════════════════════
+
+function svgBar(containerId, labels, datasets, opts) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  opts = opts || {};
+  const W = el.offsetWidth || 800;
+  const H = el.offsetHeight || 220;
+  const PAD = { top: 16, right: 16, bottom: 40, left: 60 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+
+  const allVals = datasets.flatMap(d => d.data).filter(v => !isNaN(v));
+  if (!allVals.length) { el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--ink4);font-size:12px;">No data</div>'; return; }
+  const maxV = Math.max(...allVals.map(Math.abs), 1);
+  const minV = Math.min(0, ...allVals);
+  const range = maxV - minV || 1;
+  const n = labels.length;
+  const groupW = cW / n;
+  const barW = groupW / (datasets.length + 1);
+  const zeroY = cH * (maxV / range);
+
+  const yTicks = 5;
+  const tickStep = range / yTicks;
+  let gridLines = '', yLabels = '';
+  for (let i = 0; i <= yTicks; i++) {
+    const val = minV + tickStep * i;
+    const y = PAD.top + cH - (cH * (val - minV) / range);
+    gridLines += `<line x1="${PAD.left}" y1="${y.toFixed(1)}" x2="${W - PAD.right}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
+    const lbl = Math.abs(val) >= 1000 ? (val/1000).toFixed(0)+'K' : val.toFixed(0);
+    yLabels += `<text x="${PAD.left - 6}" y="${y.toFixed(1)}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="var(--font-m,monospace)">${lbl}</text>`;
+  }
+
+  let bars = '', legend = '', xLabels = '';
+  datasets.forEach((ds, di) => {
+    legend += `<rect x="${di * 80 + 10}" y="${H - 14}" width="12" height="8" rx="2" fill="${ds.backgroundColor||'#60A5FA'}"/><text x="${di * 80 + 26}" y="${H - 6}" fill="rgba(255,255,255,0.55)" font-size="10" font-family="var(--font-m,monospace)">${ds.label||''}</text>`;
+    ds.data.forEach((val, i) => {
+      if (isNaN(val)) return;
+      const x = PAD.left + i * groupW + di * barW + barW * 0.5;
+      const barH = Math.abs(val) / range * cH;
+      const y = PAD.top + (val >= 0 ? zeroY - barH : zeroY);
+      bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="${ds.backgroundColor||'#60A5FA'}"/>`;
+    });
+  });
+
+  labels.forEach((lbl, i) => {
+    const x = PAD.left + i * groupW + groupW / 2;
+    const shortLbl = String(lbl).length > 6 ? String(lbl).slice(-5) : String(lbl);
+    xLabels += `<text x="${x.toFixed(1)}" y="${H - (legend.length?20:6)}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="var(--font-m,monospace)">${shortLbl}</text>`;
+  });
+
+  const zY = PAD.top + zeroY;
+  el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;">
+    ${gridLines}
+    <line x1="${PAD.left}" y1="${zY.toFixed(1)}" x2="${W - PAD.right}" y2="${zY.toFixed(1)}" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+    ${bars}${yLabels}${xLabels}${legend}
+  </svg>`;
 }
+
+function svgLine(containerId, labels, datasets, opts) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  opts = opts || {};
+  const W = el.offsetWidth || 800;
+  const H = el.offsetHeight || 180;
+  const PAD = { top: 12, right: 16, bottom: 32, left: 56 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+
+  const allVals = datasets.flatMap(d => d.data).filter(v => !isNaN(v));
+  if (!allVals.length) { el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--ink4);font-size:12px;">No data</div>'; return; }
+  const maxV = Math.max(...allVals, 1);
+  const minV = Math.min(0, ...allVals);
+  const range = maxV - minV || 1;
+  const n = labels.length;
+
+  const yTicks = 4;
+  let gridLines = '', yLabels = '';
+  for (let i = 0; i <= yTicks; i++) {
+    const val = minV + (range / yTicks) * i;
+    const y = PAD.top + cH - cH * (val - minV) / range;
+    gridLines += `<line x1="${PAD.left}" y1="${y.toFixed(1)}" x2="${W-PAD.right}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
+    const lbl = Math.abs(val)>=1000?(val/1000).toFixed(0)+'K':val.toFixed(0);
+    yLabels += `<text x="${PAD.left-6}" y="${y.toFixed(1)}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="var(--font-m,monospace)">${lbl}</text>`;
+  }
+
+  let paths = '', areas = '', xLabels = '', legend = '';
+  datasets.forEach((ds, di) => {
+    const color = ds.borderColor || ds.color || '#60A5FA';
+    const pts = ds.data.map((val, i) => {
+      const x = PAD.left + (i / Math.max(n-1,1)) * cW;
+      const y = PAD.top + cH - cH * (val - minV) / range;
+      return [x.toFixed(1), y.toFixed(1)];
+    });
+    if (pts.length < 2) return;
+    const d = 'M' + pts.map(p => p.join(',')).join(' L');
+    paths += `<path d="${d}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
+    if (ds.fill) {
+      const areaD = d + ` L${pts[pts.length-1][0]},${(PAD.top+cH).toFixed(1)} L${PAD.left},${(PAD.top+cH).toFixed(1)} Z`;
+      areas += `<path d="${areaD}" fill="${color}" opacity="0.12"/>`;
+    }
+    legend += `<line x1="${di*80+10}" y1="${H-10}" x2="${di*80+22}" y2="${H-10}" stroke="${color}" stroke-width="2"/><text x="${di*80+26}" y="${H-6}" fill="rgba(255,255,255,0.55)" font-size="10" font-family="var(--font-m,monospace)">${ds.label||''}</text>`;
+  });
+
+  labels.forEach((lbl, i) => {
+    const x = PAD.left + (i / Math.max(n-1,1)) * cW;
+    const shortLbl = String(lbl).length > 6 ? String(lbl).slice(-5) : String(lbl);
+    xLabels += `<text x="${x.toFixed(1)}" y="${H-18}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="var(--font-m,monospace)">${shortLbl}</text>`;
+  });
+
+  el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;">
+    ${gridLines}${areas}${paths}${yLabels}${xLabels}${legend}
+  </svg>`;
+}
+
+function svgHBar(containerId, labels, data, colors, opts) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const W = el.offsetWidth || 800;
+  const H = Math.max(labels.length * 36 + 20, el.offsetHeight || 220);
+  const PAD = { top: 8, right: 80, bottom: 8, left: 140 };
+  const cW = W - PAD.left - PAD.right;
+  const maxV = Math.max(...data.map(Math.abs), 1);
+  const rowH = (H - PAD.top - PAD.bottom) / labels.length;
+
+  let bars = '';
+  labels.forEach((lbl, i) => {
+    const val = data[i] || 0;
+    const bW = Math.abs(val) / maxV * cW;
+    const y = PAD.top + i * rowH;
+    const color = colors ? colors[i % colors.length] : '#60A5FA';
+    const valLbl = Math.abs(val) >= 1000 ? (val/1000).toFixed(1)+'K' : val.toFixed(0);
+    const shortLbl = String(lbl).length > 16 ? String(lbl).slice(0,15)+'…' : String(lbl);
+    bars += `<text x="${PAD.left-6}" y="${(y+rowH/2).toFixed(1)}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.65)" font-size="11" font-family="var(--font-ui,sans-serif)">${shortLbl}</text>`;
+    bars += `<rect x="${PAD.left}" y="${(y+rowH*0.2).toFixed(1)}" width="${bW.toFixed(1)}" height="${(rowH*0.6).toFixed(1)}" rx="3" fill="${color}"/>`;
+    bars += `<text x="${(PAD.left+bW+6).toFixed(1)}" y="${(y+rowH/2).toFixed(1)}" dominant-baseline="middle" fill="rgba(255,255,255,0.55)" font-size="10" font-family="var(--font-m,monospace)">${valLbl}</text>`;
+  });
+
+  el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;">${bars}</svg>`;
+}
+// ═════════════════════════════════════════════════════════════════
 const IMPULSE_CATS = new Set(['Health & Beauty','Toys & Games','Books','Electronics Accessories','Home','Kitchen','Sports','Pet Supplies','Arts Crafts & Sewing','Clothing','Shoes','Beauty','Grocery & Gourmet Food']);
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -3183,8 +3315,7 @@ function loadDemo() {
       'Apple Card - Kira (CC)':  'Kira',
       'Nordstrom Credit Card':   'Kira',
       'Fidelity 401k':           'Chris',
-      'Fidelity Brokerage':      'Chris',
-    };
+      'Fidelity Brokerage':      'Chris' };
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch(e) {}
     try { saveData(); } catch(e) { console.warn('saveData in demo:', e); }
     initApp();
@@ -3359,8 +3490,7 @@ function generateDemoData() {
     'Toys & Games': ['Lego Technic Set','Card Game (Exploding Kittens)','Puzzle 1000pc','Board Game','Minecraft Figurine Set','Slime Kit','Science Experiment Kit'],
     'Office Products': ['Sticky Notes 12-Pack','Binder Clips Assorted','Sharpie Markers Set','Legal Pads 6-Pack','Printer Paper 500ct','Label Maker Tape','Desk Organizer'],
     'Grocery & Gourmet Food': ['Cliff Bars 24-Pack','Beef Jerky Variety','Mixed Nuts 48oz','Olive Oil','Hot Sauce Variety Pack','Protein Bars','Green Tea Bags 100ct'],
-    'Sports & Outdoors': ['Resistance Bands Set','Foam Roller','Jump Rope','Knee Sleeves','Lifting Straps','Running Gloves','Hydration Pack'],
-  };
+    'Sports & Outdoors': ['Resistance Bands Set','Foam Roller','Jump Rope','Knee Sleeves','Lifting Straps','Running Gloves','Hydration Pack'] };
 
   for (let d = new Date(startDate); d <= now; d.setDate(d.getDate() + 1)) {
     const yr = d.getFullYear(), mo = d.getMonth(), day = d.getDate();
@@ -3583,8 +3713,7 @@ function fileTypeLabel(fileType) {
     quicken:   { label:'💳 Quicken',    cls:'badge-grn' },
     amazon:    { label:'📦 Amazon',      cls:'badge-org' },
     applecard: { label:'🍎 Apple Card',  cls:'badge-pu'  },
-    detail:    { label:'🔍 Detail',      cls:'badge-blu' },
-  };
+    detail:    { label:'🔍 Detail',      cls:'badge-blu' } };
   return map[fileType] || { label:'📄 File', cls:'badge-grn' };
 }
 
@@ -3958,22 +4087,26 @@ async function processAll() {
     }
   }
 
-  // HARD REPLACE — clear everything, load only what was just imported
+  // Hard replace: wipe all existing data before loading new import batch
   txns = []; amzItems = []; accounts = [];
   isDemoMode = false;
   try { localStorage.removeItem(DB_KEY); } catch(e) {}
-  const ex = new Set();
+
+  // Dedup within this import batch only (handles re-uploaded same files)
+  const exSet = new Set();
   const deduped = newTxns.filter(t => {
     const k = t.date+'|'+t.payee+'|'+t.amount+'|'+t.account;
-    if (ex.has(k)) return false; ex.add(k); return true;
+    return exSet.has(k) ? false : (exSet.add(k), true);
   });
-  txns = deduped.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  txns = deduped.sort((a,b) => new Date(b.date)-new Date(a.date));
   accounts = [...acctMap.values()];
 
-  const exA = new Set(amzItems.map(i=>`${i.date}|${i.title}|${i.orderId}|${i.purchaser||''}`));
-  const dedupedA = newAmz.filter(i=>!exA.has(`${i.date}|${i.title}|${i.orderId}|${i.purchaser||''}`));
-  amzItems = [...amzItems,...dedupedA].sort((a,b)=>new Date(b.date)-new Date(a.date));
-
+  const exASet = new Set();
+  const dedupedA = newAmz.filter(i => {
+    const k = i.date+'|'+i.title+'|'+i.orderId+'|'+( i.purchaser||'');
+    return exASet.has(k) ? false : (exASet.add(k), true);
+  });
+  amzItems = dedupedA.sort((a,b) => new Date(b.date)-new Date(a.date));
   isDemoMode = false;
   saveData();
   pendingFiles = [];
@@ -4359,21 +4492,7 @@ function parseCSV(text, fname) {
     var account  = get(r, acctC) || acctName;
     var memo     = get(r, memoC) || '';
 
-    // Detect internal transfers — these inflate totals and should be excluded from analytics
-    var rawCatOrig = rawCat || '';
-    var isTransfer = false;
-    // Quicken marks transfers with [Account Name] in category column
-    if (/^\[.*\]$/.test(rawCatOrig.trim())) isTransfer = true;
-    // "Transfer" as category
-    if (/^transfer$/i.test(category.trim())) isTransfer = true;
-    // Common CC payment payees (credit card bill payments from checking)
-    if (/payment|thank you|autopay|online payment/i.test(payee) && Math.abs(amount) > 200) {
-      // Only flag as transfer if category is also transfer-like
-      if (/transfer|payment|credit card/i.test(category) || /^\[.*\]$/.test(rawCatOrig.trim())) {
-        isTransfer = true;
-      }
-    }
-
+    var isTransfer = /^\[.*\]$/.test((rawCat||'').trim()) || /^transfer$/i.test((category||'').trim());
     results.push({
       date, payee, amount,
       category: category || 'Uncategorized',
@@ -4483,8 +4602,7 @@ function parseAmazon(text) {
       qty,
       total: parseFloat(total.toFixed(2)),
       orderId:(oc>=0?row[oc]:'').replace(/"/g,'').trim(),
-      asin:(ac>=0?row[ac]:'').replace(/"/g,'').trim(),
-    };
+      asin:(ac>=0?row[ac]:'').replace(/"/g,'').trim() };
   }).filter(Boolean);
 }
 
@@ -4525,8 +4643,7 @@ function parseAppleCard(text, fname, purchaser) {
       date, title, category: catRaw || 'Shopping',
       price: amount, qty: 1, total: parseFloat(amount.toFixed(2)),
       orderId: `AC-${date}-${title.slice(0,8).replace(/\s/g,'')}`,
-      asin: '', source: 'Apple Card', purchaser: owner,
-    };
+      asin: '', source: 'Apple Card', purchaser: owner };
   }).filter(Boolean);
 }
 
@@ -4560,8 +4677,7 @@ function parseGenericDetail(text, fname, purchaser) {
       date, title, category,
       price: amount, qty: 1, total: parseFloat(amount.toFixed(2)),
       orderId: `GD-${date}-${title.slice(0,8).replace(/\s/g,'')}`,
-      asin: '', source: srcName, purchaser: owner,
-    };
+      asin: '', source: srcName, purchaser: owner };
   }).filter(i => i && i.total > 0);
 }
 
@@ -4618,8 +4734,7 @@ function personSummary(personName, dateFrom) {
     topCat, impulseRate: mine.length ? Math.round(highImp.length/mine.length*100) : 0,
     avgOrder: mine.length ? total/mine.length : 0,
     monthlyAvg: total/months,
-    categories: Object.entries(catMap).sort((a,b)=>b[1]-a[1]),
-  };
+    categories: Object.entries(catMap).sort((a,b)=>b[1]-a[1]) };
 }
 
 // ── Purchaser trend detection ─────────────────────────────────
@@ -4925,12 +5040,13 @@ function renderAnalytics() {
   // ── Show/hide canvas vs heatmap ────────────────────────────
   const canvas = document.getElementById('anaMainChart');
   const heatWrap = document.getElementById('ana-heatmap-wrap');
+  const chartWrap = document.getElementById('ana-chart-wrap');
   if (anaChartType === 'heatmap') {
-    canvas.style.display = 'none';
+    if (chartWrap) chartWrap.style.display = 'none';
     heatWrap.style.display = 'block';
     renderHeatmap(groups, heatWrap, metric);
   } else {
-    canvas.style.display = 'block';
+    if (chartWrap) chartWrap.style.display = 'block';
     heatWrap.style.display = 'none';
     renderMainChart(keys, values, metric, palette, isNegativeOk);
   }
@@ -4947,84 +5063,52 @@ function renderAnalytics() {
   } catch(e) { console.error("renderAnalytics:", e); }
 }
 
-// ── Main chart renderer (switches on anaChartType) ────────────
+
 function renderMainChart(keys, values, metric, palette, isNegativeOk) {
   const canvasEl = document.getElementById('anaMainChart');
-  if (!canvasEl) return;
-  setH(canvasEl);
-  // Destroy any existing Chart.js instance on this canvas
-  const existingChart = Chart.getChart ? Chart.getChart(canvasEl) : null;
-  if (existingChart) existingChart.destroy();
-  const ctx = canvasEl.getContext('2d');
-  if (!ctx) return;
+  const wrap = document.getElementById('ana-chart-wrap');
+  if (!wrap) return;
+
   const isMoney = !['txncount','savings_rate'].includes(metric);
   const yFmt = v => isMoney ? fmtK(v) : (metric==='savings_rate' ? v.toFixed(0)+'%' : v.toLocaleString());
 
-  const positiveColor = 'rgba(245,168,0,.8)';
-  const negColor = 'rgba(248,113,113,.8)';
-  const barColors = values.map((v,i) => {
-    if (isNegativeOk) return v >= 0 ? 'rgba(45,212,191,.8)' : 'rgba(248,113,113,.8)';
-    return palette[i % palette.length] + 'CC';
-  });
-
-  const chartConfigs = {
-    bar: {
-      type: 'bar',
-      data: { labels: keys, datasets: [{ data:values, backgroundColor:barColors, borderRadius:5, borderSkipped:false }] },
-      options: {  plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
-    },
-    hbar: {
-      type: 'bar',
-      data: { labels: keys.slice().reverse(), datasets:[{ data:values.slice().reverse(), backgroundColor:barColors.slice().reverse(), borderRadius:5, borderSkipped:false }] },
-      options: { indexAxis:'y',  plugins:{legend:{display:false}}, scales:{x:{ticks:{callback:yFmt}}} }
-    },
-    line: {
-      type: 'line',
-      data: { labels:keys, datasets:[{ data:values, borderColor:'var(--gold)', backgroundColor:'rgba(245,168,0,.08)', tension:.35, pointRadius:3, pointBackgroundColor:'var(--gold)', fill:false }] },
-      options: {  plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
-    },
-    area: {
-      type: 'line',
-      data: { labels:keys, datasets:[{ data:values, borderColor:'#60A5FA', backgroundColor:'rgba(96,165,250,.15)', tension:.35, pointRadius:2, fill:true }] },
-      options: {  plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
-    },
-    donut: {
-      type: 'doughnut',
-      data: { labels:keys, datasets:[{ data:values.map(Math.abs), backgroundColor:palette.slice(0,keys.length).map(c=>c+'CC'), borderWidth:2, borderColor:'rgba(255,255,255,.05)', hoverOffset:8 }] },
-      options: {  cutout:'58%', plugins:{ legend:{ position:'right', labels:{ font:{size:10}, boxWidth:10, color:'#9E9890' }}} }
-    },
-    scatter: {
-      type: 'scatter',
-      data: { datasets:[{ data: keys.map((k,i)=>({x:i, y:values[i], label:k})), backgroundColor:palette.slice(0,keys.length).map(c=>c+'CC'), pointRadius:7, pointHoverRadius:10 }] },
-      options: {  plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${keys[ctx.parsed.x]}: ${yFmt(ctx.parsed.y)}`}}}, scales:{x:{display:false}, y:{ticks:{callback:yFmt}}} }
-    },
-    waterfall: { type:'bar', data:{labels:keys, datasets:[{data:values, backgroundColor:'rgba(45,212,191,.8)', borderRadius:3}]}, options:{ plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}}} },
-  };
-
-  // Build waterfall config properly (lazy — only when needed)
-  if (anaChartType === 'waterfall') {
-    let running = 0;
-    const wfData = values.map(v => { const start = running; running += v; return {start, end: running, value: v}; });
-    const wfColors = wfData.map(d => d.value >= 0 ? 'rgba(45,212,191,.8)' : 'rgba(248,113,113,.8)');
-    chartConfigs.waterfall = {
-      type:'bar',
-      data:{ labels:keys, datasets:[{ data:wfData.map(d=>[Math.min(d.start,d.end),Math.max(d.start,d.end)]), backgroundColor:wfColors, borderRadius:3, borderSkipped:false }] },
-      options:{  plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:yFmt}}} }
-    };
+  // Destroy existing Chart.js instance if any
+  if (canvasEl) {
+    const existing = Chart.getChart ? Chart.getChart(canvasEl) : null;
+    if (existing) { try { existing.destroy(); } catch(e) {} }
   }
-  const config = chartConfigs[anaChartType] || chartConfigs.bar;
-  // Shared defaults
-  if (!config.options.plugins) config.options.plugins = {};
-  config.options.animation = { duration: 400 };
-  if (config.options.scales) {
-    Object.values(config.options.scales).forEach(ax => {
-      ax.grid = ax.grid || { color:'rgba(255,255,255,.04)' };
-      if (ax.ticks) ax.ticks.color = '#6E6A65';
+
+  if (anaChartType === 'donut') {
+    // Donut: use Chart.js (works fine)
+    if (!canvasEl) return;
+    canvasEl.style.display = 'block';
+    wrap.innerHTML = '';
+    wrap.appendChild(canvasEl);
+    setH(canvasEl, 320);
+    const ctx = canvasEl.getContext('2d');
+    if (!ctx) return;
+    anaChart = new Chart(ctx, {
+      type:'doughnut',
+      data:{ labels:keys, datasets:[{ data:values.map(Math.abs), backgroundColor:palette.slice(0,keys.length).map(c=>c+'CC'), borderWidth:2, borderColor:'rgba(255,255,255,.05)', hoverOffset:8 }] },
+      options:{ cutout:'58%', plugins:{ legend:{ position:'right', labels:{ font:{size:10}, boxWidth:10, color:'#9E9890' }}}, animation:{duration:400} }
     });
+    return;
   }
 
-  try { anaChart = new Chart(ctx, config); } catch(e) { console.warn('ana chart:', e); }
+  // All other types: SVG (always renders regardless of layout state)
+  if (canvasEl) canvasEl.style.display = 'none';
+  wrap.id = 'anaMainChart-wrap';
+
+  if (anaChartType === 'bar' || anaChartType === 'waterfall' || anaChartType === 'scatter') {
+    const positiveColors = values.map((v,i) => v >= 0 ? (palette[i % palette.length] + 'CC') : 'rgba(248,113,113,.8)');
+    svgBar('anaMainChart-wrap', keys, [{ data: values, backgroundColor: positiveColors, label: metric }]);
+  } else if (anaChartType === 'hbar') {
+    svgHBar('anaMainChart-wrap', keys, values, palette.map(c => c + 'CC'));
+  } else if (anaChartType === 'line' || anaChartType === 'area') {
+    svgLine('anaMainChart-wrap', keys, [{ data: values, borderColor: palette[0] || '#F5A800', fill: anaChartType === 'area', label: metric }]);
+  }
 }
+
 
 // ── Heatmap renderer (month × day-of-week) ───────────────────
 function renderHeatmap(groups, wrap, metric) {
@@ -5074,7 +5158,7 @@ function renderHeatmap(groups, wrap, metric) {
 function renderMiniStack(filtered) {
   const canvasEl = document.getElementById('anaMiniStack');
   if (!canvasEl) return;
-  setH(canvasEl);
+  setH(canvasEl, 180);
   // Destroy any existing Chart.js instance on this canvas
   const existingChart = Chart.getChart ? Chart.getChart(canvasEl) : null;
   if (existingChart) existingChart.destroy();
@@ -5087,31 +5171,19 @@ function renderMiniStack(filtered) {
     const d = new Date(); d.setMonth(d.getMonth()-i);
     mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
   }
-  const spendable = getSpendable(txns);
+  const spendable=getSpendable(txns);
   const inc = mos.map(m => spendable.filter(t=>t.date.startsWith(m)&&t.amount>0).reduce((s,t)=>s+t.amount,0));
   const exp = mos.map(m => spendable.filter(t=>t.date.startsWith(m)&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0));
   // Validate we have data
   if (!inc.some(v=>v>0) && !exp.some(v=>v>0)) { return; }
-  try {
-    anaMiniStackChart = new Chart(ctx, {
-      type:'bar',
-      data:{ labels:mos.map(m=>m.slice(5)), datasets:[
-        { label:'Income', data:inc, backgroundColor:'rgba(45,212,191,.7)', borderRadius:3, stack:'a' },
-        { label:'Spending', data:exp, backgroundColor:'rgba(248,113,113,.6)', borderRadius:3, stack:'b' }
-      ]},
-      options:{  animation:{duration:300},
-        plugins:{legend:{labels:{font:{size:9},boxWidth:10,color:'#9E9890'}}},
-        scales:{y:{ticks:{callback:v=>fmtK(v),color:'#6E6A65'},grid:{color:'rgba(255,255,255,.04)'}},
-                x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
-      }
-    });
-  } catch(e) { console.error("renderMiniStack:", e.message); }
+  const mspar=document.getElementById('anaMiniStack')?.parentElement;
+  if(mspar){mspar.id='anaMiniStack-wrap';svgBar('anaMiniStack-wrap',mos.map(m=>m.slice(5)),[{label:'Income',data:inc,backgroundColor:'rgba(45,212,191,.7)'},{label:'Spending',data:exp,backgroundColor:'rgba(248,113,113,.6)'}]);}
 }
 
 function renderMiniDonut(filtered) {
   const canvasEl = document.getElementById('anaMiniDonut');
   if (!canvasEl) return;
-  setH(canvasEl);
+  setH(canvasEl, 180);
   // Destroy any existing Chart.js instance on this canvas
   const existingChart = Chart.getChart ? Chart.getChart(canvasEl) : null;
   if (existingChart) existingChart.destroy();
@@ -5134,7 +5206,7 @@ function renderMiniDonut(filtered) {
 function renderMiniDow(filtered) {
   const canvasEl = document.getElementById('anaMiniDow');
   if (!canvasEl) return;
-  setH(canvasEl);
+  setH(canvasEl, 180);
   // Destroy any existing Chart.js instance on this canvas
   const existingChart = Chart.getChart ? Chart.getChart(canvasEl) : null;
   if (existingChart) existingChart.destroy();
@@ -5148,23 +5220,14 @@ function renderMiniDow(filtered) {
     totals[dn]=(totals[dn]||0)+Math.abs(t.amount); counts[dn]=(counts[dn]||0)+1;
   });
   const avgs = days.map(d=>counts[d]>0?parseFloat((totals[d]/counts[d]).toFixed(2)):0);
-  try {
-    anaMiniDowChart = new Chart(ctx, {
-      type:'bar',
-      data:{ labels:days, datasets:[{ data:avgs, backgroundColor:days.map((_,i)=>CAT_COLORS[i]+'CC'), borderRadius:4, borderSkipped:false }] },
-      options:{  animation:{duration:300},
-        plugins:{legend:{display:false}},
-        scales:{y:{ticks:{callback:v=>fmtK(v),color:'#6E6A65'},grid:{color:'rgba(255,255,255,.04)'}},
-                x:{ticks:{color:'#6E6A65'},grid:{display:false}}}
-      }
-    });
-  } catch(e) { console.error("renderMiniDow:", e.message); }
+  const dwpar=document.getElementById('anaMiniDow')?.parentElement;
+  if(dwpar){dwpar.id='anaMiniDow-wrap';svgBar('anaMiniDow-wrap',days,[{data:avgs,backgroundColor:days.map((_,i)=>CAT_COLORS[i%CAT_COLORS.length]+'CC'),label:'Avg Spend'}]);}
 }
 
 function renderMiniPurchaser() {
   const canvasEl = document.getElementById('anaMiniPurchaser');
   if (!canvasEl) return;
-  setH(canvasEl);
+  setH(canvasEl, 180);
   // Destroy any existing Chart.js instance on this canvas
   const existingChart = Chart.getChart ? Chart.getChart(canvasEl) : null;
   if (existingChart) existingChart.destroy();
@@ -5194,7 +5257,7 @@ function renderMiniPurchaser() {
   const pData = people.map(p => {
     // Quicken spending via accountOwners
     const ownedAccts = Object.entries(settings.accountOwners||{}).filter(([,v])=>v===p).map(([k])=>k);
-    const qkn = Math.abs(getSpendable(txns).filter(t=>new Date(t.date)>=since&&t.amount<0&&ownedAccts.includes(t.account)).reduce((s,t)=>s+t.amount,0));
+    const qkn = Math.abs(txns.filter(t=>new Date(t.date)>=since&&t.amount<0&&ownedAccts.includes(t.account)).reduce((s,t)=>s+t.amount,0));
     // Detail spending
     const det = amzItems.filter(i=>i.purchaser===p&&new Date(i.date)>=since).reduce((s,i)=>s+i.total,0);
     return { p, total: qkn + det, qkn, det };
@@ -5362,7 +5425,7 @@ function showPage(name) {
     },'family');
   }
   if(name==='settings') safe(()=>renderSettingsPage(),'settings');
-  if(name==='upload') { safe(()=>initSmartScan(),'initSmartScan'); safe(()=>updateUploadStatus(),'uploadStatus'); }
+  if(name==='upload'){safe(()=>initSmartScan(),'initSmartScan');safe(()=>renderUploadStatus(),'uploadStatus');}
   if(name==='dashboard'&&txns.length) safe(()=>renderDashboard(),'dashboard');
   if(name==='intelligence'&&txns.length) safe(()=>renderIntelligence(),'intelligence');
   if(name==='cashflow'&&txns.length) safe(()=>renderCF(),'cashflow');
@@ -5412,11 +5475,11 @@ function switchTab(ns, tab) {
   if (ns==='intel' && txns.length) {
     requestAnimationFrame(function(){ requestAnimationFrame(function(){
       try {
-        if (tab==='trends')    { destroyChart('trendBarChart'); destroyChart('velocityChart'); renderTrends(); }
-        if (tab==='anomalies') { destroyChart('anomHist'); renderAnomalies(); }
-        if (tab==='seasonal')  { destroyChart('seasonalBar'); renderSeasonal(); }
-      } catch(e) {}
-    }); });
+        if(tab==='trends'){destroyChart('trendBarChart');destroyChart('velocityChart');renderTrends();}
+        if(tab==='anomalies'){destroyChart('anomHist');renderAnomalies();}
+        if(tab==='seasonal'){destroyChart('seasonalBar');renderSeasonal();}
+      } catch(e){}
+    });});
   }
 }
 
@@ -5433,7 +5496,7 @@ function setRange(r,btn) {
 function renderDashboard() {
   try {
 
-  const filtered=getSpendable(txns.filter(t=>inRange(t,range)));
+  const filtered=getSpendable(txns).filter(t=>inRange(t,range));
   const exp=filtered.filter(t=>t.amount<0);
   const inc=filtered.filter(t=>t.amount>0);
   const totalExp=Math.abs(exp.reduce((s,t)=>s+t.amount,0));
@@ -5450,17 +5513,20 @@ function renderDashboard() {
   `;
 
   const md=getMonthlyData(filtered);
-  destroyChart('cfChart');
-  setH(document.getElementById('cfChart'));
-  setH(document.getElementById('cfChart')); try { setH(document.getElementById('cfChart')); charts['cfChart']=new Chart(document.getElementById('cfChart'), {type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.7)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.7)',borderRadius:4}]},options:{plugins:{legend:{display:true,labels:{boxWidth:12,font:{size:11}}}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
-
-} catch(e){ console.warn("cfChart:",e); }
+  (function(){
+    const par=document.getElementById('cfChart')?.parentElement;
+    if(!par)return;
+    par.id='cfChart-wrap';
+    svgBar('cfChart-wrap', md.labels, [
+      {label:'Income',   data:md.income,   backgroundColor:'rgba(47,168,122,.75)'},
+      {label:'Expenses', data:md.expenses, backgroundColor:'rgba(200,75,47,.75)'}
+    ]);
+  })();
   const cats={};
   exp.forEach(t=>{const c=t.category||'Uncategorized';cats[c]=(cats[c]||0)+Math.abs(t.amount);});
   const topCats=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,9);
-  destroyChart('catDonut');
-  setH(document.getElementById('catDonut'));
-  setH(document.getElementById('catDonut')); try{setH(document.getElementById('catDonut')); charts['catDonut']=new Chart(document.getElementById('catDonut'), {type:'doughnut',data:{labels:topCats.map(([l])=>l),datasets:[{data:topCats.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topCats.length),borderWidth:1,borderColor:'rgba(255,255,255,.06)'}]},options:{plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:8,color:'#9E9890',padding:5}}},cutout:'58%'}});}catch(e){console.warn('catDonut',e);}
+  destroyChart('catDonut'); setH(document.getElementById('catDonut'), 210);
+  setH(document.getElementById('catDonut'), 210); try{setH(document.getElementById('catDonut'), 210); charts['catDonut']=new Chart(document.getElementById('catDonut'),{type:'doughnut',data:{labels:topCats.map(([l])=>l),datasets:[{data:topCats.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topCats.length),borderWidth:1,borderColor:'rgba(255,255,255,.06)'}]},options:{plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:8,color:'#9E9890',padding:5}}},cutout:'58%'}});}catch(e){console.warn('catDonut',e);}
 
   // Merchants
   const merch={};
@@ -5514,7 +5580,7 @@ function renderIntelligence() {
   renderAlerts();
   renderBudgetDrift();
   renderActions();
-  // Trend/Anomaly/Seasonal deferred to switchTab
+  // Trends/Anomalies/Seasonal deferred to switchTab (hidden pane canvases)
 
   } catch(e) { console.error("Forge renderIntelligence error:", e); }
 }
@@ -5523,8 +5589,7 @@ function renderIntelligence() {
 function detectTrendAlerts() {
   const now=new Date();
   // Last 3 months vs prior 3 months
-  const _sp=getSpendable(txns);
-  const cur3=_sp.filter(t=>{const d=new Date(t.date);return d>=new Date(now.getFullYear(),now.getMonth()-2,1)&&t.amount<0;});
+  const cur3=txns.filter(t=>{const d=new Date(t.date);return d>=new Date(now.getFullYear(),now.getMonth()-2,1)&&t.amount<0;});
   const prv3=txns.filter(t=>{const d=new Date(t.date);return d>=new Date(now.getFullYear(),now.getMonth()-5,1)&&d<new Date(now.getFullYear(),now.getMonth()-2,1)&&t.amount<0;});
   const curCats={},prvCats={};
   cur3.forEach(t=>curCats[t.category]=(curCats[t.category]||0)+Math.abs(t.amount));
@@ -5698,25 +5763,15 @@ function renderTrends() {
   const pcts=cats.map(c=>((curC[c]-(prvC[c]||0))/(prvC[c]||1))*100);
   const sorted=cats.map((c,i)=>({c,pct:pcts[i]})).sort((a,b)=>b.pct-a.pct);
 
-  destroyChart('trendBarChart');
-  setH(document.getElementById('trendBarChart'));
-  setH(document.getElementById('trendBarChart')); charts['trendBarChart']=new Chart(document.getElementById('trendBarChart'),{
-    type:'bar',
-    data:{labels:sorted.map(s=>s.c),datasets:[{data:sorted.map(s=>s.pct),backgroundColor:sorted.map(s=>s.pct>0?'rgba(200,75,47,.75)':'rgba(47,168,122,.75)'),borderRadius:4}]},
-    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>v+'%'},title:{display:true,text:'3M vs Prior 3M'}}}}
-  });
+  destroyChart('trendBarChart'); setH(document.getElementById('trendBarChart'), 260);
+  (function(){ const par=document.getElementById('trendBarChart')?.parentElement; if(!par)return; par.id='trendBarChart-wrap'; const mdV=getMonthlyData(getSpendable(txns).filter(t=>inRange(t,intelR))); svgBar('trendBarChart-wrap', mdV.labels, [{label:'Spending',data:mdV.expenses,backgroundColor:'rgba(248,113,113,.7)'}]); })();
 
   // Velocity chart — month-over-month total expense change
   const filtV=txns.filter(t=>inRange(t,intelR)&&t.amount<0);
   const mdV=getMonthlyData(filtV);
   const velocity=mdV.expenses.map((v,i)=>i===0?0:parseFloat(((v-mdV.expenses[i-1])/(mdV.expenses[i-1]||1)*100).toFixed(1)));
-  destroyChart('velocityChart');
-  setH(document.getElementById('velocityChart'));
-  setH(document.getElementById('velocityChart')); charts['velocityChart']=new Chart(document.getElementById('velocityChart'),{
-    type:'bar',
-    data:{labels:mdV.labels,datasets:[{data:velocity,backgroundColor:velocity.map(v=>v>0?'rgba(200,75,47,.7)':'rgba(47,168,122,.7)'),borderRadius:4}]},
-    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v+'%'}}}}
-  });
+  destroyChart('velocityChart'); setH(document.getElementById('velocityChart'), 260);
+  setH(document.getElementById('velocityChart'), 260);   (function(){const p=document.getElementById('velocityChart')?.parentElement;if(!p)return;p.id='velocityChart-wrap';const mdv=getMonthlyData(getSpendable(txns));const deltas=mdv.expenses.map((v,i)=>i===0?0:v-mdv.expenses[i-1]);svgBar('velocityChart-wrap',mdv.labels,[{data:deltas,backgroundColor:deltas.map(d=>d>=0?'rgba(248,113,113,.7)':'rgba(45,212,191,.7)'),label:'Monthly Δ'}]);})();
 
   // Trend detail cards
   document.getElementById('trendDetails').innerHTML=`<div class="intel-grid">
@@ -5785,9 +5840,8 @@ function renderAnomalies() {
   amounts.forEach(a=>{const b=Math.min(Math.floor(a/bktSize),buckets-1);hist[b]++;});
   for(let i=0;i<buckets;i++){const mid=(i+.5)*bktSize;histColors.push((mid-mean)/std>=2?'rgba(200,75,47,.85)':'rgba(47,107,200,.65)');}
   const histLabels=Array.from({length:buckets},(_,i)=>fmtK((i+.5)*bktSize));
-  destroyChart('anomHist');
-  setH(document.getElementById('anomHist'));
-  setH(document.getElementById('anomHist')); charts['anomHist']=new Chart(document.getElementById('anomHist'), {type:'bar',data:{labels:histLabels,datasets:[{data:hist,backgroundColor:histColors,borderRadius:2}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{title:([i])=>`~${i.label}`,label:i=>`${i.raw} transactions`}}},scales:{x:{ticks:{maxTicksLimit:6}},y:{ticks:{stepSize:1}}}}});
+  destroyChart('anomHist'); setH(document.getElementById('anomHist'), 240);
+  setH(document.getElementById('anomHist'), 240);   (function(){const p=document.getElementById('anomHist')?.parentElement;if(!p)return;p.id='anomHist-wrap';svgBar('anomHist-wrap',histLabels,[{data:hist,backgroundColor:histColors,label:'Txns'}]);})();
 
   document.getElementById('anomList').innerHTML=anomalyData.slice(0,10).map(a=>`
     <div class="anomaly-row">
@@ -5815,23 +5869,9 @@ function renderSeasonal() {
   document.getElementById('heatmap').innerHTML=hmHtml;
 
   // Seasonal bar
-  destroyChart('seasonalBar');
-  setH(document.getElementById('seasonalBar'));
-  setH(document.getElementById('seasonalBar')); charts['seasonalBar']=new Chart(document.getElementById('seasonalBar'),{
-    type:'bar',
-    data:{labels:MONTHS,datasets:[{data:avgByMonth,backgroundColor:avgByMonth.map(v=>v>overallAvg*1.1?'rgba(200,75,47,.75)':v<overallAvg*0.9?'rgba(47,168,122,.7)':'rgba(47,107,200,.65)'),borderRadius:4},{type:'line',data:Array(12).fill(overallAvg),borderColor:'rgba(200,147,47,.8)',borderDash:[4,2],pointRadius:0,label:'Average'}]},
-    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}
-  });
-
-  // Seasonal insights
-  const high=avgByMonth.map((v,i)=>({m:i,v,r:v/overallAvg})).sort((a,b)=>b.r-a.r);
-  document.getElementById('seasonalInsights').innerHTML=`<div class="intel-grid">
-    <div class="intel-card intel-danger"><div class="intel-hdr">🔥 Highest Month: ${MONTHS[high[0].m]}</div><div class="intel-body">Average ${fmt(high[0].v)} — <strong>${((high[0].r-1)*100).toFixed(0)}% above baseline</strong>. Holiday spending, gifts, and year-end travel drive this peak.</div><div class="intel-action">→ Budget an extra ${fmt(high[0].v-overallAvg)} in ${MONTHS[high[0].m]} or start a dedicated sinking fund in October.</div></div>
-    <div class="intel-card intel-good"><div class="intel-hdr">💚 Lowest Month: ${MONTHS[high[high.length-1].m]}</div><div class="intel-body">Average ${fmt(high[high.length-1].v)} — <strong>${((1-high[high.length-1].r)*100).toFixed(0)}% below baseline</strong>. A natural recovery month after holidays.</div><div class="intel-action">→ Use ${MONTHS[high[high.length-1].m]} to rebuild savings or pay down any holiday debt.</div></div>
-    <div class="intel-card intel-info"><div class="intel-hdr">📊 Year-over-Year Drift</div><div class="intel-body">Based on ${years.length} years of data. Your spending baseline has been creeping at an estimated 3-5% per year — consistent with inflation but worth watching.</div><div class="intel-action">→ Set an annual spending target and compare each December to stay on track.</div></div>
-  </div>`;
-
-  } catch(e) { console.error("Forge renderSeasonal error:", e); }
+  destroyChart('seasonalBar'); setH(document.getElementById('seasonalBar'), 240);
+  setH(document.getElementById('seasonalBar'), 240);   (function(){const p=document.getElementById('seasonalBar')?.parentElement;if(!p)return;p.id='seasonalBar-wrap';svgBar('seasonalBar-wrap',Object.keys(seasonalData).map(m=>m),[{data:Object.values(seasonalData).map(v=>v.avg||0),backgroundColor:'rgba(96,165,250,.7)',label:'Avg Spend'}]);})();
+  } catch(e) { console.error('renderSeasonal:', e); }
 }
 
 function renderActions() {
@@ -5895,9 +5935,8 @@ function renderCF() {
   const ac=document.getElementById('cfAcct').value; const yr=document.getElementById('cfYear').value;
   t=byAcct(t,ac); if(yr!=='all')t=t.filter(x=>x.date.startsWith(yr));
   const md=getMonthlyData(t);
-  destroyChart('cfBarChart');
-  setH(document.getElementById('cfBarChart'));
-  setH(document.getElementById('cfBarChart')); charts['cfBarChart']=new Chart(document.getElementById('cfBarChart'), {type:'bar',data:{labels:md.labels,datasets:[{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.75)',borderRadius:4},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.75)',borderRadius:4}]},options:{scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  destroyChart('cfBarChart'); setH(document.getElementById('cfBarChart'), 180);
+  (function(){ const par=document.getElementById('cfBarChart')?.parentElement; if(!par)return; par.id='cfBarChart-wrap'; svgBar('cfBarChart-wrap', md.labels, [{label:'Income',data:md.income,backgroundColor:'rgba(47,168,122,.75)'},{label:'Expenses',data:md.expenses,backgroundColor:'rgba(200,75,47,.75)'}]); })();
   const ti=md.income.reduce((a,b)=>a+b,0),te=md.expenses.reduce((a,b)=>a+b,0),tn=ti-te,mo=md.labels.length||1;
   document.getElementById('cfCards').innerHTML=`
     <div class="card card-al g"><div class="card-lbl">Total Income</div><div class="card-val">${fmtK(ti)}</div><div class="card-sub">${fmt(ti/mo)}/mo</div></div>
@@ -5905,9 +5944,8 @@ function renderCF() {
     <div class="card card-al ${tn>=0?'g':''}"><div class="card-lbl">Net</div><div class="card-val" style="color:${tn>=0?'var(--positive)':'var(--gold)'}">${tn>=0?'+':''}${fmtK(tn)}</div><div class="card-sub">Rate: ${ti>0?((tn/ti)*100).toFixed(1):0}%</div></div>
   `;
   const netArr=md.income.map((v,i)=>v-md.expenses[i]);
-  destroyChart('cfNetChart');
-  setH(document.getElementById('cfNetChart'));
-  setH(document.getElementById('cfNetChart')); charts['cfNetChart']=new Chart(document.getElementById('cfNetChart'), {type:'line',data:{labels:md.labels,datasets:[{data:netArr,borderColor:'#2f6bc8',backgroundColor:'rgba(47,107,200,.1)',fill:true,tension:.3,pointRadius:2}]},options:{scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  destroyChart('cfNetChart'); setH(document.getElementById('cfNetChart'), 130);
+  (function(){ const par=document.getElementById('cfNetChart')?.parentElement; if(!par)return; par.id='cfNetChart-wrap'; svgLine('cfNetChart-wrap', md.labels, [{data:netArr,borderColor:'#60A5FA',fill:true,label:'Net'}]); })();
 
   } catch(e) { console.error("Forge renderCF error:", e); }
 }
@@ -5935,13 +5973,11 @@ function renderCats() {
   const cyC={}; curYr.forEach(x=>cyC[x.category]=(cyC[x.category]||0)+Math.abs(x.amount));
 
   const top10=sorted.slice(0,10);
-  destroyChart('catBigDonut');
-  setH(document.getElementById('catBigDonut'));
-  setH(document.getElementById('catBigDonut')); charts['catBigDonut']=new Chart(document.getElementById('catBigDonut'), {type:'doughnut',data:{labels:top10.map(([l])=>l),datasets:[{data:top10.map(([,v])=>v.total),backgroundColor:CAT_COLORS.slice(0,top10.length),borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}});
+  destroyChart('catBigDonut'); setH(document.getElementById('catBigDonut'), 260);
+  setH(document.getElementById('catBigDonut'), 260); charts['catBigDonut']=new Chart(document.getElementById('catBigDonut'),{type:'doughnut',data:{labels:top10.map(([l])=>l),datasets:[{data:top10.map(([,v])=>v.total),backgroundColor:CAT_COLORS.slice(0,top10.length),borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}});
   const top8=sorted.slice(0,8).reverse();
-  destroyChart('catBarH');
-  setH(document.getElementById('catBarH'));
-  setH(document.getElementById('catBarH')); charts['catBarH']=new Chart(document.getElementById('catBarH'), {type:'bar',data:{labels:top8.map(([l])=>l),datasets:[{data:top8.map(([,v])=>v.total),backgroundColor:CAT_COLORS.slice(0,top8.length).reverse(),borderRadius:4}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtK(v)}}}}});
+  destroyChart('catBarH'); setH(document.getElementById('catBarH'), 260);
+  (function(){ const par=document.getElementById('catBarH')?.parentElement; if(!par)return; par.id='catBarH-wrap'; svgHBar('catBarH-wrap', top8.map(([l])=>l), top8.map(([,v])=>v.total), CAT_COLORS.slice(0,top8.length).reverse()); })();
 
   document.getElementById('catTbl').innerHTML=sorted.map(([l,d],i)=>{
     const yoy=lyC[l]&&cyC[l]?((cyC[l]-lyC[l])/lyC[l])*100:null;
@@ -6020,25 +6056,21 @@ function renderAmazon() {
   // Overview tab charts
   const byMo={};amzItems.forEach(i=>{const k=monthKey(i.date);byMo[k]=(byMo[k]||0)+i.total;});
   const moKeys=Object.keys(byMo).sort();
-  destroyChart('amzMonthly');
-  setH(document.getElementById('amzMonthly'));
-  setH(document.getElementById('amzMonthly')); charts['amzMonthly']=new Chart(document.getElementById('amzMonthly'), {type:'bar',data:{labels:moKeys.map(monthLabel),datasets:[{data:moKeys.map(k=>byMo[k]),backgroundColor:'rgba(255,153,0,.75)',borderRadius:4}]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v)}}}}});
+  destroyChart('amzMonthly'); setH(document.getElementById('amzMonthly'), 210);
+  (function(){ const par=document.getElementById('amzMonthly')?.parentElement; if(!par)return; par.id='amzMonthly-wrap'; svgBar('amzMonthly-wrap', moKeys.map(monthLabel), [{data:moKeys.map(k=>byMo[k]),backgroundColor:'rgba(255,153,0,.75)',label:''}]); })();
   const catS={};amzItems.forEach(i=>catS[i.category]=(catS[i.category]||0)+i.total);
   const topC=Object.entries(catS).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  destroyChart('amzCatDonut');
-  setH(document.getElementById('amzCatDonut'));
-  setH(document.getElementById('amzCatDonut')); charts['amzCatDonut']=new Chart(document.getElementById('amzCatDonut'), {type:'doughnut',data:{labels:topC.map(([l])=>l),datasets:[{data:topC.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topC.length),borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}});
+  destroyChart('amzCatDonut'); setH(document.getElementById('amzCatDonut'), 210);
+  setH(document.getElementById('amzCatDonut'), 210); charts['amzCatDonut']=new Chart(document.getElementById('amzCatDonut'),{type:'doughnut',data:{labels:topC.map(([l])=>l),datasets:[{data:topC.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,topC.length),borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10}}},cutout:'55%'}});
 
   // Categories tab
   const top8=Object.entries(catS).sort((a,b)=>b[1]-a[1]).slice(0,8).reverse();
-  destroyChart('amzCatBar');
-  setH(document.getElementById('amzCatBar'));
-  setH(document.getElementById('amzCatBar')); charts['amzCatBar']=new Chart(document.getElementById('amzCatBar'), {type:'bar',data:{labels:top8.map(([l])=>l),datasets:[{data:top8.map(([,v])=>v),backgroundColor:CAT_COLORS.slice(0,top8.length).reverse(),borderRadius:4}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtK(v)}}}}});
+  destroyChart('amzCatBar'); setH(document.getElementById('amzCatBar'), 260);
+  (function(){ const par=document.getElementById('amzCatBar')?.parentElement; if(!par)return; par.id='amzCatBar-wrap'; svgHBar('amzCatBar-wrap', top8.map(([l])=>l), top8.map(([,v])=>v), CAT_COLORS.slice(0,top8.length).reverse()); })();
   const catImp={};amzItems.forEach(i=>{const c=i.category;if(!catImp[c])catImp[c]=[];catImp[c].push(scoreImpulse(i));});
   const top8imp=top8.map(([l])=>({label:l,score:Math.round(catImp[l]?catImp[l].reduce((a,b)=>a+b,0)/catImp[l].length:0)}));
-  destroyChart('amzImpBar');
-  setH(document.getElementById('amzImpBar'));
-  setH(document.getElementById('amzImpBar')); charts['amzImpBar']=new Chart(document.getElementById('amzImpBar'), {type:'bar',data:{labels:top8imp.map(c=>c.label),datasets:[{data:top8imp.map(c=>c.score),backgroundColor:top8imp.map(c=>c.score>=60?'rgba(198,40,40,.7)':c.score>=30?'rgba(230,81,0,.7)':'rgba(46,125,50,.7)'),borderRadius:4}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{max:100}}}});
+  destroyChart('amzImpBar'); setH(document.getElementById('amzImpBar'), 260);
+  (function(){ const par=document.getElementById('amzImpBar')?.parentElement; if(!par)return; par.id='amzImpBar-wrap'; svgHBar('amzImpBar-wrap', top8imp.map(c=>c.label), top8imp.map(c=>c.score), top8imp.map(c=>c.score>=60?'rgba(198,40,40,.8)':c.score>=30?'rgba(230,81,0,.8)':'rgba(46,125,50,.8)')); })();
 
   const sortedCats=Object.entries(catS).sort((a,b)=>b[1]-a[1]);
   document.getElementById('amzCatTbl').innerHTML=sortedCats.map(([c,v],i)=>{
@@ -6065,12 +6097,10 @@ function renderAmazon() {
       <div class="card card-al b"><div class="card-lbl">All Other</div><div class="card-val">${fmtK(totalAll-totalAmz)}</div><div class="card-sub">${(100-parseFloat(pct)).toFixed(1)}% of spending</div></div>
       <div class="card card-al"><div class="card-lbl">Detail Share</div><div class="card-val">${pct}%</div><div class="card-sub" style="margin-top:8px;"><div style="height:8px;border-radius:4px;background:var(--lift);overflow:hidden;display:flex;"><div style="width:${pct}%;background:#ff9900;"></div><div style="flex:1;background:var(--river);"></div></div></div></div>
     `;
-    destroyChart('amzCmpChart');
-    setH(document.getElementById('amzCmpChart'));
-    setH(document.getElementById('amzCmpChart')); charts['amzCmpChart']=new Chart(document.getElementById('amzCmpChart'), {type:'bar',data:{labels:allMos.map(monthLabel),datasets:[{label:'Detail',data:amzVals,backgroundColor:'rgba(255,153,0,.8)',borderRadius:4,stack:'a'},{label:'Other Spending',data:otherVals,backgroundColor:'rgba(47,107,200,.6)',borderRadius:4,stack:'a'}]},options:{scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)}},x:{stacked:true}}}});
-    destroyChart('amzPctChart');
-    setH(document.getElementById('amzPctChart'));
-    setH(document.getElementById('amzPctChart')); charts['amzPctChart']=new Chart(document.getElementById('amzPctChart'), {type:'line',data:{labels:allMos.map(monthLabel),datasets:[{data:pctVals,borderColor:'#ff9900',backgroundColor:'rgba(255,153,0,.1)',fill:true,tension:.3,pointRadius:2}]},options:{scales:{y:{ticks:{callback:v=>v+'%'},max:100}}}});
+    destroyChart('amzCmpChart'); setH(document.getElementById('amzCmpChart'), 170);
+    setH(document.getElementById('amzCmpChart'), 170); setH(document.getElementById('amzCmpChart'), 170); charts['amzCmpChart']=new Chart(document.getElementById('amzCmpChart'),{type:'bar',data:{labels:allMos.map(monthLabel),datasets:[{label:'Detail',data:amzVals,backgroundColor:'rgba(255,153,0,.8)',borderRadius:4,stack:'a'},{label:'Other Spending',data:otherVals,backgroundColor:'rgba(47,107,200,.6)',borderRadius:4,stack:'a'}]},options:{scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)}},x:{stacked:true}}}});
+    destroyChart('amzPctChart'); setH(document.getElementById('amzPctChart'), 120);
+    setH(document.getElementById('amzPctChart'), 120); setH(document.getElementById('amzPctChart'), 120); charts['amzPctChart']=new Chart(document.getElementById('amzPctChart'),{type:'line',data:{labels:allMos.map(monthLabel),datasets:[{data:pctVals,borderColor:'#ff9900',backgroundColor:'rgba(255,153,0,.1)',fill:true,tension:.3,pointRadius:2}]},options:{scales:{y:{ticks:{callback:v=>v+'%'},max:100}}}});
   }
 
   populateAmzFilters();
@@ -6929,8 +6959,7 @@ const DEFAULT_SETTINGS = {
   // Maps Quicken account names → family member name for per-person analytics
   accountOwners: {},
   // How aggressively to flag detail-file impulse items (1=lenient, 5=strict)
-  detailSensitivity: 3,
-};
+  detailSensitivity: 3 };
 
 let settings = { ...DEFAULT_SETTINGS };
 
@@ -6985,8 +7014,7 @@ function saveSettings() {
         name:   nameEl.value.trim(),
         dob:    validDob,
         gender: genderEl?.value || 'm',
-        emoji,
-      });
+        emoji });
     }
   });
 
@@ -7511,144 +7539,108 @@ function updateAgeBadge(dobId, badgeId, isParent = false) {
 // Override savings rate target for badge display
 // Override Amazon sensitivity
 
-function toggleDemoPanel() {
-  const p=document.getElementById('demoPanel'), bg=document.getElementById('demoPanelBg');
-  if(!p)return; const open=p.style.display==='block';
-  p.style.display=open?'none':'block'; if(bg)bg.style.display=open?'none':'block';
+function toggleDemoPanel(){
+  const p=document.getElementById('demoPnl'),bg=document.getElementById('demoPnlBg');
+  if(!p)return;const o=p.style.display==='block';
+  p.style.display=o?'none':'block';if(bg)bg.style.display=o?'none':'block';
 }
 
-function updateUploadStatus() {
-  const el=document.getElementById('uploadDataStatus'); if(!el)return;
-  const spendable = getSpendable(txns);
-  const transfers = txns.filter(t=>looksLikeTransfer(t));
-  if (!txns.length && !amzItems.length) {
-    el.innerHTML='<div style="padding:11px 16px;background:var(--lift);border:1px solid var(--line);border-radius:var(--r-sm);font-size:12px;color:var(--ink4);">No data loaded · Drop your Quicken export files below to begin</div>';
-    return;
+function renderUploadStatus(){
+  const el=document.getElementById('uploadStatus');if(!el)return;
+  const sp=getSpendable(txns);
+  const xf=txns.filter(t=>t.isTransfer||/^\[.*\]$/.test((t.category||'').trim())||/^transfer$/i.test((t.category||'').trim()));
+  if(!txns.length&&!amzItems.length){
+    el.innerHTML='<div style="padding:11px 16px;background:var(--lift);border:1px solid var(--line);border-radius:var(--r-sm);font-size:12px;color:var(--ink4);">No data loaded · drop your Quicken export files below</div>';return;
   }
-  if (isDemoMode) {
+  if(isDemoMode){
     el.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 16px;background:rgba(245,168,0,.06);border:1px solid rgba(245,168,0,.2);border-radius:var(--r-sm);">
-      <span style="font-size:12px;color:var(--gold);">⚾ <strong>Demo data active</strong> — synthetic data, not your real finances</span>
-      <button class="btn btn-ghost btn-sm" onclick="clearAll();updateUploadStatus();" style="color:var(--negative);font-size:11px;">Clear Demo</button>
-    </div>`;
-    return;
+      <span style="font-size:12px;color:var(--gold);">⚾ <strong>Demo data active</strong> — synthetic, not your real finances</span>
+      <button class="btn btn-ghost btn-sm" onclick="clearAll();renderUploadStatus();" style="color:var(--negative);font-size:11px;">Clear Demo</button>
+    </div>`;return;
   }
-  const earliest=txns.length?txns[txns.length-1].date:'';
-  const latest=txns.length?txns[0].date:'';
-  const amzPart=amzItems.length?` · ${amzItems.length.toLocaleString()} detail items`:'';
-  const xferNote=transfers.length?`<span style="color:var(--ink4);font-size:10px;"> · ${transfers.length} internal transfers excluded from totals</span>`:'';
+  const e=txns.length?txns[txns.length-1].date:'',l=txns.length?txns[0].date:'';
+  const az=amzItems.length?` · ${amzItems.length.toLocaleString()} detail items`:'';
+  const xfNote=xf.length?` · <span style="color:var(--ink4)">${xf.length} transfers excluded</span>`:'';
   el.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 16px;background:rgba(45,212,191,.05);border:1px solid rgba(45,212,191,.18);border-radius:var(--r-sm);">
     <div>
-      <div style="font-size:13px;font-weight:600;color:var(--positive);">✓ Real data loaded</div>
-      <div style="font-size:11px;color:var(--ink4);margin-top:2px;font-family:var(--font-m);">${spendable.length.toLocaleString()} transactions · ${accounts.length} accounts · ${earliest} → ${latest}${amzPart}${xferNote}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--positive);">✓ Your data is loaded</div>
+      <div style="font-size:11px;color:var(--ink4);margin-top:2px;font-family:var(--font-m);">${sp.length.toLocaleString()} transactions · ${accounts.length} accounts · ${e} → ${l}${az}${xfNote}</div>
     </div>
     <div style="display:flex;gap:8px;flex-shrink:0;">
-      <button class="btn btn-ghost btn-sm" onclick="showAuditReport()" style="font-size:11px;">Audit Report</button>
-      <button class="btn btn-ghost btn-sm" onclick="clearAll();updateUploadStatus();" style="color:var(--negative);font-size:11px;">Clear All</button>
+      <button class="btn btn-ghost btn-sm" onclick="showAuditReport()" style="font-size:11px;">Audit</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearAll();renderUploadStatus();" style="color:var(--negative);font-size:11px;">Clear All</button>
     </div>
   </div>`;
 }
 
-function showAuditReport() {
-  if (!txns.length) { showToast('No data to audit'); return; }
-  const spendable = getSpendable(txns);
-  const transfers = txns.filter(t=>looksLikeTransfer(t));
-  const totalInc=spendable.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
-  const totalExp=spendable.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
-  const earliest=txns[txns.length-1].date, latest=txns[0].date;
-  const keys=spendable.map(t=>`${t.date}|${t.payee}|${t.amount}|${t.account}`);
-  const dupCount=keys.length-new Set(keys).size;
-
+function showAuditReport(){
+  if(!txns.length){showToast('No data loaded');return;}
+  const sp=getSpendable(txns);
+  const xf=txns.filter(t=>!sp.includes(t));
+  const inc=sp.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+  const exp=sp.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+  const e=txns[txns.length-1].date,l=txns[0].date;
+  const keys=sp.map(t=>t.date+'|'+t.payee+'|'+t.amount+'|'+t.account);
+  const dups=keys.length-new Set(keys).size;
   const byAcct={};
-  spendable.forEach(t=>{
-    if(!byAcct[t.account])byAcct[t.account]={n:0,inc:0,exp:0,first:t.date,last:t.date};
-    const a=byAcct[t.account]; a.n++;
-    if(t.amount>0)a.inc+=t.amount; else a.exp+=Math.abs(t.amount);
-    if(t.date<a.first)a.first=t.date; if(t.date>a.last)a.last=t.date;
-  });
-
+  sp.forEach(t=>{if(!byAcct[t.account])byAcct[t.account]={n:0,inc:0,exp:0,first:t.date,last:t.date};
+    const a=byAcct[t.account];a.n++;if(t.amount>0)a.inc+=t.amount;else a.exp+=Math.abs(t.amount);
+    if(t.date<a.first)a.first=t.date;if(t.date>a.last)a.last=t.date;});
   const monthly={};
-  spendable.forEach(t=>{
-    const mo=t.date.slice(0,7);
-    if(!monthly[mo])monthly[mo]={n:0,inc:0,exp:0};
-    monthly[mo].n++; if(t.amount>0)monthly[mo].inc+=t.amount; else monthly[mo].exp+=Math.abs(t.amount);
-  });
+  sp.forEach(t=>{const mo=t.date.slice(0,7);if(!monthly[mo])monthly[mo]={n:0,inc:0,exp:0};
+    monthly[mo].n++;if(t.amount>0)monthly[mo].inc+=t.amount;else monthly[mo].exp+=Math.abs(t.amount);});
   const mos=Object.keys(monthly).sort().reverse().slice(0,36);
-
-  const th='padding:8px 12px;font-family:var(--font-m);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);border-bottom:1px solid var(--line2);background:var(--lift);text-align:left;';
-  const thr=th+'text-align:right;';
-
-  const acctRows=Object.entries(byAcct).sort((a,b)=>b[1].n-a[1].n).map(([ac,d])=>`<tr style="border-bottom:1px solid var(--line);">
-    <td style="padding:7px 12px;font-size:12px;color:var(--ink2);">${ac}</td>
-    <td style="padding:7px 12px;font-family:var(--font-m);font-size:10px;color:var(--ink4);">${d.first} → ${d.last}</td>
+  const th='padding:8px 12px;font-family:var(--font-m);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);border-bottom:1px solid var(--line2);background:var(--lift);text-align:';
+  const acctRows=Object.entries(byAcct).sort((a,b)=>b[1].n-a[1].n).map(([ac,d])=>
+    `<tr style="border-bottom:1px solid var(--line);"><td style="padding:7px 12px;font-size:12px;">${ac}</td>
+    <td style="padding:7px 12px;font-family:var(--font-m);font-size:10px;color:var(--ink4);">${d.first}→${d.last}</td>
     <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;">${d.n}</td>
     <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--positive);">${fmt(d.inc)}</td>
     <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--gold);">${fmt(d.exp)}</td>
-    <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:${d.inc-d.exp>=0?'var(--positive)':'var(--negative)'};">${d.inc-d.exp>=0?'+':''}${fmt(d.inc-d.exp)}</td>
-  </tr>`).join('');
-
-  const moRows=mos.map(mo=>{const d=monthly[mo];const net=d.inc-d.exp;return`<tr style="border-bottom:1px solid var(--line);">
+    <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:${d.inc-d.exp>=0?'var(--positive)':'var(--negative)'};">${d.inc-d.exp>=0?'+':''}${fmt(d.inc-d.exp)}</td></tr>`).join('');
+  const moRows=mos.map(mo=>{const d=monthly[mo];const net=d.inc-d.exp;return `<tr style="border-bottom:1px solid var(--line);">
     <td style="padding:5px 12px;font-family:var(--font-m);font-size:11px;color:var(--ink3);">${mo}</td>
     <td style="padding:5px 12px;text-align:right;font-family:var(--font-m);font-size:11px;">${d.n}</td>
     <td style="padding:5px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--positive);">${fmt(d.inc)}</td>
     <td style="padding:5px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--gold);">${fmt(d.exp)}</td>
-    <td style="padding:5px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:${net>=0?'var(--positive)':'var(--negative)'};">${net>=0?'+':''}${fmt(net)}</td>
-  </tr>`;}).join('');
-
+    <td style="padding:5px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:${net>=0?'var(--positive)':'var(--negative)'};">${net>=0?'+':''}${fmt(net)}</td></tr>`;}).join('');
   const ov=document.createElement('div');
-  ov.id='auditModal';
-  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:1000;overflow-y:auto;padding:32px 16px;';
+  ov.id='auditModal';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:1000;overflow-y:auto;padding:32px 16px;';
   ov.innerHTML=`<div style="max-width:960px;margin:0 auto;background:var(--base);border:1px solid var(--line);border-radius:12px;overflow:hidden;">
-    <div style="padding:22px 26px 18px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;">
-      <div>
-        <div style="font-family:var(--font-d);font-size:24px;font-weight:600;">Data Audit Report</div>
-        <div style="font-size:11px;color:var(--ink4);font-family:var(--font-m);margin-top:4px;">${earliest} → ${latest} · ${new Date().toLocaleDateString()}</div>
-      </div>
-      <button onclick="document.getElementById('auditModal').remove()" style="background:none;border:1px solid var(--line);color:var(--ink4);cursor:pointer;font-size:14px;padding:4px 10px;border-radius:6px;">✕ Close</button>
+    <div style="padding:20px 26px 16px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;">
+      <div><div style="font-family:var(--font-d);font-size:24px;font-weight:600;">Data Audit Report</div>
+      <div style="font-size:11px;color:var(--ink4);font-family:var(--font-m);margin-top:4px;">${e} → ${l} · ${new Date().toLocaleDateString()}</div></div>
+      <button onclick="document.getElementById('auditModal').remove()" style="background:none;border:1px solid var(--line);color:var(--ink4);cursor:pointer;font-size:13px;padding:4px 10px;border-radius:6px;">✕ Close</button>
     </div>
-
-    <div style="padding:18px 26px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
-      ${[
-        ['All Txns', txns.length.toLocaleString(), 'var(--ink)'],
-        ['Spendable', spendable.length.toLocaleString(), 'var(--ink)'],
-        ['Transfers excluded', transfers.length.toLocaleString(), 'var(--ink4)'],
-        ['Total Income', fmt(totalInc), 'var(--positive)'],
-        ['Total Expense', fmt(totalExp), 'var(--gold)'],
-      ].map(([l,v,c])=>`<div style="background:var(--float);border:1px solid var(--line);border-radius:8px;padding:11px 13px;">
-        <div style="font-size:9px;color:var(--ink4);font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;">${l}</div>
-        <div style="font-size:18px;font-weight:700;color:${c};">${v}</div>
-      </div>`).join('')}
+    <div style="padding:16px 26px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
+      ${[['All Txns',txns.length.toLocaleString(),'var(--ink)'],['Spendable',sp.length.toLocaleString(),'var(--ink)'],['Transfers',xf.length.toLocaleString(),'var(--ink4)'],['Income',fmt(inc),'var(--positive)'],['Expense',fmt(exp),'var(--gold)']].map(([l,v,c])=>
+      `<div style="background:var(--float);border:1px solid var(--line);border-radius:8px;padding:11px 13px;"><div style="font-size:9px;color:var(--ink4);font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;">${l}</div><div style="font-size:18px;font-weight:700;color:${c};">${v}</div></div>`).join('')}
     </div>
-
-    <div style="padding:10px 26px;border-bottom:1px solid var(--line);background:${dupCount===0?'rgba(45,212,191,.04)':'rgba(248,113,113,.04)'};">
-      <span style="font-size:12px;color:${dupCount===0?'var(--positive)':'var(--negative)'};">
-        ${dupCount===0?'✓ No duplicates — all records have unique date·payee·amount·account keys':'⚠ '+dupCount+' duplicate keys detected — check for overlapping export date ranges'}
-      </span>
-      ${transfers.length?'<span style="font-size:11px;color:var(--ink4);margin-left:20px;">'+transfers.length+' internal transfers (credit card payments, account moves) excluded from Income/Expense totals above</span>':''}
+    <div style="padding:9px 26px;border-bottom:1px solid var(--line);background:${dups===0?'rgba(45,212,191,.04)':'rgba(248,113,113,.04)'};">
+      <span style="font-size:12px;color:${dups===0?'var(--positive)':'var(--negative)'};">${dups===0?'✓ No duplicates detected':'⚠ '+dups+' duplicate records — check for overlapping export date ranges'}</span>
+      ${xf.length?' <span style="font-size:11px;color:var(--ink4);margin-left:16px;">'+xf.length+' internal transfers (CC payments, account moves) excluded from totals</span>':''}
     </div>
-
-    <div style="padding:18px 26px;border-bottom:1px solid var(--line);">
+    <div style="padding:16px 26px;border-bottom:1px solid var(--line);">
       <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">By Account — Reconcile to Quicken</div>
-      <div style="font-size:11px;color:var(--ink4);margin-bottom:10px;">Compare Income and Expense per row to your Quicken account register for the same date range. Transfers between accounts are excluded.</div>
+      <div style="font-size:11px;color:var(--ink4);margin-bottom:10px;">Compare each row to your Quicken account register for the same date range.</div>
       <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
-        <thead><tr><th style="${th}">Account</th><th style="${th}">Date Range</th><th style="${thr}">Txns</th><th style="${thr}">Income</th><th style="${thr}">Expense</th><th style="${thr}">Net</th></tr></thead>
+        <thead><tr><th style="${th}left;">Account</th><th style="${th}left;">Date Range</th><th style="${th}right;">Txns</th><th style="${th}right;">Income</th><th style="${th}right;">Expense</th><th style="${th}right;">Net</th></tr></thead>
         <tbody>${acctRows}</tbody>
         <tfoot><tr style="background:var(--lift);border-top:2px solid var(--line2);">
           <td colspan="2" style="padding:8px 12px;font-size:12px;font-weight:700;">TOTAL (excl. transfers)</td>
-          <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;">${spendable.length.toLocaleString()}</td>
-          <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;color:var(--positive);">${fmt(totalInc)}</td>
-          <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;color:var(--gold);">${fmt(totalExp)}</td>
-          <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;color:${totalInc-totalExp>=0?'var(--positive)':'var(--negative)'};">${totalInc-totalExp>=0?'+':''}${fmt(totalInc-totalExp)}</td>
+          <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;">${sp.length.toLocaleString()}</td>
+          <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;color:var(--positive);">${fmt(inc)}</td>
+          <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;color:var(--gold);">${fmt(exp)}</td>
+          <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;color:${inc-exp>=0?'var(--positive)':'var(--negative)'};">${inc-exp>=0?'+':''}${fmt(inc-exp)}</td>
         </tr></tfoot>
       </table></div>
     </div>
-
-    <div style="padding:18px 26px;">
-      <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px;">Monthly Ledger — Most Recent 36 Months (transfers excluded)</div>
-      <div style="overflow-y:auto;max-height:300px;"><table style="width:100%;border-collapse:collapse;">
+    <div style="padding:16px 26px;">
+      <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px;">Monthly Ledger — Most Recent 36 Months</div>
+      <div style="overflow-y:auto;max-height:280px;"><table style="width:100%;border-collapse:collapse;">
         <thead style="position:sticky;top:0;"><tr>
-          <th style="${th}">Month</th><th style="${thr}">Txns</th><th style="${thr}">Income</th><th style="${thr}">Expense</th><th style="${thr}">Net</th>
-        </tr></thead>
-        <tbody>${moRows}</tbody>
+          <th style="${th}left;">Month</th><th style="${th}right;">Txns</th><th style="${th}right;">Income</th><th style="${th}right;">Expense</th><th style="${th}right;">Net</th>
+        </tr></thead><tbody>${moRows}</tbody>
       </table></div>
     </div>
   </div>`;
