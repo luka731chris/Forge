@@ -456,6 +456,110 @@ input:focus { border-color:var(--gold); }
   .kpi-grid { grid-template-columns: repeat(2,1fr); }
   .chart-grid-2 { grid-template-columns: 1fr; }
 }
+
+/* ── Chart tooltip ───────────────────────────────────────────── */
+#chartTip {
+  position: fixed;
+  background: var(--float);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-sm);
+  padding: 7px 12px;
+  font-size: 12px;
+  font-family: var(--font-m);
+  color: var(--ink);
+  pointer-events: none;
+  z-index: 999;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,.6);
+  display: none;
+  border-left: 3px solid var(--gold);
+}
+
+/* ── Balance sheet ───────────────────────────────────────────── */
+.bs-section {
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.bs-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: var(--lift);
+  border-bottom: 1px solid var(--line);
+}
+.bs-hdr-title { font-size:13px; font-weight:600; color:var(--ink2); }
+.bs-hdr-total { font-size:14px; font-weight:700; font-family:var(--font-m); }
+.bs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 18px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: 13px;
+}
+.bs-row:last-child { border-bottom: none; }
+.bs-row-name { color: var(--ink2); display:flex; align-items:center; gap:8px; }
+.bs-row-meta { font-size:10px; color:var(--ink4); font-family:var(--font-m); }
+.bs-row-amt  { font-family:var(--font-m); font-size:13px; font-weight:600; }
+.bs-flag { display:inline-flex; align-items:center; gap:4px; font-size:9px; font-family:var(--font-m);
+  padding:2px 7px; border-radius:10px; font-weight:600; letter-spacing:.04em; }
+.bs-flag-stale  { background:rgba(245,168,0,.12); color:var(--gold); border:1px solid rgba(245,168,0,.2); }
+.bs-flag-est    { background:rgba(96,165,250,.12); color:var(--river); border:1px solid rgba(96,165,250,.2); }
+.bs-flag-miss   { background:rgba(248,113,113,.12); color:var(--negative); border:1px solid rgba(248,113,113,.2); }
+.bs-flag-ok     { background:rgba(45,212,191,.1); color:var(--positive); border:1px solid rgba(45,212,191,.2); }
+.bs-net-row {
+  display: flex; align-items:center; justify-content:space-between;
+  padding: 16px 20px;
+  background: var(--lift);
+  border-radius: var(--r-lg);
+  border: 2px solid var(--line2);
+}
+/* ── Financial statements ────────────────────────────────────── */
+.fin-section {
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.fin-hdr {
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--lift);
+}
+.fin-hdr-title { font-family:var(--font-d); font-size:20px; font-weight:600; color:var(--ink); }
+.fin-hdr-sub   { font-size:10px; color:var(--ink4); font-family:var(--font-m); margin-top:2px; }
+.fin-row {
+  display: grid;
+  grid-template-columns: 1fr repeat(3, 110px);
+  padding: 8px 20px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: 12px;
+  align-items: center;
+}
+.fin-row.total-row {
+  border-top: 1px solid var(--line2);
+  border-bottom: 2px solid var(--line2);
+  background: var(--lift);
+  font-weight: 700;
+  font-size: 13px;
+}
+.fin-row.subtotal { background: rgba(255,255,255,.02); font-weight: 600; }
+.fin-row.indent   { padding-left: 36px; color:var(--ink3); }
+.fin-col-hdr { font-family:var(--font-m); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink4); text-align:right; }
+.fin-num { font-family:var(--font-m); text-align:right; }
+.fin-num.pos { color:var(--positive); }
+.fin-num.neg { color:var(--gold); }
+.fin-num.red { color:var(--negative); }
+.kpi-cluster { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; }
+.kpi-sm { background:var(--float); border:1px solid var(--line); border-radius:var(--r-md); padding:14px 16px; }
+.kpi-sm-lbl { font-size:9px; font-family:var(--font-m); letter-spacing:.12em; text-transform:uppercase; color:var(--ink4); margin-bottom:4px; }
+.kpi-sm-val { font-size:20px; font-weight:700; }
+.kpi-sm-sub { font-size:10px; color:var(--ink4); margin-top:2px; }
 </style>
 </head>
 <body>
@@ -473,6 +577,8 @@ input:focus { border-color:var(--gold); }
   </div>
 </header>
 
+
+<div id="chartTip"></div>
 <div class="demo-panel" id="demoPanel">
   <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">⚾ Demo Mode</div>
   <div style="font-size:12px;color:var(--ink3);line-height:1.65;margin-bottom:12px;">Loads 4 years of synthetic Pittsburgh family data. Importing real files completely replaces demo data.</div>
@@ -524,6 +630,14 @@ input:focus { border-color:var(--gold); }
     <div class="nav-item" onclick="showPage('validate')" id="nav-validate">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       Data Validation
+    </div>
+    <div class="nav-item" onclick="showPage('balancesheet')" id="nav-balancesheet">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      Balance Sheet
+    </div>
+    <div class="nav-item" onclick="showPage('financials')" id="nav-financials">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Family Financials
     </div>
   </div>
 </nav>
@@ -716,6 +830,35 @@ input:focus { border-color:var(--gold); }
 </div>
 
 
+
+<!-- ══ BALANCE SHEET ══ -->
+<div id="page-balancesheet" class="page">
+  <div class="page-hdr">
+    <div>
+      <div class="page-title">Balance Sheet</div>
+      <div class="page-sub">Luka Family · Assets, Liabilities &amp; Net Worth · As of import date</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn btn-ghost" onclick="renderBalanceSheet()" style="font-size:11px;padding:6px 12px;">↻ Refresh</button>
+    </div>
+  </div>
+  <div id="balanceSheetContent"></div>
+</div>
+
+<!-- ══ FAMILY FINANCIALS ══ -->
+<div id="page-financials" class="page">
+  <div class="page-hdr">
+    <div>
+      <div class="page-title">Family Financial Statements</div>
+      <div class="page-sub">Investor-grade reporting · Annual summary · Luka Family Office</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <select id="finYear" onchange="renderFinancials()" style="font-size:12px;padding:5px 10px;"></select>
+    </div>
+  </div>
+  <div id="financialsContent"></div>
+</div>
+
 <!-- ══ DATA VALIDATION ══ -->
 <div id="page-validate" class="page">
   <div class="page-hdr">
@@ -905,10 +1048,9 @@ function svgBar(elId, labels, datasets) {
   if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
   const W = Math.max(el.offsetWidth || 0, 300);
   const H = Math.max(el.offsetHeight || 0, 180);
-  console.log('[Forge] svgBar', elId, 'W:', W, 'H:', H, 'labels:', labels.length);
   if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;font-family:var(--font-m);">No data</div>'; return; }
 
-  const PAD = { t:10, r:10, b:48, l:62 };
+  const PAD = { t:12, r:16, b:52, l:58 };
   const cW = W - PAD.l - PAD.r;
   const cH = H - PAD.t - PAD.b;
   const n  = labels.length;
@@ -920,64 +1062,73 @@ function svgBar(elId, labels, datasets) {
   const span = maxV - minV || 1;
   const zeroY = cH * (maxV / span);
 
-  // Grid lines + Y labels
-  const YTICKS = 5;
+  // Y grid + labels
+  const YTICKS = 4;
   let grid = '', yLbls = '';
   for (let i = 0; i <= YTICKS; i++) {
     const v = minV + (span / YTICKS) * i;
     const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
-    grid  += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,.06)" stroke-width="1"/>`;
-    const lbl = Math.abs(v) >= 1000 ? (v/1000).toFixed(0)+'K' : v.toFixed(0);
-    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.38)" font-size="10" font-family="'DM Mono',monospace">${lbl}</text>`;
+    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
+    const lbl = Math.abs(v)>=1000 ? '$'+(v/1000).toFixed(0)+'K' : '$'+Math.round(v);
+    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="10" font-family="'DM Mono',monospace">${lbl}</text>`;
   }
 
-  // Bars
+  // Bars + invisible hit areas for tooltip
   const nDS  = datasets.length;
   const grpW = cW / n;
-  const barW = Math.max((grpW / (nDS + 0.5)) - 2, 4);
+  const barW = Math.max(Math.min((grpW / (nDS + 0.8)) - 1, 40), 3);
   const off  = (grpW - barW * nDS) / 2;
-  let bars = '', legend = '';
+  let bars = '', hitAreas = '', legend = '';
 
   datasets.forEach((ds, di) => {
     const color = ds.backgroundColor || COLORS[di % COLORS.length];
-    legend += `<rect x="${di*85+8}" y="${H-20}" width="10" height="8" rx="2" fill="${color}"/>
-               <text x="${di*85+22}" y="${H-12}" fill="rgba(255,255,255,.5)" font-size="10" font-family="'DM Mono',monospace">${ds.label||''}</text>`;
+    const safeLabel = (ds.label||'').replace(/'/g, '&apos;');
+    legend += `<rect x="${di*90+PAD.l}" y="${H-16}" width="10" height="8" rx="2" fill="${color}"/>
+               <text x="${di*90+PAD.l+14}" y="${H-8}" fill="rgba(255,255,255,.5)" font-size="10" font-family="'DM Mono',monospace">${safeLabel}</text>`;
     (ds.data || []).forEach((v, i) => {
       if (!isFinite(v)) return;
-      const x   = (PAD.l + i * grpW + off + di * barW).toFixed(1);
-      const bH  = (Math.abs(v) / span * cH).toFixed(1);
-      const y   = (PAD.t + (v >= 0 ? zeroY - Math.abs(v)/span*cH : zeroY)).toFixed(1);
-      bars += `<rect x="${x}" y="${y}" width="${barW.toFixed(1)}" height="${bH}" rx="3" fill="${color}" opacity=".85"/>`;
+      const x  = (PAD.l + i * grpW + off + di * barW).toFixed(1);
+      const bH = Math.max((Math.abs(v) / span * cH).toFixed(1), 1);
+      const y  = (PAD.t + (v >= 0 ? zeroY - Math.abs(v)/span*cH : zeroY)).toFixed(1);
+      const fmtV = Math.abs(v)>=1000?'$'+(v/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
+      const tip = `${labels[i]} · ${safeLabel}: ${fmtV}`;
+      bars += `<rect x="${x}" y="${y}" width="${barW.toFixed(1)}" height="${bH}" rx="2" fill="${color}" opacity=".85"/>`;
+      // Transparent hit area spanning full group height for easier hover
+      hitAreas += `<rect x="${(PAD.l+i*grpW).toFixed(1)}" y="${PAD.t}" width="${grpW.toFixed(1)}" height="${cH}"
+        fill="transparent" style="cursor:crosshair;"
+        onmouseenter="showChartTip(event,'${tip.replace(/"/g,'&quot;')}')"
+        onmouseleave="hideChartTip()"/>`;
     });
   });
 
-  // X labels — show every Nth to avoid crowding
-  const step = Math.max(1, Math.ceil(n / 12));
-  let xLbls  = '';
+  // X labels — adaptive: skip labels to prevent overlap
+  // Calculate how many chars fit per slot
+  const charsPerSlot = Math.floor(grpW / 6.5); // ~6.5px per char at font-size 10
+  const minStep = Math.ceil(n / Math.max(1, Math.floor(cW / 38)));
+  let xLbls = '';
   labels.forEach((lbl, i) => {
-    if (i % step !== 0) return;
+    if (i % minStep !== 0 && i !== n-1) return;
     const x = (PAD.l + i * grpW + grpW / 2).toFixed(1);
-    const s = String(lbl).slice(-5);
-    xLbls += `<text x="${x}" y="${H-24}" text-anchor="middle" fill="rgba(255,255,255,.38)" font-size="10" font-family="'DM Mono',monospace">${s}</text>`;
+    const s = String(lbl).length > charsPerSlot ? String(lbl).slice(-Math.max(4, charsPerSlot)) : String(lbl);
+    xLbls += `<text x="${x}" y="${PAD.t+cH+16}" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10" font-family="'DM Mono',monospace">${s}</text>`;
   });
 
-  // Zero line
   const zY = (PAD.t + zeroY).toFixed(1);
-  const zeroLine = `<line x1="${PAD.l}" y1="${zY}" x2="${W-PAD.r}" y2="${zY}" stroke="rgba(255,255,255,.15)" stroke-width="1"/>`;
+  const zeroLine = `<line x1="${PAD.l}" y1="${zY}" x2="${W-PAD.r}" y2="${zY}" stroke="rgba(255,255,255,.18)" stroke-width="1"/>`;
 
-  el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;">
-    ${grid}${zeroLine}${bars}${yLbls}${xLbls}${legend}
+  el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;overflow:visible;">
+    ${grid}${zeroLine}${bars}${yLbls}${xLbls}${legend}${hitAreas}
   </svg>`;
 }
 
 function svgLine(elId, labels, datasets) {
   const el = document.getElementById(elId);
   if (!el) return;
-  const W = el.offsetWidth || 600;
-  const H = el.offsetHeight || 140;
+  const W = Math.max(el.offsetWidth || 0, 300);
+  const H = Math.max(el.offsetHeight || 0, 140);
   if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>'; return; }
 
-  const PAD = { t:8, r:10, b:28, l:62 };
+  const PAD = { t:10, r:16, b:30, l:58 };
   const cW  = W - PAD.l - PAD.r;
   const cH  = H - PAD.t - PAD.b;
   const n   = labels.length;
@@ -992,39 +1143,46 @@ function svgLine(elId, labels, datasets) {
   for (let i = 0; i <= 4; i++) {
     const v = minV + (span / 4) * i;
     const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
-    grid  += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,.06)" stroke-width="1"/>`;
-    const lbl = Math.abs(v) >= 1000 ? (v/1000).toFixed(0)+'K' : v.toFixed(0);
-    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.38)" font-size="10" font-family="'DM Mono',monospace">${lbl}</text>`;
+    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
+    const lbl = Math.abs(v)>=1000?'$'+(v/1000).toFixed(0)+'K':'$'+Math.round(v);
+    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="10" font-family="'DM Mono',monospace">${lbl}</text>`;
   }
 
-  let paths = '', areas = '';
+  let paths = '', areas = '', dots = '', hitAreas = '';
   datasets.forEach((ds, di) => {
     const color = ds.color || ds.borderColor || COLORS[di];
     const pts = (ds.data || []).map((v, i) => {
       const x = (PAD.l + (i / Math.max(n-1,1)) * cW).toFixed(1);
       const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
-      return `${x},${y}`;
+      return {x, y, v, lbl:labels[i]};
     });
     if (pts.length < 2) return;
-    const d = 'M' + pts.join(' L');
+    const d = 'M' + pts.map(p=>p.x+','+p.y).join(' L');
     paths += `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
     if (ds.fill) {
-      const last = pts[pts.length-1].split(',');
-      const aD = `${d} L${last[0]},${PAD.t+cH} L${PAD.l},${PAD.t+cH} Z`;
-      areas += `<path d="${aD}" fill="${color}" opacity=".12"/>`;
+      const last = pts[pts.length-1];
+      areas += `<path d="${d} L${last.x},${PAD.t+cH} L${PAD.l},${PAD.t+cH} Z" fill="${color}" opacity=".12"/>`;
     }
+    pts.forEach(p => {
+      const fmtV = Math.abs(p.v)>=1000?'$'+(p.v/1000).toFixed(1)+'K':'$'+Math.round(p.v);
+      const tip = `${p.lbl}: ${fmtV}`;
+      dots += `<circle cx="${p.x}" cy="${p.y}" r="3" fill="${color}" opacity=".8"/>`;
+      hitAreas += `<circle cx="${p.x}" cy="${p.y}" r="12" fill="transparent" style="cursor:crosshair;"
+        onmouseenter="showChartTip(event,'${tip.replace(/"/g,'&quot;').replace(/'/g,'&apos;')}')"
+        onmouseleave="hideChartTip()"/>`;
+    });
   });
 
-  const step = Math.max(1, Math.ceil(n / 8));
+  const minStep = Math.ceil(n / Math.max(1, Math.floor(cW / 38)));
   let xLbls = '';
   labels.forEach((lbl, i) => {
-    if (i % step !== 0) return;
+    if (i % minStep !== 0 && i !== n-1) return;
     const x = (PAD.l + (i / Math.max(n-1,1)) * cW).toFixed(1);
-    xLbls += `<text x="${x}" y="${H-4}" text-anchor="middle" fill="rgba(255,255,255,.38)" font-size="10" font-family="'DM Mono',monospace">${String(lbl).slice(-5)}</text>`;
+    xLbls += `<text x="${x}" y="${H-4}" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10" font-family="'DM Mono',monospace">${String(lbl).slice(-5)}</text>`;
   });
 
-  el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;">
-    ${grid}${areas}${paths}${yLbls}${xLbls}
+  el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;overflow:visible;">
+    ${grid}${areas}${paths}${dots}${yLbls}${xLbls}${hitAreas}
   </svg>`;
 }
 
@@ -1032,23 +1190,25 @@ function svgHBar(elId, labels, values, colors) {
   const el = document.getElementById(elId);
   if (!el) return;
   if (!labels.length) { el.innerHTML = '<div style="padding:20px;color:var(--ink4);font-size:12px;">No data</div>'; return; }
-  const W    = el.offsetWidth || 600;
-  const rowH = 32;
+  const W    = Math.max(el.offsetWidth || 0, 300);
+  const rowH = 34;
   const H    = labels.length * rowH + 16;
-  const PAD  = { l: 140, r: 80, t: 8, b: 8 };
+  const PAD  = { l:150, r:70, t:8, b:8 };
   const cW   = W - PAD.l - PAD.r;
   const maxV = Math.max(...values.map(Math.abs), 1);
   let rows   = '';
   labels.forEach((lbl, i) => {
-    const v    = values[i] || 0;
-    const bW   = (Math.abs(v) / maxV * cW).toFixed(1);
-    const y    = PAD.t + i * rowH;
-    const color= colors ? colors[i % colors.length] : COLORS[i % COLORS.length];
-    const valS = Math.abs(v) >= 1000 ? (v/1000).toFixed(1)+'K' : v.toFixed(0);
-    const lShort = String(lbl).length > 18 ? String(lbl).slice(0,17)+'…' : String(lbl);
-    rows += `<text x="${PAD.l-8}" y="${y+rowH/2}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.65)" font-size="11" font-family="'DM Sans',sans-serif">${lShort}</text>`;
-    rows += `<rect x="${PAD.l}" y="${y+rowH*.2}" width="${bW}" height="${rowH*.6}" rx="3" fill="${color}" opacity=".85"/>`;
-    rows += `<text x="${PAD.l+parseFloat(bW)+6}" y="${y+rowH/2}" dominant-baseline="middle" fill="rgba(255,255,255,.45)" font-size="10" font-family="'DM Mono',monospace">${valS}</text>`;
+    const v     = values[i] || 0;
+    const bW    = Math.max((Math.abs(v) / maxV * cW), 2).toFixed(1);
+    const y     = PAD.t + i * rowH;
+    const color = colors ? colors[i % colors.length] : COLORS[i % COLORS.length];
+    const valS  = Math.abs(v)>=1000?'$'+(Math.abs(v)/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
+    const lShort= String(lbl).length > 20 ? String(lbl).slice(0,19)+'…' : String(lbl);
+    const tip   = `${lbl}: ${valS}`;
+    rows += `<text x="${PAD.l-10}" y="${(y+rowH/2).toFixed(1)}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.7)" font-size="11" font-family="'DM Sans',sans-serif">${lShort}</text>`;
+    rows += `<rect x="${PAD.l}" y="${(y+rowH*.18).toFixed(1)}" width="${bW}" height="${(rowH*.64).toFixed(1)}" rx="3" fill="${color}" opacity=".85"
+      style="cursor:crosshair;" onmouseenter="showChartTip(event,'${tip.replace(/'/g,'&apos;')}')" onmouseleave="hideChartTip()"/>`;
+    rows += `<text x="${(PAD.l+parseFloat(bW)+6).toFixed(1)}" y="${(y+rowH/2).toFixed(1)}" dominant-baseline="middle" fill="rgba(255,255,255,.5)" font-size="10" font-family="'DM Mono',monospace">${valS}</text>`;
   });
   el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;">${rows}</svg>`;
 }
@@ -1131,6 +1291,8 @@ function showPage(name) {
     if (name === 'income'        && txns.length) renderIncomeStatement();
     if (name === 'creditflow'    && txns.length) renderCreditFlow();
     if (name === 'validate'      ) renderValidation();
+    if (name === 'balancesheet'  ) renderBalanceSheet();
+    if (name === 'financials'    ) renderFinancials();
     if (name === 'upload')                      renderUploadStatus();
   });
 }
@@ -2753,8 +2915,6 @@ function toggleBucket(key) {
 
 // ── Main render ──────────────────────────────────────────────────
 function renderIncomeStatement() {
-  try {
-
   const el = document.getElementById('incomeStatement');
   if (!el) return;
 
@@ -2763,7 +2923,7 @@ function renderIncomeStatement() {
   const sp     = spendable(txns);
   const months = [...new Set(sp.map(t=>t.date.slice(0,7)))].sort().reverse();
 
-  if (moSel.options.length === 0) {
+  if (moSel && moSel.options.length === 0) {
     months.forEach(m => {
       const [yr,mo] = m.split('-');
       const opt = document.createElement('option');
@@ -2773,302 +2933,245 @@ function renderIncomeStatement() {
       moSel.appendChild(opt);
     });
   }
-
-  const selMonth = moSel.value || months[0];
+  const selMonth = (moSel && moSel.value) || months[0];
   if (!selMonth) { el.innerHTML='<p style="color:var(--ink4);padding:20px">No data yet.</p>'; return; }
   const [yr,mo] = selMonth.split('-');
   const monthName = new Date(yr,parseInt(mo)-1,1)
     .toLocaleDateString('en-US',{month:'long',year:'numeric'});
 
-  // ── Classify all transactions for this month ─────────────────
-  // Use ALL spendable txns (accrual = by purchase date)
+  // Classify all spendable txns for this month (accrual by purchase date)
   const monthSp = sp.filter(t => t.date.startsWith(selMonth));
 
-  // Also capture savings transfers (auto-deposits on payday)
+  // Savings transfers (auto-deposits to savings/investment accounts)
   const monthXfers = txns.filter(t =>
     t.date.startsWith(selMonth) && isTransfer(t) && t.amount < 0
   );
 
-  // Build bucket → transactions map
+  // Build bucket → txns map
   const bucketTxns = {};
-  const addToBucket = (key, t) => {
+  function addToBucket(key, t) {
     if (!bucketTxns[key]) bucketTxns[key] = [];
     bucketTxns[key].push(t);
-  };
-
+  }
   monthSp.filter(t => t.amount > 0).forEach(t => addToBucket(classifyTxn(t), t));
   monthSp.filter(t => t.amount < 0).forEach(t => addToBucket(classifyTxn(t), t));
 
-  // Savings transfers: classify by destination account
+  // Savings transfers
   monthXfers.forEach(t => {
     const destAcct = (t.category||'').replace(/^\[|\]$/g,'').trim();
     const type = detectAcctType(destAcct);
     if (type === 'savings' || type === 'investment') {
-      addToBucket('auto_save', { ...t, _xferTo: destAcct, amount: -Math.abs(t.amount) });
-    }
-    // Also check category keywords
-    else if (KW_MAP.find(([b,kws]) => b==='auto_save' && kws.some(kw=>destAcct.toLowerCase().includes(kw)))) {
-      addToBucket('auto_save', { ...t, _xferTo: destAcct, amount: -Math.abs(t.amount) });
+      addToBucket('auto_save', Object.assign({}, t, {_xferTo: destAcct, amount: -Math.abs(t.amount)}));
     }
   });
 
-  // ── Compute section totals ───────────────────────────────────
-  let runningBalance = 0;
+  // Section totals
+  let running = 0;
   const sectionData = WATERFALL.map(sec => {
-    const txnMap = {};
+    const bucketData = {};
     let secTotal = 0;
     sec.buckets.forEach(bk => {
       const bTxns = bucketTxns[bk] || [];
       const bTotal = bTxns.reduce((s,t) => s + Math.abs(t.amount), 0);
-      if (bTotal > 0.01) {
-        txnMap[bk] = { txns: bTxns, total: bTotal };
-        secTotal += bTotal;
-      }
+      if (bTotal > 0.01) { bucketData[bk] = {txns:bTxns, total:bTotal}; secTotal += bTotal; }
     });
-    if (sec.type === 'income') runningBalance = secTotal;
-    else runningBalance -= secTotal;
-    return { ...sec, bucketData: txnMap, total: secTotal, runningBalance };
+    if (sec.type === 'income') running = secTotal;
+    else running -= secTotal;
+    return {...sec, bucketData, total:secTotal, runningBalance:running};
   });
 
   const totalIncome  = sectionData.find(s=>s.id==='income')?.total || 0;
   const autoSave     = sectionData.find(s=>s.id==='auto_save')?.total || 0;
   const totalExp     = sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.total,0);
   const netSurplus   = totalIncome - autoSave - totalExp;
-  const savingsPct   = totalIncome > 0 ? ((autoSave+Math.max(0,netSurplus))/totalIncome*100) : 0;
-  const checkingIn   = totalIncome - autoSave;  // what actually hits checking
+  const savingsPct   = totalIncome>0 ? ((autoSave+Math.max(0,netSurplus))/totalIncome*100) : 0;
+  const checkingIn   = totalIncome - autoSave;
+  const surpColor    = netSurplus>=0?'var(--positive)':'var(--negative)';
 
-  // ── HTML builder helpers ─────────────────────────────────────
-  function fmtA(v, sign) {
-    const s = sign === '+' ? '+' : sign === '−' ? '−' : '';
-    return s + fmt(v);
+  // ── Helpers ────────────────────────────────────────────────────
+  function pct(v) { return totalIncome>0?(v/totalIncome*100).toFixed(0)+'%':'—'; }
+  function pbar(v, color) {
+    const w = totalIncome>0?Math.min(100,v/totalIncome*100):0;
+    return '<div style="height:3px;background:var(--lift);border-radius:2px;margin-top:5px;overflow:hidden;"><div style="height:100%;width:'+w.toFixed(1)+'%;background:'+color+';border-radius:2px;transition:width .3s;"></div></div>';
+  }
+  function chevron(open, id, fn) {
+    const rot = open ? '0deg' : '-90deg';
+    return '<span data-bkid="'+id+'" data-fn="'+fn+'" class="'+(fn==='toggleSection'?'is-sec-row':'is-bk-row')+'" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;cursor:pointer;border-radius:4px;transition:transform .2s;flex-shrink:0;transform:rotate('+rot+');">'
+      + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></span>';
+  }
+  function fmtTxnAmt(t) {
+    const v = Math.abs(t.amount);
+    const sign = t.amount > 0 ? '+' : '−';
+    const c = t.amount > 0 ? 'var(--positive)' : 'var(--gold)';
+    return '<span style="font-family:var(--font-m);font-size:12px;font-weight:600;color:'+c+';">'+sign+fmt(v)+'</span>';
   }
 
-  function chevron(open) {
-    return open
-      ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>'
-      : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>';
-  }
-
-  function pctBar(v, color, of) {
-    const w = of > 0 ? Math.min(100, v/of*100) : 0;
-    return '<div style="height:3px;background:var(--lift);border-radius:2px;margin-top:4px;"><div style="height:100%;width:'+w.toFixed(1)+'%;background:'+color+';border-radius:2px;"></div></div>';
-  }
-
-  // ── Paycheck reassembly explainer ────────────────────────────
+  // ── Build income statement HTML ─────────────────────────────────
   let out = '';
 
-  // Hero: two cards side by side
+  // Hero row
   out += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">';
+  out += '<div style="background:var(--float);border:1px solid rgba(45,212,191,.25);border-radius:var(--r-lg);padding:18px 20px;">';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Gross Income · '+monthName+'</div>';
+  out += '<div style="font-size:36px;font-weight:700;color:var(--positive);line-height:1;font-family:var(--font-d);">'+fmt(totalIncome)+'</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);margin-top:3px;">combined take-home from all sources</div></div>';
 
-  // Gross income
-  out += '<div style="background:var(--float);border:1px solid rgba(45,212,191,.3);border-radius:var(--r-lg);padding:18px 20px;">';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Gross Income · '+monthName+'</div>';
-  out += '<div style="font-size:34px;font-weight:700;color:var(--positive);line-height:1;font-family:var(--font-d);">'+fmt(totalIncome)+'</div>';
-  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">full take-home from all sources</div>';
-  out += '</div>';
-
-  // After auto-savings (available to spend)
   out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;">';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Available to Spend</div>';
-  out += '<div style="font-size:34px;font-weight:700;color:var(--river);line-height:1;font-family:var(--font-d);">'+fmt(checkingIn)+'</div>';
-  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">after '+fmt(autoSave)+' in auto-savings</div>';
-  out += '</div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Available to Spend</div>';
+  out += '<div style="font-size:36px;font-weight:700;color:var(--river);line-height:1;font-family:var(--font-d);">'+fmt(checkingIn)+'</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);margin-top:3px;">after '+fmt(autoSave)+' auto-saved</div></div>';
 
-  // Net surplus
-  const surpColor = netSurplus>=0?'var(--positive)':'var(--negative)';
   out += '<div style="background:var(--float);border:1px solid '+(netSurplus>=0?'rgba(45,212,191,.2)':'rgba(248,113,113,.2)')+';border-radius:var(--r-lg);padding:18px 20px;">';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">'+(netSurplus>=0?'Monthly Surplus':'Monthly Deficit')+'</div>';
-  out += '<div style="font-size:34px;font-weight:700;color:'+surpColor+';line-height:1;font-family:var(--font-d);">'+(netSurplus>=0?'+':'')+fmt(netSurplus)+'</div>';
-  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">total savings rate: <strong style="color:'+(savingsPct>=20?'var(--positive)':savingsPct>=10?'var(--gold)':'var(--negative)')+'">'+savingsPct.toFixed(1)+'%</strong></div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">'+(netSurplus>=0?'Surplus':'Deficit')+'</div>';
+  out += '<div style="font-size:36px;font-weight:700;color:'+surpColor+';line-height:1;font-family:var(--font-d);">'+(netSurplus>=0?'+':'')+fmt(netSurplus)+'</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);margin-top:3px;">savings rate: <strong style="color:'+(savingsPct>=20?'var(--positive)':savingsPct>=10?'var(--gold)':'var(--negative)')+'">'+savingsPct.toFixed(1)+'%</strong>'+(savingsPct>=20?' 🎯':savingsPct>=10?' 📈':' ⚠')+' target 20%</div></div>';
   out += '</div>';
 
-  out += '</div>';
-
-  // Paycheck flow explainer (the "why am I short" insight)
+  // Insight if running short
   if (autoSave > 0) {
-    out += '<div style="background:rgba(52,211,153,.04);border:1px solid rgba(52,211,153,.18);border-radius:var(--r-md);padding:12px 16px;margin-bottom:8px;font-size:12px;color:var(--ink3);line-height:1.7;">';
-    out += '💡 <strong style="color:#34D399;">Why you might feel short:</strong> ';
-    out += fmt(autoSave)+' left checking automatically for savings before you started spending. ';
-    out += 'Your real "spending budget" is <strong style="color:var(--ink);">'+fmt(checkingIn)+'</strong>, not '+fmt(totalIncome)+'. ';
-    out += 'If total expenses ('+fmt(totalExp)+') exceed that number, you&#39;ll need to pull from savings — which happened '+(totalExp>checkingIn?'<strong style="color:var(--negative);">this month</strong>.':'not this month ✓');
+    const shortfall = totalExp > checkingIn;
+    out += '<div style="background:'+(shortfall?'rgba(248,113,113,.05)':'rgba(52,211,153,.04)')+';border:1px solid '+(shortfall?'rgba(248,113,113,.18)':'rgba(52,211,153,.18)')+';border-radius:var(--r-md);padding:11px 16px;margin-bottom:8px;font-size:12px;color:var(--ink3);line-height:1.7;">';
+    out += (shortfall?'⚠':'💡')+' <strong style="color:'+(shortfall?'var(--negative)':'#34D399')+';">'+(shortfall?'You are drawing from savings:':'Your savings plan is working:')+'</strong> ';
+    out += fmt(autoSave)+' auto-saved before spending. Real spending budget: <strong style="color:var(--ink);">'+fmt(checkingIn)+'</strong>. ';
+    out += 'Total expenses this month: <strong style="color:'+(shortfall?'var(--negative)':'var(--ink)')+';">'+fmt(totalExp)+'</strong>';
+    if (shortfall) out += ' — <strong style="color:var(--negative);">'+fmt(totalExp-checkingIn)+'</strong> over budget, pulling from savings.';
+    else out += ' — <strong style="color:var(--positive);">'+fmt(checkingIn-totalExp)+'</strong> left after expenses.';
     out += '</div>';
   }
 
-  // ── Waterfall P&L table ─────────────────────────────────────
+  // ── P&L waterfall table ─────────────────────────────────────────
   out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
 
-  // Column headers
-  out += '<div style="display:grid;grid-template-columns:1fr auto auto;gap:0;padding:8px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
+  // Header
+  out += '<div style="display:grid;grid-template-columns:1fr 120px 110px;padding:9px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
   out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Category</div>';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;min-width:110px;">Amount</div>';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;min-width:100px;">Running Balance</div>';
-  out += '</div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Amount</div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Running</div></div>';
 
   sectionData.forEach(sec => {
     if (sec.id === 'other' && sec.total < 0.01) return;
-    const open = isDrillOpen[sec.id];
+    const open = !!isDrillOpen[sec.id];
     const hasBuckets = Object.keys(sec.bucketData).length > 0;
-    const cursor = hasBuckets ? 'cursor:pointer;' : '';
-    const opacity = sec.total < 0.01 ? 'opacity:.35;' : '';
     const balColor = sec.runningBalance >= 0 ? 'var(--positive)' : 'var(--negative)';
+    const opacity  = sec.total < 0.01 ? 'opacity:.3;' : '';
+    const secOnclick = hasBuckets ? ' data-sid="'+sec.id+'" class="is-sec-row"' : '';
 
-    // Section header row
-    out += '<div data-toggle-sec="true" data-sec-id="'+sec.id+'" style="'+cursor+opacity+'display:grid;grid-template-columns:1fr auto auto;gap:0;padding:12px 16px;border-bottom:1px solid var(--line);transition:background .15s;background:var(--lift);">';
+    // Section row
+    out += '<div'+secOnclick+' style="'+opacity+'display:grid;grid-template-columns:1fr 120px 110px;padding:11px 16px;border-bottom:1px solid var(--line);background:var(--lift);'+(hasBuckets?'cursor:pointer;':'')+'">';
+    out += '<div style="display:flex;align-items:center;gap:6px;">';
+    out += hasBuckets ? chevron(open, sec.id, 'toggleSection') : '<span style="width:20px;display:inline-block;"></span>';
+    out += '<div><div style="font-size:13px;font-weight:600;color:var(--ink2);">'+sec.label+'</div>';
+    out += '<div style="font-size:10px;color:var(--ink4);">'+sec.sub+'</div></div></div>';
 
-    // Label col
-    out += '<div style="display:flex;align-items:center;gap:8px;">';
-    if (hasBuckets) out += '<span style="color:var(--ink4);">'+chevron(open)+'</span>';
-    else out += '<span style="width:12px;display:inline-block;"></span>';
-    out += '<div>';
-    out += '<div style="font-size:13px;font-weight:600;color:var(--ink2);">'+sec.label+'</div>';
-    out += '<div style="font-size:10px;color:var(--ink4);">'+sec.sub+'</div>';
-    out += '</div></div>';
-
-    // Amount col
-    out += '<div style="text-align:right;min-width:110px;padding-left:16px;">';
+    out += '<div style="text-align:right;padding-left:8px;">';
     if (sec.total > 0.01) {
       out += '<div style="font-size:14px;font-weight:700;color:'+sec.color+';font-family:var(--font-m);">'+sec.sign+fmt(sec.total)+'</div>';
-      out += '<div style="font-size:9px;color:var(--ink4);">'+(totalIncome>0?(sec.total/totalIncome*100).toFixed(0)+'% of income':'')+'</div>';
-    } else {
-      out += '<div style="font-size:13px;color:var(--ink4);">—</div>';
-    }
+      out += '<div style="font-size:9px;color:var(--ink4);">'+pct(sec.total)+'</div>';
+    } else { out += '<div style="font-size:13px;color:var(--ink4);">—</div>'; }
     out += '</div>';
 
-    // Running balance col
-    out += '<div style="text-align:right;min-width:100px;padding-left:16px;">';
+    out += '<div style="text-align:right;padding-left:8px;">';
     out += '<div style="font-size:13px;font-weight:600;color:'+balColor+';font-family:var(--font-m);">'+(sec.runningBalance>=0?'+':'')+fmt(sec.runningBalance)+'</div>';
-    out += '</div>';
+    out += '</div></div>';
 
-    out += '</div>';  // section header row
-
-    // ── Bucket rows (drilldown level 1) ────────────────────────
+    // Bucket rows (level 1 drilldown)
     if (open && hasBuckets) {
       sec.buckets.forEach(bk => {
         const bd = sec.bucketData[bk];
         if (!bd) return;
-        const bMeta  = BUCKET_META[bk] || { label: bk, icon:'·' };
-        const bOpen  = isBucketOpen[bk];
-        const bColor = sec.color;
+        const bMeta = BUCKET_META[bk] || {label:bk, icon:'·'};
+        const bOpen = !!isBucketOpen[bk];
 
-        out += '<div data-toggle-bk="true" data-bk-id="'+bk+'" style="cursor:pointer;display:grid;grid-template-columns:1fr auto auto;gap:0;padding:9px 16px 9px 36px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.015);">';
+        out += '<div data-bkid="'+bk+'" class="is-bk-row" style="display:grid;grid-template-columns:1fr 120px 110px;padding:8px 16px 8px 36px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.012);cursor:pointer;">';
         out += '<div style="display:flex;align-items:center;gap:6px;">';
-        out += '<span style="color:var(--ink4);">'+chevron(bOpen)+'</span>';
+        out += chevron(bOpen, bk, 'toggleBucket');
         out += '<span style="font-size:14px;">'+bMeta.icon+'</span>';
-        out += '<div>';
-        out += '<div style="font-size:12px;color:var(--ink2);">'+bMeta.label+'</div>';
-        out += '<div style="font-size:10px;color:var(--ink4);">'+bd.txns.length+' transaction'+(bd.txns.length!==1?'s':'')+'</div>';
-        out += '</div></div>';
+        out += '<div><div style="font-size:12px;color:var(--ink2);">'+bMeta.label+'</div>';
+        out += '<div style="font-size:10px;color:var(--ink4);">'+bd.txns.length+' transaction'+(bd.txns.length!==1?'s':'')+'</div></div></div>';
 
-        out += '<div style="text-align:right;min-width:110px;padding-left:16px;">';
-        out += '<div style="font-size:13px;font-weight:600;color:'+bColor+';font-family:var(--font-m);">'+sec.sign+fmt(bd.total)+'</div>';
-        out += pctBar(bd.total, bColor, totalIncome);
-        out += '</div>';
-        out += '<div style="min-width:100px;"></div>';
-        out += '</div>';  // bucket row
+        out += '<div style="text-align:right;padding-left:8px;">';
+        out += '<div style="font-size:13px;font-weight:600;color:'+sec.color+';font-family:var(--font-m);">'+sec.sign+fmt(bd.total)+'</div>';
+        out += pbar(bd.total, sec.color);
+        out += '</div><div style="text-align:right;padding-left:8px;"></div></div>';
 
-        // ── Transaction rows (drilldown level 2) ──────────────
+        // Transaction rows (level 2 drilldown)
         if (bOpen) {
-          const sorted = [...bd.txns].sort((a,b) => b.date.localeCompare(a.date));
-          sorted.forEach(t => {
-            const isXfer = t._xferTo;
-            const amtColor = t.amount > 0 ? 'var(--positive)' : 'var(--ink3)';
-            const amtSign  = t.amount > 0 ? '+' : '−';
-            // Clean up display names for known split transactions
-            let displayPayee = t.payee || (isXfer ? '→ '+t._xferTo : '') || '—';
-            let displayNote  = t.category && t.category !== 'Uncategorized' ? t.category : '';
-            if ((t.category||'').toLowerCase() === '--split--') {
-              // This is a Quicken split — the amount is the full payment, show a note
-              if (/house loan|rocket mortgage/i.test(t.payee)) {
-                displayPayee = 'Mortgage Payment (Rocket Mortgage)';
-                displayNote  = 'Full payment: principal + interest + escrow · ' + (t.account||'');
-              } else if (/palisade|hyundai|auto loan|car loan/i.test(t.payee)) {
-                displayPayee = t.payee + ' — Full Payment';
-                displayNote  = 'Principal + interest included · ' + (t.account||'');
-              } else {
-                displayNote  = 'Split transaction · ' + (t.account||'');
-              }
-            }
-            out += '<div style="display:grid;grid-template-columns:90px 1fr auto auto auto;gap:0;padding:7px 16px 7px 60px;border-bottom:1px solid rgba(255,255,255,.025);background:rgba(0,0,0,.15);">';
-            out += '<div style="font-family:var(--font-m);font-size:10px;color:var(--ink4);">'+t.date+'</div>';
+          // Group by payee for a cleaner summary level
+          const byPayee = {};
+          bd.txns.forEach(t => {
+            const p = t.payee || (t._xferTo ? '→ '+t._xferTo : 'Unknown');
+            if (!byPayee[p]) byPayee[p] = {total:0, txns:[]};
+            byPayee[p].total += Math.abs(t.amount);
+            byPayee[p].txns.push(t);
+          });
+          const payeeOpen = isBucketOpen[bk+'_payees'];
+
+          // Show payee summaries
+          const sortedPayees = Object.entries(byPayee).sort((a,b)=>b[1].total-a[1].total);
+          sortedPayees.forEach(([payee, pd]) => {
+            const pKey = bk+'_p_'+payee.replace(/[^a-zA-Z0-9]/g,'_');
+            const pOpen = !!isBucketOpen[pKey];
+
+            out += '<div data-bkid="'+pKey+'" class="is-bk-row" style="display:grid;grid-template-columns:1fr 120px 110px;padding:6px 16px 6px 56px;border-bottom:1px solid rgba(255,255,255,.03);background:rgba(0,0,0,.12);cursor:pointer;">';
+            out += '<div style="display:flex;align-items:center;gap:5px;">';
+            out += pd.txns.length > 1 ? chevron(pOpen, pKey, 'toggleBucket') : '<span style="width:20px;display:inline-block;"></span>';
             out += '<div>';
-            out += '<div style="font-size:12px;color:var(--ink2);">'+displayPayee+'</div>';
-            if (displayNote || t.account) {
-              out += '<div style="font-size:10px;color:var(--ink4);">'+(displayNote||t.account)+'</div>';
+            out += '<div style="font-size:12px;color:var(--ink3);">'+payee+'</div>';
+            if (pd.txns.length > 1) out += '<div style="font-size:10px;color:var(--ink4);">'+pd.txns.length+' transactions</div>';
+            out += '</div></div>';
+            out += '<div style="text-align:right;padding-left:8px;font-family:var(--font-m);font-size:12px;color:var(--gold);">'+fmt(pd.total)+'</div>';
+            out += '<div style="text-align:right;padding-left:8px;"></div></div>';
+
+            // Individual transactions (level 3)
+            if (pOpen || pd.txns.length === 1) {
+              pd.txns.sort((a,b)=>b.date.localeCompare(a.date)).forEach(t => {
+                let disp = t.payee || (t._xferTo ? '→ '+t._xferTo : '—');
+                let note = t.category && t.category!=='Uncategorized' ? t.category+' · ' : '';
+                note += t.account || '';
+                if ((t.category||'').toLowerCase()==='--split--') {
+                  if (/house loan|rocket/i.test(t.payee)) disp = 'Rocket Mortgage';
+                  note = 'Full payment (principal + interest + escrow) · ' + t.account;
+                }
+                out += '<div style="display:grid;grid-template-columns:88px 1fr 120px 110px;padding:5px 16px 5px 72px;border-bottom:1px solid rgba(255,255,255,.02);background:rgba(0,0,0,.2);">';
+                out += '<div style="font-family:var(--font-m);font-size:10px;color:var(--ink4);">'+t.date+'</div>';
+                out += '<div><div style="font-size:11px;color:var(--ink3);">'+disp+'</div>';
+                if (note) out += '<div style="font-size:10px;color:var(--ink4);">'+note+'</div>';
+                out += '</div>';
+                out += '<div style="text-align:right;padding-left:8px;">'+fmtTxnAmt(t)+'</div>';
+                out += '<div></div></div>';
+              });
             }
-            out += '</div>';
-            out += '<div style="min-width:100px;text-align:right;font-family:var(--font-m);font-size:12px;font-weight:600;color:'+amtColor+';">'+amtSign+fmt(Math.abs(t.amount))+'</div>';
-            out += '<div style="min-width:100px;"></div>';
-            out += '<div style="min-width:100px;"></div>';
-            out += '</div>';  // txn row
           });
         }
       });
-
-      // Note for section (e.g. savings explainer)
-      if (sec.note) {
-        out += '<div style="padding:8px 16px 8px 36px;font-size:11px;color:var(--ink4);border-bottom:1px solid var(--line);font-style:italic;">'+sec.note+'</div>';
-      }
     }
   });
 
-  // Surplus row
-  out += '<div style="display:grid;grid-template-columns:1fr auto auto;gap:0;padding:14px 16px;background:'+(netSurplus>=0?'rgba(45,212,191,.06)':'rgba(248,113,113,.06)')+';border-top:2px solid '+(netSurplus>=0?'rgba(45,212,191,.3)':'rgba(248,113,113,.3)')+';">';
-  out += '<div style="font-size:14px;font-weight:700;color:'+(netSurplus>=0?'var(--positive)':'var(--negative)')+';">';
-  out += (netSurplus>=0?'✓ Net Surplus':'⚠ Net Deficit')+' <span style="font-size:11px;font-weight:400;color:var(--ink4);">· '+(netSurplus>=0?'available to deploy or add to savings':'spending exceeds available income')+'</span>';
-  out += '</div>';
-  out += '<div style="text-align:right;min-width:110px;font-size:16px;font-weight:700;color:'+(netSurplus>=0?'var(--positive)':'var(--negative)')+';font-family:var(--font-m);">'+(netSurplus>=0?'+':'')+fmt(netSurplus)+'</div>';
-  out += '<div style="min-width:100px;"></div>';
-  out += '</div>';
+  // Net surplus row
+  out += '<div style="display:grid;grid-template-columns:1fr 120px 110px;padding:13px 16px;background:'+(netSurplus>=0?'rgba(45,212,191,.06)':'rgba(248,113,113,.06)')+';border-top:2px solid '+(netSurplus>=0?'rgba(45,212,191,.3)':'rgba(248,113,113,.3)')+';">';
+  out += '<div style="font-size:14px;font-weight:700;color:'+surpColor+';display:flex;align-items:center;gap:8px;">';
+  out += (netSurplus>=0?'✓ Net Surplus':'⚠ Net Deficit');
+  out += '<span style="font-size:10px;font-weight:400;color:var(--ink4);">'+(netSurplus>=0?'unallocated — deploy to savings or investments':'expenses exceed available income')+'</span></div>';
+  out += '<div style="text-align:right;font-size:16px;font-weight:700;color:'+surpColor+';font-family:var(--font-m);padding-left:8px;">'+(netSurplus>=0?'+':'')+fmt(netSurplus)+'</div>';
+  out += '<div></div></div></div>';
 
-  out += '</div>';  // waterfall table
-
-  // ── Surplus allocation ───────────────────────────────────────
+  // Surplus allocation
   if (netSurplus > 0) {
-    out += '<div style="margin-top:8px;background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;">';
-    out += '<div style="font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:4px;">💰 Deploy Your Surplus</div>';
-    out += '<div style="font-size:11px;color:var(--ink4);margin-bottom:14px;">You have '+fmt(netSurplus)+' unallocated this month. Here&#39;s one way to split it:</div>';
-    out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">';
-    [
-      ['Emergency Fund', .40, '3–6mo expenses goal'],
-      ['Investments',    .30, 'brokerage / index funds'],
-      ['College (529)',  .20, 'per-child contribution'],
-      ['Experience',     .10, 'travel, family memories'],
-    ].forEach(([lbl,pct,sub]) => {
-      const amt = netSurplus * pct;
-      out += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;">';
-      out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">'+lbl+'</div>';
-      out += '<div style="font-size:18px;font-weight:700;color:var(--positive);">'+fmt(amt)+'</div>';
-      out += '<div style="font-size:10px;color:var(--ink4);">'+sub+'</div>';
-      out += '</div>';
+    out += '<div style="margin-top:8px;background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px;">';
+    out += '<div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:10px;">💰 Deploy Your '+fmt(netSurplus)+' Surplus</div>';
+    out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">';
+    [['.40','Emergency Fund','3–6 months expenses'],['.30','Investments','brokerage/index funds'],['.20','College (529)','per-child'],['.10','Experience','travel, family']].forEach(([p,l,s]) => {
+      const amt = netSurplus * parseFloat(p);
+      out += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;">';
+      out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">'+l+'</div>';
+      out += '<div style="font-size:16px;font-weight:700;color:var(--positive);">'+fmt(amt)+'</div>';
+      out += '<div style="font-size:10px;color:var(--ink4);">'+s+'</div></div>';
     });
     out += '</div></div>';
-  } else if (netSurplus < 0) {
-    // Deficit: show the gap and suggest top cuts
-    out += '<div style="margin-top:8px;background:rgba(248,113,113,.04);border:1px solid rgba(248,113,113,.18);border-radius:var(--r-lg);padding:18px 20px;">';
-    out += '<div style="font-size:13px;font-weight:600;color:var(--negative);margin-bottom:8px;">⚠ Closing the '+fmt(Math.abs(netSurplus))+' Gap</div>';
-    // Top discretionary buckets = best opportunities
-    const discSec = sectionData.find(s=>s.id==='discretionary');
-    if (discSec && discSec.total > 0) {
-      const topD = Object.entries(discSec.bucketData).sort((a,b)=>b[1].total-a[1].total).slice(0,3);
-      out += '<div style="font-size:12px;color:var(--ink3);line-height:1.9;">Your top discretionary categories this month:<br>';
-      topD.forEach(([bk,bd]) => {
-        const bm = BUCKET_META[bk];
-        out += bm.icon+' '+bm.label+' <strong style="color:var(--negative);">'+fmt(bd.total)+'</strong><br>';
-      });
-      out += '<br>A 20% reduction in discretionary spending would recover <strong style="color:var(--positive);">'+fmt(discSec.total*.2)+'</strong>/month.</div>';
-    }
-    out += '</div>';
   }
 
   el.innerHTML = out;
-
-  } catch(e) {
-    console.error('[Forge] renderIncomeStatement error:', e);
-    const _el = document.getElementById('incomeStatement');
-    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderIncomeStatement: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
-  }
 }
-
 
 
 // ════════════════════════════════════════════════
@@ -3199,6 +3302,549 @@ function renderCreditFlow() {
     const _el = document.getElementById('creditFlowContent');
     if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderCreditFlow: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
   }
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// BALANCE SHEET
+// Computed from Quicken account transaction history.
+// Each account's balance = sum of all transactions in that account.
+// This mirrors Quicken's register balance exactly.
+// ════════════════════════════════════════════════════════════════
+
+// Account classification for balance sheet
+const BS_ACCOUNTS = {
+  // CURRENT ASSETS (liquid, <12 months)
+  'Checking - PNC':         { class:'asset', sub:'current',    label:'PNC Checking',          icon:'🏦', assetType:'Cash & Equivalents' },
+  'Savings - PNC':          { class:'asset', sub:'current',    label:'PNC Savings',            icon:'💰', assetType:'Cash & Equivalents' },
+  'Savings - Sam':          { class:'asset', sub:'current',    label:'Savings — Sam',          icon:'💰', assetType:'Cash & Equivalents' },
+  'Savings - Whit':         { class:'asset', sub:'current',    label:'Savings — Whitney',      icon:'💰', assetType:'Cash & Equivalents' },
+  'Savings - Will':         { class:'asset', sub:'current',    label:'Savings — Will',         icon:'💰', assetType:'Cash & Equivalents' },
+  // NON-CURRENT ASSETS (long-term)
+  '529 - Sam':              { class:'asset', sub:'education',  label:"529 Plan — Sam",         icon:'🎓', assetType:'Education Accounts' },
+  '529 - Whit':             { class:'asset', sub:'education',  label:"529 Plan — Whitney",     icon:'🎓', assetType:'Education Accounts' },
+  '529 - Will':             { class:'asset', sub:'education',  label:"529 Plan — Will",        icon:'🎓', assetType:'Education Accounts' },
+  'Investing - NR':         { class:'asset', sub:'investment', label:'Investment — NR',        icon:'📈', assetType:'Investment Accounts' },
+  'Investing - Sam NR':     { class:'asset', sub:'investment', label:'Investment — Sam NR',    icon:'📈', assetType:'Investment Accounts' },
+  'Investing - Whit NR':    { class:'asset', sub:'investment', label:'Investment — Whit NR',   icon:'📈', assetType:'Investment Accounts' },
+  'Investing - Will NR':    { class:'asset', sub:'investment', label:'Investment — Will NR',   icon:'📈', assetType:'Investment Accounts' },
+  'Investing - C&K':        { class:'asset', sub:'investment', label:'Investment — C&K',       icon:'📈', assetType:'Investment Accounts' },
+  'Retirement - Chris HH':  { class:'asset', sub:'retirement', label:'401(k) — Chris (HH)',    icon:'🔒', assetType:'Retirement Accounts' },
+  'Retirement - NR IRA':    { class:'asset', sub:'retirement', label:'IRA — NR',               icon:'🔒', assetType:'Retirement Accounts' },
+  'Retirement - NR Roth':   { class:'asset', sub:'retirement', label:'Roth IRA — NR',          icon:'🔒', assetType:'Retirement Accounts' },
+  'House':                  { class:'asset', sub:'real_estate',label:'Primary Residence',      icon:'🏠', assetType:'Real Estate', note:'Value in Quicken may reflect equity or purchase price — confirm FMV' },
+  // LIABILITIES
+  'House Loan':             { class:'liability', sub:'long_term', label:'Mortgage (Rocket)',   icon:'🏠', liabType:'Long-Term Debt' },
+  'Palisade Loan':          { class:'liability', sub:'long_term', label:'Auto Loan (Palisade)',icon:'🚗', liabType:'Long-Term Debt' },
+  'Credit - Allegiant4':    { class:'liability', sub:'current',   label:'Allegiant CC',        icon:'💳', liabType:'Credit Cards' },
+  'Credit - Amazon17':      { class:'liability', sub:'current',   label:'Amazon CC',           icon:'💳', liabType:'Credit Cards' },
+  'Credit - ChPNC1':        { class:'liability', sub:'current',   label:'Chase PNC CC',        icon:'💳', liabType:'Credit Cards' },
+  'Credit - Flag17':        { class:'liability', sub:'current',   label:'Flag CC',             icon:'💳', liabType:'Credit Cards' },
+  'Credit - KiPNC28':       { class:'liability', sub:'current',   label:'Kira PNC CC',         icon:'💳', liabType:'Credit Cards' },
+  'Credit - Kohls27':       { class:'liability', sub:'current',   label:"Kohl's CC",           icon:'💳', liabType:'Credit Cards' },
+  'Credit - Old Navy4':     { class:'liability', sub:'current',   label:'Old Navy CC',         icon:'💳', liabType:'Credit Cards' },
+  'Credit - Quick19':       { class:'liability', sub:'current',   label:'Quick CC',            icon:'💳', liabType:'Credit Cards' },
+};
+
+// Items NOT in Quicken that are needed for a complete balance sheet
+const BS_MISSING = [
+  { category:'Assets', item:'Home Fair Market Value', note:'Quicken shows $159,500 — this likely reflects equity or purchase price. Pull current Zillow/Redfin estimate and enter as Home FMV; subtract from Quicken House account.', severity:'high' },
+  { category:'Assets', item:'Vehicle Values', note:'Palisade (2025) and any other vehicles owned — current market value (Kelley Blue Book). Add as Asset, the auto loan is already in Quicken as a liability.', severity:'high' },
+  { category:'Assets', item:'Personal Property', note:'High-value items: jewelry, art, collectibles, boats, recreational equipment. Typically insured value or appraisal.', severity:'low' },
+  { category:'Assets', item:'HSA Balance', note:'Health Savings Account not found in Quicken export. If you have an HSA, add current balance.', severity:'medium' },
+  { category:'Assets', item:'Life Insurance Cash Value', note:'If you hold whole or universal life policies, the cash surrender value is an asset.', severity:'low' },
+  { category:'Assets', item:'Business Equity', note:'Any ownership stake in a business (Highmark ESOP, stock options, etc.).', severity:'medium' },
+  { category:'Liabilities', item:'Current Tax Liability', note:'Estimated tax owed above withholding for current tax year. Run a quick estimate.', severity:'medium' },
+  { category:'Liabilities', item:'Other Loans / Informal Debt', note:'Family loans, HELOCs, personal guarantees not tracked in Quicken.', severity:'low' },
+];
+
+function computeBSFromTxns() {
+  // Sum all transactions per account to get Quicken register balance
+  const balances = {};
+  const lastDate  = {};
+  txns.forEach(t => {
+    balances[t.account] = (balances[t.account] || 0) + t.amount;
+    if (!lastDate[t.account] || t.date > lastDate[t.account]) lastDate[t.account] = t.date;
+  });
+  return { balances, lastDate };
+}
+
+function renderBalanceSheet() {
+  const el = document.getElementById('balanceSheetContent');
+  if (!el) return;
+
+  if (!txns.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">No data loaded. Import your Quicken files first.</div>';
+    return;
+  }
+
+  const { balances, lastDate } = computeBSFromTxns();
+  const today = new Date().toISOString().slice(0,10);
+
+  // Classify accounts
+  const assetGroups = {};
+  const liabGroups  = {};
+  let totalAssets = 0, totalLiabs = 0;
+
+  Object.entries(BS_ACCOUNTS).forEach(([acct, meta]) => {
+    const raw = balances[acct] || 0;
+    // For liabilities, Quicken stores as negative net (credits > debits for CCs)
+    const amt = meta.class === 'liability' ? Math.abs(raw) : raw;
+    if (amt === 0 && meta.sub === 'current' && meta.class === 'liability') return; // skip paid-off CCs
+    
+    // Staleness flag
+    const last = lastDate[acct];
+    const monthsOld = last ? Math.floor((new Date(today) - new Date(last)) / (1000*60*60*24*30)) : 999;
+    const stale = monthsOld > 3;
+    const flags = [];
+    if (stale) flags.push({ type:'stale', text: monthsOld+'mo old' });
+    if (meta.note) flags.push({ type:'est', text:'⚠ see notes' });
+
+    const row = { acct, meta, amt, last: last||'—', stale, monthsOld, flags, note: meta.note };
+
+    if (meta.class === 'asset') {
+      const g = meta.assetType;
+      if (!assetGroups[g]) assetGroups[g] = [];
+      assetGroups[g].push(row);
+      totalAssets += amt;
+    } else {
+      const g = meta.liabType;
+      if (!liabGroups[g]) liabGroups[g] = [];
+      liabGroups[g].push(row);
+      totalLiabs += amt;
+    }
+  });
+
+  const netWorth = totalAssets - totalLiabs;
+  const netColor = netWorth >= 0 ? 'var(--positive)' : 'var(--negative)';
+
+  // Completeness score
+  const highMissing = BS_MISSING.filter(m=>m.severity==='high').length;
+  const totalMissing = BS_MISSING.length;
+  const completeness = Math.round((1 - highMissing/8) * 100);
+
+  function flagBadge(f) {
+    return `<span class="bs-flag bs-flag-${f.type}">${f.text}</span>`;
+  }
+  function amtSpan(v, cls) {
+    return `<span class="bs-row-amt" style="color:${cls||'var(--ink)'}">${v>=0?'':'-'}${fmt(Math.abs(v))}</span>`;
+  }
+  function groupTotal(rows) {
+    return rows.reduce((s,r)=>s+r.amt,0);
+  }
+
+  let out = '';
+
+  // ── Data quality banner ──────────────────────────────────────────
+  out += `<div style="display:grid;grid-template-columns:auto 1fr;gap:0;background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px;">
+    <div style="padding:20px 24px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:120px;">
+      <div style="font-size:44px;font-weight:700;color:${completeness>=85?'var(--positive)':completeness>=65?'var(--gold)':'var(--negative)'};line-height:1;font-family:var(--font-d);">${completeness}%</div>
+      <div style="font-size:10px;font-family:var(--font-m);color:var(--ink4);margin-top:4px;">Completeness</div>
+    </div>
+    <div style="padding:16px 20px;">
+      <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:8px;">Data Quality Assessment</div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:11px;color:var(--ink3);line-height:2;">
+        <span>📋 <strong style="color:var(--ink)">${Object.keys(balances).length}</strong> accounts imported from Quicken</span>
+        <span>✅ <strong style="color:var(--positive)">${Object.values(balances).filter(v=>Math.abs(v)>0).length}</strong> accounts with balances</span>
+        <span>⚠ <strong style="color:var(--gold)">${Object.values(lastDate).filter(d=>{const m=Math.floor((new Date(today)-new Date(d))/(1000*60*60*24*30));return m>3;}).length}</strong> accounts with stale data (>3mo)</span>
+        <span>❌ <strong style="color:var(--negative)">${highMissing}</strong> high-priority items missing</span>
+      </div>
+    </div>
+  </div>`;
+
+  // ── Summary KPIs ─────────────────────────────────────────────────
+  out += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+    <div style="background:var(--float);border:1px solid rgba(45,212,191,.2);border-radius:var(--r-lg);padding:16px 18px;">
+      <div class="kpi-sm-lbl">Total Assets</div>
+      <div class="kpi-sm-val" style="color:var(--positive);">${fmt(totalAssets)}</div>
+      <div class="kpi-sm-sub">from Quicken · may be incomplete</div>
+    </div>
+    <div style="background:var(--float);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-lg);padding:16px 18px;">
+      <div class="kpi-sm-lbl">Total Liabilities</div>
+      <div class="kpi-sm-val" style="color:var(--negative);">${fmt(totalLiabs)}</div>
+      <div class="kpi-sm-sub">all debts tracked in Quicken</div>
+    </div>
+    <div style="background:var(--float);border:1px solid ${netWorth>=0?'rgba(45,212,191,.25)':'rgba(248,113,113,.25)'};border-radius:var(--r-lg);padding:16px 18px;">
+      <div class="kpi-sm-lbl">Net Worth</div>
+      <div class="kpi-sm-val" style="color:${netColor};">${netWorth>=0?'+':''}${fmt(netWorth)}</div>
+      <div class="kpi-sm-sub">assets minus liabilities</div>
+    </div>
+  </div>`;
+
+  // ── ASSETS ───────────────────────────────────────────────────────
+  const assetOrder = ['Cash & Equivalents','Investment Accounts','Education Accounts','Retirement Accounts','Real Estate'];
+  out += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">';
+
+  // Assets column
+  out += '<div>';
+  out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--positive);margin-bottom:6px;">ASSETS</div>';
+  assetOrder.forEach(grp => {
+    const rows = assetGroups[grp];
+    if (!rows || rows.length === 0) return;
+    const grpTotal = groupTotal(rows);
+    out += '<div class="bs-section">';
+    out += `<div class="bs-hdr"><span class="bs-hdr-title">${grp}</span><span class="bs-hdr-total" style="color:var(--positive);">${fmt(grpTotal)}</span></div>`;
+    rows.forEach(r => {
+      out += '<div class="bs-row">';
+      out += `<div class="bs-row-name">${r.meta.icon} <div><div>${r.meta.label}</div><div class="bs-row-meta">Last: ${r.last}</div></div>`;
+      r.flags.forEach(f => out += flagBadge(f));
+      out += '</div>';
+      out += amtSpan(r.amt, r.stale?'var(--ink3)':'var(--positive)');
+      out += '</div>';
+    });
+    out += '</div>';
+  });
+
+  // Missing assets
+  const missingAssets = BS_MISSING.filter(m=>m.category==='Assets');
+  if (missingAssets.length) {
+    out += '<div class="bs-section" style="border-color:rgba(248,113,113,.2);">';
+    out += '<div class="bs-hdr" style="background:rgba(248,113,113,.06);border-color:rgba(248,113,113,.15);">';
+    out += '<span class="bs-hdr-title" style="color:var(--negative);">⚠ Missing / Unconfirmed Assets</span>';
+    out += '<span class="bs-flag bs-flag-miss">Incomplete</span></div>';
+    missingAssets.forEach(m => {
+      out += `<div class="bs-row" style="flex-direction:column;align-items:flex-start;gap:4px;padding:10px 18px;">
+        <div style="display:flex;align-items:center;gap:8px;width:100%;justify-content:space-between;">
+          <span style="font-size:13px;font-weight:500;">${m.item}</span>
+          <span class="bs-flag bs-flag-${m.severity==='high'?'miss':m.severity==='medium'?'stale':'est'}">${m.severity.toUpperCase()}</span>
+        </div>
+        <div style="font-size:11px;color:var(--ink4);line-height:1.6;">${m.note}</div>
+      </div>`;
+    });
+    out += '</div>';
+  }
+  out += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 16px;margin-top:4px;display:flex;justify-content:space-between;align-items:center;">';
+  out += '<span style="font-size:13px;font-weight:700;">Total Assets</span>';
+  out += `<span style="font-size:16px;font-weight:700;color:var(--positive);font-family:var(--font-m);">${fmt(totalAssets)}</span>`;
+  out += '</div></div>';
+
+  // Liabilities column
+  out += '<div>';
+  out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--negative);margin-bottom:6px;">LIABILITIES</div>';
+  ['Long-Term Debt','Credit Cards'].forEach(grp => {
+    const rows = liabGroups[grp];
+    if (!rows || rows.length === 0) return;
+    const grpTotal = groupTotal(rows);
+    out += '<div class="bs-section">';
+    out += `<div class="bs-hdr"><span class="bs-hdr-title">${grp}</span><span class="bs-hdr-total" style="color:var(--negative);">${fmt(grpTotal)}</span></div>`;
+    rows.forEach(r => {
+      out += '<div class="bs-row">';
+      out += `<div class="bs-row-name">${r.meta.icon} <div><div>${r.meta.label}</div><div class="bs-row-meta">Last: ${r.last}${r.stale?' · stale':''}</div></div>`;
+      r.flags.filter(f=>f.type==='stale').forEach(f => out += flagBadge(f));
+      out += '</div>';
+      out += amtSpan(-r.amt, 'var(--negative)');
+      out += '</div>';
+    });
+    out += '</div>';
+  });
+
+  const missingLiabs = BS_MISSING.filter(m=>m.category==='Liabilities');
+  if (missingLiabs.length) {
+    out += '<div class="bs-section" style="border-color:rgba(245,168,0,.2);">';
+    out += '<div class="bs-hdr" style="background:rgba(245,168,0,.06);border-color:rgba(245,168,0,.15);">';
+    out += '<span class="bs-hdr-title" style="color:var(--gold);">⚠ Verify / Potentially Missing</span></div>';
+    missingLiabs.forEach(m => {
+      out += `<div class="bs-row" style="flex-direction:column;align-items:flex-start;gap:4px;padding:10px 18px;">
+        <div style="display:flex;align-items:center;gap:8px;width:100%;justify-content:space-between;">
+          <span style="font-size:13px;font-weight:500;">${m.item}</span>
+          <span class="bs-flag bs-flag-${m.severity==='high'?'miss':'stale'}">${m.severity.toUpperCase()}</span>
+        </div>
+        <div style="font-size:11px;color:var(--ink4);line-height:1.6;">${m.note}</div>
+      </div>`;
+    });
+    out += '</div>';
+  }
+  out += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 16px;margin-top:4px;display:flex;justify-content:space-between;align-items:center;">';
+  out += '<span style="font-size:13px;font-weight:700;">Total Liabilities</span>';
+  out += `<span style="font-size:16px;font-weight:700;color:var(--negative);font-family:var(--font-m);">${fmt(totalLiabs)}</span>`;
+  out += '</div></div>';
+  out += '</div>'; // grid
+
+  // Net worth footer
+  out += `<div class="bs-net-row" style="border-color:${netColor};">
+    <div>
+      <div style="font-size:16px;font-weight:700;color:${netColor};">Net Worth (Equity)</div>
+      <div style="font-size:11px;color:var(--ink4);margin-top:2px;">Total Assets ${fmt(totalAssets)} − Total Liabilities ${fmt(totalLiabs)}</div>
+    </div>
+    <div style="font-size:28px;font-weight:700;color:${netColor};font-family:var(--font-d);">${netWorth>=0?'+':''}${fmt(netWorth)}</div>
+  </div>`;
+
+  // Debt ratios
+  const dti = totalLiabs > 0 && totalAssets > 0 ? (totalLiabs/totalAssets*100).toFixed(1) : 0;
+  const mortgageRow = Object.entries(BS_ACCOUNTS).find(([,v])=>v.sub==='mortgage');
+  const mortgageBal = mortgageRow ? Math.abs(balances[mortgageRow[0]]||0) : 0;
+  const homeBal = balances['House'] || 0;
+  const ltv = homeBal > 0 ? (mortgageBal/homeBal*100).toFixed(1) : '—';
+
+  out += `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;">
+    ${[
+      ['Debt-to-Asset', dti+'%', dti<40?'var(--positive)':dti<60?'var(--gold)':'var(--negative)', 'Lower is stronger'],
+      ['Mortgage LTV', ltv+'%', parseFloat(ltv)<80?'var(--positive)':'var(--gold)', 'Loan-to-value ratio'],
+      ['Liquid Assets', fmt((balances['Checking - PNC']||0)+(balances['Savings - PNC']||0)), 'var(--river)', 'Cash on hand'],
+      ['Credit Utilization', (() => {
+        const cc = Object.entries(BS_ACCOUNTS).filter(([,v])=>v.liabType==='Credit Cards');
+        const used = cc.reduce((s,[a])=>s+Math.abs(balances[a]||0),0);
+        return used > 0 ? fmt(used)+' balance' : '$0 balance';
+      })(), 'var(--ink)', 'Total CC balance'],
+    ].map(([l,v,c,s])=>`<div class="kpi-sm"><div class="kpi-sm-lbl">${l}</div><div class="kpi-sm-val" style="color:${c};">${v}</div><div class="kpi-sm-sub">${s}</div></div>`).join('')}
+  </div>`;
+
+  el.innerHTML = out;
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// FAMILY FINANCIAL STATEMENTS — Investor-Grade Format
+// Presents household finances as a family office / holding company.
+// ════════════════════════════════════════════════════════════════
+
+function renderFinancials() {
+  const el = document.getElementById('financialsContent');
+  if (!el) return;
+
+  // Populate year selector
+  const yrSel = document.getElementById('finYear');
+  const sp = spendable(txns);
+  const years = [...new Set(sp.map(t=>t.date.slice(0,4)))].sort().reverse();
+
+  if (yrSel && yrSel.options.length === 0) {
+    years.forEach(yr => {
+      const opt = document.createElement('option');
+      opt.value = yr; opt.textContent = yr + ' Annual';
+      yrSel.appendChild(opt);
+    });
+    // Add trailing 12 months option
+    const ttm = document.createElement('option');
+    ttm.value = 'ttm'; ttm.textContent = 'Trailing 12 Months';
+    yrSel.insertBefore(ttm, yrSel.firstChild);
+    yrSel.value = 'ttm';
+  }
+
+  const selYear = (yrSel && yrSel.value) || 'ttm';
+  let filtered;
+  let periodLabel;
+  if (selYear === 'ttm') {
+    const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear()-1);
+    filtered = sp.filter(t => new Date(t.date) >= cutoff);
+    periodLabel = 'Trailing 12 Months (TTM)';
+  } else {
+    filtered = sp.filter(t => t.date.startsWith(selYear));
+    periodLabel = 'Fiscal Year ' + selYear;
+  }
+
+  const months = [...new Set(filtered.map(t=>t.date.slice(0,7)))].sort();
+  const nMonths = months.length || 1;
+
+  // ── Income Statement ─────────────────────────────────────────────
+  const income    = filtered.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+  const salary    = filtered.filter(t=>t.amount>0 && /net salary|salary|wages|direct dep|payroll/i.test(t.category+t.payee)).reduce((s,t)=>s+t.amount,0);
+  const otherInc  = income - salary;
+
+  // Expense by section
+  function sectionTotal(sectionId) {
+    const sec = WATERFALL.find(s=>s.id===sectionId);
+    if (!sec) return 0;
+    return filtered.filter(t=>t.amount<0&&sec.buckets.includes(classifyTxn(t))).reduce((s,t)=>s+Math.abs(t.amount),0);
+  }
+
+  const savings     = sectionTotal('auto_save');
+  const housing     = sectionTotal('fixed');    // mortgage + car + insurance + education + childcare
+  const utilities   = sectionTotal('utilities');
+  const food        = sectionTotal('necessities');
+  const discretion  = sectionTotal('discretionary');
+  const totalExp    = housing + utilities + food + discretion;
+  const ebitda      = income - totalExp; // "earnings before savings/investments/taxes/depreciation"
+  const netIncome   = income - savings - totalExp;
+  const savingsRate = income > 0 ? (savings/income*100) : 0;
+  const expRatio    = income > 0 ? (totalExp/income*100) : 0;
+
+  // YoY comparison (prior year if available)
+  const priorYear = selYear === 'ttm' ? null : String(parseInt(selYear)-1);
+  let priorFiltered = null;
+  if (priorYear) {
+    priorFiltered = sp.filter(t => t.date.startsWith(priorYear));
+  }
+  const priorIncome = priorFiltered ? priorFiltered.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0) : null;
+  const priorExp    = priorFiltered ? priorFiltered.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0) : null;
+
+  function yoy(curr, prior) {
+    if (!prior || prior === 0) return '';
+    const chg = ((curr - prior)/prior*100);
+    const color = chg >= 0 ? 'var(--positive)' : 'var(--negative)';
+    return `<span style="font-size:10px;color:${color};font-family:var(--font-m);">${chg>=0?'▲':'▼'}${Math.abs(chg).toFixed(1)}%</span>`;
+  }
+
+  function finRow(label, curr, prior, isExpense, indent, bold, highlight) {
+    const fmt2 = v => v===null?'—':fmt(Math.abs(v));
+    const sign  = isExpense ? '-' : (curr > 0 ? '+' : '');
+    const color = bold ? (isExpense?'var(--negative)':curr>=0?'var(--positive)':'var(--negative)') : (isExpense?'var(--gold)':'var(--ink2)');
+    const cls   = bold ? 'fin-row total-row' : (indent ? 'fin-row indent' : 'fin-row');
+    const priorFmt = prior !== null && prior !== undefined ? fmt2(prior) : '—';
+    const avgMo = (curr/nMonths);
+    const avgFmt = Math.abs(avgMo)>=1000?'$'+(Math.abs(avgMo)/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(avgMo));
+    return `<div class="${cls}" ${highlight?'style="background:rgba(245,168,0,.04);"':''}>
+      <div style="color:${bold?'var(--ink)':'inherit'};font-weight:${bold?700:400};">${label}</div>
+      <div class="fin-num ${bold?'':'neg'}" style="color:${color};">${sign}${fmt2(curr)}</div>
+      <div class="fin-num" style="color:var(--ink4);">${priorFmt!=='—'?(isExpense?'-':'')+priorFmt:'—'}</div>
+      <div class="fin-num" style="color:var(--ink4);">${avgFmt}/mo</div>
+    </div>`;
+  }
+
+  const { balances } = computeBSFromTxns();
+  const totalAssets = Object.entries(BS_ACCOUNTS).filter(([,v])=>v.class==='asset').reduce((s,[a,])=>s+(balances[a]||0),0);
+  const totalLiabs  = Object.entries(BS_ACCOUNTS).filter(([,v])=>v.class==='liability').reduce((s,[a,])=>s+Math.abs(balances[a]||0),0);
+  const netWorth    = totalAssets - totalLiabs;
+
+  const liquid = (balances['Checking - PNC']||0)+(balances['Savings - PNC']||0);
+  const monthlyExp = totalExp/nMonths;
+  const runway = liquid/Math.max(monthlyExp,1);
+
+  let out = '';
+
+  // ── Cover block ───────────────────────────────────────────────────
+  out += `<div style="background:var(--float);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:var(--r-lg);padding:24px 28px;margin-bottom:12px;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-family:var(--font-d);font-size:28px;font-weight:600;color:var(--ink);margin-bottom:4px;">Luka Family Office</div>
+        <div style="font-size:13px;color:var(--ink3);">Consolidated Financial Statements · ${periodLabel}</div>
+        <div style="font-size:11px;color:var(--ink4);font-family:var(--font-m);margin-top:4px;">Pittsburgh, PA · Prepared from Quicken register data · For internal use</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;color:var(--ink4);font-family:var(--font-m);">Net Worth</div>
+        <div style="font-size:32px;font-weight:700;color:var(--positive);font-family:var(--font-d);">${fmt(netWorth)}</div>
+        <div style="font-size:11px;color:var(--ink4);">as of last data import</div>
+      </div>
+    </div>
+  </div>`;
+
+  // ── Executive KPIs ────────────────────────────────────────────────
+  out += '<div class="kpi-cluster">';
+  [
+    ['Annual Revenue', fmt(income), income>0?'var(--positive)':'var(--negative)', 'total take-home'],
+    ['EBITDA', (ebitda>=0?'+':'')+fmt(ebitda), ebitda>=0?'var(--positive)':'var(--negative)', 'income − expenses'],
+    ['Savings Rate', savingsRate.toFixed(1)+'%', savingsRate>=20?'var(--positive)':savingsRate>=10?'var(--gold)':'var(--negative)', 'target ≥20%'],
+    ['Cash Runway', runway.toFixed(1)+' mo', runway>=6?'var(--positive)':runway>=3?'var(--gold)':'var(--negative)', 'liquid ÷ monthly burn'],
+  ].forEach(([l,v,c,s])=>{
+    out += `<div class="kpi-sm"><div class="kpi-sm-lbl">${l}</div><div class="kpi-sm-val" style="color:${c};">${v}</div><div class="kpi-sm-sub">${s}</div></div>`;
+  });
+  out += '</div>';
+
+  // ── Income Statement ──────────────────────────────────────────────
+  out += '<div class="fin-section">';
+  out += `<div class="fin-hdr">
+    <div class="fin-hdr-title">Income Statement</div>
+    <div class="fin-hdr-sub">${periodLabel} · All figures in USD · Accrual basis (expenses dated to purchase)</div>
+  </div>`;
+  out += `<div class="fin-row" style="background:var(--lift);">
+    <div style="color:var(--ink4);"></div>
+    <div class="fin-col-hdr">Current</div>
+    <div class="fin-col-hdr">${priorYear||'Prior'}</div>
+    <div class="fin-col-hdr">Avg/Month</div>
+  </div>`;
+  out += finRow('REVENUE', null, null, false, false, false);
+  out += finRow('Employment Income (Net Salary)', salary, priorIncome?priorIncome*0.9:null, false, true, false);
+  out += finRow('Other Income (Interest, Dividends, Refunds)', otherInc, null, false, true, false);
+  out += finRow('Total Revenue', income, priorIncome, false, false, true, true);
+
+  out += finRow('OPERATING EXPENSES', null, null, true, false, false);
+  out += finRow('Housing (Mortgage, Auto Loan, Insurance, Education)', housing, null, true, true, false);
+  out += finRow('Utilities & Communications', utilities, null, true, true, false);
+  out += finRow('Food & Groceries', filtered.filter(t=>t.amount<0&&['groceries','restaurants'].includes(classifyTxn(t))).reduce((s,t)=>s+Math.abs(t.amount),0), null, true, true, false);
+  out += finRow('Transportation', filtered.filter(t=>t.amount<0&&['gas_car','transit'].includes(classifyTxn(t))).reduce((s,t)=>s+Math.abs(t.amount),0), null, true, true, false);
+  out += finRow('Healthcare', filtered.filter(t=>t.amount<0&&classifyTxn(t)==='healthcare').reduce((s,t)=>s+Math.abs(t.amount),0), null, true, true, false);
+  out += finRow('Discretionary & Lifestyle', discretion, null, true, true, false);
+  out += finRow('Total Operating Expenses', totalExp, priorExp, true, false, true, true);
+
+  out += `<div class="fin-row subtotal" style="background:rgba(245,168,0,.04);">
+    <div>EBITDA (Operating Surplus before Savings)</div>
+    <div class="fin-num" style="color:${ebitda>=0?'var(--positive)':'var(--negative)'};">${ebitda>=0?'+':'-'}${fmt(Math.abs(ebitda))}</div>
+    <div class="fin-num" style="color:var(--ink4);">${priorIncome&&priorExp?(priorIncome-priorExp>=0?'+':'-')+fmt(Math.abs(priorIncome-priorExp)):'—'}</div>
+    <div class="fin-num" style="color:var(--ink4);">${fmt(ebitda/nMonths)}/mo</div>
+  </div>`;
+
+  out += finRow('SAVINGS & INVESTMENT FLOWS', null, null, false, false, false);
+  out += finRow('Pre-committed Savings (Auto-transfer)', savings, null, false, true, false);
+  out += `<div class="fin-row total-row" style="border-top:2px solid var(--gold);">
+    <div>Net Income (Bottom Line)</div>
+    <div class="fin-num" style="color:${netIncome>=0?'var(--positive)':'var(--negative)'};">${netIncome>=0?'+':'-'}${fmt(Math.abs(netIncome))}</div>
+    <div class="fin-num">—</div>
+    <div class="fin-num" style="color:${netIncome>=0?'var(--positive)':'var(--negative)'};">${netIncome>=0?'+':'-'}${fmt(Math.abs(netIncome/nMonths))}/mo</div>
+  </div>`;
+  out += '</div>';
+
+  // ── Cash Flow Statement ───────────────────────────────────────────
+  const ccPaid = txns.filter(t=>t.isTransfer&&t.amount<0&&(t.category||'').includes('[Credit')).reduce((s,t)=>s+Math.abs(t.amount),0);
+  const savXfer = txns.filter(t=>t.isTransfer&&t.amount<0&&selYear!=='ttm'?t.date.startsWith(selYear):new Date(t.date)>=new Date(new Date().setFullYear(new Date().getFullYear()-1))).reduce((s,t)=>s+Math.abs(t.amount),0);
+
+  out += '<div class="fin-section">';
+  out += `<div class="fin-hdr">
+    <div class="fin-hdr-title">Statement of Cash Flows</div>
+    <div class="fin-hdr-sub">${periodLabel} · Operating + Investing + Financing activities</div>
+  </div>`;
+  out += `<div class="fin-row" style="background:var(--lift);"><div style="color:var(--ink4);">Activity</div><div class="fin-col-hdr">Amount</div><div class="fin-col-hdr">Notes</div><div></div></div>`;
+
+  function cfRow(label, amt, note, bold) {
+    const c = amt>=0?'var(--positive)':'var(--negative)';
+    return `<div class="fin-row ${bold?'total-row':''}">
+      <div>${label}</div>
+      <div class="fin-num" style="color:${c};">${amt>=0?'+':''}${fmt(amt)}</div>
+      <div style="font-size:10px;color:var(--ink4);text-align:right;">${note}</div>
+      <div></div>
+    </div>`;
+  }
+  out += cfRow('Net Employment Income', salary, 'payroll deposits to checking', false);
+  out += cfRow('Other Operating Income', otherInc, 'interest, refunds, transfers in', false);
+  out += cfRow('Operating Expenses Paid', -totalExp, 'CC charges + direct debits', false);
+  out += cfRow('Net Cash from Operations', income-totalExp, '', true);
+  out += cfRow('Savings Transfers (to savings/investment)', -savings, 'auto-transfers out of checking', false);
+  out += cfRow('Net Change in Checking Balance', income-totalExp-savings, 'estimated check register change', true);
+  out += '</div>';
+
+  // ── Key Ratios ────────────────────────────────────────────────────
+  const debtService = (housing/nMonths);
+  const dscr = income/nMonths > 0 ? (income/nMonths)/debtService : 0;
+  const grocAmt = filtered.filter(t=>t.amount<0&&classifyTxn(t)==='groceries').reduce((s,t)=>s+Math.abs(t.amount),0);
+  const restAmt = filtered.filter(t=>t.amount<0&&classifyTxn(t)==='restaurants').reduce((s,t)=>s+Math.abs(t.amount),0);
+
+  out += '<div class="fin-section">';
+  out += '<div class="fin-hdr"><div class="fin-hdr-title">Key Financial Ratios</div><div class="fin-hdr-sub">Benchmarked to household finance best practices</div></div>';
+  out += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">';
+  [
+    ['Savings Rate', savingsRate.toFixed(1)+'%', savingsRate>=20?'✓ Excellent':savingsRate>=10?'⚠ On Track':'✗ Below Target', savingsRate>=20?'var(--positive)':savingsRate>=10?'var(--gold)':'var(--negative)', 'Target: ≥20% of gross income'],
+    ['Expense Ratio', expRatio.toFixed(1)+'%', expRatio<=70?'✓ Healthy':'⚠ High', expRatio<=70?'var(--positive)':'var(--gold)', 'Target: ≤70% of income on expenses'],
+    ['Housing Cost Ratio', income>0?(housing/income*100).toFixed(1)+'%':'—', income>0&&housing/income<0.28?'✓ Under 28%':'⚠ Above guideline', income>0&&housing/income<0.28?'var(--positive)':'var(--gold)', 'Target: ≤28% on housing'],
+    ['Debt Service Coverage', dscr.toFixed(2)+'×', dscr>=2?'✓ Strong':dscr>=1.25?'⚠ Adequate':'✗ Tight', dscr>=2?'var(--positive)':dscr>=1.25?'var(--gold)':'var(--negative)', 'Monthly income ÷ debt payments'],
+    ['Cash Runway', runway.toFixed(1)+' months', runway>=6?'✓ 6mo+ emergency fund':runway>=3?'⚠ 3-6mo adequate':'✗ Under 3mo', runway>=6?'var(--positive)':runway>=3?'var(--gold)':'var(--negative)', 'Liquid cash ÷ monthly burn rate'],
+    ['Groceries vs Dining', grocAmt>0&&restAmt>0?(restAmt/grocAmt).toFixed(1)+'× dining':'—', 'Informational', 'var(--ink3)', 'Dining $ per $1 of groceries'],
+  ].forEach(([l,v,label,c,bench])=>{
+    out += `<div style="padding:12px 20px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);">
+      <div style="font-size:11px;color:var(--ink4);margin-bottom:2px;">${l}</div>
+      <div style="font-size:20px;font-weight:700;color:${c};font-family:var(--font-m);">${v}</div>
+      <div style="font-size:11px;color:${c};margin-top:2px;">${label}</div>
+      <div style="font-size:10px;color:var(--ink4);margin-top:2px;">${bench}</div>
+    </div>`;
+  });
+  out += '</div></div>';
+
+  // ── Forward Look (Projections) ────────────────────────────────────
+  const projIncome  = (income/nMonths) * 12;
+  const projExp     = (totalExp/nMonths) * 12;
+  const projSavings = (savings/nMonths) * 12;
+  const projNet     = projIncome - projSavings - projExp;
+
+  out += `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;margin-top:4px;">
+    <div style="font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:12px;">📊 12-Month Forward Projection <span style="font-size:10px;font-weight:400;color:var(--ink4);font-family:var(--font-m);">(based on TTM run rate)</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+      ${[
+        ['Projected Income', projIncome, 'var(--positive)'],
+        ['Projected Expenses', projExp, 'var(--gold)'],
+        ['Projected Savings', projSavings, 'var(--river)'],
+        ['Projected Net', projNet, projNet>=0?'var(--positive)':'var(--negative)'],
+      ].map(([l,v,c])=>`<div class="kpi-sm"><div class="kpi-sm-lbl">${l}</div><div class="kpi-sm-val" style="color:${c};">${v>=0?'+':''}${fmt(v)}</div><div class="kpi-sm-sub">annualized</div></div>`).join('')}
+    </div>
+  </div>`;
+
+  el.innerHTML = out;
 }
 
 // ════════════════════════════════════════════════
