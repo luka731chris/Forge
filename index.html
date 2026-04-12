@@ -754,7 +754,7 @@ input:focus { border-color:var(--gold); }
 
 // ── Storage ──────────────────────────────────────
 const DB_KEY  = 'forge_lean_v1';
-const BUILD   = 'lean_2.0';  // bump to clear stale storage
+const BUILD   = 'lean_3.0';  // bump to clear stale storage
 const BLD_KEY = 'forge_build';
 
 // Auto-clear stale storage on every load
@@ -899,7 +899,7 @@ function inRange(t, r) {
 // ════════════════════════════════════════════════
 function svgBar(elId, labels, datasets) {
   const el = document.getElementById(elId);
-  if (!el) return;
+  if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
   const W = el.offsetWidth || 600;
   const H = el.offsetHeight || 200;
   if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;font-family:var(--font-m);">No data</div>'; return; }
@@ -1108,6 +1108,7 @@ function fmtK(v) { return Math.abs(v)>=1000 ? '$'+(Math.abs(v)/1000).toFixed(1)+
 // NAVIGATION
 // ════════════════════════════════════════════════
 function showPage(name) {
+  console.log('[Forge] showPage:', name, '| txns:', txns.length);
   document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display='none'; });
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const pg = document.getElementById('page-'+name);
@@ -1147,6 +1148,8 @@ function setCatRange(r, btn) {
 // RENDER DASHBOARD
 // ════════════════════════════════════════════════
 function renderDashboard() {
+  try {
+
   const filtered = spendable(txns).filter(t => inRange(t, range));
   const inc = filtered.filter(t => t.amount > 0).reduce((s,t) => s+t.amount, 0);
   const exp = filtered.filter(t => t.amount < 0).reduce((s,t) => s+Math.abs(t.amount), 0);
@@ -1195,12 +1198,20 @@ function renderDashboard() {
      <td class="td-num">${d.count}</td>
      <td class="td-num td-neg">${fmt(d.total)}</td></tr>`
   ).join('');
+
+  } catch(e) {
+    console.error('[Forge] renderDashboard error:', e);
+    const _el = document.getElementById('dashKPIs');
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderDashboard: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+  }
 }
 
 // ════════════════════════════════════════════════
 // RENDER CASH FLOW
 // ════════════════════════════════════════════════
 function renderCashFlow() {
+  try {
+
   let src = spendable(txns);
 
   // Populate filters on first call
@@ -1241,12 +1252,20 @@ function renderCashFlow() {
     { label:'Net',             val:(totNet>=0?'+':'')+fmtK(totNet), sub:'Savings rate: '+(totInc>0?((totNet/totInc)*100).toFixed(1):0)+'%', cls:totNet>=0?'positive':'' },
     { label:'Months',          val:mo, sub:'in view', cls:'' },
   ].map(k=>`<div class="kpi ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-val">${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+
+  } catch(e) {
+    console.error('[Forge] renderCashFlow error:', e);
+    const _el = document.getElementById('cfBarWrap');
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderCashFlow: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+  }
 }
 
 // ════════════════════════════════════════════════
 // RENDER CATEGORIES
 // ════════════════════════════════════════════════
 function renderCategories() {
+  try {
+
   const filtered = spendable(txns).filter(t => inRange(t, catRange) && t.amount < 0);
   const cats = {};
   filtered.forEach(t => { cats[t.category||'Other'] = (cats[t.category||'Other']||0)+Math.abs(t.amount); });
@@ -1263,12 +1282,20 @@ function renderCategories() {
      <td class="td-num td-neg">${fmt(val)}</td>
      <td class="td-num" style="color:var(--ink4)">${(val/total*100).toFixed(1)}%</td></tr>`
   ).join('');
+
+  } catch(e) {
+    console.error('[Forge] renderCategories error:', e);
+    const _el = document.getElementById('catBarWrap');
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderCategories: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+  }
 }
 
 // ════════════════════════════════════════════════
 // RENDER TRANSACTIONS
 // ════════════════════════════════════════════════
 function renderTxns() {
+  try {
+
   const search   = (document.getElementById('txnSearch')?.value||'').toLowerCase();
   const acctF    = document.getElementById('txnAcct')?.value||'all';
   const catF     = document.getElementById('txnCat')?.value||'all';
@@ -1315,6 +1342,12 @@ function renderTxns() {
     <span>Page ${page+1} of ${pages} · ${total.toLocaleString()} rows</span>
     <button class="btn btn-ghost" onclick="txnPage=Math.min(${pages-1},txnPage+1);renderTxns()" ${page>=pages-1?'disabled':''} style="font-size:11px;padding:5px 10px;">Next →</button>
   ` : `<span>${total.toLocaleString()} transactions</span>`;
+
+  } catch(e) {
+    console.error('[Forge] renderTxns error:', e);
+    const _el = document.getElementById('txnTable');
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderTxns: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+  }
 }
 
 // ════════════════════════════════════════════════
@@ -1532,6 +1565,8 @@ async function diagnoseFiles() {
 // Every number here should be verifiable against your Quicken register.
 // ════════════════════════════════════════════════
 function renderValidation() {
+  try {
+
   const el = document.getElementById('validateContent');
   if (!el) return;
 
@@ -1922,6 +1957,12 @@ function renderValidation() {
   </div>`;
 
   el.innerHTML = out;
+
+  } catch(e) {
+    console.error('[Forge] renderValidation error:', e);
+    const _el = document.getElementById('validateContent');
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderValidation: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+  }
 }
 
 function filterTxnsByAcct(acct) {
@@ -2013,6 +2054,7 @@ async function processFiles() {
     acctMeta[a] = { type, isCreditCard: type === 'credit' };
   });
   saveData();
+  console.log('[Forge] Data saved. txns:', txns.length, 'accounts:', accounts.length);
   pendingFiles = [];
   renderFileList();
   document.getElementById('importActions').style.display = 'none';
@@ -2021,6 +2063,7 @@ async function processFiles() {
   updateHeader();
   renderUploadStatus();
   toast(`✓ Loaded ${spendable(txns).length.toLocaleString()} spendable transactions`);
+  console.log('[Forge] Navigating to dashboard. txns.length:', txns.length);
   setTimeout(() => showPage('dashboard'), 800);
 }
 
@@ -2702,6 +2745,8 @@ function toggleBucket(key) {
 
 // ── Main render ──────────────────────────────────────────────────
 function renderIncomeStatement() {
+  try {
+
   const el = document.getElementById('incomeStatement');
   if (!el) return;
 
@@ -3008,6 +3053,12 @@ function renderIncomeStatement() {
   }
 
   el.innerHTML = out;
+
+  } catch(e) {
+    console.error('[Forge] renderIncomeStatement error:', e);
+    const _el = document.getElementById('incomeStatement');
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderIncomeStatement: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+  }
 }
 
 
@@ -3017,6 +3068,8 @@ function renderIncomeStatement() {
 // Shows per-card: velocity, projected bill, when to have cash ready
 // ════════════════════════════════════════════════
 function renderCreditFlow() {
+  try {
+
   const el = document.getElementById('creditFlowContent');
   if (!el) return;
 
@@ -3132,6 +3185,12 @@ function renderCreditFlow() {
   out += '</div></div>';
 
   el.innerHTML = out;
+
+  } catch(e) {
+    console.error('[Forge] renderCreditFlow error:', e);
+    const _el = document.getElementById('creditFlowContent');
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderCreditFlow: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+  }
 }
 
 // ════════════════════════════════════════════════
