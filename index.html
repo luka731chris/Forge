@@ -476,6 +476,11 @@ input:focus { border-color:var(--gold); }
 }
 
 /* ── Balance sheet ───────────────────────────────────────────── */
+
+.bs-row:hover { background: rgba(255,255,255,.03); }
+.fin-row:hover { background: rgba(255,255,255,.02); }
+.fin-row.indent:hover { background: rgba(255,255,255,.02); }
+
 .bs-section {
   background: var(--float);
   border: 1px solid var(--line);
@@ -519,6 +524,11 @@ input:focus { border-color:var(--gold); }
   border: 2px solid var(--line2);
 }
 /* ── Financial statements ────────────────────────────────────── */
+@media (max-width: 900px) {
+  .kpi-cluster { grid-template-columns: repeat(2,1fr); }
+  .fin-row { grid-template-columns: 1fr 110px 110px; }
+  .fin-row .fin-col-hdr:nth-child(3) { display:none; }
+}
 .fin-section {
   background: var(--float);
   border: 1px solid var(--line);
@@ -631,6 +641,14 @@ input:focus { border-color:var(--gold); }
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       Data Validation
     </div>
+    <div class="nav-item" onclick="showPage('budget')" id="nav-budget">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7h8M8 12h8M8 17h5"/></svg>
+      Budget vs Actual
+    </div>
+    <div class="nav-item" onclick="showPage('calendar')" id="nav-calendar">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Bill Calendar
+    </div>
     <div class="nav-item" onclick="showPage('balancesheet')" id="nav-balancesheet">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
       Balance Sheet
@@ -696,7 +714,7 @@ input:focus { border-color:var(--gold); }
   <div class="page-hdr">
     <div>
       <div class="page-title">The Gauge</div>
-      <div class="page-sub" id="dashSub">Your financial picture</div>
+      <div class="page-sub" id="dashSub">Your financial picture · click any bar to drill into transactions</div>
     </div>
     <div class="range-tabs">
       <button class="rtab" onclick="setRange('3m',this)">3M</button>
@@ -836,7 +854,7 @@ input:focus { border-color:var(--gold); }
   <div class="page-hdr">
     <div>
       <div class="page-title">Balance Sheet</div>
-      <div class="page-sub">Luka Family · Assets, Liabilities &amp; Net Worth · As of import date</div>
+      <div class="page-sub">Assets, Liabilities &amp; Net Worth · balances from Quicken register · flagged items need attention</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <button class="btn btn-ghost" onclick="renderBalanceSheet()" style="font-size:11px;padding:6px 12px;">↻ Refresh</button>
@@ -850,13 +868,40 @@ input:focus { border-color:var(--gold); }
   <div class="page-hdr">
     <div>
       <div class="page-title">Family Financial Statements</div>
-      <div class="page-sub">Investor-grade reporting · Annual summary · Luka Family Office</div>
+      <div class="page-sub">Luka Family Office · investor-grade statements · select period above</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <select id="finYear" onchange="renderFinancials()" style="font-size:12px;padding:5px 10px;"></select>
     </div>
   </div>
   <div id="financialsContent"></div>
+</div>
+
+<!-- ══ BUDGET VS ACTUAL ══ -->
+<div id="page-budget" class="page">
+  <div class="page-hdr">
+    <div>
+      <div class="page-title">Budget vs. Actual</div>
+      <div class="page-sub">Monthly targets, trailing run rate, and where you stand right now</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <select id="budgetMonth" onchange="renderBudget()" style="font-size:12px;padding:5px 10px;"></select>
+      <button class="btn btn-ghost" onclick="suggestBudget()" style="font-size:11px;padding:6px 12px;">✨ Suggest Budget</button>
+    </div>
+  </div>
+  <div id="budgetContent"></div>
+</div>
+
+<!-- ══ BILL CALENDAR ══ -->
+<div id="page-calendar" class="page">
+  <div class="page-hdr">
+    <div>
+      <div class="page-title">Bill Calendar</div>
+      <div class="page-sub">Recurring transactions, CC billing cycles, and upcoming cash needs</div>
+    </div>
+    <button class="btn btn-ghost" onclick="renderBillCalendar()" style="font-size:11px;padding:6px 12px;">↻ Refresh</button>
+  </div>
+  <div id="calendarContent"></div>
 </div>
 
 <!-- ══ DATA VALIDATION ══ -->
@@ -877,8 +922,8 @@ input:focus { border-color:var(--gold); }
 <div id="page-income" class="page">
   <div class="page-hdr">
     <div>
-      <div class="page-title">Monthly Income Statement</div>
-      <div class="page-sub">Your household P&amp;L — plain English</div>
+      <div class="page-title">Income Statement</div>
+      <div class="page-sub">Household P&amp;L · accrual basis · click any section to expand</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <span style="font-size:11px;color:var(--ink4);font-family:var(--font-m);">Month:</span>
@@ -899,9 +944,56 @@ input:focus { border-color:var(--gold); }
 // ════════════════════════════════════════════════
 
 // ── Storage ──────────────────────────────────────
-const DB_KEY  = 'forge_lean_v1';
-const BUILD   = 'lean_3.0';  // bump to clear stale storage
-const BLD_KEY = 'forge_build';
+// ════════════════════════════════════════════════
+// CHART DRILL-THROUGH
+// Clicking a chart bar/segment navigates to Transactions filtered to that data
+// ════════════════════════════════════════════════
+function drillFromChart(drillJSON) {
+  try {
+    window._chartDrill = JSON.parse(drillJSON);
+    txnPage = 0;
+    showPage('transactions');
+  } catch(e) { console.warn('drillFromChart parse error', e); }
+}
+
+function applyChartDrill() {
+  const d = window._chartDrill;
+  if (!d) return;
+  window._lastDrill = d;
+  window._chartDrill = null;
+
+  // Reset all filters first
+  const searchEl = document.getElementById('txnSearch');
+  const catEl    = document.getElementById('txnCat');
+  const acctEl   = document.getElementById('txnAcct');
+  if (searchEl) searchEl.value = '';
+  if (acctEl)   acctEl.value   = 'all';
+
+  // Apply month filter via search — date field matching
+  if (d.month && searchEl) {
+    // labels are "25-04" format → convert to "2025-04" for date matching
+    const prefix = /^\d{2}-\d{2}$/.test(d.month) ? '20' + d.month : d.month;
+    searchEl.value = prefix;
+    // txnSub is updated later in renderTxns after filtering
+  }
+
+  // Apply category filter
+  if (d.cat && catEl) {
+    for (let i = 0; i < catEl.options.length; i++) {
+      if (catEl.options[i].value === d.cat || catEl.options[i].text === d.cat) {
+        catEl.value = catEl.options[i].value; break;
+      }
+    }
+  }
+}
+
+
+const PROD_KEY = 'forge_prod_v1';   // real imported data — never touched by demo
+const DEMO_KEY = 'forge_demo_v1';   // demo data — never touches prod
+const DB_KEY   = 'forge_lean_v1';   // legacy key — migrated on first load
+const NW_KEY   = 'forge_networth';  // Quicken Net Worth snapshot overrides
+const BUILD    = 'lean_4.0';        // bump to clear stale storage
+const BLD_KEY  = 'forge_build';
 
 // Auto-clear stale storage on every load
 (function() {
@@ -919,7 +1011,8 @@ const BLD_KEY = 'forge_build';
 let txns     = [];   // all parsed transactions
 let accounts = [];   // unique account names
 let acctMeta = {};   // { acctName: { type:'checking'|'credit'|'savings'|'investment', isCreditCard:bool } }
-let isDemoMode = false;
+let isDemoMode        = false;
+let netWorthOverrides = {};   // account name → { value, date, source } from NW export
 let range    = '1y';
 let catRange = '1y';
 let txnPage  = 0;
@@ -927,7 +1020,11 @@ const PAGE_SZ = 100;
 let pendingFiles = [];
 let donutDash = null;
 let donutCat  = null;
-let surplusTargets = { emergency:0, investments:0, college:0, other:0 };  // monthly $ targets
+let surplusTargets  = { emergency:0, investments:0, college:0, other:0 };
+let ccSettings      = {};  // { acctName: { closeDay:int, dueDay:int } }
+let budgetTargets   = {};  // { bucketKey: monthlyDollarTarget }
+let nonRecurringIds = new Set(); // set of dedup keys for NR-flagged transactions
+const SETTINGS_KEY  = 'forge_settings_v2';
 
 // ── Colours ───────────────────────────────────────
 const COLORS = [
@@ -1043,6 +1140,44 @@ function inRange(t, r) {
 // ════════════════════════════════════════════════
 // SVG CHARTS — no library dependency, always renders
 // ════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════
+// CHART TOOLTIP + BINDING
+// ════════════════════════════════════════════════
+function showChartTip(e, text) {
+  const tip = document.getElementById('chartTip');
+  if (!tip) return;
+  const hasDrill = e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.drill;
+  tip.innerHTML = (text||'').replace(/&apos;/g,"'").replace(/&quot;/g,'"') +
+    (hasDrill ? '<span style="display:block;font-size:9px;color:var(--gold);margin-top:3px;">↗ click to view transactions</span>' : '');
+  tip.style.display = 'block';
+  positionChartTip(e);
+}
+function positionChartTip(e) {
+  const tip = document.getElementById('chartTip');
+  if (!tip || tip.style.display === 'none') return;
+  const x = e.clientX + 14, y = e.clientY - 10;
+  const tw = tip.offsetWidth + 20, th = tip.offsetHeight + 10;
+  tip.style.left = (x + tw > window.innerWidth  ? e.clientX - tw : x) + 'px';
+  tip.style.top  = (y + th > window.innerHeight ? e.clientY - th : y) + 'px';
+}
+function hideChartTip() {
+  const tip = document.getElementById('chartTip');
+  if (tip) tip.style.display = 'none';
+}
+function bindChartTips(container) {
+  if (!container) return;
+  container.querySelectorAll('[data-tip]').forEach(function(el) {
+    el.addEventListener('mouseenter', function(e) { showChartTip(e, this.dataset.tip); });
+    el.addEventListener('mouseleave', hideChartTip);
+    if (el.dataset && el.dataset.drill) {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', function() { drillFromChart(this.dataset.drill); });
+    }
+  });
+}
+document.addEventListener('mousemove', positionChartTip);
+
 function svgBar(elId, labels, datasets) {
   const el = document.getElementById(elId);
   if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
@@ -1093,11 +1228,12 @@ function svgBar(elId, labels, datasets) {
       const fmtV = Math.abs(v)>=1000?'$'+(v/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
       const tip = `${labels[i]} · ${safeLabel}: ${fmtV}`;
       bars += `<rect x="${x}" y="${y}" width="${barW.toFixed(1)}" height="${bH}" rx="2" fill="${color}" opacity=".85"/>`;
-      // Transparent hit area spanning full group height for easier hover
+      // Transparent hit area — hover for tooltip, click to drill to transactions
+      const drillData = JSON.stringify({month: String(labels[i])}).replace(/"/g,'&quot;');
       hitAreas += `<rect x="${(PAD.l+i*grpW).toFixed(1)}" y="${PAD.t}" width="${grpW.toFixed(1)}" height="${cH}"
-        fill="transparent" style="cursor:crosshair;"
-        onmouseenter="showChartTip(event,'${tip.replace(/"/g,'&quot;')}')"
-        onmouseleave="hideChartTip()"/>`;
+        fill="transparent" style="cursor:pointer;"
+        data-tip="${tip.replace(/"/g,'&quot;').replace(/'/g,'&apos;')}"
+        data-drill="${drillData}"/>`;
     });
   });
 
@@ -1119,6 +1255,7 @@ function svgBar(elId, labels, datasets) {
   el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;overflow:visible;">
     ${grid}${zeroLine}${bars}${yLbls}${xLbls}${legend}${hitAreas}
   </svg>`;
+  bindChartTips(el);
 }
 
 function svgLine(elId, labels, datasets) {
@@ -1167,9 +1304,7 @@ function svgLine(elId, labels, datasets) {
       const fmtV = Math.abs(p.v)>=1000?'$'+(p.v/1000).toFixed(1)+'K':'$'+Math.round(p.v);
       const tip = `${p.lbl}: ${fmtV}`;
       dots += `<circle cx="${p.x}" cy="${p.y}" r="3" fill="${color}" opacity=".8"/>`;
-      hitAreas += `<circle cx="${p.x}" cy="${p.y}" r="12" fill="transparent" style="cursor:crosshair;"
-        onmouseenter="showChartTip(event,'${tip.replace(/"/g,'&quot;').replace(/'/g,'&apos;')}')"
-        onmouseleave="hideChartTip()"/>`;
+      hitAreas += `<circle cx="${p.x}" cy="${p.y}" r="12" fill="transparent" style="cursor:crosshair;" data-tip="${tip.replace(/"/g,'&quot;').replace(/'/g,'&apos;')}"/>`;
     });
   });
 
@@ -1184,6 +1319,7 @@ function svgLine(elId, labels, datasets) {
   el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;overflow:visible;">
     ${grid}${areas}${paths}${dots}${yLbls}${xLbls}${hitAreas}
   </svg>`;
+  bindChartTips(el);
 }
 
 function svgHBar(elId, labels, values, colors) {
@@ -1206,11 +1342,15 @@ function svgHBar(elId, labels, values, colors) {
     const lShort= String(lbl).length > 20 ? String(lbl).slice(0,19)+'…' : String(lbl);
     const tip   = `${lbl}: ${valS}`;
     rows += `<text x="${PAD.l-10}" y="${(y+rowH/2).toFixed(1)}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.7)" font-size="11" font-family="'DM Sans',sans-serif">${lShort}</text>`;
+    const catDrill = JSON.stringify({cat: String(lbl)}).replace(/"/g,'&quot;');
     rows += `<rect x="${PAD.l}" y="${(y+rowH*.18).toFixed(1)}" width="${bW}" height="${(rowH*.64).toFixed(1)}" rx="3" fill="${color}" opacity=".85"
-      style="cursor:crosshair;" onmouseenter="showChartTip(event,'${tip.replace(/'/g,'&apos;')}')" onmouseleave="hideChartTip()"/>`;
+      style="cursor:pointer;"
+      data-tip="${tip.replace(/'/g,'&apos;').replace(/"/g,'&quot;')}"
+      data-drill="${catDrill}"/>`;
     rows += `<text x="${(PAD.l+parseFloat(bW)+6).toFixed(1)}" y="${(y+rowH/2).toFixed(1)}" dominant-baseline="middle" fill="rgba(255,255,255,.5)" font-size="10" font-family="'DM Mono',monospace">${valS}</text>`;
   });
   el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;">${rows}</svg>`;
+  bindChartTips(el);
 }
 
 // ════════════════════════════════════════════════
@@ -1265,7 +1405,7 @@ function monthlyData(txnArr) {
   };
 }
 
-function fmt(v)  { return '$' + Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmt(v)  { const a=Math.abs(v); if(!a)return '$0'; return a>=10 ? '$'+Math.round(a).toLocaleString('en-US') : '$'+a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtK(v) { return Math.abs(v)>=1000 ? '$'+(Math.abs(v)/1000).toFixed(1)+'K' : '$'+Math.abs(v).toFixed(0); }
 
 // ════════════════════════════════════════════════
@@ -1291,6 +1431,8 @@ function showPage(name) {
     if (name === 'income'        && txns.length) renderIncomeStatement();
     if (name === 'creditflow'    && txns.length) renderCreditFlow();
     if (name === 'validate'      ) renderValidation();
+    if (name === 'budget'        ) renderBudget();
+    if (name === 'calendar'      ) renderBillCalendar();
     if (name === 'balancesheet'  ) renderBalanceSheet();
     if (name === 'financials'    ) renderFinancials();
     if (name === 'upload')                      renderUploadStatus();
@@ -1474,7 +1616,7 @@ function renderTxns() {
   if (!showXfer) src = spendable(src);
   if (acctF !== 'all') src = src.filter(t=>t.account===acctF);
   if (catF  !== 'all') src = src.filter(t=>t.category===catF);
-  if (search) src = src.filter(t=>(t.payee||'').toLowerCase().includes(search)||(t.category||'').toLowerCase().includes(search));
+  if (search) src = src.filter(t=>(t.payee||'').toLowerCase().includes(search)||(t.category||'').toLowerCase().includes(search)||(t.date||'').includes(search));
 
   // Populate filters on first run
   const acctSel = document.getElementById('txnAcct');
@@ -1486,7 +1628,12 @@ function renderTxns() {
       cats.map(c=>`<option>${c}</option>`).join('');
   }
 
-  document.getElementById('txnSub').textContent = src.length.toLocaleString()+' transactions';
+  // Apply any pending chart drill-through filter
+  applyChartDrill();
+
+  const drillLabel = window._lastDrill ? ' · filtered from chart' : '';
+  window._lastDrill = null;
+  document.getElementById('txnSub').textContent = src.length.toLocaleString()+' transactions'+drillLabel;
   const page = txnPage;
   const slice = src.slice(page*PAGE_SZ, (page+1)*PAGE_SZ);
 
@@ -1588,7 +1735,7 @@ async function diagnoseFiles() {
     try {
       const text = await readFile(f);
       const ext  = f.name.split('.').pop().toLowerCase();
-      const lines = text.replace(/^\uFEFF/,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+      const lines = text.replace(/\r/g,'\n').split('\n');
       const nonBlank = lines.filter(l=>l.trim());
 
       html += '<div style="margin-bottom:20px;">';
@@ -2172,29 +2319,45 @@ async function processFiles() {
   const btn = document.getElementById('importBtn');
   btn.textContent = 'Processing…'; btn.disabled = true;
 
+  // ── Step 1: Parse every file in the batch ────────────────────────
   const newTxns = [];
-  const acctSet = new Set();
+  let isNetWorthFile = false;
 
   for (const f of pendingFiles) {
     try {
       const text = await readFile(f);
       const ext  = f.name.split('.').pop().toLowerCase();
+
+      // Detect Quicken Net Worth export (different format — just account/balance pairs)
+      if (isNetWorthExport(text)) {
+        const nwData = parseNetWorthCSV(text);
+        const nwCount = Object.keys(nwData).length;
+        if (nwCount > 0) {
+          Object.assign(netWorthOverrides, nwData);
+          saveNetWorthOverrides();
+          toast('✓ ' + f.name + ' — Net Worth snapshot: ' + nwCount + ' account balances imported');
+          isNetWorthFile = true;
+        } else {
+          toast('⚠ ' + f.name + ' — Looks like a Net Worth file but 0 accounts found');
+        }
+        continue;
+      }
+
       let parsed = [];
       if (ext==='qif') parsed = parseQIF(text, f.name);
       else if (ext==='qfx'||ext==='ofx') parsed = parseOFX(text, f.name);
       else parsed = parseCSV(text, f.name);
 
       if (parsed.length === 0) {
-        const preview = text.replace(/^\uFEFF/,'').split('\n').slice(0,3).join(' | ').slice(0,140);
-        toast('⚠ ' + f.name + ' — 0 rows parsed. File preview: ' + preview);
-        console.warn('[Forge] 0 rows from ' + f.name);
-        console.warn('[Forge] First 4 lines:', text.split('\n').slice(0,4));
+        const preview = text.replace(/^﻿/,'').split('\n').slice(0,3).join(' | ').slice(0,140);
+        toast('⚠ ' + f.name + ' — 0 rows parsed. Preview: ' + preview);
+        console.warn('[Forge] 0 rows from', f.name);
       } else {
         const xfers  = parsed.filter(t => t.isTransfer).length;
         const spndbl = parsed.length - xfers;
         const accts  = [...new Set(parsed.map(t => t.account))];
-        parsed.forEach(t => { acctSet.add(t.account); newTxns.push(t); });
-        toast('✓ ' + f.name + ' — ' + parsed.length + ' txns (' + spndbl + ' spendable, ' + xfers + ' transfers, ' + accts.length + ' accounts)');
+        parsed.forEach(t => newTxns.push(t));
+        toast('✓ ' + f.name + ' — ' + parsed.length + ' rows (' + spndbl + ' spendable, ' + xfers + ' transfers, ' + accts.length + ' accounts)');
       }
     } catch(e) {
       console.error('[Forge] parse error', f.name, e);
@@ -2202,28 +2365,78 @@ async function processFiles() {
     }
   }
 
-  // HARD REPLACE — wipe everything first
-  txns     = [];
-  accounts = [];
+  // If only Net Worth files were uploaded, refresh balance sheet and stop
+  if (isNetWorthFile && newTxns.length === 0) {
+    pendingFiles = [];
+    renderFileList();
+    document.getElementById('importActions').style.display = 'none';
+    btn.textContent = 'Begin Forging →'; btn.disabled = false;
+    renderUploadStatus();
+    toast('✓ Net Worth balances saved — Balance Sheet updated');
+    setTimeout(() => showPage('balancesheet'), 600);
+    return;
+  }
+
+  if (newTxns.length === 0) {
+    pendingFiles = [];
+    renderFileList();
+    document.getElementById('importActions').style.display = 'none';
+    btn.textContent = 'Begin Forging →'; btn.disabled = false;
+    return;
+  }
+
+  // ── Step 2: This is real data — NEVER touch demo storage ─────────
   isDemoMode = false;
-  try { localStorage.removeItem(DB_KEY); } catch(e) {}
 
-  // Dedup within this batch
-  const seen = new Set();
-  txns = newTxns.filter(t => {
-    const k = `${t.date}|${t.payee}|${t.amount}|${t.account}`;
-    return seen.has(k) ? false : (seen.add(k), true);
-  }).sort((a,b) => b.date.localeCompare(a.date));
+  // ── Step 3: Build dedup key set from existing prod transactions ───
+  const existingKeys = new Set(txns.map(t => t.date+'|'+t.payee+'|'+t.amount+'|'+t.account));
+  const beforeCount  = txns.length;
 
-  accounts = [...acctSet].sort();
-  // Classify each account type
-  acctMeta = {};
-  accounts.forEach(a => {
-    const type = detectAcctType(a);
-    acctMeta[a] = { type, isCreditCard: type === 'credit' };
+  // ── Step 4: Dedup new batch against itself AND existing data ──────
+  let added = 0, duped = 0, nearDuped = 0;
+  const nearKeyMap = {};  // date|amount → [accounts] for near-dup detection
+
+  // First pass: dedup within the new batch
+  const batchSeen = new Set();
+  const dedupedNew = newTxns.filter(t => {
+    const k = t.date+'|'+t.payee+'|'+t.amount+'|'+t.account;
+    if (batchSeen.has(k)) { duped++; return false; }
+    batchSeen.add(k);
+    return true;
   });
+
+  // Second pass: dedup against existing prod data, collect near-dups for warning
+  const toAdd = [];
+  dedupedNew.forEach(t => {
+    const k = t.date+'|'+t.payee+'|'+t.amount+'|'+t.account;
+    if (existingKeys.has(k)) { duped++; return; }
+    // Near-dup check: same date + amount, different account
+    const nk = t.date+'|'+Math.abs(t.amount).toFixed(2);
+    if (!nearKeyMap[nk]) nearKeyMap[nk] = [];
+    nearKeyMap[nk].push(t.account);
+    toAdd.push(t);
+    added++;
+  });
+
+  // Count near-dups (same date+amount across different accounts — could be CC + checking payment)
+  const nearDupWarnings = Object.entries(nearKeyMap)
+    .filter(([,accts]) => accts.length > 1 && new Set(accts).size > 1)
+    .length;
+
+  // ── Step 5: Merge and sort ────────────────────────────────────────
+  txns = [...txns, ...toAdd].sort((a,b) => b.date.localeCompare(a.date));
+
+  // ── Step 6: Rebuild accounts from merged set ──────────────────────
+  const acctSet = new Set(txns.map(t => t.account));
+  accounts = [...acctSet].sort();
+  accounts.forEach(a => {
+    if (!acctMeta[a]) acctMeta[a] = { type: detectAcctType(a), isCreditCard: isCreditAcct(a) };
+  });
+
+  // ── Step 7: Save to PROD_KEY only ────────────────────────────────
   saveData();
-  console.log('[Forge] Data saved. txns:', txns.length, 'accounts:', accounts.length);
+
+  // ── Step 8: Report ────────────────────────────────────────────────
   pendingFiles = [];
   renderFileList();
   document.getElementById('importActions').style.display = 'none';
@@ -2231,10 +2444,46 @@ async function processFiles() {
 
   updateHeader();
   renderUploadStatus();
+
   const spCount = spendable(txns).length;
-  console.log('[Forge] Import complete. txns:', txns.length, 'spendable:', spCount, 'accounts:', accounts.length);
-  toast('✓ ' + spCount.toLocaleString() + ' spendable transactions loaded across ' + accounts.length + ' accounts');
+  let msg = '✓ ' + added.toLocaleString() + ' new transactions added';
+  if (duped > 0)           msg += ' · ' + duped + ' duplicates skipped';
+  if (nearDupWarnings > 0) msg += ' · ⚠ ' + nearDupWarnings + ' near-duplicates (review in Validation)';
+  msg += ' · ' + spCount.toLocaleString() + ' spendable total across ' + accounts.length + ' accounts';
+  toast(msg);
+
+  console.log('[Forge] Import:', added, 'added,', duped, 'duped,', nearDupWarnings, 'near-dups. Total txns:', txns.length);
   setTimeout(() => showPage('dashboard'), 800);
+}
+
+// Detect if a CSV looks like a Quicken Net Worth export
+// (two columns: account name + balance, no transaction fields)
+// Dedup key used for NR flagging — same as transaction dedup key
+function txnKey(t) { return t.date+'|'+t.payee+'|'+t.amount+'|'+t.account; }
+
+function toggleNonRecurring(key) {
+  if (nonRecurringIds.has(key)) nonRecurringIds.delete(key);
+  else nonRecurringIds.add(key);
+  saveSettings();
+  // Re-render whichever income statement or budget page is visible
+  if (document.getElementById('page-income').style.display !== 'none') renderIncomeStatement();
+  if (document.getElementById('page-budget').style.display !== 'none') renderBudget();
+}
+
+function isNetWorthExport(text) {
+  // Quicken Net Worth / Property & Debt export detection.
+  // These files have a header mentioning "Net Worth" and 2-column rows (account, balance).
+  const top = text.slice(0, 500).toLowerCase();
+  if (top.includes('net worth') || top.includes('property & debt')) return true;
+  // Heuristic: check first few data lines for 2-col account+balance pattern (no date col)
+  const lines2 = text.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 8);
+  for (const l of lines2) {
+    const cols = csvRow(l);
+    if (cols.length === 2 && !cols[0].match(/^\d{1,2}[/\-]/) && !isNaN(parseAmt(cols[1]))) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function readFile(f) {
@@ -2482,36 +2731,117 @@ function parseOFX(text, fname) {
 // ════════════════════════════════════════════════
 function saveData() {
   try {
-    localStorage.setItem(DB_KEY, JSON.stringify({ txns, accounts, acctMeta, isDemoMode, surplusTargets, savedAt:Date.now() }));
-  } catch(e) { toast('Storage full — data not saved'); }
+    const key = isDemoMode ? DEMO_KEY : PROD_KEY;
+    localStorage.setItem(key, JSON.stringify({
+      txns, accounts, acctMeta, isDemoMode, surplusTargets, savedAt: Date.now()
+    }));
+    // Settings are stored separately so they survive a data wipe
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      ccSettings, budgetTargets, nonRecurringIds: [...nonRecurringIds]
+    }));
+  } catch(e) { toast('⚠ Storage full — try clearing old data'); }
 }
 
-function loadData() {
+function loadData(preferDemo) {
+  // Never mix prod and demo — load whichever key matches intent
+  const tryKeys = preferDemo
+    ? [DEMO_KEY]
+    : [PROD_KEY, DB_KEY];  // DB_KEY = legacy migration path
+
+  for (const key of tryKeys) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const d = JSON.parse(raw);
+      if (!d.txns || !d.txns.length) continue;
+      txns           = d.txns           || [];
+      accounts       = d.accounts       || [];
+      acctMeta       = d.acctMeta       || {};
+      isDemoMode     = !!d.isDemoMode;
+      surplusTargets = d.surplusTargets || { emergency:0, investments:0, college:0, other:0 };
+      netWorthOverrides = loadNetWorthOverrides();
+      loadSettings();
+      accounts.forEach(a => {
+        if (!acctMeta[a]) acctMeta[a] = { type: detectAcctType(a), isCreditCard: isCreditAcct(a) };
+      });
+      // Migrate legacy key → prod key
+      if (key === DB_KEY && !isDemoMode) { saveData(); try { localStorage.removeItem(DB_KEY); } catch(e) {} }
+      return true;
+    } catch(e) { continue; }
+  }
+  return false;
+}
+
+// ── Net Worth override helpers ───────────────────────────────────
+// Quicken Net Worth export gives true market value for investment accounts.
+// These override transaction-computed balances on the balance sheet.
+function loadSettings() {
   try {
-    const raw = localStorage.getItem(DB_KEY);
-    if (!raw) return false;
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return;
     const d = JSON.parse(raw);
-    txns           = d.txns           || [];
-    accounts       = d.accounts       || [];
-    acctMeta       = d.acctMeta       || {};
-    isDemoMode     = !!d.isDemoMode;
-    surplusTargets = d.surplusTargets  || { emergency:0, investments:0, college:0, other:0 };
-    // Re-derive acctMeta for any accounts not already classified
-    accounts.forEach(a => {
-      if (!acctMeta[a]) {
-        const type = detectAcctType(a);
-        acctMeta[a] = { type, isCreditCard: type === 'credit' };
-      }
-    });
-    return txns.length > 0;
-  } catch(e) { return false; }
+    ccSettings      = d.ccSettings      || {};
+    budgetTargets   = d.budgetTargets   || {};
+    nonRecurringIds = new Set(d.nonRecurringIds || []);
+  } catch(e) {}
+}
+function saveSettings() {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      ccSettings, budgetTargets, nonRecurringIds: [...nonRecurringIds]
+    }));
+  } catch(e) {}
+}
+function saveNetWorthOverrides() {
+  try { localStorage.setItem(NW_KEY, JSON.stringify(netWorthOverrides)); } catch(e) {}
+}
+function loadNetWorthOverrides() {
+  try {
+    const raw = localStorage.getItem(NW_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+function clearNetWorthOverrides() {
+  netWorthOverrides = {};
+  try { localStorage.removeItem(NW_KEY); } catch(e) {}
+}
+
+// ── Parse Quicken Net Worth / Property & Debt CSV ────────────────
+// Format: Account Name, Balance (two columns, no header or with header)
+// Quicken exports this as a simple snapshot — one row per account.
+function parseNetWorthCSV(text) {
+  const clean = text.replace(/\r/g,'\n');
+  const lines = clean.split('\n');
+  const results = {};
+  let asOf = new Date().toISOString().slice(0,10);
+
+  // Look for a date in the header like "Net Worth as of 3/29/2026"
+  for (const l of lines.slice(0, 5)) {
+    const dm = l.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (dm) { asOf = dm[3]+'-'+dm[1].padStart(2,'0')+'-'+dm[2].padStart(2,'0'); break; }
+  }
+
+  for (const l of lines) {
+    const parts = csvRow(l);
+    if (parts.length < 2) continue;
+    const name = (parts[0]||'').replace(/^["\s]+|["\s]+$/g,'').trim();
+    if (!name || /^total/i.test(name) || name.toLowerCase() === 'account') continue;
+    const amt = parseAmt(parts[1]);
+    if (isNaN(amt)) continue;
+    results[name] = { value: amt, date: asOf, source: 'quicken-networth' };
+  }
+  return results;
 }
 
 function clearAll() {
   txns=[]; accounts=[]; acctMeta={}; isDemoMode=false;
   surplusTargets = { emergency:0, investments:0, college:0, other:0 };
+  netWorthOverrides = {};
   donutDash=null; donutCat=null;
-  try { localStorage.removeItem(DB_KEY); } catch(e) {}
+  try { localStorage.removeItem(PROD_KEY); } catch(e) {}
+  try { localStorage.removeItem(DEMO_KEY); } catch(e) {}
+  try { localStorage.removeItem(DB_KEY);   } catch(e) {}
+  try { localStorage.removeItem(NW_KEY);   } catch(e) {}
   document.getElementById('clearBtn').style.display='none';
   document.getElementById('hdrStat').innerHTML='';
   // Reset filter selects
@@ -2533,7 +2863,9 @@ function toggleDemo() {
 }
 
 function loadDemo() {
-  txns=[]; accounts=[]; isDemoMode=true;
+  // Demo always loads fresh from hardcoded data into DEMO_KEY
+  // NEVER touches PROD_KEY
+  txns=[]; accounts=[]; isDemoMode=true; netWorthOverrides={};
   const accts=['Chase Checking','Chase Savings','Chase Sapphire (CC)','Amex Blue Cash (CC)','Fidelity 401k'];
   const cats =['Groceries','Dining','Shopping','Housing','Transportation','Healthcare','Utilities','Savings','Education','Entertainment'];
   const payees={
@@ -2733,7 +3065,7 @@ const QUICKEN_CAT_MAP = {
   'dues':                          'other',
   'tax:fed':                       'other',
   'tax:state':                     'other',
-  '--split--':                     'other',
+  // '--split--' intentionally NOT in this map — handled by special case in classifyTxn
   'transfer':                      'other',
 };
 
@@ -2996,7 +3328,9 @@ function renderIncomeStatement() {
   }
   function chevron(open, id, fn) {
     const rot = open ? '0deg' : '-90deg';
-    return '<span data-bkid="'+id+'" data-fn="'+fn+'" class="'+(fn==='toggleSection'?'is-sec-row':'is-bk-row')+'" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;cursor:pointer;border-radius:4px;transition:transform .2s;flex-shrink:0;transform:rotate('+rot+');">'
+    // Use data-sid for section toggles, data-bkid for bucket toggles
+    const attr = fn === 'toggleSection' ? 'data-sid="'+id+'"' : 'data-bkid="'+id+'"';
+    return '<span '+attr+' class="'+(fn==='toggleSection'?'is-sec-row':'is-bk-row')+'" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;cursor:pointer;border-radius:4px;transition:transform .2s;flex-shrink:0;transform:rotate('+rot+');">'
       + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></span>';
   }
   function fmtTxnAmt(t) {
@@ -3171,6 +3505,25 @@ function renderIncomeStatement() {
   }
 
   el.innerHTML = out;
+
+  // Single delegated click handler — only add once, flag on element
+  if (el.dataset.listenerBound) return;
+  el.dataset.listenerBound = '1';
+  el.addEventListener('click', function handler(e) {
+    let node = e.target;
+    while (node && node !== el) {
+      if (node.dataset && node.dataset.sid) {
+        toggleSection(node.dataset.sid);
+        return;
+      }
+      if (node.dataset && node.dataset.bkid) {
+        e.stopPropagation();
+        toggleBucket(node.dataset.bkid);
+        return;
+      }
+      node = node.parentElement;
+    }
+  });
 }
 
 
@@ -3847,11 +4200,591 @@ function renderFinancials() {
   el.innerHTML = out;
 }
 
+
+// ════════════════════════════════════════════════════════════════
+// 1. NON-RECURRING REVENUE FLAGGING
+// Auto-detect and manually tag income as one-time vs recurring.
+// Flagged txns are excluded from run-rate and forward projections.
+// ════════════════════════════════════════════════════════════════
+
+// Heuristics to auto-suggest NR income
+function autoDetectNonRecurring() {
+  const sp = spendable(txns);
+  const incTxns = sp.filter(t => t.amount > 0);
+  if (!incTxns.length) return;
+
+  // Median monthly income (recurring baseline)
+  const byMonth = {};
+  incTxns.forEach(t => {
+    const k = t.date.slice(0,7);
+    byMonth[k] = (byMonth[k]||0) + t.amount;
+  });
+  const monthTotals = Object.values(byMonth).sort((a,b)=>a-b);
+  const median = monthTotals[Math.floor(monthTotals.length/2)] || 1;
+
+  // Payee frequency map
+  const payeeFreq = {};
+  incTxns.forEach(t => { payeeFreq[t.payee] = (payeeFreq[t.payee]||0) + 1; });
+
+  let flagged = 0;
+  incTxns.forEach(t => {
+    const key = txnKey(t);
+    if (nonRecurringIds.has(key)) return; // already flagged
+
+    const isLarge      = t.amount > median * 0.6;   // >60% of median monthly income in one txn
+    const isRare       = payeeFreq[t.payee] <= 2;   // payee appears rarely
+    const isBonus      = /bonus|gift|award|settlement|refund|inheritance|tax ref/i.test(t.payee+t.category);
+    const isInterest   = /interest|dividend|_divinc|_rlzdgain/i.test(t.category);
+
+    if ((isLarge && isRare) || isBonus) {
+      nonRecurringIds.add(key);
+      flagged++;
+    }
+    // Interest/dividends from investment accounts: flag as NR for run-rate purposes
+    if (isInterest && t.amount > 500) {
+      nonRecurringIds.add(key);
+      flagged++;
+    }
+  });
+  if (flagged > 0) saveSettings();
+  return flagged;
+}
+
+// Recurring income monthly average (excludes NR flagged txns)
+function recurringIncomeAvg(months) {
+  const sp = spendable(txns);
+  const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - (months||12));
+  const filtered = sp.filter(t => t.amount > 0 && new Date(t.date) >= cutoff && !nonRecurringIds.has(txnKey(t)));
+  const byMonth = {};
+  filtered.forEach(t => { const k=t.date.slice(0,7); byMonth[k]=(byMonth[k]||0)+t.amount; });
+  const vals = Object.values(byMonth);
+  return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+}
+
+// ════════════════════════════════════════════════════════════════
+// 2. BUDGET VS ACTUAL
+// Monthly budget targets per bucket, suggested from trailing 12mo
+// seasonality-adjusted, shown vs current month actuals.
+// ════════════════════════════════════════════════════════════════
+
+// Suggest budget based on trailing 12mo with seasonality
+function suggestBudget() {
+  const sp = spendable(txns);
+  const now = new Date();
+
+  // Get the same calendar month across all available years
+  const thisMonth = now.getMonth(); // 0-indexed
+
+  // For each bucket, compute: 12mo average, and same-month average (seasonality)
+  const bucketMonthly = {};  // { bucket: { month: [amounts] } }
+
+  sp.filter(t => t.amount < 0).forEach(t => {
+    const bucket = classifyTxn(t);
+    const d = new Date(t.date);
+    const mo = d.getMonth();
+    const yr = d.getFullYear();
+    const k = yr + '-' + String(mo).padStart(2,'0');
+    if (!bucketMonthly[bucket]) bucketMonthly[bucket] = {};
+    if (!bucketMonthly[bucket][k]) bucketMonthly[bucket][k] = 0;
+    bucketMonthly[bucket][k] += Math.abs(t.amount);
+  });
+
+  const newTargets = {};
+  Object.entries(bucketMonthly).forEach(([bucket, months]) => {
+    const allVals = Object.values(months);
+    if (!allVals.length) return;
+
+    // 12mo trailing average
+    const avg12 = allVals.reduce((a,b)=>a+b,0) / allVals.length;
+
+    // Same-month values (seasonality signal)
+    const sameMoVals = Object.entries(months)
+      .filter(([k]) => parseInt(k.split('-')[1]) === thisMonth)
+      .map(([,v]) => v);
+
+    // Weighted: 60% 12mo avg + 40% same-month historical if we have data
+    const suggestion = sameMoVals.length > 0
+      ? avg12 * 0.6 + (sameMoVals.reduce((a,b)=>a+b,0)/sameMoVals.length) * 0.4
+      : avg12;
+
+    // Round to nearest $25
+    newTargets[bucket] = Math.round(suggestion / 25) * 25;
+  });
+
+  // Merge with existing (don't overwrite manually set ones? Actually replace all)
+  budgetTargets = newTargets;
+  saveSettings();
+  renderBudget();
+  toast('✓ Budget suggested from trailing 12-month run rate with seasonality adjustment');
+}
+
+function renderBudget() {
+  const el = document.getElementById('budgetContent');
+  if (!el) return;
+
+  if (!txns.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">No data loaded.</div>';
+    return;
+  }
+
+  // Month selector
+  const moSel = document.getElementById('budgetMonth');
+  const sp    = spendable(txns);
+  const months = [...new Set(sp.map(t=>t.date.slice(0,7)))].sort().reverse();
+  if (moSel && moSel.options.length === 0) {
+    months.forEach(m => {
+      const [yr,mo] = m.split('-');
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = new Date(yr,parseInt(mo)-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      moSel.appendChild(opt);
+    });
+  }
+  const selMonth = (moSel && moSel.value) || months[0];
+  if (!selMonth) return;
+  const [yr,mo] = selMonth.split('-');
+  const monthName = new Date(yr,parseInt(mo)-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const daysInMonth = new Date(yr, parseInt(mo), 0).getDate();
+  const today = new Date();
+  const isCurrentMonth = selMonth === today.toISOString().slice(0,7);
+  const daysPassed = isCurrentMonth ? today.getDate() : daysInMonth;
+  const pctMonthDone = daysPassed / daysInMonth;
+
+  // Actuals for selected month
+  const monthTxns = sp.filter(t => t.date.startsWith(selMonth) && t.amount < 0);
+  const actuals = {};
+  monthTxns.forEach(t => {
+    const b = classifyTxn(t);
+    actuals[b] = (actuals[b]||0) + Math.abs(t.amount);
+  });
+
+  // Monthly recurring income (for budget context)
+  const monthInc = sp.filter(t => t.date.startsWith(selMonth) && t.amount > 0
+    && !nonRecurringIds.has(txnKey(t))).reduce((s,t)=>s+t.amount,0);
+  const nrInc = sp.filter(t => t.date.startsWith(selMonth) && t.amount > 0
+    && nonRecurringIds.has(txnKey(t))).reduce((s,t)=>s+t.amount,0);
+
+  // Total budget vs actual
+  const totalBudget = Object.values(budgetTargets).reduce((a,b)=>a+b,0);
+  const totalActual = Object.values(actuals).reduce((a,b)=>a+b,0);
+  const projectedTotal = isCurrentMonth && pctMonthDone > 0 ? totalActual / pctMonthDone : totalActual;
+
+  let out = '';
+
+  // Header KPIs
+  out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;">';
+  const surplus = monthInc - totalActual;
+  const projSurplus = monthInc - projectedTotal;
+  [
+    ['Recurring Income', fmt(monthInc), 'var(--positive)', nrInc>0?'+ '+fmt(nrInc)+' one-time':'no non-recurring items'],
+    ['Spent So Far', fmt(totalActual), 'var(--gold)', daysPassed+' of '+daysInMonth+' days ('+Math.round(pctMonthDone*100)+'%)'],
+    ['Projected Total', fmt(projectedTotal), projectedTotal>totalBudget?'var(--negative)':'var(--ink)', 'at current pace'],
+    ['Budget Remaining', fmt(Math.max(0,totalBudget-totalActual)), surplus>=0?'var(--positive)':'var(--negative)', totalBudget?'of '+fmt(totalBudget)+' budget':'no budget set — click Suggest'],
+  ].forEach(([l,v,c,s]) => {
+    out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;">';
+    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">'+l+'</div>';
+    out += '<div style="font-size:22px;font-weight:700;color:'+c+';">'+v+'</div>';
+    out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+s+'</div></div>';
+  });
+  out += '</div>';
+
+  // Pace indicator
+  if (isCurrentMonth && totalBudget > 0) {
+    const paceOk = totalActual <= totalBudget * pctMonthDone;
+    out += '<div style="background:'+(paceOk?'rgba(45,212,191,.05)':'rgba(248,113,113,.05)')+';border:1px solid '+(paceOk?'rgba(45,212,191,.15)':'rgba(248,113,113,.15)')+';border-radius:var(--r-md);padding:10px 16px;margin-bottom:10px;font-size:12px;color:var(--ink3);">';
+    out += (paceOk?'✓ On pace — ':'⚠ Running hot — ');
+    out += 'At day '+daysPassed+' of '+daysInMonth+', you&#39;ve used '+fmt(totalActual)+' of your '+fmt(totalBudget)+' monthly budget. ';
+    const expectedByNow = totalBudget * pctMonthDone;
+    const diff = Math.abs(totalActual - expectedByNow);
+    out += paceOk
+      ? '<strong style="color:var(--positive);">'+fmt(diff)+'</strong> under expected pace.'
+      : '<strong style="color:var(--negative);">'+fmt(diff)+'</strong> over expected pace. Projected month-end: <strong style="color:var(--negative);">'+fmt(projectedTotal)+'</strong>.';
+    out += '</div>';
+  }
+
+  // Category table
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
+
+  // Header
+  out += '<div style="display:grid;grid-template-columns:160px 1fr 90px 90px 90px 90px;gap:0;padding:9px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
+  ['Category','Progress','Budget','Spent','Projected','Status'].forEach((h,i) => {
+    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);'+(i>1?'text-align:right;':'')+'">'+h+'</div>';
+  });
+  out += '</div>';
+
+  // Rows — include all buckets that have either a budget or actual spending
+  const BUCKET_ORDER = ['paycheck','other_inc','auto_save','mortgage','car','education',
+    'insurance','childcare','electric','gas_util','water','internet','cell',
+    'groceries','gas_car','transit','healthcare','restaurants','entertainment',
+    'household','personal','clothing','travel','subscriptions','gifts','other'];
+
+  const SECTION_COLORS = {
+    paycheck:'var(--positive)', other_inc:'var(--positive)', auto_save:'#34D399',
+    mortgage:'#60A5FA', car:'#60A5FA', education:'#60A5FA', insurance:'#60A5FA', childcare:'#60A5FA',
+    electric:'#A78BFA', gas_util:'#A78BFA', water:'#A78BFA', internet:'#A78BFA', cell:'#A78BFA',
+    groceries:'var(--gold)', gas_car:'var(--gold)', transit:'var(--gold)', healthcare:'var(--gold)',
+    restaurants:'#E879F9', entertainment:'#E879F9', household:'#E879F9', personal:'#E879F9',
+    clothing:'#E879F9', travel:'#E879F9', subscriptions:'#E879F9', gifts:'#E879F9',
+    other:'var(--ink4)',
+  };
+
+  BUCKET_ORDER.forEach(bk => {
+    if (bk === 'paycheck' || bk === 'other_inc') return; // income not in expense budget
+    const budget  = budgetTargets[bk] || 0;
+    const actual  = actuals[bk] || 0;
+    if (budget === 0 && actual === 0) return;
+
+    const meta     = BUCKET_META[bk] || { label:bk, icon:'·' };
+    const color    = SECTION_COLORS[bk] || 'var(--gold)';
+    const proj     = isCurrentMonth && pctMonthDone > 0 ? actual / pctMonthDone : actual;
+    const pct      = budget > 0 ? Math.min(actual/budget, 1) : 0;
+    const over     = budget > 0 && actual > budget;
+    const nearOver = budget > 0 && actual > budget * 0.85 && !over;
+    const barColor = over ? 'var(--negative)' : nearOver ? 'var(--gold)' : color;
+    const status   = !budget ? '-' : over ? 'Over' : nearOver ? 'Near' : 'OK';
+    const statColor= !budget ? 'var(--ink4)' : over ? 'var(--negative)' : nearOver ? 'var(--gold)' : 'var(--positive)';
+
+    out += '<div style="display:grid;grid-template-columns:160px 1fr 90px 90px 90px 90px;gap:0;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;">';
+
+    // Category name
+    out += '<div style="display:flex;align-items:center;gap:6px;font-size:12px;">';
+    out += '<span>'+meta.icon+'</span><span>'+meta.label+'</span></div>';
+
+    // Progress bar + budget edit
+    out += '<div style="padding:0 12px;">';
+    if (budget > 0) {
+      out += '<div style="height:6px;background:var(--lift);border-radius:3px;overflow:hidden;">';
+      out += '<div style="height:100%;width:'+Math.min(pct*100,100).toFixed(1)+'%;background:'+barColor+';border-radius:3px;transition:width .3s;"></div></div>';
+      out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">'+Math.round(pct*100)+'% of budget';
+      if (isCurrentMonth) out += ' · pace: '+(pctMonthDone>0?Math.round(actual/proj*100):'—')+'%';
+      out += '</div>';
+    } else {
+      out += '<div style="font-size:10px;color:var(--ink4);">no target set</div>';
+    }
+    out += '</div>';
+
+    // Budget (editable)
+    out += '<div style="text-align:right;">';
+    out += '<input type="number" value="'+(budget||'')+'" placeholder="—" min="0" step="25" data-bucket="'+bk+'"'
+      + ' style="width:75px;background:var(--lift);border:1px solid var(--line);border-radius:4px;padding:3px 6px;font-family:var(--font-m);font-size:11px;color:var(--ink);text-align:right;"'
+      + ' onchange="budgetTargets[this.dataset.bucket]=parseFloat(this.value)||0;saveSettings();renderBudget();">';
+    out += '</div>';
+
+    // Actual
+    out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;color:'+(over?'var(--negative)':'var(--ink)')+'">';
+    out += actual>0 ? fmt(actual) : '—';
+    out += '</div>';
+
+    // Projected
+    out += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">';
+    out += isCurrentMonth && actual>0 ? fmt(proj) : '—';
+    out += '</div>';
+
+    // Status
+    out += '<div style="text-align:right;font-size:11px;font-weight:600;color:'+statColor+';">'+status+'</div>';
+
+    out += '</div>';
+  });
+
+  // Totals row
+  out += '<div style="display:grid;grid-template-columns:160px 1fr 90px 90px 90px 90px;gap:0;padding:10px 16px;background:var(--lift);border-top:2px solid var(--line);">';
+  out += '<div style="font-size:12px;font-weight:700;">Total Expenses</div>';
+  out += '<div></div>';
+  out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;">'+fmt(totalBudget)+'</div>';
+  out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;color:'+(totalActual>totalBudget&&totalBudget>0?'var(--negative)':'var(--ink)')+';">'+fmt(totalActual)+'</div>';
+  out += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">'+(isCurrentMonth&&totalActual>0?fmt(projectedTotal):'—')+'</div>';
+  out += '<div></div></div>';
+
+  out += '</div>'; // table
+
+  // NR income section (if any in this month)
+  const nrTxns = sp.filter(t => t.date.startsWith(selMonth) && t.amount > 0 && nonRecurringIds.has(txnKey(t)));
+  if (nrTxns.length || sp.filter(t=>t.date.startsWith(selMonth)&&t.amount>0).length > 0) {
+    const allIncTxns = sp.filter(t => t.date.startsWith(selMonth) && t.amount > 0);
+    out += '<div style="margin-top:10px;background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
+    out += '<div style="padding:10px 16px;background:var(--lift);border-bottom:1px solid var(--line);font-size:12px;font-weight:600;">Income This Month · click ⭐ to flag as non-recurring</div>';
+    allIncTxns.sort((a,b)=>b.amount-a.amount).forEach(t => {
+      const key = txnKey(t);
+      const isNR = nonRecurringIds.has(key);
+      out += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid rgba(255,255,255,.04);">';
+      out += '<div style="display:flex;align-items:center;gap:10px;">';
+      const safeKey2 = (key||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+      out += '<button class="nr-toggle-btn" data-nrkey="'+safeKey2+'" style="background:none;border:none;cursor:pointer;font-size:14px;opacity:'+(isNR?'1':'.35')+';transition:opacity .2s;">'+(isNR?'\u2B50':'\u2606')+'</button>';
+      out += '<div>';
+      out += '<div style="font-size:12px;color:var(--ink2);">'+t.payee+'</div>';
+      out += '<div style="font-size:10px;color:var(--ink4);">'+t.date+' · '+t.category+' · '+t.account+'</div>';
+      out += '</div></div>';
+      out += '<div style="font-family:var(--font-m);font-size:13px;font-weight:600;color:'+(isNR?'var(--river)':'var(--positive)')+';">+'+fmt(t.amount)+'</div>';
+      out += '</div>';
+    });
+    out += '<div style="padding:8px 16px;font-size:11px;color:var(--ink4);">⭐ Non-recurring items are shown on the income statement but excluded from run-rate calculations and forward projections.</div>';
+    out += '</div>';
+  }
+
+  el.innerHTML = out;
+
+  // NR toggle buttons — event delegation
+  if (!el.dataset.nrBound) {
+    el.dataset.nrBound = '1';
+    el.addEventListener('click', function(e) {
+      const btn = e.target.closest('.nr-toggle-btn');
+      if (btn) {
+        const key = btn.dataset.nrkey.replace(/&amp;/g,'&').replace(/&quot;/g,'"');
+        toggleNonRecurring(key);
+      }
+    });
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// 3. RECURRING TRANSACTION DETECTION + BILL CALENDAR
+// Detects recurring charges, maps CC billing cycles using
+// user-configured statement close/due dates.
+// ════════════════════════════════════════════════════════════════
+
+function detectRecurring() {
+  const sp = spendable(txns);
+  const expenses = sp.filter(t => t.amount < 0);
+
+  // Group by payee — find those appearing every ~month at similar amount
+  const byPayee = {};
+  expenses.forEach(t => {
+    const k = t.payee + '|' + t.account;
+    if (!byPayee[k]) byPayee[k] = [];
+    byPayee[k].push(t);
+  });
+
+  const recurring = [];
+  Object.entries(byPayee).forEach(([key, txList]) => {
+    if (txList.length < 2) return;
+    txList.sort((a,b) => a.date.localeCompare(b.date));
+
+    // Check spacing between transactions
+    const gaps = [];
+    for (let i = 1; i < txList.length; i++) {
+      const d1 = new Date(txList[i-1].date);
+      const d2 = new Date(txList[i].date);
+      gaps.push(Math.round((d2-d1)/(1000*60*60*24)));
+    }
+    const avgGap = gaps.reduce((a,b)=>a+b,0)/gaps.length;
+    const gapStdDev = Math.sqrt(gaps.map(g=>(g-avgGap)**2).reduce((a,b)=>a+b,0)/gaps.length);
+
+    // Monthly (25-35 days avg, low variance) or weekly (5-9 days), annual (360-370)
+    const freq = avgGap >= 25 && avgGap <= 40 && gapStdDev < 8 ? 'monthly'
+               : avgGap >= 6  && avgGap <= 9  && gapStdDev < 3 ? 'weekly'
+               : avgGap >= 83 && avgGap <= 97 && gapStdDev < 10 ? 'quarterly'
+               : avgGap >= 355 && avgGap <= 375 ? 'annual'
+               : null;
+    if (!freq) return;
+
+    const amounts = txList.map(t => Math.abs(t.amount));
+    const avgAmt  = amounts.reduce((a,b)=>a+b,0)/amounts.length;
+    const amtVariance = amounts.some(a => Math.abs(a-avgAmt)/avgAmt > 0.25);
+    if (amtVariance && freq !== 'monthly') return; // variable amounts ok for monthly (utility bills)
+
+    // Predict next occurrence
+    const last = new Date(txList[txList.length-1].date);
+    const nextDate = new Date(last);
+    if (freq === 'monthly')     nextDate.setDate(nextDate.getDate() + Math.round(avgGap));
+    else if (freq === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
+    else if (freq === 'quarterly') nextDate.setDate(nextDate.getDate() + 91);
+    else if (freq === 'annual') nextDate.setDate(nextDate.getDate() + 365);
+
+    recurring.push({
+      payee:    txList[0].payee,
+      account:  txList[0].account,
+      category: txList[0].category,
+      freq,
+      avgAmt,
+      lastDate: txList[txList.length-1].date,
+      nextDate: nextDate.toISOString().slice(0,10),
+      count:    txList.length,
+      variable: amtVariance,
+    });
+  });
+
+  return recurring.sort((a,b) => a.nextDate.localeCompare(b.nextDate));
+}
+
+function renderBillCalendar() {
+  const el = document.getElementById('calendarContent');
+  if (!el) return;
+
+  if (!txns.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">No data loaded.</div>';
+    return;
+  }
+
+  const today    = new Date();
+  const todayStr = today.toISOString().slice(0,10);
+  const in30     = new Date(today); in30.setDate(in30.getDate()+30);
+  const in30Str  = in30.toISOString().slice(0,10);
+
+  const recurring = detectRecurring();
+  const upcoming  = recurring.filter(r => r.nextDate >= todayStr && r.nextDate <= in30Str);
+  const ccAccts   = Object.entries(acctMeta).filter(([,m])=>m.isCreditCard).map(([a])=>a);
+
+  let out = '';
+
+  // ── CC Settings Panel ─────────────────────────────────────────
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px;">';
+  out += '<div style="padding:12px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
+  out += '<div style="font-size:13px;font-weight:600;color:var(--ink2);">Credit Card Billing Cycles</div>';
+  out += '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">Set statement close and due dates for accurate cycle tracking and projections. Changes update the Credit Card Flow page.</div>';
+  out += '</div>';
+
+  if (!ccAccts.length) {
+    out += '<div style="padding:16px;font-size:12px;color:var(--ink4);">No credit card accounts detected. Import Quicken data that includes CC accounts.</div>';
+  } else {
+    out += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0;">';
+    ccAccts.forEach((acct, idx) => {
+      const cfg = ccSettings[acct] || { closeDay:1, dueDay:25 };
+      const border = idx%2===0 ? '1px solid rgba(255,255,255,.04)' : 'none';
+      out += '<div style="padding:14px 18px;border-right:'+border+';border-bottom:1px solid rgba(255,255,255,.04);">';
+      out += '<div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:10px;">💳 '+acct+'</div>';
+      out += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+
+      // Statement close day
+      out += '<div>';
+      out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Statement Closes</div>';
+      out += '<div style="display:flex;align-items:center;gap:6px;">';
+      out += '<input type="number" min="1" max="31" value="'+(cfg.closeDay||1)+'" data-acct="'+acct+'" data-field="closeDay"'
+        + ' style="width:55px;background:var(--lift);border:1px solid var(--line);border-radius:4px;padding:4px 8px;font-family:var(--font-m);font-size:13px;color:var(--ink);text-align:center;"'
+        + ' onchange="updateCCSetting(this)">';
+      out += '<span style="font-size:11px;color:var(--ink4);">of month</span></div></div>';
+
+      // Payment due day
+      out += '<div>';
+      out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Payment Due</div>';
+      out += '<div style="display:flex;align-items:center;gap:6px;">';
+      out += '<input type="number" min="1" max="31" value="'+(cfg.dueDay||25)+'" data-acct="'+acct+'" data-field="dueDay"'
+        + ' style="width:55px;background:var(--lift);border:1px solid var(--line);border-radius:4px;padding:4px 8px;font-family:var(--font-m);font-size:13px;color:var(--ink);text-align:center;"'
+        + ' onchange="updateCCSetting(this)">';
+      out += '<span style="font-size:11px;color:var(--ink4);">of month</span></div></div>';
+
+      out += '</div>'; // grid
+
+      // Current cycle summary
+      const closeDay = cfg.closeDay || 1;
+      const dueDay   = cfg.dueDay || 25;
+      const thisClose = new Date(today.getFullYear(), today.getMonth(), closeDay);
+      if (thisClose < today) thisClose.setMonth(thisClose.getMonth()+1);
+      const cycleStart = new Date(thisClose); cycleStart.setMonth(cycleStart.getMonth()-1);
+      const daysInCycle = Math.round((today-cycleStart)/(1000*60*60*24));
+      const cycleLenDays = Math.round((thisClose-cycleStart)/(1000*60*60*24));
+
+      // Current cycle charges
+      const cycleStartStr = cycleStart.toISOString().slice(0,10);
+      const cycleTxns = txns.filter(t =>
+        t.account === acct && t.date >= cycleStartStr && t.date <= todayStr
+        && t.amount < 0 && !isTransfer(t)
+      );
+      const cycleAmt = cycleTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
+      const dailyVel = daysInCycle > 0 ? cycleAmt / daysInCycle : 0;
+      const daysLeft = Math.max(0, Math.round((thisClose-today)/(1000*60*60*24)));
+      const projBal  = cycleAmt + dailyVel * daysLeft;
+      const dueDateStr = new Date(today.getFullYear(), today.getMonth(), dueDay).toISOString().slice(0,10);
+
+      out += '<div style="margin-top:10px;padding:8px 10px;background:var(--lift);border-radius:var(--r-sm);font-size:11px;color:var(--ink3);line-height:1.9;">';
+      out += '📅 Cycle: <strong>'+cycleStartStr+'</strong> → <strong>'+thisClose.toISOString().slice(0,10)+'</strong><br>';
+      out += '💳 '+daysInCycle+'d into cycle · '+daysLeft+'d remaining<br>';
+      out += '📊 Charges so far: <strong style="color:var(--gold);">'+fmt(cycleAmt)+'</strong> · '+fmt(dailyVel)+'/day<br>';
+      out += '🎯 Projected statement: <strong style="color:'+(projBal>1000?'var(--negative)':'var(--ink)')+'">'+fmt(projBal)+'</strong><br>';
+      out += '📆 Payment due: <strong>'+dueDateStr+'</strong>';
+      out += '</div>';
+
+      out += '</div>'; // card
+    });
+    out += '</div>'; // grid
+  }
+  out += '</div>'; // CC section
+
+  // ── Upcoming 30 Days Calendar ─────────────────────────────────
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px;">';
+  out += '<div style="padding:12px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
+  out += '<div style="font-size:13px;font-weight:600;color:var(--ink2);">Upcoming 30 Days</div>';
+  out += '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">Predicted next occurrences based on historical transaction patterns</div>';
+  out += '</div>';
+
+  if (!upcoming.length) {
+    out += '<div style="padding:16px;font-size:12px;color:var(--ink4);">No recurring transactions predicted in the next 30 days. More data may be needed.</div>';
+  } else {
+    const totalUpcoming = upcoming.reduce((s,r)=>s+r.avgAmt,0);
+    out += '<div style="padding:10px 16px;font-size:12px;color:var(--ink3);border-bottom:1px solid var(--line);">';
+    out += '<strong style="color:var(--negative);">'+fmt(totalUpcoming)+'</strong> expected in the next 30 days from '+upcoming.length+' recurring transactions.';
+    out += '</div>';
+    out += '<div style="overflow-y:auto;max-height:400px;">';
+    upcoming.forEach(r => {
+      const d = new Date(r.nextDate);
+      const daysAway = Math.round((d-today)/(1000*60*60*24));
+      const urgColor = daysAway <= 5 ? 'var(--negative)' : daysAway <= 10 ? 'var(--gold)' : 'var(--ink3)';
+      out += '<div style="display:grid;grid-template-columns:80px 1fr auto auto;gap:0;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;">';
+      out += '<div style="font-family:var(--font-m);font-size:10px;color:'+urgColor+';">'+r.nextDate+'</div>';
+      out += '<div>';
+      out += '<div style="font-size:12px;color:var(--ink2);">'+r.payee+'</div>';
+      out += '<div style="font-size:10px;color:var(--ink4);">'+r.account+' · '+r.freq+(r.variable?' · variable amt':'')+'</div>';
+      out += '</div>';
+      out += '<div style="font-size:11px;color:'+urgColor+';padding:0 12px;">'+(daysAway===0?'Today':daysAway===1?'Tomorrow':'in '+daysAway+'d')+'</div>';
+      out += '<div style="font-family:var(--font-m);font-size:13px;font-weight:600;color:var(--negative);">−'+fmt(r.avgAmt)+'</div>';
+      out += '</div>';
+    });
+    out += '</div>';
+  }
+  out += '</div>';
+
+  // ── All Recurring Transactions ────────────────────────────────
+  const byFreq = { monthly:[], weekly:[], quarterly:[], annual:[] };
+  recurring.forEach(r => { if (byFreq[r.freq]) byFreq[r.freq].push(r); });
+  const monthlyTotal = byFreq.monthly.reduce((s,r)=>s+r.avgAmt,0);
+  const annualTotal  = recurring.reduce((s,r) => {
+    const mult = r.freq==='monthly'?12 : r.freq==='weekly'?52 : r.freq==='quarterly'?4 : 1;
+    return s + r.avgAmt * mult;
+  }, 0);
+
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
+  out += '<div style="padding:12px 16px;background:var(--lift);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">';
+  out += '<div><div style="font-size:13px;font-weight:600;color:var(--ink2);">All Recurring Transactions</div>';
+  out += '<div style="font-size:11px;color:var(--ink4);">'+recurring.length+' detected · '+fmt(monthlyTotal)+'/mo · '+fmt(annualTotal)+'/yr committed spend</div></div>';
+  out += '</div>';
+
+  ['monthly','quarterly','annual','weekly'].forEach(freq => {
+    const list = byFreq[freq];
+    if (!list.length) return;
+    const freqTotal = list.reduce((s,r)=>s+r.avgAmt,0);
+    const freqLabel = {monthly:'Monthly',quarterly:'Quarterly',annual:'Annual',weekly:'Weekly'}[freq];
+    out += '<div style="padding:7px 16px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--line);font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">'+freqLabel+' · '+fmt(freqTotal)+(freq==='monthly'?'/mo':freq==='weekly'?'/wk':'/occ')+'</div>';
+    list.forEach(r => {
+      out += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0;padding:8px 16px;border-bottom:1px solid rgba(255,255,255,.03);align-items:center;">';
+      out += '<div><div style="font-size:12px;color:var(--ink2);">'+r.payee+'</div>';
+      out += '<div style="font-size:10px;color:var(--ink4);">'+r.account+' · last: '+r.lastDate+' · '+r.count+' occurrences</div></div>';
+      out += '<div style="font-size:11px;color:var(--ink4);padding:0 16px;">next: '+r.nextDate+'</div>';
+      out += '<div style="font-size:11px;color:var(--ink4);padding:0 8px;">'+(r.variable?'~':'')+'</div>';
+      out += '<div style="font-family:var(--font-m);font-size:12px;font-weight:600;color:var(--negative);">−'+fmt(r.avgAmt)+'</div>';
+      out += '</div>';
+    });
+  });
+  out += '</div>';
+
+  el.innerHTML = out;
+}
+
+function updateCCSetting(input) {
+  const acct  = input.dataset.acct;
+  const field = input.dataset.field;
+  const val   = parseInt(input.value) || 1;
+  if (!ccSettings[acct]) ccSettings[acct] = { closeDay:1, dueDay:25 };
+  ccSettings[acct][field] = Math.min(Math.max(val,1),31);
+  saveSettings();
+  renderBillCalendar();
+}
+
 // ════════════════════════════════════════════════
 // BOOT
 // ════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  if (loadData() && txns.length) {
+  netWorthOverrides = loadNetWorthOverrides();
+  if (loadData(false) && txns.length) {
+    autoDetectNonRecurring();
     updateHeader();
     showPage('dashboard');
   } else {
