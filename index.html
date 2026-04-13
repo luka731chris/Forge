@@ -2353,26 +2353,26 @@ async function processFiles() {
 
   // ── Step 1: Parse every file in the batch ────────────────────────
   const newTxns = [];
-  let isNetWorthFile = false;
+  let nwSuccessCount = 0;  // files that successfully parsed as NW snapshots
 
   for (const f of pendingFiles) {
     try {
       const text = await readFile(f);
       const ext  = f.name.split('.').pop().toLowerCase();
 
-      // Detect Quicken Net Worth export (different format — just account/balance pairs)
+      // Detect Quicken Net Worth / Investment Performance export
       if (isNetWorthExport(text)) {
         const nwData = parseNetWorthCSV(text);
         const nwCount = Object.keys(nwData).length;
         if (nwCount > 0) {
           Object.assign(netWorthOverrides, nwData);
           saveNetWorthOverrides();
-          toast('✓ ' + f.name + ' — Net Worth snapshot: ' + nwCount + ' account balances imported');
-          isNetWorthFile = true;
-        } else {
-          toast('⚠ ' + f.name + ' — Looks like a Net Worth file but 0 accounts found');
+          toast('✓ ' + f.name + ' — Balance snapshot: ' + nwCount + ' account values loaded');
+          nwSuccessCount++;
+          continue;  // only skip transaction parsing when NW parse actually succeeded
         }
-        continue;
+        // NW detection fired but parse returned 0 accounts — fall through to transaction parser
+        toast('⚠ ' + f.name + ' — NW format detected but no accounts found; trying as transaction file');
       }
 
       let parsed = [];
@@ -2397,8 +2397,8 @@ async function processFiles() {
     }
   }
 
-  // If only Net Worth files were uploaded, refresh balance sheet and stop
-  if (isNetWorthFile && newTxns.length === 0) {
+  // If ONLY balance snapshot files were uploaded (and all succeeded), go to Balance Sheet
+  if (nwSuccessCount > 0 && newTxns.length === 0) {
     pendingFiles = [];
     renderFileList();
     document.getElementById('importActions').style.display = 'none';
@@ -2504,30 +2504,24 @@ function toggleNonRecurring(key) {
 
 function isNetWorthExport(text) {
   // Detects Quicken Net Worth, Property & Debt, and Investment Performance reports.
-  // These are snapshot/balance reports — NOT transaction reports.
-  // Key signals: specific report titles in the header; NO "Date,Account,Num,Payee" header.
-  const top = text.slice(0, 600).toLowerCase();
+  // STRICT: only match on explicit Quicken report title strings in the first 4 lines.
+  // Never rely on heuristics — merchant CSVs (Home Depot, Amazon, etc.) can look similar.
 
-  // Explicit report titles Quicken uses
-  if (top.includes('net worth')) return true;
-  if (top.includes('property & debt')) return true;
-  if (top.includes('investment performance')) return true;
-  if (top.includes('portfolio value')) return true;
-  if (top.includes('account balances')) return true;
+  // First: if it looks like a transaction CSV, immediately return false.
+  const top600 = text.slice(0, 600).toLowerCase();
+  if (top600.includes('date') && top600.includes('payee') && top600.includes('amount')) return false;
+  if (top600.includes('date') && top600.includes('account') && top600.includes('num')) return false;
 
-  // If it has a Date+Account+Payee transaction header, it is NOT a balance report
-  if (top.includes('date') && top.includes('payee') && top.includes('amount')) return false;
+  // Only match on the very first non-empty line containing an explicit Quicken report title.
+  const firstLines = text.replace(/\r/g,'\n').split('\n')
+    .map(l => l.trim()).filter(Boolean).slice(0, 4).join(' ').toLowerCase();
 
-  // Heuristic: 2-column rows with no date in col 0, has a dollar amount in col 1
-  const lines2 = text.split('\n').map(l=>l.trim()).filter(Boolean).slice(0,10);
-  let balanceRows=0;
-  for (const l of lines2) {
-    const cols = csvRow(l);
-    if (cols.length >= 2 && !cols[0].match(/^\d{1,2}[/\-]\d/) && !isNaN(parseAmt(cols[1])) && parseAmt(cols[1]) !== 0) {
-      balanceRows++;
-    }
-  }
-  return balanceRows >= 2;
+  if (firstLines.includes('net worth')) return true;
+  if (firstLines.includes('property & debt')) return true;
+  if (firstLines.includes('investment performance')) return true;
+  if (firstLines.includes('portfolio value')) return true;
+
+  return false;
 }
 
 function readFile(f) {
@@ -2641,8 +2635,8 @@ function parseCSV(text, fname) {
 
   // Map columns — try many possible Quicken column name variants
   const dateC  = findCol(headers, 'date', 'transaction date', 'trans date', 'posted date');
-  const payeeC = findCol(headers, 'payee', 'description', 'name', 'memo', 'payee/description');
-  const amtC   = findCol(headers, 'amount', 'transaction amount', 'debit amount');
+  const payeeC = findCol(headers, 'payee', 'description', 'name', 'memo', 'payee/description', 'merchant', 'vendor', 'transaction description', 'item', 'items ordered', 'details');
+  const amtC   = findCol(headers, 'amount', 'transaction amount', 'debit amount', 'total', 'item total', 'order total', 'price', 'charge');
   const catC   = findCol(headers, 'category', 'tag', 'type');
   const acctC  = findCol(headers, 'account', 'account name');
   const memoC  = findCol(headers, 'memo', 'notes', 'note');
