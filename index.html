@@ -2848,39 +2848,55 @@ function clearNetWorthOverrides() {
 // Format: Account Name, Balance (two columns, no header or with header)
 // Quicken exports this as a simple snapshot — one row per account.
 function parseNetWorthCSV(text) {
-  // Handles Quicken Net Worth, Property & Debt, and Investment Performance exports.
-  const clean = text.replace(/\r/g,'\n');
-  const lines = clean.split('\n');
+  // Quicken Net Worth export format (verified against real export):
+  //   Col 0: blank (Quicken uses blank first col for all data rows)
+  //   Col 1: account name or section header
+  //   Col 2: balance amount
+  // Title row: "Net Worth - As of M/D/YYYY" in col 0
+  // Multi-line quoted header: handled by joining lines and re-splitting on commas
+
+  const clean = text.replace(/\r/g, '\n');
+  const lines  = clean.split('\n');
   const results = {};
   let asOf = new Date().toISOString().slice(0,10);
 
-  // Extract "as of" date from anywhere in first 6 lines
-  for (const l of lines.slice(0, 6)) {
+  // Extract date from title row ("Net Worth - As of 4/12/2026")
+  for (const l of lines.slice(0, 4)) {
     const dm = l.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if (dm) { asOf = dm[3]+'-'+dm[1].padStart(2,'0')+'-'+dm[2].padStart(2,'0'); break; }
   }
 
-  const isInvPerf = text.slice(0,300).toLowerCase().includes('investment performance')
-                 || text.slice(0,300).toLowerCase().includes('market value')
-                 || text.slice(0,300).toLowerCase().includes('cost basis');
+  // Detect which column layout this export uses:
+  // Layout A (col1=name, col2=amount): blank col0 — Quicken's standard NW report
+  // Layout B (col0=name, col1=amount): some older Quicken versions
+  // Detect by checking first data row that has a known account-like string
+  let nameCol = 1, amtCol = 2;  // default: Quicken standard
+  for (const l of lines.slice(0, 20)) {
+    const cols = csvRow(l);
+    if (cols.length >= 3 && cols[0].trim() === '' && cols[1].trim() && !isNaN(parseAmt(cols[2])) && parseAmt(cols[2]) !== 0) {
+      nameCol = 1; amtCol = 2; break;  // confirmed Layout A
+    }
+    if (cols.length >= 2 && cols[0].trim() && cols[0].trim() !== '' && !isNaN(parseAmt(cols[1])) && parseAmt(cols[1]) !== 0) {
+      nameCol = 0; amtCol = 1; break;  // Layout B
+    }
+  }
 
-  // Rows to skip in Net Worth / Property & Debt reports
-  const SKIP_NW = /^(total|grand total|net worth|assets|liabilities|cash and bank|investment account|brokerage|property|credit card accounts|other asset|other liab|balance|account name|subtotal)/i;
+  // Also detect Investment Performance (col1=account in Total rows)
+  const isInvPerf = text.slice(0, 300).toLowerCase().includes('investment performance')
+                 || text.slice(0, 300).toLowerCase().includes('market value');
+
+  const SKIP = /^(total|grand total|net worth|overall total|assets|liabilities|cash and bank|other assets|other liab|credit card|investments|property|account|balance|unrealized|includes)/i;
 
   for (const l of lines) {
     if (!l.trim()) continue;
-    const parts = csvRow(l);
-    if (parts.length < 2) continue;
-    const raw0 = (parts[0]||'').replace(/^["\s]+|["\s]+$/g,'').trim();
-    if (!raw0 || raw0.length < 2) continue;
+    const cols = csvRow(l);
 
     if (isInvPerf) {
-      // Investment Performance: only capture "Total" rows (per-account subtotals)
-      // Format: Total, "Account Name", "", "Beginning", "Ending", "Gain", "Return%"
-      if (/^total$/i.test(raw0) && parts.length >= 5) {
-        const acctName = (parts[1]||'').replace(/^["\s]+|["\s]+$/g,'').trim();
+      // Investment Performance: "Total","Account Name","",beginning,ending,...
+      if (/^total$/i.test((cols[0]||'').trim()) && cols.length >= 5) {
+        const acctName = (cols[1]||'').replace(/^["\s]+|["\s]+$/g,'').trim();
         if (!acctName || /^(total|grand)/i.test(acctName)) continue;
-        const endVal = parseAmt(parts[4]||'');
+        const endVal = parseAmt(cols[4]||'');
         if (!isNaN(endVal) && endVal !== 0) {
           results[acctName] = { value: endVal, date: asOf, source: 'quicken-invperf' };
         }
@@ -2888,14 +2904,17 @@ function parseNetWorthCSV(text) {
       continue;
     }
 
-    // Net Worth / Property & Debt
-    if (SKIP_NW.test(raw0)) continue;
-    if (/^TOTAL\s/i.test(raw0) || /^net worth$/i.test(raw0)) continue;
-    if (/^\d+\.?\d*%?$/.test(raw0)) continue;
+    // Net Worth format
+    if (cols.length <= amtCol) continue;
+    const name = (cols[nameCol]||'').replace(/^["\s]+|["\s]+$/g,'').trim();
+    if (!name || name.length < 2) continue;
+    if (SKIP.test(name)) continue;
+    if (/^\d+\.?\d*%?$/.test(name)) continue;  // skip pure numbers
 
-    const val = parseAmt(parts[1]);
-    if (isNaN(val)) continue;
-    results[raw0] = { value: val, date: asOf, source: 'quicken-networth' };
+    const amt = parseAmt(cols[amtCol]);
+    if (isNaN(amt)) continue;
+
+    results[name] = { value: amt, date: asOf, source: 'quicken-networth' };
   }
   return results;
 }
