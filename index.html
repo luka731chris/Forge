@@ -3813,16 +3813,28 @@ function renderBalanceSheet() {
   let totalAssets = 0, totalLiabs = 0;
 
   Object.entries(BS_ACCOUNTS).forEach(([acct, meta]) => {
-    const raw = balances[acct] || 0;
-    // For liabilities, Quicken stores as negative net (credits > debits for CCs)
-    const amt = meta.class === 'liability' ? Math.abs(raw) : raw;
+    // Priority: Net Worth override (true market value) > transaction-computed balance
+    const nwOverride = netWorthOverrides[acct];
+    let raw, amt, valueSource;
+    if (nwOverride) {
+      // Use the Net Worth snapshot value — this is the real market value
+      raw         = nwOverride.value;
+      valueSource = nwOverride.source === 'quicken-invperf' ? 'inv-perf' : 'net-worth';
+      amt         = meta.class === 'liability' ? Math.abs(raw) : raw;
+    } else {
+      // Fall back to transaction-computed register balance
+      raw         = balances[acct] || 0;
+      valueSource = 'transactions';
+      amt         = meta.class === 'liability' ? Math.abs(raw) : raw;
+    }
     if (amt === 0 && meta.sub === 'current' && meta.class === 'liability') return; // skip paid-off CCs
-    
-    // Staleness flag
-    const last = lastDate[acct];
+
+    // Staleness: if we have a NW override, use its date; otherwise use last transaction date
+    const last = nwOverride ? nwOverride.date : (lastDate[acct] || '');
     const monthsOld = last ? Math.floor((new Date(today) - new Date(last)) / (1000*60*60*24*30)) : 999;
-    const stale = monthsOld > 3;
+    const stale = !nwOverride && monthsOld > 3;  // NW overrides are never stale
     const flags = [];
+    if (valueSource !== 'transactions') flags.push({ type:'ok', text: valueSource === 'inv-perf' ? '📈 from inv. report' : '✓ from NW report' });
     if (stale) flags.push({ type:'stale', text: monthsOld+'mo old' });
     if (meta.note) flags.push({ type:'est', text:'⚠ see notes' });
 
@@ -3998,15 +4010,15 @@ function renderBalanceSheet() {
   // Debt ratios
   const dti = totalLiabs > 0 && totalAssets > 0 ? (totalLiabs/totalAssets*100).toFixed(1) : 0;
   const mortgageRow = Object.entries(BS_ACCOUNTS).find(([,v])=>v.sub==='mortgage');
-  const mortgageBal = mortgageRow ? Math.abs(balances[mortgageRow[0]]||0) : 0;
-  const homeBal = balances['House'] || 0;
+  const mortgageBal = mortgageRow ? Math.abs((netWorthOverrides[mortgageRow[0]]?.value) || balances[mortgageRow[0]]||0) : 0;
+  const homeBal = (netWorthOverrides['House']?.value) || balances['House'] || 0;
   const ltv = homeBal > 0 ? (mortgageBal/homeBal*100).toFixed(1) : '—';
 
   out += `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;">
     ${[
       ['Debt-to-Asset', dti+'%', dti<40?'var(--positive)':dti<60?'var(--gold)':'var(--negative)', 'Lower is stronger'],
       ['Mortgage LTV', ltv+'%', parseFloat(ltv)<80?'var(--positive)':'var(--gold)', 'Loan-to-value ratio'],
-      ['Liquid Assets', fmt((balances['Checking - PNC']||0)+(balances['Savings - PNC']||0)), 'var(--river)', 'Cash on hand'],
+      ['Liquid Assets', fmt((netWorthOverrides['Checking - PNC']?.value||balances['Checking - PNC']||0)+(netWorthOverrides['Savings - PNC']?.value||balances['Savings - PNC']||0)), 'var(--river)', 'Cash on hand'],
       ['Credit Utilization', (() => {
         const cc = Object.entries(BS_ACCOUNTS).filter(([,v])=>v.liabType==='Credit Cards');
         const used = cc.reduce((s,[a])=>s+Math.abs(balances[a]||0),0);
