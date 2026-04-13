@@ -3811,6 +3811,9 @@ function computeBSFromTxns() {
 function renderBalanceSheet() {
   const el = document.getElementById('balanceSheetContent');
   if (!el) return;
+  // Always reload NW overrides fresh — in-memory state may be stale after page interactions
+  const freshNW = loadNetWorthOverrides();
+  if (Object.keys(freshNW).length > 0) netWorthOverrides = freshNW;
 
   if (!txns.length) {
     el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">No data loaded. Import your Quicken files first.</div>';
@@ -3885,6 +3888,21 @@ function renderBalanceSheet() {
   }
 
   let out = '';
+
+  // ── Net Worth override status banner ─────────────────────────────
+  const nwLoaded = Object.keys(netWorthOverrides).length;
+  if (nwLoaded > 0) {
+    const nwDates = [...new Set(Object.values(netWorthOverrides).map(v=>v.date))].join(', ');
+    out += '<div style="background:rgba(45,212,191,.06);border:1px solid rgba(45,212,191,.2);border-radius:var(--r-md);padding:10px 16px;margin-bottom:8px;font-size:12px;color:var(--ink3);">';
+    out += '✓ <strong style="color:var(--positive);">Net Worth snapshot loaded</strong> — '+nwLoaded+' account values from Quicken as of '+nwDates+'. ';
+    out += 'These override transaction-computed balances for accurate market values.';
+    out += '</div>';
+  } else {
+    out += '<div style="background:rgba(245,168,0,.05);border:1px solid rgba(245,168,0,.15);border-radius:var(--r-md);padding:10px 16px;margin-bottom:8px;font-size:12px;color:var(--ink4);">';
+    out += '⚠ No Net Worth snapshot loaded. Values shown are computed from transaction history and <strong style="color:var(--gold);">understate</strong> investment accounts and home value. ';
+    out += 'Upload a Quicken Net Worth report (Reports → Net Worth &amp; Balances → Net Worth) for accurate balances.';
+    out += '</div>';
+  }
 
   // ── Data quality banner ──────────────────────────────────────────
   out += `<div style="display:grid;grid-template-columns:auto 1fr;gap:0;background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px;">
@@ -4021,6 +4039,20 @@ function renderBalanceSheet() {
   </div>`;
 
   // Debt ratios
+  // ── Also show any NW override accounts NOT in BS_ACCOUNTS ──────
+  const bsAccountNames = new Set(Object.keys(BS_ACCOUNTS));
+  const extraNW = Object.entries(netWorthOverrides).filter(([name]) => !bsAccountNames.has(name));
+  if (extraNW.length > 0) {
+    if (!assetGroups['Other (from NW file)']) assetGroups['Other (from NW file)'] = [];
+    extraNW.forEach(([name, nw]) => {
+      const amt = nw.value;
+      if (amt > 0) {
+        assetGroups['Other (from NW file)'].push({ acct:name, meta:{icon:'📋',label:name,assetType:'Other (from NW file)'}, amt, last:nw.date, stale:false, flags:[{type:'ok',text:'✓ from NW report'}], note:'' });
+        totalAssets += amt;
+      }
+    });
+  }
+
   const dti = totalLiabs > 0 && totalAssets > 0 ? (totalLiabs/totalAssets*100).toFixed(1) : 0;
   const mortgageRow = Object.entries(BS_ACCOUNTS).find(([,v])=>v.sub==='mortgage');
   const mortgageBal = mortgageRow ? Math.abs((netWorthOverrides[mortgageRow[0]]?.value) || balances[mortgageRow[0]]||0) : 0;
