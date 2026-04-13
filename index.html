@@ -591,7 +591,7 @@ input:focus { border-color:var(--gold); }
 <div id="chartTip"></div>
 <div class="demo-panel" id="demoPanel">
   <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">⚾ Demo Mode</div>
-  <div style="font-size:12px;color:var(--ink3);line-height:1.65;margin-bottom:12px;">Loads 4 years of synthetic Pittsburgh family data. Importing real files completely replaces demo data.</div>
+  <div style="font-size:12px;color:var(--ink3);line-height:1.65;margin-bottom:12px;">Loads 4 years of synthetic Pittsburgh family data. Demo data is stored separately — importing real files never touches it.</div>
   <div style="display:flex;gap:8px;">
     <button class="btn btn-gold" onclick="toggleDemo();loadDemo();" style="flex:1;justify-content:center;font-size:11px;">Load Demo</button>
     <button class="btn btn-ghost" onclick="toggleDemo();" style="font-size:11px;">Cancel</button>
@@ -666,7 +666,7 @@ input:focus { border-color:var(--gold); }
 <div id="page-upload" class="page active">
   <div style="max-width:680px;margin:0 auto;">
     <div class="page-title">Import Data</div>
-    <div class="page-sub">Drop your Quicken export files — CSV, QIF, QFX, or OFX</div>
+    <div class="page-sub">Drop any Quicken export — transactions, net worth, or investment performance — any date range, any size</div>
 
     <div id="dataStatus" class="status-strip status-empty">No data loaded · import your Quicken files to begin</div>
 
@@ -697,14 +697,46 @@ input:focus { border-color:var(--gold); }
       <div id="fileDiagnosticContent" style="padding:14px;overflow-x:auto;max-height:380px;overflow-y:auto;"></div>
     </div>
 
-    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:16px 18px;">
-      <div style="font-size:11px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">Import Notes</div>
-      <ul style="font-size:12px;color:var(--ink3);line-height:2;padding-left:16px;">
-        <li>Each import <strong style="color:var(--ink2);">replaces all existing data</strong> — no co-mingling</li>
-        <li>Quicken transfers (CC payments, account moves) are automatically excluded from totals</li>
-        <li>Transactions with <code style="background:var(--float);padding:1px 5px;border-radius:3px;">[Account]</code> category = internal transfer, excluded</li>
-        <li>Include all accounts in one export for complete picture</li>
-      </ul>
+    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">
+      <div style="padding:12px 16px;background:rgba(245,168,0,.06);border-bottom:1px solid var(--line);">
+        <div style="font-size:12px;font-weight:600;color:var(--ink2);">How Forge handles imports</div>
+        <div style="font-size:11px;color:var(--ink4);margin-top:2px;">Cumulative, deduplicated, longitudinal — every upload adds to your history without gaps or overlaps</div>
+      </div>
+      <div style="padding:14px 18px;font-size:12px;color:var(--ink3);line-height:2.1;">
+        <strong style="color:var(--ink2);">✓ Append, never replace.</strong> Each upload adds new transactions to your existing history.
+        Upload a full 3-year export, a single month, or yesterday's transactions — Forge merges everything correctly.<br>
+        <strong style="color:var(--ink2);">✓ Automatic deduplication.</strong> Every transaction is fingerprinted by date · payee · amount · account.
+        Exact duplicates from overlapping export date ranges are silently skipped. Near-duplicates (same date + amount across different accounts) are flagged in Validation for your review.<br>
+        <strong style="color:var(--ink2);">✓ Transfer exclusion.</strong> CC payments, account-to-account moves, and any category using Quicken bracket syntax <code style="background:var(--float);padding:1px 5px;border-radius:3px;font-size:10px;">[AccountName]</code> are excluded from income/expense totals — counted once at the point of purchase, never at payment.<br>
+        <strong style="color:var(--ink2);">✓ Three report types accepted simultaneously.</strong> Drop a transaction CSV, a Net Worth snapshot, and an Investment Performance export all at once. Each is parsed correctly and routed to the right place.<br>
+        <strong style="color:var(--ink2);">✓ Settings survive imports.</strong> CC billing cycles, budget targets, and non-recurring flags are stored separately and never overwritten by a data import.
+      </div>
+      <div style="padding:12px 16px;border-top:1px solid var(--line);background:var(--lift);">
+        <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:8px;">Quicken export paths</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:11px;color:var(--ink3);line-height:1.8;">
+          <div>
+            <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Transactions</div>
+            <strong style="color:var(--ink2);">Reports → Banking → Transaction</strong><br>
+            Set date range → Export to CSV<br>
+            Include all accounts for full picture<br>
+            <span style="color:var(--ink4);">Format: Date, Account, Payee, Amount...</span>
+          </div>
+          <div>
+            <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--positive);margin-bottom:4px;">Balance Sheet / Net Worth</div>
+            <strong style="color:var(--ink2);">Reports → Net Worth &amp; Balances → Net Worth</strong><br>
+            Set date to today → Export to CSV<br>
+            Gives true market values for 401k, 529s<br>
+            <span style="color:var(--ink4);">Format: Account, Balance (snapshot)</span>
+          </div>
+          <div>
+            <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--river);margin-bottom:4px;">Investment Performance</div>
+            <strong style="color:var(--ink2);">Reports → Investing → Investment Performance</strong><br>
+            Set date range → Export to CSV<br>
+            Shows cost basis vs market value<br>
+            <span style="color:var(--ink4);">Format: Security, Account, Value, Return...</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -2471,19 +2503,31 @@ function toggleNonRecurring(key) {
 }
 
 function isNetWorthExport(text) {
-  // Quicken Net Worth / Property & Debt export detection.
-  // These files have a header mentioning "Net Worth" and 2-column rows (account, balance).
-  const top = text.slice(0, 500).toLowerCase();
-  if (top.includes('net worth') || top.includes('property & debt')) return true;
-  // Heuristic: check first few data lines for 2-col account+balance pattern (no date col)
-  const lines2 = text.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 8);
+  // Detects Quicken Net Worth, Property & Debt, and Investment Performance reports.
+  // These are snapshot/balance reports — NOT transaction reports.
+  // Key signals: specific report titles in the header; NO "Date,Account,Num,Payee" header.
+  const top = text.slice(0, 600).toLowerCase();
+
+  // Explicit report titles Quicken uses
+  if (top.includes('net worth')) return true;
+  if (top.includes('property & debt')) return true;
+  if (top.includes('investment performance')) return true;
+  if (top.includes('portfolio value')) return true;
+  if (top.includes('account balances')) return true;
+
+  // If it has a Date+Account+Payee transaction header, it is NOT a balance report
+  if (top.includes('date') && top.includes('payee') && top.includes('amount')) return false;
+
+  // Heuristic: 2-column rows with no date in col 0, has a dollar amount in col 1
+  const lines2 = text.split('\n').map(l=>l.trim()).filter(Boolean).slice(0,10);
+  let balanceRows=0;
   for (const l of lines2) {
     const cols = csvRow(l);
-    if (cols.length === 2 && !cols[0].match(/^\d{1,2}[/\-]/) && !isNaN(parseAmt(cols[1]))) {
-      return true;
+    if (cols.length >= 2 && !cols[0].match(/^\d{1,2}[/\-]\d/) && !isNaN(parseAmt(cols[1])) && parseAmt(cols[1]) !== 0) {
+      balanceRows++;
     }
   }
-  return false;
+  return balanceRows >= 2;
 }
 
 function readFile(f) {
@@ -2810,25 +2854,54 @@ function clearNetWorthOverrides() {
 // Format: Account Name, Balance (two columns, no header or with header)
 // Quicken exports this as a simple snapshot — one row per account.
 function parseNetWorthCSV(text) {
+  // Handles Quicken Net Worth, Property & Debt, and Investment Performance exports.
   const clean = text.replace(/\r/g,'\n');
   const lines = clean.split('\n');
   const results = {};
   let asOf = new Date().toISOString().slice(0,10);
 
-  // Look for a date in the header like "Net Worth as of 3/29/2026"
-  for (const l of lines.slice(0, 5)) {
+  // Extract "as of" date from anywhere in first 6 lines
+  for (const l of lines.slice(0, 6)) {
     const dm = l.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if (dm) { asOf = dm[3]+'-'+dm[1].padStart(2,'0')+'-'+dm[2].padStart(2,'0'); break; }
   }
 
+  const isInvPerf = text.slice(0,300).toLowerCase().includes('investment performance')
+                 || text.slice(0,300).toLowerCase().includes('market value')
+                 || text.slice(0,300).toLowerCase().includes('cost basis');
+
+  // Rows to skip in Net Worth / Property & Debt reports
+  const SKIP_NW = /^(total|grand total|net worth|assets|liabilities|cash and bank|investment account|brokerage|property|credit card accounts|other asset|other liab|balance|account name|subtotal)/i;
+
   for (const l of lines) {
+    if (!l.trim()) continue;
     const parts = csvRow(l);
     if (parts.length < 2) continue;
-    const name = (parts[0]||'').replace(/^["\s]+|["\s]+$/g,'').trim();
-    if (!name || /^total/i.test(name) || name.toLowerCase() === 'account') continue;
-    const amt = parseAmt(parts[1]);
-    if (isNaN(amt)) continue;
-    results[name] = { value: amt, date: asOf, source: 'quicken-networth' };
+    const raw0 = (parts[0]||'').replace(/^["\s]+|["\s]+$/g,'').trim();
+    if (!raw0 || raw0.length < 2) continue;
+
+    if (isInvPerf) {
+      // Investment Performance: only capture "Total" rows (per-account subtotals)
+      // Format: Total, "Account Name", "", "Beginning", "Ending", "Gain", "Return%"
+      if (/^total$/i.test(raw0) && parts.length >= 5) {
+        const acctName = (parts[1]||'').replace(/^["\s]+|["\s]+$/g,'').trim();
+        if (!acctName || /^(total|grand)/i.test(acctName)) continue;
+        const endVal = parseAmt(parts[4]||'');
+        if (!isNaN(endVal) && endVal !== 0) {
+          results[acctName] = { value: endVal, date: asOf, source: 'quicken-invperf' };
+        }
+      }
+      continue;
+    }
+
+    // Net Worth / Property & Debt
+    if (SKIP_NW.test(raw0)) continue;
+    if (/^TOTAL\s/i.test(raw0) || /^net worth$/i.test(raw0)) continue;
+    if (/^\d+\.?\d*%?$/.test(raw0)) continue;
+
+    const val = parseAmt(parts[1]);
+    if (isNaN(val)) continue;
+    results[raw0] = { value: val, date: asOf, source: 'quicken-networth' };
   }
   return results;
 }
