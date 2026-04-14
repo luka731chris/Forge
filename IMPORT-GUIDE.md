@@ -1,169 +1,219 @@
 # Forge Import Guide
 
-One drop zone. Any file. Forge figures out the rest.
+Everything you need to get data into Forge — Quicken exports, Net Worth reports, merchant CSVs, and the monthly update workflow.
 
 ---
 
-## How It Works
+## Quicken Exports
 
-Drop any file — Quicken export, Amazon order history, Apple Card statement, or any itemized CSV — onto the single import zone in The Pour. Forge reads the first line of each file to detect what format it is, routes it to the right parser, and processes everything in one pass. You can drop multiple files at once.
+### All Transactions CSV (primary ledger)
 
-| What you drop | How Forge detects it | What it becomes |
-|---------------|---------------------|-----------------|
-| Quicken CSV | `payee`, `account`, `amount` columns | Ledger transactions |
-| Quicken QIF | `.qif` extension | Ledger transactions |
-| Quicken QFX / OFX | `.qfx` / `.ofx` extension | Ledger transactions |
-| Amazon order history | `asin`, `product name`, or `order id` + `quantity` columns | Detail Lens items |
-| Apple Card statement | `clearing date` or `amount (usd)` column | Detail Lens items |
-| Any other itemized CSV | Date + description + amount (Forge tries) | Detail Lens items |
+This is the file you'll import most often. It contains every transaction across all accounts.
 
-Deduplication is automatic across all types. Re-importing any file already in the ledger adds nothing.
+**Steps:**
+1. Quicken → **Reports** tab
+2. **Spending** → **All Transactions**
+3. Set date range: from your earliest data through today (e.g., 1/1/2023 → today)
+4. **Export** → **Export to CSV**
+5. Save as something like `QuickenExportAll_260413.csv`
+6. Drop onto Forge Import page
 
----
+**What Forge does with it:**
+- Skips the 4-line preamble Quicken adds (title, blank, date range, blank)
+- Maps columns: Date, Account, Payee, Amount, Category, Memo
+- Sets `isTransfer:true` for any transaction with a bracket category like `[Checking - PNC]`
+- Runs `autoDetectNonRecurring()` after parsing to flag bonuses and large rare income
+- Deduplicates: `date|payee|amount|account` — re-importing the same file adds zero duplicate rows
 
-## Quicken Export — First Time (Full History)
-
-Export everything going back as far as Quicken will allow. The more history Forge has, the more accurate its seasonal patterns, trend baselines, and year-over-year comparisons become. Do this once, then switch to the monthly routine.
-
-### Mac
-
-1. Open Quicken and sign in
-2. In the **left sidebar**, click **All Transactions** — shows every account together
-3. Clear any date filters so the full history is visible
-4. **File → Export → Register Transactions to CSV File**
-5. Choose **Export: All visible transactions** · uncheck Scheduled Transactions · **Save**
-6. Drop the file in The Pour → **Begin Forging**
-
-### Windows
-
-1. Open Quicken and sign in
-2. **Reports → Banking → Transaction**
-3. Set **Accounts: All Accounts** · date range from your earliest date through today
-4. Run the report
-5. Click the **Export icon** (green arrow at top) → **Export to CSV File**
-6. Drop the file in The Pour → **Begin Forging**
-
-### Fallback — Account by Account
-
-Export each account individually (gear icon → Export to Excel workbook) and drop all the files at once. Forge merges them automatically.
-
-> ⚠️ **Do not use** *File → Export → Quicken Transfer Format (.qxf)* — that file moves Quicken between computers and cannot be imported here.
+**File format Quicken uses:**
+```
+Transaction,,,,,,,,
+,,,,,,,,
+1/1/2023 through 4/13/2026,,,,,,,,
+,,,,,,,,
+Date,Account,Num,Payee,Memo,Category,Tag,Clr,Amount
+5/6/2024,Checking - PNC,,Giant Eagle,,Food & Dining:Groceries,,,"-127.43"
+```
 
 ---
 
-## Monthly Routine (2–3 Minutes)
+### Net Worth CSV (balance sheet snapshots)
 
-Same export path, just change the date range to Last 30–60 days, All Accounts. Then add any detail files for the same period — Amazon orders, Apple Card statement — and drop everything at once. Forge handles the rest.
+Export one of these for each historical comparison point you want available in the Balance Sheet dropdown.
+
+**Steps:**
+1. Quicken → **Reports** tab
+2. **Net Worth & Balances** → **Net Worth**
+3. Set the **"as of"** date to the period end you want
+4. **Export** → **Export to CSV**
+5. Name the file to reflect the date (see table below)
+6. Drop onto Forge Import page — you can drop a NW file alone, no transaction file needed
+
+**Recommended snapshot schedule:**
+
+| Balance Sheet dropdown | As-of date to set | Suggested filename |
+|---|---|---|
+| YE 2024 | 12/31/2024 | `NetWorth_241231.csv` |
+| Q1 2025 | 3/31/2025 | `NetWorth_250331.csv` |
+| Q2 2025 | 6/30/2025 | `NetWorth_250630.csv` |
+| Q3 2025 | 9/30/2025 | `NetWorth_250930.csv` |
+| YE 2025 | 12/31/2025 | `NetWorth_251231.csv` |
+| Current | Today (most recent) | `NetWorth_260413.csv` |
+
+Upload each file once. Forge stores every snapshot in `forge_networth_hist` keyed by date — they accumulate without overwriting each other. The Balance Sheet comparison column uses the closest snapshot on or before the selected comparison date.
+
+**Storage behavior:**
+
+| Key | Cleared by Clear Data? | Cleared by? |
+|---|---|---|
+| `forge_networth` | Yes | Clear Data button |
+| `forge_networth_hist` | **No** | "✕ Clear NW History" button in Balance Sheet header only |
+
+This means you run through your 5–6 historical NW exports once, upload them all, and they persist permanently regardless of how many times you re-import your transaction file.
+
+**What Forge parses from the NW file:**
+
+Quicken Net Worth reports look like this:
+```
+Net Worth
+
+As of 12/31/2025
+
+ASSETS
+
+Cash and Bank Accounts
+   Checking - PNC                    15,432.00
+   Savings - PNC                     22,100.00
+...
+```
+
+Forge reads account name + balance pairs, skips all TOTAL/SUBTOTAL/NET WORTH summary rows, and stores `{ 'Checking - PNC': { value: 15432, date: '2025-12-31', source: 'quicken-nw' } }`.
 
 ---
 
-## Detail Files — Line-Item Enrichment
+## Merchant CSVs
 
-Detail files unmask the lump-sum charges in your Quicken register. "Amazon.com — $147.32" becomes 14 individual line items. "Apple Card — $89.00" becomes the specific merchant. Drop detail files in the same zone as your Quicken export — Forge auto-detects and routes them correctly.
+Drop any of these alongside your Quicken file or by themselves. Forge auto-detects format from column headers — no configuration needed.
+
+### Apple Card
+
+**How to export:** Wallet app on iPhone → tap your Apple Card → scroll down → **Export Transactions** → choose date range → Share → save as CSV.
+
+**What Forge detects:** `clearing date` + `merchant` + `amount (usd)` columns.
+
+**What you get:**
+- Payee = Merchant column (cleaner store name: "Giant Eagle" not "GIANT EAGLE 0382")
+- `itemDetail` = Description column (the raw terminal string: "GIANT EAGLE 0382 PITT PA")
+- Amounts negated (Apple exports charges as positive; Forge makes them negative)
+- Account name = filename (e.g., `apple_card_chris.csv` → account "apple_card_chris")
+
+**Tip:** Name the file with the person's name for attribution: `apple_card_chris.csv`, `apple_card_kira.csv`.
+
+---
 
 ### Amazon Order History
 
-Amazon changed their export in 2023 — you must request the file and wait for an email.
+**How to export:** amazon.com → Account → Order History Reports → choose "Items" report type → set date range → Request Report → Download CSV when ready.
 
-1. On a **desktop browser**, go to amazon.com and sign in (the mobile app cannot do this)
-2. **Account & Lists → Account → Manage your data → Request your data**
-3. Select **Your Orders** → submit
-4. Amazon sends a confirmation email immediately — **click the link to confirm**
-5. Wait for a second email with the download link (usually a few hours, up to 24)
-6. Download the ZIP file · unzip · open the **Your Orders** folder
-7. Use the file named **`Retail.OrderHistory.1.csv`**
-8. Drop it in The Pour with your other files
+**What Forge detects:** `order id` + `asin` + `total charged` columns.
 
-### Apple Card Monthly Statement
-
-1. Open **Wallet** on iPhone
-2. Tap **Apple Card**
-3. Scroll down · tap any month's statement
-4. Tap **Export Transactions** (or the share icon) → saves as CSV
-5. Transfer the file to your computer and drop it in The Pour
-
-### Other Sources — Any Itemized CSV
-
-PayPal activity exports, Venmo transaction history, Costco purchase history, store loyalty exports — anything with Date, Description, and Amount columns. Drop it in. If Forge can read it, it will. If it can't, the import result panel tells you exactly what was missing.
+**What you get:**
+- Payee = product title (truncated to 60 chars + `…` if longer)
+- `itemDetail` = full product title (e.g., "Milwaukee M18 FUEL 1/2 in. Hammer Drill/Driver Kit with Two Batteries")
+- One transaction per order line item
+- Amounts negated (Amazon exports as positive)
 
 ---
 
-## Purchaser Attribution — Who Bought What
+### Home Depot Orders
 
-Include a family member's first name in the filename to attribute every item in that file to that person:
+**How to export:** homedepot.com → Order History → select an order → Print/Save confirmation, or use the order export if available in your account.
 
-| Filename | Who gets credited |
-|----------|------------------|
-| `amazon_chris.csv` | Chris |
-| `applecard_kira.csv` | Kira |
-| `orders_sam.csv` | Sam |
-| `amazon.csv` | Unattributed (shared) |
+**What Forge detects:** `order number` + `items ordered` + `order total` columns.
 
-Forge checks the filename against the full family member list from Settings (user1, user2, and every kid). The match is case-insensitive. This works for any file type — Amazon, Apple Card, or generic.
-
-For Quicken accounts, go to **Settings → Account Owners** to map each account to the person who primarily uses it.
-
-Once attribution is configured, the Detail Lens By Purchaser tab shows individual spending cards, impulse rates, monthly projections, and category acceleration warnings per person.
+**What you get:**
+- Payee = items ordered field
+- `itemDetail` = same (full item description)
+- Amounts negated
 
 ---
 
-## Supported File Formats
+### Venmo Statement
 
-### Quicken formats (drop in the unified zone)
+**How to export:** venmo.com → Settings → Statements → Download CSV for the date range.
 
-| Format | Extension | Notes |
-|--------|-----------|-------|
-| Comma-separated values | `.csv` | Most reliable |
-| Quicken Interchange Format | `.qif` | Also reliable |
-| Quicken Financial Exchange | `.qfx` | May export empty in newer Quicken |
-| Open Financial Exchange | `.ofx` | Same as QFX |
+**What Forge detects:** `funding source` + `destination` + `amount (total)` columns.
 
-### Detail Enrichment (also in the same drop zone)
-
-| Format | How Forge detects it |
-|--------|---------------------|
-| Amazon order history | `asin` column, or `product name` + `order id` + `quantity` columns, or `retail.orderhistory` in filename |
-| Apple Card statement | `clearing date` column, or `amount (usd)` column, or `apple`/`applecard` in filename |
-| Generic enrichment | Date + description + amount columns — Forge tries; if it reads >0 rows, it worked |
+**What you get:**
+- Outgoing payments (negative): payee = "To" column
+- Incoming payments (positive): payee = "From" column
+- `itemDetail` = Note column (e.g., "Soccer fees", "Birthday gift", "Split dinner")
+- Amounts use sign from the amount string itself (`- $50.00` = -50, `+ $100.00` = +100)
 
 ---
 
-## Troubleshooting
+## How the Drop Zone Works
 
-### "0 transactions imported" from Quicken
+1. Drop one or more files (any combination of the above formats)
+2. Forge reads each file, detects its format by column headers
+3. Net Worth files go to `parseNetWorthCSV()` → stored in snapshot history
+4. Transaction files go through the parser chain → appended to `txns[]` with dedup
+5. Toast shows result: "✓ filename.csv — 847 transactions from 3 accounts"
+6. If `WORKER_URL` is set and a file returns 0 rows, Smart Scan runs automatically as fallback
 
-Most common cause: single-account or narrow-date export.
-
-- **Mac:** Click **All Transactions** in the sidebar before exporting, not an individual account
-- **Windows:** Use **Reports → Banking → Transaction** with All Accounts selected
-
-### File detected as wrong type
-
-Forge uses column headers to detect format. If a Quicken CSV is being read as a detail file, it likely has column names that overlap with detail file formats. Add the file extension (`.qif`) or use the standard Quicken export path which produces consistent headers.
-
-### "Forge couldn't read line-item detail"
-
-The detail file doesn't have the expected columns. Forge needs: date + description or merchant + amount. Check that the file is a transaction export, not a summary or report.
-
-### Purchaser not attributed
-
-The filename didn't match any family member's name. Check that Settings → The Family has correct first names entered and that the filename contains the first name (case-insensitive): `amazon_Chris.csv` and `amazon_chris.csv` both work.
-
-### "0 items" from Amazon
-
-Use `Retail.OrderHistory.1.csv` from inside the **Your Orders** folder of the ZIP Amazon emailed you. Other files in the ZIP will not parse correctly.
+**Dedup:** `date|payee|amount|account` exact match. Re-importing the same Quicken export adds nothing. Uploading overlapping date ranges is safe.
 
 ---
 
-## Monthly Checklist
+## Monthly Update Workflow
 
-```
-□  Export Quicken — last 30–60 days, All Accounts
-□  Download Amazon order history (if you want this month's detail)
-□  Export Apple Card statement for the month
-□  Name detail files with purchaser first names before importing
-□  Drop ALL files at once into The Pour
-□  Click Begin Forging
-□  Open The Confluence with your partner (~35 min)
-□  Export PDF Blueprint
-```
+End of month:
+
+1. Quicken → All Transactions report → set date through end of month → Export CSV
+2. Drop onto Forge Import
+3. Verify the Data Validation page shows no new issues
+4. Check Budget vs Actual for the closing month
+5. Visit Balance Sheet — review the KPI tiles
+
+Quarterly (or when you want fresh comparison data):
+
+1. Quicken → Net Worth report → set to last day of the quarter
+2. Export CSV → name it `NetWorth_YYMMDD.csv`
+3. Drop onto Forge Import
+4. Balance Sheet now has an accurate comparison point for that quarter
+
+---
+
+## What Quicken Categories Map to in Forge
+
+Forge classifies transactions into buckets for the Income Statement waterfall and Budget vs Actual.
+
+| Quicken category | Forge bucket |
+|---|---|
+| Net Salary, Direct Deposit, W-2 Income | paycheck |
+| Interest Earned, Dividends | other_inc |
+| Mortgage & Rent, --Split-- (House Loan payee) | mortgage |
+| Auto Loan, --Split-- (Palisade payee) | car |
+| Education, Tuition, Student Loan | education |
+| Insurance | insurance |
+| Childcare, Daycare | childcare |
+| Electric, Gas & Electric | electric |
+| Gas (utility), Natural Gas | gas_util |
+| Water, Sewer | water |
+| Internet, Cable & Internet | internet |
+| Cell Phone, Mobile Phone | cell |
+| Food & Dining:Groceries, Supermarkets | groceries |
+| Auto & Transport:Gas, Gasoline | gas_car |
+| Bus, Subway, Rideshare | transit |
+| Health & Fitness, Doctor, Dentist, Pharmacy | healthcare |
+| Food & Dining:Restaurants, Fast Food, Takeout | restaurants |
+| Entertainment, Movies, Sports | entertainment |
+| Home, Furnishings, Lawn & Garden | household |
+| Personal Care, Salon, Barber | personal |
+| Shopping:Clothing, Department Store | clothing |
+| Travel, Hotels, Airlines, Vacation | travel |
+| Streaming, Software subscriptions | subscriptions |
+| Gifts, Charity, Donations | gifts |
+| Everything else | other |
+
+If transactions land in **Other / Uncategorized**, better Quicken category names will move them into the right bucket on the next import.

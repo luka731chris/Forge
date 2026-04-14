@@ -1,571 +1,260 @@
-# Forge — Technical Reference
+# Forge Technical Reference
 
-Architecture, data model, parser documentation, purchaser attribution system, and design reference.
-
----
-
-## Architecture
-
-Forge is a zero-dependency static web application. All logic lives in two HTML files. No build step, no package manager, no transpilation.
-
-```
-index.html (397 KB)
-├── Embedded CSS (~1,900 lines, audited and stripped of unused rules in v3.12) — design system, layout, components
-└── Embedded JavaScript (~175,000 chars, 130+ functions, dead code removed in v3.12)
-    ├── Constants & state
-    ├── Persistence (saveData, loadData, saveSettings, loadSettings)
-    ├── File handling (handleFiles, renderFileList, processAll)
-    ├── Quicken parsers (parseCSV, parseQIF, parseOFX, parseDate, splitCSV)
-    ├── Detail parsers (parseAmazon, parseAppleCard, parseGenericDetail, parseDetailFile)
-    ├── Purchaser intelligence (personSummary, detectPersonTrends, predictMonthlyDetail)
-    ├── Intelligence engine (runIntelligence, detectTrendAlerts, detectBudgetDrift,
-    │                        detectAnomalies, detectSeasonal, buildLifeStageRecommendations)
-    ├── Renderers (renderDashboard, renderCF, renderCats, renderMch, renderAmazon,
-    │             renderPurchaserTab, renderAmzItems, renderTxns, renderFamily)
-    └── Settings (renderSettingsPage, saveSettings, renderAccountOwnerSection)
-```
+Build: `lean_4.0` · File: `index.html` · 233KB · 4,675 lines
 
 ---
 
 ## Data Model
 
-### localStorage Keys
-
-| Key | Schema |
-|-----|--------|
-| `ledger_v3` | `{ txns[], accounts[], amzItems[], isDemoMode, savedAt }` |
-| `forge_settings_v1` | `{ familyName, user1, user1Dob, user2, user2Dob, kids[], savingsTarget, emergencyTarget, largePurchaseThreshold, amzSensitivity, detailSensitivity, accountOwners{}, confluenceMode, kidsInAlerts, confluenceAnim, meetingDay, meetingDuration, reportHeader, reportSubtitle, pdfCollege, pdfSavings, categoryBudgets{}, agendaSteps{} }` |
-| `ledger_fbr_v2` | `{ goals[], notes{1..6}, stepsDone[], decisions[], plannedPurchases[] }` |
-
-### Transaction Object (Quicken)
+### Transaction object
 
 ```javascript
 {
-  date:     "2024-03-15",           // ISO 8601
-  payee:    "Giant Eagle",           // from Quicken
-  amount:   -127.43,                // negative = expense, positive = income
-  category: "Groceries",            // from Quicken or "Uncategorized"
-  account:  "Chase Sapphire (CC)",  // account name from Quicken file
-  memo:     "",                     // optional
-  type:     "debit"                 // "debit" | "credit"
+  date:       '2025-11-15',          // YYYY-MM-DD, always
+  payee:      'Giant Eagle',         // display name
+  amount:     -127.43,               // negative = expense, positive = income
+  category:   'Food & Dining:Groceries',
+  account:    'Checking - PNC',
+  memo:       '',                    // Quicken memo field
+  isTransfer: false,                 // true when category is [AccountName]
+  itemDetail: 'GIANT EAGLE #0382',  // merchant CSV item name; null for Quicken txns
 }
 ```
 
-Purchaser attribution for transactions uses `settings.accountOwners` at render time — it's not stored on the transaction itself. This means account ownership can be changed retroactively in Settings without re-importing.
+**Dedup key:** `date|payee|amount|account` — exact match = skip on import.
 
-### amzItem Object (Detail Files)
+**Transfer detection:** `isTransfer(t)` returns true when `t.category` matches `/^\[.+\]$/` — Quicken's bracket-category format for account transfers. Never rely on the word "Transfer" in the category string; some budgets use it as a real category.
+
+**`spendable(arr)`:** Filters all transfers out. Use for every income/expense calculation. Never sum raw `txns` for financial totals.
+
+---
+
+### Storage keys
+
+| Key | Type | Contents | Cleared by |
+|---|---|---|---|
+| `forge_prod_v1` | JSON | `{ txns[], accounts[], acctMeta{}, savedAt }` | Clear Data button |
+| `forge_demo_v1` | JSON | Same shape, demo data only | Never auto-cleared |
+| `forge_lean_v1` | JSON | Legacy — migrated on boot, then removed | Boot migration |
+| `forge_networth` | JSON | `{ acctName: { value, date, source } }` | Clear Data button |
+| `forge_networth_hist` | JSON | `{ dateKey: { acctName: value } }` | Clear NW History button only |
+| `forge_settings_v2` | JSON | See Settings schema below | Never auto-cleared |
+| `forge_build` | String | `'lean_4.0'` | Never |
+
+### Settings schema (`forge_settings_v2`)
 
 ```javascript
 {
-  date:      "2024-02-10",         // ISO 8601
-  title:     "Instant Pot Duo",    // product/merchant name
-  category:  "Kitchen",            // department or category
-  price:     89.99,                // unit price
-  qty:        1,                   // quantity
-  total:     89.99,                // price × qty
-  orderId:   "D01-XXXXXXXX",       // order ID or synthetic key
-  asin:      "B00FLYWNYQ",         // ASIN if Amazon; empty string otherwise
-  source:    "Amazon",             // "Amazon" | "Apple Card" | filename-derived
-  purchaser: "Kira",               // family member name, or null if unattributed
+  ccSettings:       { 'Credit - Allegiant4': { closeDay:1, dueDay:25 }, ... },
+  budgetTargets:    { mortgage:2800, groceries:900, restaurants:600, ... },
+  nonRecurringIds:  ['date|payee|amount|account', ...],  // Set serialized as array
+  surplusTargets:   { emergency:0, investments:0, college:0, other:0 },
+  accountOwners:    { 'Credit - Allegiant4': 'Chris', ... },
 }
 ```
-
-The `purchaser` and `source` fields are the key additions enabling per-person analytics. They are populated at import time and persisted in `ledger_v3`.
-
-### accountOwners Map (Settings)
-
-```javascript
-settings.accountOwners = {
-  "Chase Sapphire (CC)": "Chris",
-  "Apple Card (CC)":     "Kira",
-  "PNC Business Checking": "Chris",
-  // Accounts not listed are treated as shared/unassigned
-}
-```
-
----
-
-## Demo Data
-
-`generateDemoData()` generates 4 years of synthetic Pittsburgh-family financial data:
-
-**Quicken Accounts (13):**
-- Chase Checking, Chase Savings, Marcus Savings (HYSA) — banking
-- Chase Sapphire (CC), Amex Blue Cash (CC), Citi Double Cash (CC) — credit
-- Apple Card - Chris (CC), Apple Card - Kira (CC) — individual Apple Cards
-- Nordstrom Credit Card — Kira's clothing/beauty card
-- Fidelity 401k, Fidelity Brokerage — investments
-- PNC Business Checking, PayPal — business/other
-
-**Detail File Sources (3):**
-- `Apple Card` (purchaser: Chris) — mobile pay, dining, streaming, app purchases
-- `Apple Card` (purchaser: Kira) — fitness, clothing, beauty, grocery Apple Pay
-- `Nordstrom Card` (purchaser: Kira) — clothing, footwear, beauty, dining; July/August Anniversary Sale spike
-
-**Account Owners auto-configured on loadDemo():**
-
-```javascript
-settings.accountOwners = {
-  'Chase Sapphire (CC)':     'Chris',
-  'Apple Card - Chris (CC)': 'Chris',
-  'Citi Double Cash (CC)':   'Chris',
-  'PNC Business Checking':   'Chris',
-  'Amex Blue Cash (CC)':     'Kira',
-  'Apple Card - Kira (CC)':  'Kira',
-  'Nordstrom Credit Card':   'Kira',
-  'Fidelity 401k':           'Chris',
-  'Fidelity Brokerage':      'Chris',
-};
-```
-
----
-
-## Bug Fix and Architecture History (v3.4 – v3.12)
-
-### v3.12 — Codebase Audit and Cleanup
-
-11 dead functions removed from `index.html` (confirmed never called): `buildSidSystemPrompt`, `calcAgeInYears`, `getAmzSensitivityThreshold`, `getAnaFiltered`, `getCategoryBudget`, `getFamilyReportHeader`, `getFamilyReportSubtitle`, `getLargePurchaseThreshold`, `getSavingsRateTarget`, `isTextFile`, `refreshKidAge`.
-
-22 unused CSS classes removed: `.badge-gold`, `.btn-xs`, `.confidence-high/medium/low`, `.dollar-brand`, `.forge-moment` (+3 variants), `.furnace-icon/sub/title`, `.g-chip`, `.gauge-chips/eyebrow/label`, `.gc-gold/muted/negative/positive/river`, `.jersey-badge`, `.nav-badge`, `.nav-footer`.
-
-12 unused CSS custom properties removed: `--accent` (×4), `--cream`, `--forge-dark`, `--r`, `--r-xl`, `--slate`, `--surface`, `--text`, `--text2`. Duplicate `@keyframes pop-in` definition removed.
-
-From `forge-pulse.html`: 3 unused CSS classes (`.chip-blu`, `.chip-muted`, `.gold-star`) and 3 unused CSS variables (`--caution`, `--hover`, `--purple`) removed.
-
-### v3.11 — Analytics and Cash Flow blank sections
-
-**Canvas-already-in-use:** Every analytics chart renderer (`renderMiniStack`, `renderMiniDow`, `renderMiniPurchaserChart`, `renderMainChart`) was calling `element.getContext('2d')` without checking for an active Chart.js instance. On repeat navigation or filter change, Chart.js threw "Canvas is already in use by chart with id X" — silently swallowed, leaving the chart blank. Fix: `Chart.getChart(canvasEl)` guard before every chart creation; destroy if found before creating new.
-
-**Waterfall IIFE:** The waterfall config in `renderMainChart` was built as an IIFE on every call regardless of selected chart type, causing edge-case throws. Fixed by making waterfall config lazy — only built when `anaChartType === 'waterfall'`.
-
-### v3.10 — Black Screen: True Root Cause
-
-One missing `</div>` in the upload page HTML. The Smart Scan zone insertion left `<div id="page-upload">` unclosed. `<div id="page-dashboard">` sat **inside** the unclosed div as a child, not a sibling. When `showPage('dashboard')` ran, the upload page got `display:none`, and the dashboard inherited it — `offsetHeight: 0` despite real content. Fix: one `</div>` added immediately before `<!-- ══ DASHBOARD ══ -->`.
-
-### v3.9 — Smart Scan
-
-AI-powered universal extraction fallback using Claude. Handles receipt photos, PDF bank statements, W-2s/1099s, unknown CSVs. Integrated at three points in `processAll()`: images/PDFs bypass structured parsers entirely; unknown extensions attempt Smart Scan; CSVs that parse to zero rows fall back automatically. Requires `WORKER_URL` set in `index.html` and `forge_worker_v2.js` deployed to Cloudflare.
-
-`forge_worker_v2.js` adds the `/scan` endpoint alongside the existing `/chat` endpoint:
-
-| Route | Purpose | Max tokens |
-|-------|---------|------------|
-| `POST /chat` | $id AI financial assistant | 1,500 |
-| `POST /scan` | Smart Scan transaction extraction | 4,096 |
-
-### v3.8 — Quicken CSV Preamble Detection
-
-`parseCSV` header scanner now loops through the first 30 lines and picks the first one containing both a date-like and amount-like column name. Preamble rows (report title, date range) are naturally skipped. Confirmed: `QuickenExportAll_260329.csv` (7,440 lines) → 7,420 transactions parsed.
-
-### v3.7 — Black Screen: Orphaned CSS `to {}` Fragments
-
-Removing `@keyframes bodyReveal` and `@keyframes pageReveal` in a prior session left orphaned `to { opacity: 1; }` and `to { transform: translateY(0); }` closing fragments at the top level of the stylesheet. These corrupted the cascade for rules that followed — `.page { display:none }` and `.page.active { display:block }` were misapplied. Fix: both orphaned fragments removed. CSS brace count: 403 open / 403 closed.
-
-### v3.6 — Black Screen: Chart.defaults at Parse Time
-
-`Chart.defaults.*` assignments ran at the top level of the script — outside any function, before `DOMContentLoaded`. If Chart.js had not fully parsed yet, `TypeError` killed the entire script silently. All Chart.defaults assignments moved into `applyChartDefaults()`, called from `DOMContentLoaded`.
-
-### v3.5 — Black Screen: JS Syntax Error (Orphan `}`)
-
-A prior session's partial replacement left an orphan `}` on line 25 of the main script — hard syntax error, browser refused to parse the script entirely. Also eliminated in this pass: `body { animation: bodyReveal }` with `both` fill-mode holding body near-invisible; page and Pulse animations replaced with inline-style visibility control exclusively. `showPage()` now sets `display`, `opacity`, and `visibility` via inline style; CSS class is fallback only.
-
-### v3.4 — CSV Import Comprehensive Rewrite
-
-Complete rewrite of `parseCSV()`. Blank column handling, `sep=,` stripping, BOM stripping, semicolon/pipe delimiter detection, European decimal format, mixed CRLF+LF, `N/A`/`--` amount guards, mid-file repeated header skipping. Suite 26 added to `forge_tests_v2.js` (39 tests, 26 suites total).
-
----
-
-## Known Fixes Applied in v3.3
-
-| Function | Bug | Fix |
-|----------|-----|-----|
-| `scoreImpulse` | `total=0` was triggering low-price bonus (+25 pts) | Added `total > 0` guard before price tier check |
-| `guessType` | `'brokerage'` and `'roth'` returned `'other'` | Added to investment detection pattern |
-| `parseCSV` | Standalone `Debit` column not recognized | Added `'debit'` and `'credit'` to amount column detector |
-| `parseAppleCard` | `null` purchaser overwritten by filename fallback | Explicit `null` now preserved; fallback only for `undefined` |
-| `parseGenericDetail` | Same null-purchaser issue | Same fix applied |
-
----
-
-## v3.3 Bug Fixes
-
-The following bugs were identified by the exhaustive test suite (forge_tests_v2.js) and fixed:
-
-### `scoreImpulse(item)`
-**Before:** `if (total < 15) s += 25` — items with `total=0` (empty objects, malformed rows) received a 25-point low-price bonus.
-**After:** `if (total > 0 && total < 15) s += 25` — requires a positive total.
-
-### `guessType(name)`
-**Before:** Only recognized `invest`, `401`, `ira` as investment signals.
-**After:** Also recognizes `brokerage` and `roth`.
-
-```javascript
-// Before
-if (n.includes('invest') || n.includes('401') || n.includes('ira')) return 'investment';
-// After
-if (n.includes('invest') || n.includes('401') || n.includes('ira') || n.includes('brokerage') || n.includes('roth')) return 'investment';
-```
-
-### `parseCSV(text, fname)`
-**Before:** Amount column detection did not include standalone `debit` or `credit` columns.
-**After:** Both added to the `col()` call for amount detection, enabling Apple Card bank-format CSVs to import correctly.
-
-### `parseAppleCard(text, fname, purchaser)` and `parseGenericDetail(text, fname, purchaser)`
-**Before:** `const owner = purchaser || fname.replace(...)` — when `purchaser=null` was passed explicitly, the `||` short-circuit replaced it with the filename-derived label.
-**After:** `const owner = (purchaser !== undefined && purchaser !== null) ? purchaser : fname.replace(...)` — explicit `null` is now preserved, preventing false attribution.
-
----
-
-## Bug Fix History (v3.2)
-
-Five defects were found by the v3.2 test suite and corrected in the production code:
-
-| Function | Issue | Fix |
-|----------|-------|-----|
-| `scoreImpulse` | `total=0` triggered low-price bonus (25 pts), so empty objects scored Medium Impulse | Added `total > 0` guard before the `< 15` branch |
-| `guessType` | `brokerage` and `roth` matched `other` instead of `investment` | Added both keywords to the investment detection condition |
-| `parseCSV` | Standalone `debit`/`credit` column headers not recognized as amount columns | Added `'debit'` and `'credit'` to `col()` lookup list |
-| `parseAppleCard` | `null` purchaser was replaced by filename-derived label via JS `||` operator | Changed to explicit `!== null && !== undefined` guard |
-| `parseGenericDetail` | Same null-purchaser issue as `parseAppleCard` | Same fix applied |
 
 ---
 
 ## Parser Reference
 
-### `parseAmazon(text)`
-
-Supports both Amazon Privacy Central format (2023+) and legacy Order History Reports format (pre-2023). Auto-detects by checking column headers.
-
-**New format columns:** `Order ID`, `Order Date`, `Product Name`, `Quantity`, `Purchase Price Per Unit`, `Grand Total`, `ASIN/ISBN`, `Department`
-
-**Legacy format columns:** `Order Date`, `Order ID`, `Title`, `Category`, `ASIN`, `Quantity`, `Item Total`
-
-Returns `amzItem[]`. Note: `source` and `purchaser` are NOT set by `parseAmazon` directly — they are added by `parseDetailFile` which wraps it.
-
-### `parseAppleCard(text, fname, purchaser)`
-
-Parses Apple Card monthly statement CSV exported from the Wallet app.
-
-**Detected by:** `clearing date` column, `amount (usd)` column, or `apple`/`applecard` in filename.
-
-**Column detection:**
-- Date: `transaction date`, `clearing date`, `date`
-- Payee: `merchant`, `description`, `payee`
-- Amount: `amount (usd)`, `amount`
-- Category: `category`, `type`
-
-Automatically skips payments, autopay, credits, and refund rows. Returns `amzItem[]` with `source: 'Apple Card'` and `purchaser` set from the argument.
-
-### `parseGenericDetail(text, fname, purchaser)`
-
-Catches any enrichment CSV not matched by the other parsers. Looks for standard financial column names.
-
-**Date:** `date`, `transaction date`, `order date`, `purchase date`, `posted date`
-
-**Description:** `description`, `merchant`, `name`, `payee`, `title`, `item`, `memo`
-
-**Amount:** `amount`, `total`, `price`, `charge`, `debit`, `cost`, `amount usd`
-
-Sets `source` from the filename (stripped of extension and underscores). Returns `amzItem[]`.
-
-### `parseDetailFile(text, fname, purchaser)`
-
-**The router.** Takes any enrichment CSV and sends it to the right parser:
-
-1. Check for Amazon signals → `parseAmazon()` + stamp `source: 'Amazon'` + `purchaser`
-2. Check for Apple Card signals → `parseAppleCard()`
-3. Fall back → `parseGenericDetail()`
-
-This is what `processAll()` calls for all files dropped on the right (detail) zone.
-
 ### `parseCSV(text, fname)`
 
-Multi-format Quicken CSV parser. Handles comma and tab delimiters, quoted fields, and all common Quicken column naming variants.
+Auto-detects format from column signatures. Tries merchant formats first; falls through to Quicken generic.
 
-**Flexible column matching** — accepted column names:
+**Merchant detection order:**
 
-| Field | Accepted names |
-|-------|---------------|
-| Date | `date`, `transaction date`, `trans date`, `posted date`, `post date`, `value date` |
-| Payee | `payee`, `description`, `merchant`, `name`, `memo`, `narrative`, `details` |
-| Amount | `amount`, `transaction amount`, `value`, `debit/credit`, `net amount`, `withdrawal`, `deposit` |
-| Category | `category`, `type`, `transaction type`, `class` |
-| Account | `account`, `account name`, `account number` |
+1. Apple Card: first 3 lines contain `clearing date` + `merchant` + `amount (usd)` → `parseMerchantCSV()` with `sign:-1` (negate all amounts)
+2. Amazon: first 3 lines contain `order id` + `asin` + `total charged` → `parseMerchantCSV()` with `sign:-1`
+3. Home Depot: first 3 lines contain `order number` + `items ordered` + `order total` → `parseMerchantCSV()` with `sign:-1`
+4. Venmo: first 3 lines contain `funding source` + `destination` + `amount (total)` → `parseMerchantCSV()` with `sign:0` (use amount string sign)
+5. Generic Quicken CSV: header scanner loops first 30 lines for a row with both a date-like and amount-like column name
 
----
+**Column mapping (Quicken generic):** `findCol(headers, ...names)` tries multiple column name variants for each field. Debit/credit split columns are supported alongside single amount columns. BOM stripped, CRLF normalized, `sep=` Excel hint removed, European decimal detected.
 
-## Purchaser Attribution System
-
-### At Import Time (Detail Files)
-
-`processAll()` infers the purchaser from the filename before calling `parseDetailFile()`:
+### `parseMerchantCSV(text, acctName, opts)`
 
 ```javascript
-const allPeople = [settings.user1, settings.user2, ...settings.kids.map(k=>k.name)];
-allPeople.forEach(p => {
-  if (fname.toLowerCase().includes(p.toLowerCase())) purchaser = p;
-});
-```
-
-The purchaser is passed into `parseDetailFile()` and stamped on every item in the file.
-
-**Deduplication key includes purchaser:** `date|title|orderId|purchaser` — so the same item can exist for different purchasers (e.g. if Chris and Kira both bought the same item on the same day from separate accounts).
-
-### At Render Time (Quicken Transactions)
-
-Quicken transactions are attributed using the `accountOwners` map at render time:
-
-```javascript
-function inferTxnOwner(txn) {
-  if (!settings.accountOwners) return null;
-  return settings.accountOwners[txn.account] || null;
+opts = {
+  dateCol:     'transaction date',   // header column name for date
+  payeeCol:    'merchant',           // header column for payee
+  payeeColAlt: null,                 // optional second payee col (Venmo: 'to')
+  amtCol:      'amount (usd)',       // header column for amount
+  catCol:      'category',           // header column for category (null to skip)
+  detailCol:   'description',        // header column for itemDetail
+  sign:        -1,                   // -1=always expense, 0=use amount sign
 }
 ```
 
-This is intentionally kept at render time (not stored on the transaction) so ownership can be updated retroactively without re-importing.
+Titles longer than 60 characters: full title saved to `itemDetail`, payee truncated to 55 chars + `…`.
 
-### Per-Person Analytics Functions
+### `parseNetWorthCSV(text)`
 
-**`personSummary(personName, dateFrom)`**
-Returns `{ name, total, items, topCat, impulseRate, avgOrder, monthlyAvg, categories[] }` for a given person's detail purchases.
+Detects Quicken Net Worth report by scanning the first 4 lines for the string `Net Worth`. Returns `{ acctName: { value, date, source } }`.
 
-**`detectPersonTrends()`**
-Compares last 3 months vs. prior 3 months per person, at both total and category level. Returns `{ person, cat, pct, cur, prv, sev }[]`.
+Column layout: 3-column (col0=blank, col1=name, col2=balance). Handles Investment Performance variant (uses col4 = ending value, only rows where col1 = 'Total'). Skips: TOTAL rows, NET WORTH summary row, OVERALL TOTAL, section header rows, zero-balance rows.
 
-**`predictMonthlyDetail(personName)`**
-Projects current month's detail spend to end-of-month for a given person. Returns `{ projected, histAvg, mtdTotal, daysLeft }`.
+**`isNetWorthExport(text)`:** Strict detection — only returns true when `Net Worth` appears in the first 4 lines. Never uses heuristics (prevents transaction CSVs from being misidentified).
 
-**`inferTxnOwner(txn)`**
-Returns the owner of a Quicken transaction based on the accountOwners map, or null if unassigned.
+### `parseQIF(text, fname)`
 
----
+Multi-account QIF. `!Account` sections set `currentAcct`. Parses `D`, `T`, `P`, `M`, `L`, `^` fields. Transfer categories in `[bracket]` format set `isTransfer:true`.
 
-## Intelligence Engine
+### `parseOFX(text, fname)`
 
-### detectTrendAlerts() — Enhanced
-
-Now runs three passes:
-
-1. **Shared account trends** — 3M vs. prior 3M by category across all transactions (original behavior)
-2. **Per-person Quicken trends** — for each person in `accountOwners`, computes their account-level trend and alerts if >35%
-3. **Per-person detail trends** — calls `detectPersonTrends()` and pushes per-person + per-category alerts with the person named in the title
-
-All purchaser alerts have `type: 'purchaser'` and `icon: '👤'` for visual distinction in the Bullpen.
-
-### buildLifeStageRecommendations() — Enhanced
-
-In addition to age-based recommendations, now includes:
-
-- Per-person predictive warning if anyone is on pace for their highest detail spend month (>130% of historical average)
-- Per-person impulse rate warning if any attributed purchaser is above 40% impulse rate
-- Platform-level warning if detail imports represent >15% of monthly spending
+OFX/QFX XML-like format. Parses `<STMTTRN>` blocks. CDATA stripped. Amount sign: OFX negative = expense (debits from account), positive = income.
 
 ---
 
-## Detail Lens Page (renderAmazon)
+## Classification
 
-The Detail Lens page now has five tabs:
+### `classifyTxn(t)` — bucket assignment
 
-| Tab | What it shows |
-|-----|--------------|
-| Overview | Monthly detail spend bar chart + category donut (all sources combined) |
-| By Category | Spend bar + impulse score bar (horizontal) + category table |
-| All Items | Searchable/filterable table with purchaser badge, source badge, impulse badge; filters for Person and Source added |
-| By Purchaser | Per-person cards with total, impulse rate, avg order, projected spend, acceleration warnings, category breakdown |
-| vs. Total Spend | Detail lens as % of all spending, stacked bar, percent line chart |
+Priority order:
 
-### renderPurchaserTab()
+1. `QUICKEN_CAT_MAP` exact match on `t.category.toLowerCase()` — 60+ entries covering all standard Quicken categories
+2. `QUICKEN_CAT_MAP` partial match (category contains key)
+3. `--split--` special handler: routes by payee keyword — `/house loan|rocket/i` → `mortgage`, `/palisade/i` → `car`
+4. `KW_MAP` payee keyword match — `/giant eagle|aldi|whole foods/i` → `groceries`, etc.
+5. Income heuristic: positive unknown amount → `other_inc`
+6. Default: `other`
 
-The By Purchaser tab renders a card per attributed person using `personSummary()` and `predictMonthlyDetail()`. Each card shows:
-- Total spend and share of all detail spend
-- Monthly avg, impulse rate, average order
-- Projected this-month spend vs. historical (highlighted if >130% of avg)
-- Acceleration warning (from `detectPersonTrends()`) if any category is up >40%
-- Top 5 categories ranked by spend
+### `WATERFALL` — income statement sections
 
-If no purchaser data exists, the tab renders an instructional empty state explaining the filename tagging convention.
-
----
-
-## Settings — Account Owners
-
-### renderAccountOwnerSection()
-
-Dynamically renders one row per account with a dropdown populated from the family member list (user1, user2, kids). The current `accountOwners` value is pre-selected. Only renders if `accounts.length > 0`.
-
-### saveSettings() Update
-
-Reads `.acct-owner-select` elements and writes to `settings.accountOwners`. Accounts not explicitly set to a person are excluded from the map (treated as shared).
+```
+income       → paycheck, other_inc
+auto_save    → auto_save
+fixed        → mortgage, car, education, insurance, childcare
+utilities    → electric, gas_util, water, internet, cell
+necessities  → groceries, gas_car, transit, healthcare
+discretionary→ restaurants, entertainment, household, personal,
+               clothing, travel, subscriptions, gifts
+other        → other
+```
 
 ---
 
-## Design System
+## Balance Sheet
 
-### Color Palette
+### `BS_ACCOUNTS` — 27 entries
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--void` | `#080808` | Deepest background |
-| `--base` | `#0E0E0E` | Primary background |
-| `--lift` | `#151515` | Raised surfaces |
-| `--float` | `#1C1C1C` | Cards, panels |
-| `--gold` | `#F5A800` | Brand primary |
-| `--positive` | `#2DD4BF` | Positive values (teal) |
-| `--negative` | `#F87171` | Negative values |
-| `--river` | `#60A5FA` | Purchaser badges, secondary accent |
-| `--purple` | `#A78BFA` | Source badges (Apple Card, non-Amazon) |
-| `--ink` | `#F2EFE9` | Primary text (warm white) |
+| Account (Quicken name) | Class | Sub | Label |
+|---|---|---|---|
+| Checking - PNC | asset | current | PNC Checking |
+| Savings - PNC | asset | current | PNC Savings |
+| Savings - Sam/Whit/Will | asset | current | Savings — [name] |
+| 529 - Sam/Whit/Will | asset | education | 529 Plan — [name] |
+| Investing - NR/Sam NR/Whit NR/Will NR/C&K | asset | investment | Investment — [name] |
+| Retirement - Chris HH | asset | retirement | 401(k) — Chris (HH) |
+| Retirement - NR IRA/NR Roth | asset | retirement | IRA/Roth IRA — NR |
+| House | asset | **property** | Primary Residence |
+| House Loan | liability | **mortgage** | Mortgage (Rocket) |
+| Palisade Loan | liability | **auto** | Auto Loan (Palisade) |
+| Credit - Allegiant4/Amazon17/ChPNC1/Flag17/KiPNC28/Kohls27/Old Navy4/Quick19 | liability | current | [label] CC |
 
-### Typography
+**Critical:** `sub` values must match exactly what `renderBalanceSheet()` searches. Home equity uses `sub==='property'` and `sub==='mortgage'`. The liabSubOrder array uses `['current','mortgage','auto','student','long_term','other']`.
 
-| Token | Stack | Purpose |
-|-------|-------|---------|
-| `--font-d` | Cormorant Garamond → Playfair Display → Georgia | Display |
-| `--font-ui` | DM Sans → Inter → system-ui | UI text |
-| `--font-m` | Fira Code → JetBrains Mono → monospace | Dates, numbers |
+### `computeBSFromTxns()`
 
----
+Sums all transactions per account. Returns `{ balances: { acctName: number }, lastDate: { acctName: 'YYYY-MM-DD' } }`. This is the fallback value source when no NW snapshot is loaded.
 
-## Deduplication Keys
-
-| Data type | Dedup key |
-|-----------|-----------|
-| Quicken transactions | `date\|payee\|amount\|account` |
-| Detail items | `date\|title\|orderId\|purchaser` |
-
-The purchaser is part of the detail dedup key so the same item can be attributed to different people without being deduplicated against each other.
-
----
-
-## External Dependencies
-
-| Dependency | Version | Source | Usage |
-|-----------|---------|--------|-------|
-| Chart.js | 4.4.1 | cdnjs CDN | All 16 charts |
-| Cormorant Garamond | — | Google Fonts | Display typography |
-| DM Sans | — | Google Fonts | UI typography |
-| Fira Code | — | Google Fonts | Monospace typography |
-
-No npm, no webpack, no framework. Works offline except for CDN resources.
-
----
-
-## Analytics Studio
-
-### Architecture
-
-The Analytics page is a single `renderAnalytics()` call that orchestrates five sub-renderers. All computation happens client-side in the browser using existing `txns` and `amzItems` data.
-
-**Control flow:**
-1. User changes any control → `renderAnalytics()` fires
-2. `getAnaFiltered()` applies date range, category, and account filters to `txns`
-3. `groupByDimension(txns, dim)` groups the filtered data by the selected dimension
-4. `computeMetric(group, metric)` extracts the requested metric value per group
-5. `renderMainChart()` switches on `anaChartType` and constructs the Chart.js config
-6. Four secondary mini charts render independently with fixed configurations
-7. `renderAnaTable()` renders if `anaTableVisible` is true
-
-### Chart Types
-
-| Type | Implementation | Notes |
-|------|---------------|-------|
-| Bar | Chart.js `bar`, vertical | Default; color per bar |
-| Horizontal Bar | Chart.js `bar`, `indexAxis:'y'` | Sorted descending |
-| Line | Chart.js `line`, tension 0.35 | Gold accent color |
-| Area | Chart.js `line`, fill:true | River blue fill |
-| Donut | Chart.js `doughnut`, cutout 58% | Legend right |
-| Scatter | Chart.js `scatter`, index as x | Tooltip maps x→label |
-| Waterfall | Chart.js `bar`, floating `[start,end]` pairs | Green/red per direction |
-| Heatmap | Pure HTML table | Month × day-of-week grid, gold opacity scale |
-
-### State Variables
+### Value resolution in `renderBalanceSheet()`
 
 ```javascript
-let anaChartType = 'bar';          // current chart type
-let anaChart = null;               // primary Chart.js instance
-let anaMiniStackChart = null;      // secondary: income vs spending
-let anaMiniDonutChart = null;      // secondary: top categories
-let anaMiniDowChart = null;        // secondary: day of week
-let anaMiniPurchaserChart = null;  // secondary: by person
-let anaTableVisible = false;       // data table open/closed
-let anaDataCache = null;           // {keys, values, metric, dim} for table
-```
-
----
-
-## Test Suites
-
-Three test suites cover all parser, analytics, and AI logic. Run with Node.js — no browser required.
-
-```bash
-node forge_tests.js       # 149 tests — parsers, formatters, dedup (original suite)
-node forge_tests_v2.js    # 325 tests — Apple Card, analytics, purchaser, edge cases, blank CSV columns (Suite 26)
-node forge_sid_tests.js   # 98 tests  — $id AI layer, context, alerts, error routing
-# Total: 572 tests
-```
-
-### Test framework
-
-Micro-framework defined inside each test file: `suite(name)`, `test(name, fn)`, `assert(cond, msg)`, `eq(a, b, msg)`, `near(a, b, tol)`, `gt(a, b)`, `gte(a, b)`, `isArr(v)`, `hasKeys(obj, keys)`, `noThrow(fn)`, `throws(fn)`.
-
-### forge_module.js (auto-generated)
-
-The test harness requires functions extracted from `index.html` into `forge_module.js`. Rebuild whenever `index.html` changes:
-
-```javascript
-// Extract functions from index.html and write to forge_module.js
-// Run: node forge_docs_v2.js  (this also rebuilds Word docs)
-// Or run the Python extraction script in forge_tests.js comments
-```
-
-The extractor uses a depth-counting parser to find function boundaries and a top-level guard to avoid extracting `const` declarations from inside function bodies.
-
----
-
-## Smart Scan — AI-Powered Universal Extraction
-
-Added in v3.9. Claude reads any file Forge's structured parsers cannot handle.
-
-### Supported Input Types
-
-| Source type | How it works |
-|-------------|-------------|
-| Photos of receipts | Base64 image → Claude reads amounts, dates, merchant |
-| Photos of bank statements | Same — Claude reads any layout |
-| PDF bank/investment statements | Native PDF block → Claude reads the full document |
-| W-2 / 1099 forms | Extracted as a single income transaction dated Dec 31 of tax year |
-| Unknown CSV formats | Text sent to Claude as fallback when parser returns 0 rows |
-
-### Integration Points in `processAll()`
-
-1. **Images and PDFs** dropped in the main zone → routed to Smart Scan immediately (no structured parser attempted)
-2. **Unknown extensions** (`.xlsx`, `.xls`, etc.) → Smart Scan attempted if `WORKER_URL` is configured
-3. **CSV/QIF/OFX that parse to zero rows** → Smart Scan attempted automatically as fallback
-
-### Configuration
-
-Set `WORKER_URL` in `index.html` (line ~6771):
-```javascript
-const WORKER_URL = 'https://forge-sid.YOURSUBDOMAIN.workers.dev';
-```
-
-`forge_worker_v2.js` must be deployed (not the original `forge_worker.js`) — it adds the `/scan` endpoint. The `/chat` endpoint for $id works on both versions.
-
-### Cost
-
-~$0.001–0.005 per file (Claude Sonnet). Billed to the Anthropic account via the Worker's API key.
-
----
-
-## Wrangler Configuration
-
-```jsonc
-{
-  "name": "forge-sid",
-  "main": "forge_worker.js",
-  "compatibility_date": "2025-09-27",
-  "compatibility_flags": ["nodejs_compat"]
+function getCurrentValue(acct, meta) {
+  const nwOv = netWorthOverrides[acct];
+  if (nwOv) return { value: meta.class === 'liability' ? Math.abs(nwOv.value) : nwOv.value, source: 'net-worth' };
+  const raw = balances[acct] || 0;
+  return { value: meta.class === 'liability' ? Math.abs(raw) : raw, source: 'transactions' };
 }
 ```
 
-No `assets` block — its presence disables the Worker's `fetch` handler and prevents secrets from being accessible.
+For liabilities: Quicken stores CC balances as negative net (credits exceed debits). `Math.abs()` is applied so all liability values are shown positive, then subtracted for net worth.
+
+### Balance sheet KPI tiles
+
+Row 1 — Wealth:
+- **Net Worth** = totalAssets − totalLiabs. With compare active: shows delta and % change.
+- **Total Assets** — all asset account values summed
+- **Total Liabilities** — all liability account values summed
+- **Home Equity** = `getCurrentValue('House').value − getCurrentValue('House Loan').value`
+
+Row 2 — Liquidity:
+- **Current Assets** = sum of `sub:'current'` + `sub:'savings'` asset accounts
+- **Current Liabilities** = sum of `sub:'current'` liability accounts (CC balances)
+- **Current Ratio** = currentAssets ÷ currentLiabs. Target ≥2×.
+
+Row 3 — Debt/Income:
+- **Debt-to-Asset** = totalLiabs ÷ totalAssets × 100. Target <30%.
+- **Debt-to-Income** = totalDebt ÷ (recurringIncomeAvg(12) × 12) × 100. Target <36%. Uses recurring income only (excludes NR-flagged transactions).
+- **Liquid Coverage** = currentAssets ÷ recurringIncomeAvg(1). Target ≥6 months.
+
+---
+
+## Recurring Detection
+
+`detectRecurring()` groups `spendable(txns)` expenses by `payee|account`. For each group with ≥2 transactions:
+
+1. Sort by date, compute inter-arrival gaps in days
+2. Compute mean gap and standard deviation
+3. Classify: monthly (avg 25–40d, stddev <8), weekly (6–9d, <3), quarterly (83–97d, <10), annual (355–375d, any stddev)
+4. Reject: variable-amount non-monthly patterns (any amount >25% from mean for weekly/quarterly/annual)
+5. Project next occurrence from last date + mean gap
+
+Returns array sorted by `nextDate` ascending.
+
+---
+
+## Non-Recurring Income
+
+`autoDetectNonRecurring()` runs on boot and after every import. Flags income transactions as non-recurring when:
+- Amount > 60% of median monthly income AND payee appears ≤2 times total, OR
+- Payee/category matches `/bonus|gift|award|settlement|refund|inheritance|tax ref/i`
+
+Flagged keys stored as `nonRecurringIds` (Set) in `forge_settings_v2`. `recurringIncomeAvg(months)` excludes flagged transactions when computing any income-based ratio.
+
+---
+
+## Functions — Complete List
+
+**Parsers:** `parseMerchantCSV`, `parseCSV`, `parseQIF`, `parseOFX`, `parseNetWorthCSV`, `parseDate`, `parseAmt`, `csvRow`, `findCol`, `isNetWorthExport`
+
+**Classification:** `classifyTxn`, `detectAcctType`, `isCreditAcct`, `isTransfer`, `spendable`, `incomeOnly`, `expensesOnly`
+
+**Storage:** `saveData`, `loadData`, `saveSettings`, `loadSettings`, `saveNetWorthOverrides`, `loadNetWorthOverrides`, `clearAll`, `clearNetWorthOverrides`, `toggleDemo`, `loadDemo`
+
+**Formatting:** `fmt`, `fmtK`, `txnKey`
+
+**Charts/SVG:** `svgBar`, `svgLine`, `svgHBar`, `makeDonut`, `monthlyData`, `drillFromChart`, `applyChartDrill`, `showChartTip`, `positionChartTip`, `hideChartTip`, `bindChartTips`
+
+**Navigation:** `showPage`, `setRange`, `setCatRange`, `updateHeader`, `showAudit`, `toast`
+
+**Render — pages:** `renderDashboard`, `renderCashFlow`, `renderCategories`, `renderTxns`, `renderUploadStatus`, `renderValidation`, `renderFileList`, `renderIncomeStatement`, `renderCreditFlow`, `computeBSFromTxns`, `renderBalanceSheet`, `renderFinancials`, `renderBudget`, `renderBillCalendar`
+
+**Render — helpers:** `toggleSection`, `toggleBucket`, `filterTxnsByAcct`
+
+**Financial logic:** `getCCProjections`, `rangeStart`, `inRange`, `detectRecurring`, `autoDetectNonRecurring`, `recurringIncomeAvg`, `suggestBudget`, `balanceAsOfDate`
+
+**Settings:** `updateCCSetting`, `toggleNonRecurring`
+
+**Import pipeline:** `handleFiles`, `readFile`
+
+Total: 75 functions.
+
+---
+
+## Code Conventions
+
+- **Visibility:** JS inline styles only (`element.style.display`). CSS class `.page.active` is a fallback. No CSS animation controls visibility.
+- **Chart creation:** Always `Chart.getChart(canvasEl)` guard — destroy existing before creating new. No `Chart.defaults.*` at top level; all inside `applyChartDefaults()` called from DOMContentLoaded.
+- **No dead code:** Confirm with full-file string search before declaring any function unreachable.
+- **Syntax check:** `node --check` after every edit. CSS brace balance verified.
+- **No `--split--` in QUICKEN_CAT_MAP:** Removing it lets the payee router handle mortgage/car correctly.
+
+---
+
+## Known Gaps
+
+- No automated visual regression testing. Manual verification checklist in TESTING.md.
+- `forge_module.js` must be manually rebuilt after any `index.html` function changes.
+- Word docs (User Manual, Quick Start, Sid Setup) reflect approximately v3.2 — not updated for lean_4.0.
+- Forge Pulse (`forge-pulse.html`) retains v3.12 architecture; not rebuilt as lean core.

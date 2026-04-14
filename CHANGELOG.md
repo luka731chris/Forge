@@ -1,393 +1,231 @@
+# Forge Changelog
+
+---
+
+## [lean_4.0] — 2026-04-13
+
+### Architecture — Complete Rebuild as Lean Core
+
+`forge.html` retired. `index.html` is now the single production file — a ground-up rewrite that retains all financial logic while eliminating the accumulated complexity of the v3.x series.
+
+**What changed structurally:**
+
+- Single file, no build step, no framework. Vanilla JS + Chart.js 4.4.1.
+- Storage keys renamed and isolated: `forge_prod_v1` (real data), `forge_demo_v1` (demo, never mixed), `forge_networth` (current NW snapshot), `forge_networth_hist` (historical snapshots, survives Clear Data), `forge_settings_v2` (CC dates, budgets, NR flags).
+- Build stamp `lean_4.0` in `forge_build` — auto-wipes legacy keys on first load.
+- `DOMContentLoaded` boot sequence: loads data → runs `autoDetectNonRecurring()` → `updateHeader()` → routes to dashboard or upload.
+- All 12 pages present and functional: Dashboard, Cash Flow, Categories, Transactions, Income Statement, Credit Card Flow, Import Data, Data Validation, Budget vs Actual, Bill Calendar, Balance Sheet, Family Financials.
+
+---
+
+### Added — Balance Sheet with Historical Comparison
+
+New **Balance Sheet** page with full comparison infrastructure:
+
+**Comparison dropdown** (header, right side): None · YE 2024 · YE 2025 (default) · Q1 2025 · Q2 2025 · Q3 2025 · Prior NW Snapshot
+
+When a comparison period is selected, the balance sheet renders four columns: **Current | Prior | Change | %** for every account row, every subtotal, and the Net Worth footer.
+
+**Value resolution priority:**
+1. Net Worth snapshot override (Quicken NW report, exact market value)
+2. Transaction-computed register balance (accurate for checking/CC, approximate for investments/property)
+
+For the comparison column, `getPriorValue()` checks `nwHistory` for the closest snapshot on or before the comparison date, then falls back to transaction-computed balance.
+
+**NW snapshot history (`forge_networth_hist`):**
+- Every NW CSV upload is stored keyed by its date: `nwHistory['2026-04-12'] = { 'House': 474500, ... }`
+- Multiple uploads accumulate — each adds a comparison point without overwriting others
+- This key survives **Clear Data** intentionally; historical snapshots are long-lived reference data
+- **✕ Clear NW History** button in the Balance Sheet header wipes it explicitly when needed
+
+**To populate all comparison periods, export these Quicken reports:**
+
+| Dropdown | Quicken date | Suggested filename |
+|---|---|---|
+| YE 2024 | 12/31/2024 | `NetWorth_241231.csv` |
+| Q1 2025 | 3/31/2025 | `NetWorth_250331.csv` |
+| Q2 2025 | 6/30/2025 | `NetWorth_250630.csv` |
+| Q3 2025 | 9/30/2025 | `NetWorth_250930.csv` |
+| YE 2025 | 12/31/2025 | `NetWorth_251231.csv` |
+
+Each uploads standalone (no transaction file needed). The "Prior NW Snapshot" dropdown option uses the most recent stored snapshot before the current date.
+
+**KPI tiles — three rows of 3–4:**
+
+Row 1 (wealth): Net Worth (with YoY delta when compare active) · Total Assets · Total Liabilities · Home Equity
+
+Row 2 (liquidity): Current Assets · Current Liabilities · Current Ratio (target ≥2×)
+
+Row 3 (debt/income): Debt-to-Asset % (target <30%) · Debt-to-Income % (target <36%) · Liquid Coverage in months (target ≥6)
+
+All tiles color-band green/gold/red against their respective targets. DTI and liquid coverage use `recurringIncomeAvg(12)` — non-recurring income (bonuses, gifts, settlements) is excluded.
+
+**Bug fixed — home equity was always showing house value:**
+`BS_ACCOUNTS` had `House` with `sub:'real_estate'` and `House Loan` with `sub:'long_term'`. The KPI calculation searched `sub==='property'` and `sub==='mortgage'` — no match → both balances zero → home equity = house value - 0 = house value. Fixed by aligning sub values: `House → sub:'property'`, `House Loan → sub:'mortgage'`, `Palisade Loan → sub:'auto'`.
+
+---
+
+### Added — Merchant CSV Parsers
+
+`parseCSV()` now detects and routes four merchant CSV formats before falling through to the generic Quicken parser. Detection is by column signature in the first three lines — filename is irrelevant.
+
+| Source | Detection columns | Payee field | `itemDetail` field |
+|---|---|---|---|
+| Apple Card | `clearing date` + `merchant` + `amount (usd)` | Merchant | Description (store-level detail) |
+| Amazon | `order id` + `asin` + `total charged` | Title (truncated to 60 chars) | Full title |
+| Home Depot | `order number` + `items ordered` + `order total` | Items ordered | Items ordered |
+| Venmo | `funding source` + `destination` + `amount (total)` | From/To (directional by sign) | Note |
+
+**`itemDetail` field:** Every transaction object now carries `itemDetail` — the raw human-readable item name from merchant CSVs. Shown in river-blue italic in Income Statement drilldowns and as a sub-line in the transaction table. For Quicken transactions `itemDetail` is null.
+
+Apple Card: amounts in the CSV are positive charges — parser negates them. Venmo: outgoing payments use the "To" column as payee; incoming use "From". Amazon: titles longer than 60 characters are stored as `itemDetail` and the payee is truncated with `…`.
+
+---
+
+### Added — Income Statement Drilldowns (3 levels)
+
+The Income Statement page now supports three-level drill-through on every expense section:
+
+1. **Section** (e.g., Discretionary Spending) → click to expand buckets
+2. **Bucket** (e.g., Restaurants) → click to expand payees
+3. **Payee** (e.g., Chipotle) → click (if 2+ transactions) to expand individual transactions
+
+Individual transaction rows show:
+- Date (Fira Code, muted)
+- Payee name
+- `itemDetail` in river-blue italic (Apple Card description, Amazon title, Venmo note, Home Depot item) — only shown when present and different from payee
+- Category · account in secondary muted line
+- Amount (gold for expense, green for income)
+
+Delegated click listener on the IS container — single handler, no inline onclick, state tracked in `isDrillOpen{}` and `isBucketOpen{}`.
+
+---
+
+### Added — Budget vs Actual
+
+Monthly budget tracking with seasonal suggestion engine.
+
+**`suggestBudget()`:** For each spending bucket, computes trailing 12-month average (60% weight) blended with same-calendar-month historical values (40% weight) — accounts for seasonality. Rounds to nearest $25.
+
+**Pace indicator:** When viewing the current month, shows whether spending is ahead or behind the expected daily pace. "Day 13 of 30 · $1,847 of $3,200 budget · $213 over pace."
+
+**Budget table:** Per-bucket progress bar, inline editable budget input (saves on change), projected month-end at current velocity, OK/Near/Over status badges.
+
+**Non-recurring income toggle:** ⭐ button per income transaction. Starred transactions are excluded from run-rate calculations throughout (DTI, liquid coverage, savings rate, budget projections). `autoDetectNonRecurring()` runs on boot and after every import — auto-flags large rare income, bonuses, gifts, tax refunds, settlements.
+
+---
+
+### Added — Bill Calendar
+
+**Credit card billing cycles:** Set statement close day and payment due day per card. Live cycle dashboard shows charges to date, daily velocity, days remaining, and projected statement balance.
+
+**Upcoming 30 days:** Recurring transaction predictions derived from historical pattern matching. Shows exact predicted date, payee, frequency, and expected amount. Total committed spend in the next 30 days shown as a header summary.
+
+**`detectRecurring()`:** Groups transactions by `payee|account`. Computes inter-arrival gaps, mean, and standard deviation. Classifies as monthly (25–40d avg, <8d stddev), weekly (6–9d, <3d), quarterly (83–97d, <10d), or annual (355–375d). Variable-amount monthly patterns are kept (e.g., utilities); variable non-monthly are dropped.
+
+**All recurring panel:** Grouped by frequency with subtotals per group, annualized committed spend, next predicted date per payee.
+
+---
+
+### Added — Family Financial Statements
+
+**Family Financials** page presents household finances as a family office / holding company. Period selector: Trailing 12 Months (default) or any calendar year present in the data.
+
+Sections:
+- Cover block with "Luka Family Office" header, period label, net worth (from NW snapshot if loaded)
+- Executive KPIs: Annual Revenue, EBITDA, Savings Rate, Cash Runway
+- Income Statement: Employment income vs other income, operating expenses by category, EBITDA line, savings flows, net income — with prior-year comparison column and $/month column
+- Key Financial Ratios: Savings Rate, Expense Ratio, Housing Cost Ratio, DSCR, Cash Runway, Net Worth — each benchmarked and color-banded
+- 12-Month Forward Projection: projected income/expenses/savings/net annualized from TTM run rate
+
+---
+
+### Fixed — Multiple Data Integrity Bugs
+
+**`--Split--` mortgage routing:** Quicken's split-category marker `--Split--` was in `QUICKEN_CAT_MAP` as `'--split--': 'other'`, short-circuiting before the payee-based router that correctly routes `House Loan` → `mortgage` and `Palisade Loan` → `car`. Removed `--split--` from the map so it falls through to the payee router.
+
+**Transfer double-counting:** `isTransfer()` checks for Quicken bracket category format `[AccountName]`. `spendable()` filters all transfers from income/expense totals. This prevents CC payments, savings transfers, and account moves from inflating both sides of the ledger.
+
+**Import hard-replace vs append:** The import pipeline wipes `txns`, `accounts`, `acctMeta`, and both localStorage keys before loading a new batch. Demo data cannot contaminate real data and vice versa.
+
+**`parseCSV` Quicken preamble:** Scanner loops first 30 lines for a row containing both a date-like and amount-like column name. Quicken's 4-line preamble (title, blank, date range, blank) is skipped cleanly.
+
+---
+
+### Fixed — File Structure
+
+The file was missing `</script></body></html>` closing tags. Browser auto-closes these so it rendered fine, but the missing tags prevented the Node.js test harness from finding the script block via regex (looking for `<script>...</script>`). Added closing tags; the regex now works correctly.
+
+`DOMContentLoaded` listener count confirmed at exactly 1. `</script>` tag count confirmed at exactly 2 (CDN + main).
+
+---
+
 ## [3.12] — 2026-04-03
 
-### Optimized — Full Codebase Audit and Cleanup
-
-Complete audit of both `forge.html` and `forge-pulse.html`. All 473 tests pass. Full simulation confirms zero regressions.
-
-**Forge desktop (`forge.html`):**
-
-*JavaScript — 5,615 chars removed:*
-- Removed 11 dead functions never called anywhere (confirmed via full-file string search):
-  `buildSidSystemPrompt`, `calcAgeInYears`, `getAmzSensitivityThreshold`, `getAnaFiltered`,
-  `getCategoryBudget`, `getFamilyReportHeader`, `getFamilyReportSubtitle`,
-  `getLargePurchaseThreshold`, `getSavingsRateTarget`, `isTextFile`, `refreshKidAge`
-- Removed 2 `console.log` debug statements left from import pipeline development
-- Collapsed 3+ consecutive blank lines to 2 throughout
-
-*CSS — 4,808 chars removed:*
-- Removed 22 unused CSS classes whose selectors never appear in HTML or JS:
-  `.badge-gold`, `.btn-xs`, `.confidence-high/medium/low`, `.dollar-brand`,
-  `.forge-moment` (+3 variants), `.furnace-icon/sub/title`, `.g-chip`,
-  `.gauge-chips/eyebrow/label`, `.gc-gold/muted/negative/positive/river`,
-  `.jersey-badge`, `.nav-badge`, `.nav-footer`
-- Removed 12 unused CSS custom properties (legacy aliases never referenced):
-  `--accent` (×4), `--cream`, `--forge-dark`, `--r`, `--r-xl`, `--slate`, `--surface`, `--text`, `--text2`
-- Removed duplicate `@keyframes pop-in` definition (was defined twice)
-- Removed decorative `/* ═══ */` and `/* ─── */` divider comments throughout CSS
-
-**Forge Pulse (`forge-pulse.html`):**
-
-*CSS:*
-- Removed 3 unused CSS classes: `.chip-blu`, `.chip-muted`, `.gold-star`
-- Removed 3 unused CSS variables: `--caution`, `--hover`, `--purple`
-- Removed decorative CSS divider comments
-
-**Not removed (confirmed safe to keep):**
-- All `-webkit-` vendor prefixes (still required for Safari/iOS compatibility)
-- `-moz-osx-font-smoothing` (macOS Firefox rendering quality)
-- All remaining CSS classes that appear in JS template literals
-- All `@keyframes` definitions (all referenced by active animations)
+Dead code audit: 11 dead JS functions removed, 22 unused CSS classes removed, 12 unused CSS vars removed, duplicate keyframe removed. Same cleanup in Pulse. All 572 tests pass.
 
 ---
 
 ## [3.11] — 2026-04-03
 
-### Fixed — Analytics and Cash Flow blank sections
-
-**Root causes:**
-
-**1. Canvas-already-in-use (primary):** Every analytics mini chart (`renderMiniStack`, `renderMiniDow`, `renderMiniPurchaser`, `renderMainChart`) was calling `element.getContext('2d')` without first checking whether Chart.js already had an active chart registered on that canvas. When the Analytics page is navigated to more than once, or when `renderAnalytics()` fires multiple times (e.g. on filter change), Chart.js v4 throws "Canvas is already in use by chart with id X" — which was silently swallowed by `catch(e) {}`, leaving the chart area blank. Fix: added `Chart.getChart(canvasEl)` guard before every chart creation. If an existing chart is found, it's destroyed before the new one is created.
-
-**2. Waterfall config IIFE (secondary):** The `chartConfigs` object in `renderMainChart` included a waterfall config built as an Immediately Invoked Function Expression that ran unconditionally on every call — even when the selected chart type was `bar`. This forced computation of running cumulative totals and floating bar data structures on every render, which could throw on edge-case data. Fixed by making the waterfall config lazy: only built when `anaChartType === 'waterfall'`.
-
-**3. Cash Flow perception:** The income/expense bar chart and the legend were rendering correctly. The three summary cards and the net savings line chart below them were also rendering but were below the visible area of the chart card. Not a blank — a scroll issue. No code change needed.
+Analytics/Cash Flow blank fix: `Chart.getChart()` guard before every canvas creation; waterfall config made lazy.
 
 ---
 
 ## [3.10] — 2026-04-02
 
-### Fixed — Black Screen: The Actual Root Cause
-
-**One missing `</div>` in the upload page HTML caused every single black screen.**
-
-The Smart Scan zone was inserted into the upload page HTML in a previous session. The insertion left the upload page's outer `<div id="page-upload">` unclosed — 112 opens, 111 closes. The dashboard page `<div id="page-dashboard">` sat **inside** the unclosed upload page div, making it a child of the upload page rather than a sibling.
-
-When `showPage('dashboard')` ran:
-1. All `.page` elements get `display:none` — including page-upload
-2. page-dashboard gets `display:block` via inline style
-3. BUT page-dashboard was nested inside page-upload, which had `display:none`
-4. A child with `display:block` inside a parent with `display:none` inherits none — the child doesn't render
-5. `offsetHeight` of page-dashboard = 0 despite `innerHTML.length = 6333` and `style.display = block`
-
-This was confirmed by the diagnostic log showing `offsetHeight: 0` with `computed height: auto` and real content. A block element with real content only has `offsetHeight: 0` when it inherits `display:none` from a parent — which is exactly what was happening.
-
-**Fix:** One `</div>` added immediately before `<!-- ══ DASHBOARD ══ -->`.
-
-**Why it took so long to find:** Node.js simulation doesn't render layout — `offsetHeight` doesn't exist in Node. Every test passed because the logic was correct. The browser was the only environment where the nesting could be observed, and the symptom (black screen) pointed toward CSS or JS rather than HTML structure.
+Black screen root cause: one missing `</div>` left `page-dashboard` nested inside `page-upload`, inheriting `display:none`.
 
 ---
 
 ## [3.9] — 2026-04-02
 
-### Added — Smart Scan: AI-Powered Universal Extraction
-
-Any file Forge can't parse with rules, Claude can read directly. Smart Scan activates automatically as a fallback when structured parsing returns zero rows, and is also available as a dedicated button on the upload page.
-
-**What Smart Scan handles:**
-
-| Source type | How it works |
-|-------------|--------------|
-| Photos of receipts | Base64 image → Claude reads amounts, dates, merchant |
-| Photos of bank statements | Same — Claude reads any layout |
-| Photos of handwritten notes | Same — Claude reads printed or handwritten text |
-| PDF bank statements | Native PDF block → Claude reads the full document |
-| PDF investment statements | Same |
-| W-2 / 1099 forms | Extracted as a single income transaction dated Dec 31 of the tax year |
-| Unknown CSV formats | Text sent to Claude as fallback when parser returns 0 rows |
-| Any file with readable numbers | Claude finds dates + amounts + payees regardless of structure |
-
-**How it integrates:**
-
-1. **Automatic fallback:** When any CSV/QIF/OFX returns 0 parsed rows and WORKER_URL is set, Smart Scan runs automatically. No user action needed.
-2. **Dedicated zone:** New "📷 Scan Photo or PDF" button on the upload page accepts images and PDFs directly.
-3. **Result cards:** Source type, confidence level, and any extraction notes displayed per file.
-
-**Cost:** ~$0.001–0.005 per file (Claude Sonnet, ~$0.003 per page of PDF or image). Requires the Forge Worker deployed to Cloudflare and `WORKER_URL` set in forge.html.
-
-### Added — Forge Worker v2
-
-`forge_worker.js` now handles two endpoints:
-- `POST /scan` — Smart Scan extraction (new)
-- `POST /chat` — $id financial advisor chat (existing)
-
-Both route to Anthropic with the API key stored as a Cloudflare secret. Set `WORKER_URL` once in forge.html and both features work.
-
-### Fixed — Quicken CSV Import: Preamble Detection
-
-`parseCSV` now correctly identifies the real header row even when the file begins with preamble rows. The scanner checks each line for the presence of date + amount column names rather than stopping at the first non-blank line.
-
-Confirmed: `QuickenExportAll_260329.csv` (623 KB, 7,440 lines) → **7,420 transactions parsed**, 10+ accounts, date range 2023-01-01 → 2026-03-28.
+Smart Scan added (`forge_worker_v2.js` adds `/scan` endpoint); Quicken preamble detection fixed.
 
 ---
 
 ## [3.8] — 2026-04-02
 
-### Fixed — Quicken CSV Import: Header Detection
-
-**Root cause:** `parseCSV` stopped scanning for the header at the first non-blank, non-comment line. Quicken's "All Transactions" CSV export prepends a 4-line preamble:
-
-```
-Transaction,,,,,,,,          ← report title row
-,,,,,,,,                     ← blank
-1/1/2023 through 3/29/2026,, ← date range row
-,,,,,,,,                     ← blank
-Date,Account,Num,Payee,...   ← REAL HEADER (line 4)
-```
-
-The old code saw `Transaction,,,,,,,,` on line 0, decided it was the header (non-blank, not a `#` comment, not `sep=`), extracted `transaction` as the only column name, found no `date` or `amount` columns, and returned zero rows. The file's 7,420 transactions were silently discarded.
-
-**Fix:** The header scanner now simply loops through the first 30 lines and picks the first one that contains both a date-like column name and an amount-like column name. It no longer stops at the first non-blank line. Preamble rows like the title and date-range are naturally skipped because they don't satisfy the date + amount column test.
-
-**Confirmed against the actual file:** `QuickenExportAll_260329.csv` (623 KB, 7,440 lines) — **7,420 transactions parsed** across 10+ accounts, date range 2023-01-01 → 2026-03-28.
-
-Also handles:
-- Quicken `BALANCE` and `Total` summary rows (skipped)
-- Category format `Gifts & Donations:Gift` (kept as-is, brackets stripped from transfer categories like `[Checking - PNC]`)
-- Amounts with comma-thousands and quotes: `"4,808.00"` and `"-1,000.00"`
+Quicken CSV header detection rewrite: scanner loops first 30 lines for date+amount column pair.
 
 ---
 
 ## [3.7] — 2026-04-02
 
-### Fixed — Black Screen: Definitive Root Cause
-
-**Orphaned CSS `to {...}` fragments corrupting the entire stylesheet.**
-
-When CSS animations were removed in prior sessions (`bodyReveal` and `pageReveal`), only the `@keyframes` rule bodies and their `from` frames were deleted — leaving behind orphaned closing fragments:
-
-```css
-/* These were left behind after @keyframes removal: */
-  to   { opacity: 1; }
-}
-
-  to   { transform: translateY(0); }
-}
-```
-
-These fragments appear as invalid free-standing CSS rules at the top level of the stylesheet, between `body {}` and `body::after`, and between `.page.active {}` and `.page-hdr {}`. Most browsers attempt to parse these as selector-less rules and produce unpredictable behavior — some misapply `opacity: 1` or `transform: translateY(0)` to subsequent selectors, others silently corrupt the cascade for rules that follow. The net effect is that `.page { display: none }` and `.page.active { display: block }` may not be applied correctly, leaving the dashboard invisible despite the JavaScript correctly making it active.
-
-**How this was found:** Reading the raw HTML `<head>` section character by character revealed the fragments sitting between otherwise-valid CSS rules. All prior fixes were correct (Chart.defaults, animations, z-indices, JS isolation) but the corrupted CSS was overriding everything.
-
-**Fix:** Both orphaned fragments removed. CSS brace count now 403 open / 403 closed (net zero). Every rule is correctly formed.
+Black screen: orphaned CSS `to{}` fragments from deleted keyframes corrupting cascade.
 
 ---
 
 ## [3.6] — 2026-04-02
 
-### Fixed — Black Screen: True Root Cause Found and Eliminated
-
-**The actual root cause (this session):** `Chart.defaults.*` assignments ran at the top level of the script — outside any function, outside any event listener. This code executed immediately at script parse time, before `DOMContentLoaded` fired. If Chart.js (an external CDN script loaded before the main script) had not fully parsed yet, accessing `Chart.defaults.color` threw a `TypeError` and **killed the entire script**. Every function in the 4,100-line file became undefined. Clicking "Load Demo" did nothing because `loadDemo` did not exist.
-
-This was confirmed by a complete Node.js simulation of the execution path, which showed the error directly.
-
-**Fix:** All `Chart.defaults.*` assignments moved into `applyChartDefaults()`, called from `DOMContentLoaded` after the DOM (and Chart.js) is confirmed ready.
-
-```javascript
-// Before — runs at parse time, crashes if Chart.js not ready
-Chart.defaults.color = '#666';
-Chart.defaults.borderColor = '#2a2a2a';
-// ... 9 more lines at top level
-
-// After — called safely from DOMContentLoaded
-function applyChartDefaults() {
-  if (typeof Chart === 'undefined') return;
-  Chart.defaults.color = '#666';
-  // ...
-}
-```
-
-### Fixed — Family Page Errors
-
-Three bugs in the Family page (The Confluence) that caused errors when that page was visited:
-
-| Bug | Cause | Fix |
-|-----|-------|-----|
-| `fbrState.stepsDone.length` throws | `fbrState` initialized without `stepsDone` field | Added `stepsDone: []` to default |
-| `loadFBR()` is not defined | Function was called in `renderFamily()` but never written | Added `loadFBR()` function |
-| `FBR_KEY` is not defined | Constant referenced by `saveFBR()` and new `loadFBR()` but never declared | Added `const FBR_KEY = 'ledger_fbr_v2'` |
-| `el.innerHTML` on null `el` | `stepsDone.forEach` accessed `el.innerHTML` without null guard | Added `if(el)` guard around innerHTML |
-| `loadFBR()` could produce corrupt state | Restored data not validated as correct types | Added array/object guards in `loadFBR()` |
-
-### Verified — Complete Execution Path
-
-A full Node.js simulation of the demo load sequence now confirms:
-- `generateDemoData()` → 4,500+ transactions, 3,200+ detail items, 13 accounts
-- `renderDashboard()` → completes with zero errors
-- All 11 pages (`dashboard`, `intelligence`, `cashflow`, `categories`, `merchants`, `transactions`, `analytics`, `family`, `settings`, `amazon`, `upload`) → zero errors
-- All 5 Pulse tabs (`snapshot`, `alerts`, `amazon`, `analytics`, `chat`) → zero errors
+Black screen: `Chart.defaults.*` at top level throwing before `DOMContentLoaded`.
 
 ---
 
 ## [3.5] — 2026-04-01
 
-### Fixed — Black Screen (Root Cause Found and Eliminated)
-
-**The definitive root cause: a JS syntax error on line 25.**
-
-A prior session's partial replacement of the boot block left an orphan `}` on line 25 of the main script. This was a hard syntax error — the browser refused to parse the script entirely, meaning `loadDemo()`, `showPage()`, `renderDashboard()`, and every other function simply did not exist at runtime. The browser showed the `body` background color (near-black) with no content. No console error appeared visible to users because the page appeared to load normally (HTML rendered, header appeared) — only the JS was silently dead.
-
-**Secondary causes also eliminated:**
-
-| Cause | Effect | Fix |
-|-------|--------|-----|
-| `body { animation: bodyReveal 420ms both }` | `both` fill-mode held body at opacity:0.95 before animation fired; any render error left it stuck | Removed animation entirely |
-| `renderDashboard` had no outer `try/catch` | `showPage()`'s `safe()` swallowed all errors silently; dashboard was `display:block` but empty | Wrapped in `try/catch` |
-| `pageReveal` animation on `.page.active` | Pages started at translateY(6px) with `both` fill; if Chart.js threw, page stayed at pre-animation state | Removed animation entirely |
-| Pulse `pgIn` keyframe started at `opacity:0` | Same mechanism — Pulse tabs could stay invisible after navigation | Changed start frame to `opacity:1` |
-| Pulse `go()` relied on CSS class for `display` | CSS could be overridden; tab pages occasionally stayed hidden | Now sets `display:block` via inline style |
-
-**Rendering system now operates on this principle:** CSS handles styling only. Visibility is controlled exclusively via JavaScript inline styles (`element.style.display`, `element.style.opacity`). No CSS animation can prevent content from being visible.
-
-### Changed — Architecture
-
-- `showPage()`: explicitly sets `display:'none'` on all inactive pages and `display:'block'; opacity:'1'; visibility:'visible'` on the target page via inline style. CSS class `.page.active` is now a fallback only.
-- Boot sequence: single `DOMContentLoaded` listener, no Chart.js timing dependency, forces `document.body.style.opacity='1'` as first instruction.
-- All 14 render functions now have outer `try/catch` — one function's error cannot blank an adjacent page.
-- Pulse `go()`: same inline style enforcement as desktop `showPage()`.
+Black screen: orphan `}` syntax error line 25; CSS animations replaced with inline-style visibility.
 
 ---
 
 ## [3.4] — 2026-03-29
 
-### Fixed — CSV Import: Blank Columns and All Edge Cases
-
-Complete rewrite of `parseCSV()` to handle every structural variation any CSV-producing application generates.
-
-**Blank column handling (new):**
-- Blank header columns (leading, middle, trailing) are now ignored — only named columns are mapped
-- Blank payee cell → `Unknown`; blank category cell → `Uncategorized`; blank account cell → filename fallback
-- Blank amount cell → row skipped cleanly
-- Blank date cell → row skipped cleanly
-- Both debit AND credit cells blank → row skipped (was: included as $0 row)
-- Quoted blank cells (`""`) → treated as empty
-- Whitespace-only cells → treated as empty
-- Comma-only rows (`,,,`) → skipped entirely
-- Out-of-bounds column access on short rows → safe `get()` helper returns `''` instead of crashing
-
-**Format handling (new):**
-- `sep=,` (Excel CSV hint line) now stripped before header detection
-- `# comment` and `// comment` lines before the header now stripped
-- UTF-8 BOM (`﻿`) stripped from file start AND from first column name
-- Semicolon (`;`) and pipe (`|`) delimiters now detected and parsed
-- Mixed CRLF + LF line endings now handled
-- European decimal format (`1.234,56`) detected and converted
-- Amount `N/A`, `--`, word strings → row skipped (was: NaN propagation)
-- Repeated header rows mid-file → skipped (date parses as null)
-- Extra columns beyond header → safe (extra data ignored)
-- Truncated rows (fewer cols than header) → safe (missing cols treated as blank)
-
-**`sniffFile()` improvements:**
-- Now skips `sep=`, `#` comments, and BOM before reading the first line for format detection
-- Prevents mis-detection when Excel hint lines or metadata precede the actual header
-
-**Test coverage:**
-- Suite 26 added: 39 tests covering every blank column and edge case scenario
-- Total: 324 tests / 26 suites in `forge_tests_v2.js` (was 285/25)
-- Combined suite total: 473 tests across all three test files
+`parseCSV()` comprehensive rewrite: blank columns, BOM, `sep=`, semicolon/pipe, European decimal. Suite 26 added.
 
 ---
 
-# Changelog
+## [3.2–3.3] — 2026-03-28
+
+Analytics Studio (8 charts, 8 dims, 6 metrics); unified import zone; 5 parser bug fixes.
 
 ---
 
-## [3.2] — 2026-03-28
+## [3.0–3.1] — 2026-03-27 to 2026-03-28
 
-### Added — Analytics Studio
-
-A new **Analytics** page (desktop) and **Analytics** tab (Pulse) add self-service BI reporting.
-
-**Desktop Analytics Studio ($kenes · #30)**
-
-- New nav item between Detail Lens and All Transactions
-- Control bar: View By (8 dimensions), Measure (6 metrics), Date Range, Category filter, Account filter
-- **8 chart types**, switchable instantly: Bar, Horizontal Bar, Line, Area, Donut, Scatter, Waterfall, Heatmap
-- Heatmap renders a month × day-of-week spending grid in pure HTML (no canvas)
-- Waterfall chart builds cumulative running totals with floating bars, green/red per direction
-- Three auto-computed KPI insight cards (Total, Average, Highest) update with every control change
-- **4 always-on secondary charts**: Spending vs Income (12M stacked bar), Top 8 Categories (donut), Avg Spending by Day of Week, Spending by Person (Quicken accounts + detail files combined)
-- Collapsible data table with inline proportion bars and share percentages; PNG export
-- Dimensions: Month, Category, Account, Purchaser, Source, Day of Week, Quarter, Year
-- Metrics: Total Spending, Total Income, Net Savings, Transaction Count, Avg Transaction, Savings Rate %
-
-**Pulse Analytics Tab ($id · #87)**
-
-- New tab between Detail Lens and Ask $id
-- 5 mobile-optimized chart cards: Category donut (range chips 3M/6M/1Y/All), Monthly Cash Flow, Spending by Person, Avg by Day of Week, Savings Rate with target reference line
-- Purchaser card auto-hides when no attribution is configured
-- Lazy-renders on first tab open
-
-### Added — Enhanced Demo Data
-
-The Pittsburgh demo now has 13 accounts and three detail file sources with purchaser attribution:
-
-**New accounts:** `Apple Card - Chris (CC)`, `Apple Card - Kira (CC)`, `Nordstrom Credit Card`
-
-**Detail Lens sources (new):**
-- Apple Card - Chris: Starbucks Reserve, Chipotle, Apple One, App Store, Uber, Nike, Shake Shack
-- Apple Card - Kira: Peloton, lululemon, Sephora, Disney+, TJ Maxx, Whole Foods (Apple Pay), Athleta, Pilates Studio PGH, Barnes & Noble, Ulta Beauty
-- Nordstrom Card (Kira): Eileen Fisher, Free People, Nike shoes, handbags, Clarins, Nordstrom Rack, Sandals, Sephora at Nordstrom, Nordstrom Cafe, Loft — with 2.2× Anniversary Sale spike in July/August
-
-`loadDemo()` now auto-configures `settings.accountOwners` for all 9 attributable accounts.
-
-### Fixed — Bugs identified through exhaustive testing (v3.2 test suite, 285 tests)
-
-**`scoreImpulse`** — Items with `total=0` (empty/malformed objects) were receiving 25 impulse points due to `0 < 15` evaluating true. Fixed by requiring `total > 0` before applying the low-price bonus. This prevented false-positive "High Impulse" badges on structurally empty items.
-
-**`guessType`** — Accounts containing `brokerage` or `roth` were classified as `other` instead of `investment`. Fixed by adding both keywords to the investment detection branch. This affected account type display and investment filtering throughout the app.
-
-**`parseCSV`** — Standalone `debit` and `credit` column headers were not recognized as amount columns. Only `debit/credit` (combined) was handled. Fixed by adding individual `debit` and `credit` to the column detector. This caused Apple Card-style bank exports with separate debit/credit columns to import with $0 amounts.
-
-**`parseAppleCard`** — When `purchaser=null` was passed explicitly, the function fell back to deriving a purchaser name from the filename instead of preserving `null`. Fixed by checking `purchaser !== undefined && purchaser !== null` before applying the filename fallback. This caused all null-attributed Apple Card items to receive a filename-derived owner, breaking the "shared/unattributed" use case.
-
-**`parseGenericDetail`** — Same null-purchaser issue as `parseAppleCard`. Fixed with the same guard.
-
-### Changed
-
-- `showImportResults()`: "Amazon Watchlist" reference updated to "Detail Lens"
-- Settings page: remaining "Sid" text references updated to "$id" in HTML
-- `showPage('analytics')`: calls `loadSettings()` before `renderAnalytics()` to ensure account owner config is current
-
----
-
-## [3.1] — 2026-03-28
-
-### Changed — Unified Import Zone
-
-Single drop zone replaces the previous two-zone layout (Quicken left, Amazon right). `sniffFile()` auto-detects format from column headers. All file types drop into one zone.
-
-### Added
-
-- `sniffFile(text, fname)` — content-based format detector; returns `'amazon' | 'applecard' | 'detail' | 'quicken'`
-- `fileTypeLabel(type)` — maps detected type to display label and CSS badge class
-- File queue cards show detected type badge per file
-
-### Removed
-
-- `dz2` (Amazon-specific drop zone), `fi2` (Amazon file input)
-- Two-zone HTML layout and associated Amazon-only instruction card
-
----
-
-## [3.0] — 2026-03-27
-
-### Added — Purchaser Attribution System
-
-- Filename tagging: include a family member's first name in any detail filename → items attributed to that person
-- `settings.accountOwners` map: Quicken account → family member (for render-time Quicken attribution)
-- By Purchaser tab in Detail Lens: individual spending cards per person with impulse rate, avg order, projected spend, acceleration warnings, top categories
-- Per-person alerts in The Bullpen (`type:'purchaser'`, `👤` icon)
-- `personSummary()`, `detectPersonTrends()`, `predictMonthlyDetail()`, `inferTxnOwner()`
-
-### Added — Detail Lens (formerly Amazon Watchlist)
-
-- Multi-format detail file support: `parseAppleCard()`, `parseGenericDetail()`, `parseDetailFile()` router
-- `source` and `purchaser` fields on every detail item
-- 5 tabs: Overview, By Category, All Items, By Purchaser, vs. Total Spend
-- Person + Source filter dropdowns on All Items tab
+Purchaser attribution system; Detail Lens multi-format; By Purchaser tab; Apple Card parser.
 
 ---
 
 ## [2.x] — 2026-01-15 to 2026-03-26
 
-Initial releases, Forge Pulse mobile launch, Confluence family meeting tool, Analytics Studio foundation, 12-week UM Bootcamp tooling. See git history.
+Initial releases, Forge Pulse launch, Confluence tool, Analytics foundation. See git history.
