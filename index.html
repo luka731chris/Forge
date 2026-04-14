@@ -900,6 +900,7 @@ input:focus { border-color:var(--gold); }
         <option value="prior_snap">Prior NW Snapshot</option>
       </select>
       <button class="btn btn-ghost" onclick="renderBalanceSheet()" style="font-size:11px;padding:6px 12px;">↻ Refresh</button>
+      <button class="btn btn-ghost" onclick="if(confirm('Clear all stored Net Worth snapshots? This cannot be undone.')){clearNetWorthOverrides();renderBalanceSheet();}" style="font-size:11px;padding:6px 12px;color:var(--negative);">✕ Clear NW History</button>
     </div>
   </div>
   <div id="balanceSheetContent"></div>
@@ -1033,7 +1034,8 @@ function applyChartDrill() {
 const PROD_KEY = 'forge_prod_v1';   // real imported data — never touched by demo
 const DEMO_KEY = 'forge_demo_v1';   // demo data — never touches prod
 const DB_KEY   = 'forge_lean_v1';   // legacy key — migrated on first load
-const NW_KEY   = 'forge_networth';  // Quicken Net Worth snapshot overrides
+const NW_KEY      = 'forge_networth';      // current NW snapshot (cleared with Clear Data)
+const NW_HIST_KEY = 'forge_networth_hist';  // historical snapshots (survives Clear Data)
 const BUILD    = 'lean_4.0';        // bump to clear stale storage
 const BLD_KEY  = 'forge_build';
 
@@ -2971,14 +2973,14 @@ function saveSettings() {
 }
 function saveNetWorthOverrides() {
   try {
-    localStorage.setItem(NW_KEY, JSON.stringify(netWorthOverrides));
-    localStorage.setItem(NW_KEY + '_hist', JSON.stringify(nwHistory));
+    localStorage.setItem(NW_KEY,      JSON.stringify(netWorthOverrides));
+    localStorage.setItem(NW_HIST_KEY, JSON.stringify(nwHistory));  // separate key — survives Clear Data
   } catch(e) {}
 }
 function loadNetWorthOverrides() {
   try {
     const raw = localStorage.getItem(NW_KEY);
-    const hist = localStorage.getItem(NW_KEY + '_hist');
+    const hist = localStorage.getItem(NW_HIST_KEY);
     if (hist) nwHistory = JSON.parse(hist);
     return raw ? JSON.parse(raw) : {};
   } catch(e) { return {}; }
@@ -3001,8 +3003,8 @@ function balanceAsOfDate(acct, asOfDate) {
 }
 function clearNetWorthOverrides() {
   netWorthOverrides = {}; nwHistory = {};
-  try { localStorage.removeItem(NW_KEY); } catch(e) {}
-  try { localStorage.removeItem(NW_KEY + '_hist'); } catch(e) {}
+  try { localStorage.removeItem(NW_KEY);      } catch(e) {}
+  try { localStorage.removeItem(NW_HIST_KEY); } catch(e) {}
 }
 
 // ── Parse Quicken Net Worth / Property & Debt CSV ────────────────
@@ -3088,7 +3090,9 @@ function clearAll() {
   try { localStorage.removeItem(PROD_KEY); } catch(e) {}
   try { localStorage.removeItem(DEMO_KEY); } catch(e) {}
   try { localStorage.removeItem(DB_KEY);   } catch(e) {}
-  try { localStorage.removeItem(NW_KEY);   } catch(e) {}
+  try { localStorage.removeItem(NW_KEY); } catch(e) {}
+  // NW_HIST_KEY intentionally NOT cleared — historical snapshots survive Clear Data
+  // Use "Clear History" in the Balance Sheet header to wipe snapshots
   document.getElementById('clearBtn').style.display='none';
   document.getElementById('hdrStat').innerHTML='';
   // Reset filter selects
@@ -3945,10 +3949,10 @@ const BS_ACCOUNTS = {
   'Retirement - Chris HH':  { class:'asset', sub:'retirement', label:'401(k) — Chris (HH)',    icon:'🔒', assetType:'Retirement Accounts' },
   'Retirement - NR IRA':    { class:'asset', sub:'retirement', label:'IRA — NR',               icon:'🔒', assetType:'Retirement Accounts' },
   'Retirement - NR Roth':   { class:'asset', sub:'retirement', label:'Roth IRA — NR',          icon:'🔒', assetType:'Retirement Accounts' },
-  'House':                  { class:'asset', sub:'real_estate',label:'Primary Residence',      icon:'🏠', assetType:'Real Estate', note:'Value in Quicken may reflect equity or purchase price — confirm FMV' },
+  'House':                  { class:'asset', sub:'property',   label:'Primary Residence',      icon:'🏠', assetType:'Real Estate', note:'Value in Quicken may reflect equity or purchase price — confirm FMV' },
   // LIABILITIES
-  'House Loan':             { class:'liability', sub:'long_term', label:'Mortgage (Rocket)',   icon:'🏠', liabType:'Long-Term Debt' },
-  'Palisade Loan':          { class:'liability', sub:'long_term', label:'Auto Loan (Palisade)',icon:'🚗', liabType:'Long-Term Debt' },
+  'House Loan':             { class:'liability', sub:'mortgage',  label:'Mortgage (Rocket)',   icon:'🏠', liabType:'Long-Term Debt' },
+  'Palisade Loan':          { class:'liability', sub:'auto',      label:'Auto Loan (Palisade)',icon:'🚗', liabType:'Long-Term Debt' },
   'Credit - Allegiant4':    { class:'liability', sub:'current',   label:'Allegiant CC',        icon:'💳', liabType:'Credit Cards' },
   'Credit - Amazon17':      { class:'liability', sub:'current',   label:'Amazon CC',           icon:'💳', liabType:'Credit Cards' },
   'Credit - ChPNC1':        { class:'liability', sub:'current',   label:'Chase PNC CC',        icon:'💳', liabType:'Credit Cards' },
@@ -4172,8 +4176,8 @@ function renderBalanceSheet() {
 
   const GROUP_LABELS = {
     current:'Cash & Checking', savings:'Savings', investment:'Investments & Retirement',
-    property:'Real Property', mortgage:'Mortgage', auto:'Auto Loan',
-    student:'Student Loans', Other:'Other Assets'
+    property:'Real Property', retirement:'Retirement Accounts', education:'Education (529)',
+    mortgage:'Mortgage', auto:'Auto Loan', student:'Student Loans', Other:'Other Assets'
   };
 
   // ── Render ──────────────────────────────────────────────────────
@@ -4211,6 +4215,59 @@ function renderBalanceSheet() {
     ['Home Equity', fmt(homeEquity), homeEquity>=0?'var(--river)':'var(--negative)', 'property minus mortgage'],
   ];
   kpis.forEach(([l,v,c,s]) => {
+    out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;">';
+    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">'+l+'</div>';
+    out += '<div style="font-size:22px;font-weight:700;color:'+c+';">'+v+'</div>';
+    out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+s+'</div></div>';
+  });
+  out += '</div>';
+
+  // ── Second KPI row: operating ratios ───────────────────────────
+  const currentAssets = Object.entries(BS_ACCOUNTS)
+    .filter(([,v])=>v.class==='asset'&&(v.sub==='current'||v.sub==='savings'))
+    .reduce((s,[a,v])=>s+getCurrentValue(a,v).value, 0);
+  const currentLiabs = Object.entries(BS_ACCOUNTS)
+    .filter(([,v])=>v.class==='liability'&&v.sub==='current')
+    .reduce((s,[a,v])=>s+getCurrentValue(a,v).value, 0);
+  const longTermDebt = Object.entries(BS_ACCOUNTS)
+    .filter(([,v])=>v.class==='liability'&&(v.sub==='mortgage'||v.sub==='auto'||v.sub==='student'||v.sub==='long_term'))
+    .reduce((s,[a,v])=>s+getCurrentValue(a,v).value, 0);
+  const totalDebt = currentLiabs + longTermDebt;
+  const currentRatio = currentLiabs > 0 ? (currentAssets/currentLiabs) : null;
+  const debtRatio    = totalAssets > 0 ? (totalLiabs/totalAssets*100) : 0;
+  const monthlyInc   = recurringIncomeAvg(12);
+  const dtiRatio     = monthlyInc > 0 ? (totalDebt/(monthlyInc*12)*100) : null;
+  const liquidMonths = monthlyInc > 0 ? currentAssets/monthlyInc : null;
+
+  out += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;">';
+  const kpis2 = [
+    ['Current Assets',  fmt(currentAssets),  'var(--positive)',  'cash + savings · liquid within 12mo'],
+    ['Current Liabilities', fmt(currentLiabs), 'var(--negative)', 'CC balances due this cycle'],
+    ['Current Ratio',   currentRatio!==null ? currentRatio.toFixed(2)+'×' : '—',
+      currentRatio===null?'var(--ink4)':currentRatio>=2?'var(--positive)':currentRatio>=1?'var(--gold)':'var(--negative)',
+      'current assets ÷ current liabilities · target ≥2×'],
+  ];
+  kpis2.forEach(([l,v,c,s]) => {
+    out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;">';
+    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">'+l+'</div>';
+    out += '<div style="font-size:22px;font-weight:700;color:'+c+';">'+v+'</div>';
+    out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+s+'</div></div>';
+  });
+  out += '</div>';
+
+  out += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;">';
+  const kpis3 = [
+    ['Debt-to-Asset Ratio', debtRatio.toFixed(1)+'%',
+      debtRatio<30?'var(--positive)':debtRatio<50?'var(--gold)':'var(--negative)',
+      'total liabilities ÷ total assets · target <30%'],
+    ['Debt-to-Income', dtiRatio!==null ? dtiRatio.toFixed(1)+'%' : '—',
+      dtiRatio===null?'var(--ink4)':dtiRatio<36?'var(--positive)':dtiRatio<50?'var(--gold)':'var(--negative)',
+      'total debt ÷ annual income · target <36%'],
+    ['Liquid Coverage', liquidMonths!==null ? liquidMonths.toFixed(1)+' mo' : '—',
+      liquidMonths===null?'var(--ink4)':liquidMonths>=6?'var(--positive)':liquidMonths>=3?'var(--gold)':'var(--negative)',
+      'current assets ÷ monthly income · target ≥6mo'],
+  ];
+  kpis3.forEach(([l,v,c,s]) => {
     out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;">';
     out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">'+l+'</div>';
     out += '<div style="font-size:22px;font-weight:700;color:'+c+';">'+v+'</div>';
@@ -4259,7 +4316,7 @@ function renderBalanceSheet() {
   out += '</div>';
   out += hdrRow();
 
-  const liabSubOrder = ['current','mortgage','auto','student','other'];
+  const liabSubOrder = ['current','mortgage','auto','student','long_term','other'];
   liabSubOrder.forEach(sub => {
     const entries = liabGroups[sub];
     if (!entries || !entries.length) return;
