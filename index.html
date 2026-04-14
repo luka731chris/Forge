@@ -889,6 +889,16 @@ input:focus { border-color:var(--gold); }
       <div class="page-sub">Assets, Liabilities &amp; Net Worth · balances from Quicken register · flagged items need attention</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
+      <span style="font-size:11px;color:var(--ink4);">Compare to:</span>
+      <select id="bsCompare" onchange="renderBalanceSheet()" style="font-size:12px;padding:5px 10px;">
+        <option value="none">— None —</option>
+        <option value="ye2024">YE 2024</option>
+        <option value="ye2025" selected>YE 2025</option>
+        <option value="q1">Q1 2025</option>
+        <option value="q2">Q2 2025</option>
+        <option value="q3">Q3 2025</option>
+        <option value="prior_snap">Prior NW Snapshot</option>
+      </select>
       <button class="btn btn-ghost" onclick="renderBalanceSheet()" style="font-size:11px;padding:6px 12px;">↻ Refresh</button>
     </div>
   </div>
@@ -1044,7 +1054,8 @@ let txns     = [];   // all parsed transactions
 let accounts = [];   // unique account names
 let acctMeta = {};   // { acctName: { type:'checking'|'credit'|'savings'|'investment', isCreditCard:bool } }
 let isDemoMode        = false;
-let netWorthOverrides = {};   // account name → { value, date, source } from NW export
+let netWorthOverrides = {};   // account name → { value, date, source } — current snapshot
+let nwHistory         = {};   // dateKey → { acctName: value } — all snapshots for comparison
 let range    = '1y';
 let catRange = '1y';
 let txnPage  = 0;
@@ -1675,7 +1686,7 @@ function renderTxns() {
     const amtSign = t.amount > 0 ? '+' : '';
     return `<tr>
       <td class="td-num" style="text-align:left;color:var(--ink4)">${t.date}</td>
-      <td>${t.payee||'—'}</td>
+      <td>${t.payee||'—'}${t.itemDetail&&t.itemDetail!==t.payee?'<div style="font-size:10px;color:var(--river);font-style:italic;">'+t.itemDetail.slice(0,70)+'</div>':''}</td>
       <td style="color:var(--ink4)">${t.category||'—'}</td>
       <td style="color:var(--ink4);font-size:11px">${t.account||'—'}</td>
       <td class="td-num ${amtCls}">${amtSign}${fmt(t.amount)}</td>
@@ -2366,8 +2377,12 @@ async function processFiles() {
         const nwCount = Object.keys(nwData).length;
         if (nwCount > 0) {
           Object.assign(netWorthOverrides, nwData);
+          // Build history entry keyed by date
+          const snapDate = Object.values(nwData)[0]?.date || new Date().toISOString().slice(0,10);
+          if (!nwHistory[snapDate]) nwHistory[snapDate] = {};
+          Object.entries(nwData).forEach(([k,v]) => { nwHistory[snapDate][k] = v.value; });
           saveNetWorthOverrides();
-          toast('✓ ' + f.name + ' — Balance snapshot: ' + nwCount + ' account values loaded');
+          toast('✓ ' + f.name + ' — Balance snapshot: ' + nwCount + ' account values loaded (as of ' + snapDate + ')');
           nwSuccessCount++;
           continue;  // only skip transaction parsing when NW parse actually succeeded
         }
@@ -2592,8 +2607,132 @@ function findCol(headers, ...names) {
   return -1;
 }
 
+
+// ════════════════════════════════════════════════
+// MERCHANT CSV PARSER
+// Handles Apple Card, Amazon, Home Depot, Venmo
+// sign: -1 = always expense, +1 = always income, 0 = use amount sign
+// ════════════════════════════════════════════════
+function parseMerchantCSV(text, acctName, opts) {
+  const lines = text.split('\n').filter(l => l.trim() && !l.match(/^,+$/));
+  if (lines.length < 2) return [];
+
+  // Find header row
+  let hdrIdx = 0;
+  const dl = opts.dateCol.toLowerCase();
+  for (let i = 0; i < Math.min(lines.length, 10); i++) {
+    if (lines[i].toLowerCase().includes(dl)) { hdrIdx = i; break; }
+  }
+  const headers = csvRow(lines[hdrIdx]).map(h => h.toLowerCase().replace(/["']/g,'').trim());
+
+  function fc(name) {
+    if (!name) return -1;
+    const idx = headers.findIndex(h => h === name || h.includes(name));
+    return idx;
+  }
+
+  const dateC   = fc(opts.dateCol);
+  const payeeC  = fc(opts.payeeCol);
+  const payeeAlt= opts.payeeColAlt ? fc(opts.payeeColAlt) : -1;
+  const amtC    = fc(opts.amtCol);
+  const catC    = opts.catCol ? fc(opts.catCol) : -1;
+  const detailC = opts.detailCol ? fc(opts.detailCol) : -1;
+  if (dateC < 0 || amtC < 0) return [];
+
+  const results = [];
+  for (let i = hdrIdx + 1; i < lines.length; i++) {
+    const row = csvRow(lines[i]);
+    if (!row.length) continue;
+
+    const rawDate = (row[dateC] || '').trim();
+    const date = parseDate(rawDate);
+    if (!date) continue;
+
+    let rawAmt = parseAmt(row[amtC] || '');
+    if (isNaN(rawAmt) || rawAmt === 0) continue;
+
+    // Apple Card and Amazon: amounts are positive for charges — negate
+    if (opts.sign === -1) rawAmt = -Math.abs(rawAmt);
+    // Venmo: sign from amount string itself (+ or -)
+
+    // Payee: for Venmo, From = who sent, To = who received; pick contextually
+    let payee = '';
+    if (payeeC >= 0) payee = (row[payeeC] || '').replace(/^["'\s]+|["'\s]+$/g, '').trim();
+    if (!payee && payeeAlt >= 0) payee = (row[payeeAlt] || '').replace(/^["'\s]+|["'\s]+$/g, '').trim();
+    if (!payee) payee = 'Unknown';
+
+    // For Venmo: if amount is negative (outgoing payment), payee = "To" column
+    if (opts.payeeColAlt && rawAmt < 0 && payeeAlt >= 0) {
+      const toVal = (row[payeeAlt] || '').replace(/^["'\s]+|["'\s]+$/g, '').trim();
+      if (toVal) payee = toVal;
+    }
+
+    const cat = catC >= 0 ? (row[catC] || '').replace(/^["'\s]+|["'\s]+$/g,'').trim() || 'Uncategorized' : 'Uncategorized';
+
+    // itemDetail: the actual item name / description / note
+    let itemDetail = null;
+    if (detailC >= 0) {
+      const raw = (row[detailC] || '').replace(/^["'\s]+|["'\s]+$/g,'').trim();
+      if (raw && raw !== payee) itemDetail = raw;  // don't duplicate if same as payee
+    }
+
+    // Truncate very long payees (Amazon titles can be 200+ chars)
+    if (payee.length > 60) {
+      if (!itemDetail) itemDetail = payee;  // save full name as detail
+      payee = payee.slice(0, 55) + '…';
+    }
+
+    results.push({
+      date, payee, amount: rawAmt,
+      category: cat, account: acctName,
+      memo: itemDetail || '', isTransfer: false,
+      itemDetail
+    });
+  }
+  return results;
+}
+
 function parseCSV(text, fname) {
   const acctName = fname.replace(/\.[^.]+$/, '');
+
+  // ── Merchant-specific fast paths ────────────────────────────────
+  const cleanText = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const firstLine = cleanText.split('\n').filter(l=>l.trim()).slice(0,3).join(' ').toLowerCase();
+
+  // Apple Card CSV: "Transaction Date,Clearing Date,Description,Merchant,Category,Type,Amount (USD)"
+  if (firstLine.includes('clearing date') && firstLine.includes('merchant') && firstLine.includes('amount (usd)')) {
+    return parseMerchantCSV(cleanText, acctName, {
+      dateCol:'transaction date', payeeCol:'merchant', amtCol:'amount (usd)',
+      catCol:'category', detailCol:'description', sign: -1  // Apple Card amounts are positive for charges
+    });
+  }
+
+  // Amazon Order History CSV: "Order ID,Order Date,Title,Category,ASIN,Quantity,Unit Price,Total Charged"
+  if (firstLine.includes('order id') && firstLine.includes('asin') && firstLine.includes('total charged')) {
+    return parseMerchantCSV(cleanText, acctName, {
+      dateCol:'order date', payeeCol:'title', amtCol:'total charged',
+      catCol:'category', detailCol:'title', sign: -1
+    });
+  }
+
+  // Home Depot Order CSV: "Order Date,Order Number,Items ordered,Order Total"
+  if (firstLine.includes('order number') && firstLine.includes('items ordered') && firstLine.includes('order total')) {
+    return parseMerchantCSV(cleanText, acctName, {
+      dateCol:'order date', payeeCol:'items ordered', amtCol:'order total',
+      catCol:null, detailCol:'items ordered', sign: -1
+    });
+  }
+
+  // Venmo CSV: "ID,Datetime,Type,Status,Note,From,To,Amount (total),Funding Source,Destination"
+  if (firstLine.includes('funding source') && firstLine.includes('destination') && firstLine.includes('amount (total)')) {
+    return parseMerchantCSV(cleanText, acctName, {
+      dateCol:'datetime', payeeCol:'from', payeeColAlt:'to',
+      amtCol:'amount (total)', detailCol:'note', catCol:'type', sign: 0
+    });
+  }
+
+  // Nordstrom / generic retailer: "Date,Description,Amount" or "Date,Transaction,Amount"
+  // (falls through to generic parser below)
 
   // Normalize line endings and strip BOM
   const clean = text
@@ -2831,17 +2970,39 @@ function saveSettings() {
   } catch(e) {}
 }
 function saveNetWorthOverrides() {
-  try { localStorage.setItem(NW_KEY, JSON.stringify(netWorthOverrides)); } catch(e) {}
+  try {
+    localStorage.setItem(NW_KEY, JSON.stringify(netWorthOverrides));
+    localStorage.setItem(NW_KEY + '_hist', JSON.stringify(nwHistory));
+  } catch(e) {}
 }
 function loadNetWorthOverrides() {
   try {
     const raw = localStorage.getItem(NW_KEY);
+    const hist = localStorage.getItem(NW_KEY + '_hist');
+    if (hist) nwHistory = JSON.parse(hist);
     return raw ? JSON.parse(raw) : {};
   } catch(e) { return {}; }
 }
+
+// Get balance of an account as of a prior date
+// Uses nwHistory if a snapshot exists near that date, otherwise txn-computed
+function balanceAsOfDate(acct, asOfDate) {
+  // Find the closest nwHistory snapshot on or before asOfDate
+  const snapDates = Object.keys(nwHistory).filter(d => d <= asOfDate).sort();
+  if (snapDates.length > 0) {
+    const snap = nwHistory[snapDates[snapDates.length - 1]];
+    if (snap[acct] !== undefined) return { value: snap[acct], source: 'snapshot' };
+  }
+  // Fall back: sum transactions up to asOfDate
+  const bal = txns
+    .filter(t => t.account === acct && t.date <= asOfDate)
+    .reduce((s, t) => s + t.amount, 0);
+  return { value: bal, source: 'transactions' };
+}
 function clearNetWorthOverrides() {
-  netWorthOverrides = {};
+  netWorthOverrides = {}; nwHistory = {};
   try { localStorage.removeItem(NW_KEY); } catch(e) {}
+  try { localStorage.removeItem(NW_KEY + '_hist'); } catch(e) {}
 }
 
 // ── Parse Quicken Net Worth / Property & Debt CSV ────────────────
@@ -3546,16 +3707,29 @@ function renderIncomeStatement() {
             if (pOpen || pd.txns.length === 1) {
               pd.txns.sort((a,b)=>b.date.localeCompare(a.date)).forEach(t => {
                 let disp = t.payee || (t._xferTo ? '→ '+t._xferTo : '—');
-                let note = t.category && t.category!=='Uncategorized' ? t.category+' · ' : '';
-                note += t.account || '';
+                let sub1 = '';  // item name / detail line
+                let sub2 = '';  // category · account meta line
+
                 if ((t.category||'').toLowerCase()==='--split--') {
                   if (/house loan|rocket/i.test(t.payee)) disp = 'Rocket Mortgage';
-                  note = 'Full payment (principal + interest + escrow) · ' + t.account;
+                  sub2 = 'Principal + interest + escrow · ' + t.account;
+                } else {
+                  // Item detail: real item name from merchant CSVs (Amazon title, HD item, etc.)
+                  if (t.itemDetail && t.itemDetail !== t.payee) {
+                    sub1 = t.itemDetail;
+                  }
+                  sub2 = '';
+                  if (t.category && t.category !== 'Uncategorized') sub2 += t.category;
+                  if (t.account) sub2 += (sub2 ? ' · ' : '') + t.account;
+                  if (t.memo && t.memo !== t.itemDetail && t.memo.length < 60) sub2 += (sub2?' · ':'')+t.memo;
                 }
-                out += '<div style="display:grid;grid-template-columns:88px 1fr 120px 110px;padding:5px 16px 5px 72px;border-bottom:1px solid rgba(255,255,255,.02);background:rgba(0,0,0,.2);">';
-                out += '<div style="font-family:var(--font-m);font-size:10px;color:var(--ink4);">'+t.date+'</div>';
-                out += '<div><div style="font-size:11px;color:var(--ink3);">'+disp+'</div>';
-                if (note) out += '<div style="font-size:10px;color:var(--ink4);">'+note+'</div>';
+
+                out += '<div style="display:grid;grid-template-columns:90px 1fr 120px 110px;padding:5px 16px 5px 72px;border-bottom:1px solid rgba(255,255,255,.02);background:rgba(0,0,0,.2);">';
+                out += '<div style="font-family:var(--font-m);font-size:10px;color:var(--ink4);padding-top:1px;">'+t.date+'</div>';
+                out += '<div>';
+                out += '<div style="font-size:11px;color:var(--ink3);">'+disp+'</div>';
+                if (sub1) out += '<div style="font-size:10px;color:var(--river);font-style:italic;">'+sub1+'</div>';
+                if (sub2) out += '<div style="font-size:10px;color:var(--ink4);">'+sub2+'</div>';
                 out += '</div>';
                 out += '<div style="text-align:right;padding-left:8px;">'+fmtTxnAmt(t)+'</div>';
                 out += '<div></div></div>';
@@ -3811,638 +3985,351 @@ function computeBSFromTxns() {
 function renderBalanceSheet() {
   const el = document.getElementById('balanceSheetContent');
   if (!el) return;
-  // Always reload NW overrides fresh — in-memory state may be stale after page interactions
+
+  // Always reload NW overrides fresh
   const freshNW = loadNetWorthOverrides();
   if (Object.keys(freshNW).length > 0) netWorthOverrides = freshNW;
 
-  if (!txns.length) {
+  if (!txns.length && Object.keys(netWorthOverrides).length === 0) {
     el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">No data loaded. Import your Quicken files first.</div>';
     return;
   }
 
-  const { balances, lastDate } = computeBSFromTxns();
+  // ── Determine comparison period ─────────────────────────────────
+  const compareSel = document.getElementById('bsCompare');
+  const compareMode = compareSel ? compareSel.value : 'ye2025';
   const today = new Date().toISOString().slice(0,10);
+  const curYear = parseInt(today.slice(0,4));
 
-  // Classify accounts
-  const assetGroups = {};
-  const liabGroups  = {};
+  const compareDates = {
+    'ye2024':     (curYear-2)+'-12-31',
+    'ye2025':     (curYear-1)+'-12-31',
+    'q1':         (curYear-1)+'-03-31',
+    'q2':         (curYear-1)+'-06-30',
+    'q3':         (curYear-1)+'-09-30',
+    'prior_snap': null,  // handled below
+  };
+  let compareDate = compareDates[compareMode] || null;
+  let compareLabel = '';
+
+  if (compareMode === 'prior_snap') {
+    const snapDates = Object.keys(nwHistory).sort();
+    const currentSnapDate = Object.values(netWorthOverrides)[0]?.date;
+    const priorDates = snapDates.filter(d => d !== currentSnapDate);
+    compareDate = priorDates.length > 0 ? priorDates[priorDates.length - 1] : null;
+    compareLabel = compareDate ? 'vs. snapshot ' + compareDate : '';
+  } else {
+    const modeLabels = {
+      'ye2024':'vs. YE 2024','ye2025':'vs. YE 2025',
+      'q1':'vs. Q1 2025','q2':'vs. Q2 2025','q3':'vs. Q3 2025','none':''
+    };
+    compareLabel = modeLabels[compareMode] || '';
+  }
+  const showCompare = compareMode !== 'none' && compareDate !== null;
+
+  const { balances, lastDate } = computeBSFromTxns();
+  const hasCompare = showCompare;
+
+  // ── Account value resolution ────────────────────────────────────
+  function getCurrentValue(acct, meta) {
+    const nwOv = netWorthOverrides[acct];
+    if (nwOv) return { value: meta.class === 'liability' ? Math.abs(nwOv.value) : nwOv.value, source: nwOv.source === 'quicken-invperf' ? 'inv-perf' : 'net-worth' };
+    const raw = balances[acct] || 0;
+    return { value: meta.class === 'liability' ? Math.abs(raw) : raw, source: 'transactions' };
+  }
+
+  function getPriorValue(acct, meta) {
+    if (!compareDate) return null;
+    // Check nwHistory for the comparison date
+    const snapDates = Object.keys(nwHistory).filter(d => d <= compareDate).sort();
+    if (snapDates.length > 0) {
+      const snap = nwHistory[snapDates[snapDates.length - 1]];
+      if (snap[acct] !== undefined) {
+        const v = meta.class === 'liability' ? Math.abs(snap[acct]) : snap[acct];
+        return { value: v, source: 'snapshot' };
+      }
+    }
+    // Fall back: transaction-computed balance as of compareDate
+    const bal = txns.filter(t => t.account === acct && t.date <= compareDate)
+                    .reduce((s, t) => s + t.amount, 0);
+    const v = meta.class === 'liability' ? Math.abs(bal) : bal;
+    return { value: v, source: 'transactions' };
+  }
+
+  // ── Build account lists ─────────────────────────────────────────
+  const assetGroups = {}, liabGroups = {};
   let totalAssets = 0, totalLiabs = 0;
+  let totalPriorAssets = 0, totalPriorLiabs = 0;
 
   Object.entries(BS_ACCOUNTS).forEach(([acct, meta]) => {
-    // Priority: Net Worth override (true market value) > transaction-computed balance
-    const nwOverride = netWorthOverrides[acct];
-    let raw, amt, valueSource;
-    if (nwOverride) {
-      // Use the Net Worth snapshot value — this is the real market value
-      raw         = nwOverride.value;
-      valueSource = nwOverride.source === 'quicken-invperf' ? 'inv-perf' : 'net-worth';
-      amt         = meta.class === 'liability' ? Math.abs(raw) : raw;
-    } else {
-      // Fall back to transaction-computed register balance
-      raw         = balances[acct] || 0;
-      valueSource = 'transactions';
-      amt         = meta.class === 'liability' ? Math.abs(raw) : raw;
-    }
-    if (amt === 0 && meta.sub === 'current' && meta.class === 'liability') return; // skip paid-off CCs
+    const cur = getCurrentValue(acct, meta);
+    const prior = hasCompare ? getPriorValue(acct, meta) : null;
+    const amt = cur.value;
+    if (amt === 0 && meta.sub === 'current' && meta.class === 'liability' && !netWorthOverrides[acct]) return;
 
-    // Staleness: if we have a NW override, use its date; otherwise use last transaction date
-    const last = nwOverride ? nwOverride.date : (lastDate[acct] || '');
+    const last = netWorthOverrides[acct] ? netWorthOverrides[acct].date : (lastDate[acct] || '');
     const monthsOld = last ? Math.floor((new Date(today) - new Date(last)) / (1000*60*60*24*30)) : 999;
-    const stale = !nwOverride && monthsOld > 3;  // NW overrides are never stale
+    const stale = !netWorthOverrides[acct] && monthsOld > 3;
     const flags = [];
-    if (valueSource !== 'transactions') flags.push({ type:'ok', text: valueSource === 'inv-perf' ? '📈 from inv. report' : '✓ from NW report' });
-    if (stale) flags.push({ type:'stale', text: monthsOld+'mo old' });
-    if (meta.note) flags.push({ type:'est', text:'⚠ see notes' });
+    if (cur.source !== 'transactions') flags.push({ type:'ok', text: cur.source === 'inv-perf' ? '📈 inv. report' : '✓ NW report' });
+    if (stale) flags.push({ type:'stale', text:'⚠ '+monthsOld+'mo old' });
 
-    const row = { acct, meta, amt, last: last||'—', stale, monthsOld, flags, note: meta.note };
+    const change = (prior && prior.value !== 0) ? amt - prior.value : null;
+    const changePct = (change !== null && prior.value !== 0) ? (change / prior.value * 100) : null;
+
+    const entry = { acct, meta, amt, prior: prior?.value ?? null, priorSrc: prior?.source, change, changePct, flags, last };
 
     if (meta.class === 'asset') {
-      const g = meta.assetType;
-      if (!assetGroups[g]) assetGroups[g] = [];
-      assetGroups[g].push(row);
+      if (!assetGroups[meta.sub]) assetGroups[meta.sub] = [];
+      assetGroups[meta.sub].push(entry);
       totalAssets += amt;
+      totalPriorAssets += prior?.value ?? 0;
     } else {
-      const g = meta.liabType;
-      if (!liabGroups[g]) liabGroups[g] = [];
-      liabGroups[g].push(row);
+      if (!liabGroups[meta.sub]) liabGroups[meta.sub] = [];
+      liabGroups[meta.sub].push(entry);
       totalLiabs += amt;
+      totalPriorLiabs += prior?.value ?? 0;
+    }
+  });
+
+  // Extra NW accounts not in BS_ACCOUNTS
+  const bsNames = new Set(Object.keys(BS_ACCOUNTS));
+  Object.entries(netWorthOverrides).filter(([n]) => !bsNames.has(n)).forEach(([name, nw]) => {
+    if (nw.value > 0) {
+      if (!assetGroups['Other']) assetGroups['Other'] = [];
+      assetGroups['Other'].push({ acct:name, meta:{icon:'📋',label:name,sub:'Other',class:'asset'}, amt:nw.value, prior:null, change:null, changePct:null, flags:[{type:'ok',text:'✓ NW report'}], last:nw.date });
+      totalAssets += nw.value;
     }
   });
 
   const netWorth = totalAssets - totalLiabs;
-  const netColor = netWorth >= 0 ? 'var(--positive)' : 'var(--negative)';
+  const priorNetWorth = totalPriorAssets - totalPriorLiabs;
+  const nwChange = hasCompare ? netWorth - priorNetWorth : null;
+  const nwChangePct = (nwChange !== null && priorNetWorth !== 0) ? (nwChange / priorNetWorth * 100) : null;
+  const nwLoaded = Object.keys(netWorthOverrides).length;
 
-  // Completeness score
-  const highMissing = BS_MISSING.filter(m=>m.severity==='high').length;
-  const totalMissing = BS_MISSING.length;
-  const completeness = Math.round((1 - highMissing/8) * 100);
+  // ── Column helper ───────────────────────────────────────────────
+  const cols = hasCompare ? '1fr 110px 100px 90px 90px' : '1fr 130px 110px';
 
-  function flagBadge(f) {
-    return `<span class="bs-flag bs-flag-${f.type}">${f.text}</span>`;
-  }
-  function amtSpan(v, cls) {
-    return `<span class="bs-row-amt" style="color:${cls||'var(--ink)'}">${v>=0?'':'-'}${fmt(Math.abs(v))}</span>`;
-  }
-  function groupTotal(rows) {
-    return rows.reduce((s,r)=>s+r.amt,0);
+  function hdrRow() {
+    let r = '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:8px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
+    r += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Account</div>';
+    r += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Current</div>';
+    if (hasCompare) {
+      r += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">'+compareLabel.replace('vs. ','')+'</div>';
+      r += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Change</div>';
+      r += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">%</div>';
+    } else {
+      r += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Source</div>';
+    }
+    return r + '</div>';
   }
 
+  function acctRow(e) {
+    const changeColor = e.change === null ? 'var(--ink4)' : e.change >= 0 ? 'var(--positive)' : 'var(--negative)';
+    let r = '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;" class="bs-row">';
+    // Name + flags
+    r += '<div style="display:flex;align-items:center;gap:7px;min-width:0;">';
+    r += '<span style="font-size:14px;flex-shrink:0;">'+(e.meta.icon||'·')+'</span>';
+    r += '<div style="min-width:0;"><div style="font-size:12px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+e.meta.label+'</div>';
+    if (e.flags.length) {
+      r += '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:1px;">';
+      e.flags.forEach(f => {
+        const fc = f.type==='ok'?'rgba(45,212,191,.2)':f.type==='stale'?'rgba(245,168,0,.2)':'rgba(248,113,113,.2)';
+        const tc = f.type==='ok'?'var(--positive)':f.type==='stale'?'var(--gold)':'var(--negative)';
+        r += '<span style="font-size:8px;background:'+fc+';color:'+tc+';padding:1px 5px;border-radius:3px;font-family:var(--font-m);">'+f.text+'</span>';
+      });
+      r += '</div>';
+    }
+    r += '</div></div>';
+    // Current value
+    r += '<div style="text-align:right;font-family:var(--font-m);font-size:13px;font-weight:600;color:var(--ink);">'+fmt(e.amt)+'</div>';
+    if (hasCompare) {
+      r += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;color:var(--ink4);">'+(e.prior !== null ? fmt(e.prior) : '—')+'</div>';
+      r += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:600;color:'+changeColor+';">'+(e.change !== null ? (e.change >= 0 ? '+' : '')+fmt(e.change) : '—')+'</div>';
+      r += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:'+changeColor+';">'+(e.changePct !== null ? (e.changePct >= 0?'+':'')+e.changePct.toFixed(1)+'%' : '—')+'</div>';
+    } else {
+      r += '<div style="text-align:right;font-size:10px;color:var(--ink4);">'+(e.flags.find(f=>f.type==='ok')?.text||'txn register')+'</div>';
+    }
+    return r + '</div>';
+  }
+
+  function groupRow(label, total, priorTotal) {
+    const change = hasCompare && priorTotal ? total - priorTotal : null;
+    const changeColor = change === null ? 'var(--ink4)' : change >= 0 ? 'var(--positive)' : 'var(--negative)';
+    let r = '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:8px 16px;background:rgba(255,255,255,.025);border-bottom:1px solid var(--line);">';
+    r += '<div style="font-size:10px;font-weight:600;color:var(--ink3);letter-spacing:.05em;">'+label+'</div>';
+    r += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:600;color:var(--ink);">'+fmt(total)+'</div>';
+    if (hasCompare) {
+      r += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">'+fmt(priorTotal)+'</div>';
+      r += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;color:'+changeColor+';">'+(change!==null?(change>=0?'+':'')+fmt(change):'—')+'</div>';
+      r += '<div></div>';
+    } else {
+      r += '<div></div>';
+    }
+    return r + '</div>';
+  }
+
+  const GROUP_LABELS = {
+    current:'Cash & Checking', savings:'Savings', investment:'Investments & Retirement',
+    property:'Real Property', mortgage:'Mortgage', auto:'Auto Loan',
+    student:'Student Loans', Other:'Other Assets'
+  };
+
+  // ── Render ──────────────────────────────────────────────────────
   let out = '';
 
-  // ── Net Worth override status banner ─────────────────────────────
-  const nwLoaded = Object.keys(netWorthOverrides).length;
+  // NW status banner
   if (nwLoaded > 0) {
     const nwDates = [...new Set(Object.values(netWorthOverrides).map(v=>v.date))].join(', ');
     out += '<div style="background:rgba(45,212,191,.06);border:1px solid rgba(45,212,191,.2);border-radius:var(--r-md);padding:10px 16px;margin-bottom:8px;font-size:12px;color:var(--ink3);">';
-    out += '✓ <strong style="color:var(--positive);">Net Worth snapshot loaded</strong> — '+nwLoaded+' account values from Quicken as of '+nwDates+'. ';
-    out += 'These override transaction-computed balances for accurate market values.';
+    out += '✓ <strong style="color:var(--positive);">Net Worth snapshot loaded</strong> — '+nwLoaded+' account values as of '+nwDates+'. ';
+    const snapCount = Object.keys(nwHistory).length;
+    if (snapCount > 1) out += snapCount+' historical snapshots stored for comparison. ';
+    out += 'Upload additional Net Worth CSVs to build comparison history.';
     out += '</div>';
   } else {
     out += '<div style="background:rgba(245,168,0,.05);border:1px solid rgba(245,168,0,.15);border-radius:var(--r-md);padding:10px 16px;margin-bottom:8px;font-size:12px;color:var(--ink4);">';
-    out += '⚠ No Net Worth snapshot loaded. Values shown are computed from transaction history and <strong style="color:var(--gold);">understate</strong> investment accounts and home value. ';
-    out += 'Upload a Quicken Net Worth report (Reports → Net Worth &amp; Balances → Net Worth) for accurate balances.';
+    out += '⚠ No Net Worth snapshot loaded. Upload a Quicken Net Worth report for accurate investment and property values.';
     out += '</div>';
   }
 
-  // ── Data quality banner ──────────────────────────────────────────
-  out += `<div style="display:grid;grid-template-columns:auto 1fr;gap:0;background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px;">
-    <div style="padding:20px 24px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:120px;">
-      <div style="font-size:44px;font-weight:700;color:${completeness>=85?'var(--positive)':completeness>=65?'var(--gold)':'var(--negative)'};line-height:1;font-family:var(--font-d);">${completeness}%</div>
-      <div style="font-size:10px;font-family:var(--font-m);color:var(--ink4);margin-top:4px;">Completeness</div>
-    </div>
-    <div style="padding:16px 20px;">
-      <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:8px;">Data Quality Assessment</div>
-      <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:11px;color:var(--ink3);line-height:2;">
-        <span>📋 <strong style="color:var(--ink)">${Object.keys(balances).length}</strong> accounts imported from Quicken</span>
-        <span>✅ <strong style="color:var(--positive)">${Object.values(balances).filter(v=>Math.abs(v)>0).length}</strong> accounts with balances</span>
-        <span>⚠ <strong style="color:var(--gold)">${Object.values(lastDate).filter(d=>{const m=Math.floor((new Date(today)-new Date(d))/(1000*60*60*24*30));return m>3;}).length}</strong> accounts with stale data (>3mo)</span>
-        <span>❌ <strong style="color:var(--negative)">${highMissing}</strong> high-priority items missing</span>
-      </div>
-    </div>
-  </div>`;
-
-  // ── Summary KPIs ─────────────────────────────────────────────────
-  out += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
-    <div style="background:var(--float);border:1px solid rgba(45,212,191,.2);border-radius:var(--r-lg);padding:16px 18px;">
-      <div class="kpi-sm-lbl">Total Assets</div>
-      <div class="kpi-sm-val" style="color:var(--positive);">${fmt(totalAssets)}</div>
-      <div class="kpi-sm-sub">from Quicken · may be incomplete</div>
-    </div>
-    <div style="background:var(--float);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-lg);padding:16px 18px;">
-      <div class="kpi-sm-lbl">Total Liabilities</div>
-      <div class="kpi-sm-val" style="color:var(--negative);">${fmt(totalLiabs)}</div>
-      <div class="kpi-sm-sub">all debts tracked in Quicken</div>
-    </div>
-    <div style="background:var(--float);border:1px solid ${netWorth>=0?'rgba(45,212,191,.25)':'rgba(248,113,113,.25)'};border-radius:var(--r-lg);padding:16px 18px;">
-      <div class="kpi-sm-lbl">Net Worth</div>
-      <div class="kpi-sm-val" style="color:${netColor};">${netWorth>=0?'+':''}${fmt(netWorth)}</div>
-      <div class="kpi-sm-sub">assets minus liabilities</div>
-    </div>
-  </div>`;
-
-  // ── ASSETS ───────────────────────────────────────────────────────
-  const assetOrder = ['Cash & Equivalents','Investment Accounts','Education Accounts','Retirement Accounts','Real Estate'];
-  out += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">';
-
-  // Assets column
-  out += '<div>';
-  out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--positive);margin-bottom:6px;">ASSETS</div>';
-  assetOrder.forEach(grp => {
-    const rows = assetGroups[grp];
-    if (!rows || rows.length === 0) return;
-    const grpTotal = groupTotal(rows);
-    out += '<div class="bs-section">';
-    out += `<div class="bs-hdr"><span class="bs-hdr-title">${grp}</span><span class="bs-hdr-total" style="color:var(--positive);">${fmt(grpTotal)}</span></div>`;
-    rows.forEach(r => {
-      out += '<div class="bs-row">';
-      out += `<div class="bs-row-name">${r.meta.icon} <div><div>${r.meta.label}</div><div class="bs-row-meta">Last: ${r.last}</div></div>`;
-      r.flags.forEach(f => out += flagBadge(f));
-      out += '</div>';
-      out += amtSpan(r.amt, r.stale?'var(--ink3)':'var(--positive)');
-      out += '</div>';
-    });
-    out += '</div>';
-  });
-
-  // Missing assets
-  const missingAssets = BS_MISSING.filter(m=>m.category==='Assets');
-  if (missingAssets.length) {
-    out += '<div class="bs-section" style="border-color:rgba(248,113,113,.2);">';
-    out += '<div class="bs-hdr" style="background:rgba(248,113,113,.06);border-color:rgba(248,113,113,.15);">';
-    out += '<span class="bs-hdr-title" style="color:var(--negative);">⚠ Missing / Unconfirmed Assets</span>';
-    out += '<span class="bs-flag bs-flag-miss">Incomplete</span></div>';
-    missingAssets.forEach(m => {
-      out += `<div class="bs-row" style="flex-direction:column;align-items:flex-start;gap:4px;padding:10px 18px;">
-        <div style="display:flex;align-items:center;gap:8px;width:100%;justify-content:space-between;">
-          <span style="font-size:13px;font-weight:500;">${m.item}</span>
-          <span class="bs-flag bs-flag-${m.severity==='high'?'miss':m.severity==='medium'?'stale':'est'}">${m.severity.toUpperCase()}</span>
-        </div>
-        <div style="font-size:11px;color:var(--ink4);line-height:1.6;">${m.note}</div>
-      </div>`;
-    });
-    out += '</div>';
-  }
-  out += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 16px;margin-top:4px;display:flex;justify-content:space-between;align-items:center;">';
-  out += '<span style="font-size:13px;font-weight:700;">Total Assets</span>';
-  out += `<span style="font-size:16px;font-weight:700;color:var(--positive);font-family:var(--font-m);">${fmt(totalAssets)}</span>`;
-  out += '</div></div>';
-
-  // Liabilities column
-  out += '<div>';
-  out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--negative);margin-bottom:6px;">LIABILITIES</div>';
-  ['Long-Term Debt','Credit Cards'].forEach(grp => {
-    const rows = liabGroups[grp];
-    if (!rows || rows.length === 0) return;
-    const grpTotal = groupTotal(rows);
-    out += '<div class="bs-section">';
-    out += `<div class="bs-hdr"><span class="bs-hdr-title">${grp}</span><span class="bs-hdr-total" style="color:var(--negative);">${fmt(grpTotal)}</span></div>`;
-    rows.forEach(r => {
-      out += '<div class="bs-row">';
-      out += `<div class="bs-row-name">${r.meta.icon} <div><div>${r.meta.label}</div><div class="bs-row-meta">Last: ${r.last}${r.stale?' · stale':''}</div></div>`;
-      r.flags.filter(f=>f.type==='stale').forEach(f => out += flagBadge(f));
-      out += '</div>';
-      out += amtSpan(-r.amt, 'var(--negative)');
-      out += '</div>';
-    });
-    out += '</div>';
-  });
-
-  const missingLiabs = BS_MISSING.filter(m=>m.category==='Liabilities');
-  if (missingLiabs.length) {
-    out += '<div class="bs-section" style="border-color:rgba(245,168,0,.2);">';
-    out += '<div class="bs-hdr" style="background:rgba(245,168,0,.06);border-color:rgba(245,168,0,.15);">';
-    out += '<span class="bs-hdr-title" style="color:var(--gold);">⚠ Verify / Potentially Missing</span></div>';
-    missingLiabs.forEach(m => {
-      out += `<div class="bs-row" style="flex-direction:column;align-items:flex-start;gap:4px;padding:10px 18px;">
-        <div style="display:flex;align-items:center;gap:8px;width:100%;justify-content:space-between;">
-          <span style="font-size:13px;font-weight:500;">${m.item}</span>
-          <span class="bs-flag bs-flag-${m.severity==='high'?'miss':'stale'}">${m.severity.toUpperCase()}</span>
-        </div>
-        <div style="font-size:11px;color:var(--ink4);line-height:1.6;">${m.note}</div>
-      </div>`;
-    });
-    out += '</div>';
-  }
-  out += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 16px;margin-top:4px;display:flex;justify-content:space-between;align-items:center;">';
-  out += '<span style="font-size:13px;font-weight:700;">Total Liabilities</span>';
-  out += `<span style="font-size:16px;font-weight:700;color:var(--negative);font-family:var(--font-m);">${fmt(totalLiabs)}</span>`;
-  out += '</div></div>';
-  out += '</div>'; // grid
-
-  // Net worth footer
-  out += `<div class="bs-net-row" style="border-color:${netColor};">
-    <div>
-      <div style="font-size:16px;font-weight:700;color:${netColor};">Net Worth (Equity)</div>
-      <div style="font-size:11px;color:var(--ink4);margin-top:2px;">Total Assets ${fmt(totalAssets)} − Total Liabilities ${fmt(totalLiabs)}</div>
-    </div>
-    <div style="font-size:28px;font-weight:700;color:${netColor};font-family:var(--font-d);">${netWorth>=0?'+':''}${fmt(netWorth)}</div>
-  </div>`;
-
-  // Debt ratios
-  // ── Also show any NW override accounts NOT in BS_ACCOUNTS ──────
-  const bsAccountNames = new Set(Object.keys(BS_ACCOUNTS));
-  const extraNW = Object.entries(netWorthOverrides).filter(([name]) => !bsAccountNames.has(name));
-  if (extraNW.length > 0) {
-    if (!assetGroups['Other (from NW file)']) assetGroups['Other (from NW file)'] = [];
-    extraNW.forEach(([name, nw]) => {
-      const amt = nw.value;
-      if (amt > 0) {
-        assetGroups['Other (from NW file)'].push({ acct:name, meta:{icon:'📋',label:name,assetType:'Other (from NW file)'}, amt, last:nw.date, stale:false, flags:[{type:'ok',text:'✓ from NW report'}], note:'' });
-        totalAssets += amt;
-      }
-    });
-  }
-
+  // KPI summary row
   const dti = totalLiabs > 0 && totalAssets > 0 ? (totalLiabs/totalAssets*100).toFixed(1) : 0;
-  const mortgageRow = Object.entries(BS_ACCOUNTS).find(([,v])=>v.sub==='mortgage');
-  const mortgageBal = mortgageRow ? Math.abs((netWorthOverrides[mortgageRow[0]]?.value) || balances[mortgageRow[0]]||0) : 0;
-  const homeBal = (netWorthOverrides['House']?.value) || balances['House'] || 0;
-  const ltv = homeBal > 0 ? (mortgageBal/homeBal*100).toFixed(1) : '—';
+  const mortgageKey = Object.entries(BS_ACCOUNTS).find(([,v])=>v.sub==='mortgage')?.[0];
+  const mortgageBal = mortgageKey ? getCurrentValue(mortgageKey, BS_ACCOUNTS[mortgageKey]).value : 0;
+  const houseKey = Object.entries(BS_ACCOUNTS).find(([,v])=>v.sub==='property')?.[0];
+  const houseBal = houseKey ? getCurrentValue(houseKey, BS_ACCOUNTS[houseKey]).value : 0;
+  const homeEquity = houseBal - mortgageBal;
 
-  out += `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;">
-    ${[
-      ['Debt-to-Asset', dti+'%', dti<40?'var(--positive)':dti<60?'var(--gold)':'var(--negative)', 'Lower is stronger'],
-      ['Mortgage LTV', ltv+'%', parseFloat(ltv)<80?'var(--positive)':'var(--gold)', 'Loan-to-value ratio'],
-      ['Liquid Assets', fmt((netWorthOverrides['Checking - PNC']?.value||balances['Checking - PNC']||0)+(netWorthOverrides['Savings - PNC']?.value||balances['Savings - PNC']||0)), 'var(--river)', 'Cash on hand'],
-      ['Credit Utilization', (() => {
-        const cc = Object.entries(BS_ACCOUNTS).filter(([,v])=>v.liabType==='Credit Cards');
-        const used = cc.reduce((s,[a])=>s+Math.abs(balances[a]||0),0);
-        return used > 0 ? fmt(used)+' balance' : '$0 balance';
-      })(), 'var(--ink)', 'Total CC balance'],
-    ].map(([l,v,c,s])=>`<div class="kpi-sm"><div class="kpi-sm-lbl">${l}</div><div class="kpi-sm-val" style="color:${c};">${v}</div><div class="kpi-sm-sub">${s}</div></div>`).join('')}
-  </div>`;
-
-  el.innerHTML = out;
-}
-
-
-// ════════════════════════════════════════════════════════════════
-// FAMILY FINANCIAL STATEMENTS — Investor-Grade Format
-// Presents household finances as a family office / holding company.
-// ════════════════════════════════════════════════════════════════
-
-function renderFinancials() {
-  const el = document.getElementById('financialsContent');
-  if (!el) return;
-
-  // Populate year selector
-  const yrSel = document.getElementById('finYear');
-  const sp = spendable(txns);
-  const years = [...new Set(sp.map(t=>t.date.slice(0,4)))].sort().reverse();
-
-  if (yrSel && yrSel.options.length === 0) {
-    years.forEach(yr => {
-      const opt = document.createElement('option');
-      opt.value = yr; opt.textContent = yr + ' Annual';
-      yrSel.appendChild(opt);
-    });
-    // Add trailing 12 months option
-    const ttm = document.createElement('option');
-    ttm.value = 'ttm'; ttm.textContent = 'Trailing 12 Months';
-    yrSel.insertBefore(ttm, yrSel.firstChild);
-    yrSel.value = 'ttm';
-  }
-
-  const selYear = (yrSel && yrSel.value) || 'ttm';
-  let filtered;
-  let periodLabel;
-  if (selYear === 'ttm') {
-    const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear()-1);
-    filtered = sp.filter(t => new Date(t.date) >= cutoff);
-    periodLabel = 'Trailing 12 Months (TTM)';
-  } else {
-    filtered = sp.filter(t => t.date.startsWith(selYear));
-    periodLabel = 'Fiscal Year ' + selYear;
-  }
-
-  const months = [...new Set(filtered.map(t=>t.date.slice(0,7)))].sort();
-  const nMonths = months.length || 1;
-
-  // ── Income Statement ─────────────────────────────────────────────
-  const income    = filtered.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
-  const salary    = filtered.filter(t=>t.amount>0 && /net salary|salary|wages|direct dep|payroll/i.test(t.category+t.payee)).reduce((s,t)=>s+t.amount,0);
-  const otherInc  = income - salary;
-
-  // Expense by section
-  function sectionTotal(sectionId) {
-    const sec = WATERFALL.find(s=>s.id===sectionId);
-    if (!sec) return 0;
-    return filtered.filter(t=>t.amount<0&&sec.buckets.includes(classifyTxn(t))).reduce((s,t)=>s+Math.abs(t.amount),0);
-  }
-
-  const savings     = sectionTotal('auto_save');
-  const housing     = sectionTotal('fixed');    // mortgage + car + insurance + education + childcare
-  const utilities   = sectionTotal('utilities');
-  const food        = sectionTotal('necessities');
-  const discretion  = sectionTotal('discretionary');
-  const totalExp    = housing + utilities + food + discretion;
-  const ebitda      = income - totalExp; // "earnings before savings/investments/taxes/depreciation"
-  const netIncome   = income - savings - totalExp;
-  const savingsRate = income > 0 ? (savings/income*100) : 0;
-  const expRatio    = income > 0 ? (totalExp/income*100) : 0;
-
-  // YoY comparison (prior year if available)
-  const priorYear = selYear === 'ttm' ? null : String(parseInt(selYear)-1);
-  let priorFiltered = null;
-  if (priorYear) {
-    priorFiltered = sp.filter(t => t.date.startsWith(priorYear));
-  }
-  const priorIncome = priorFiltered ? priorFiltered.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0) : null;
-  const priorExp    = priorFiltered ? priorFiltered.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0) : null;
-
-  function yoy(curr, prior) {
-    if (!prior || prior === 0) return '';
-    const chg = ((curr - prior)/prior*100);
-    const color = chg >= 0 ? 'var(--positive)' : 'var(--negative)';
-    return `<span style="font-size:10px;color:${color};font-family:var(--font-m);">${chg>=0?'▲':'▼'}${Math.abs(chg).toFixed(1)}%</span>`;
-  }
-
-  function finRow(label, curr, prior, isExpense, indent, bold, highlight) {
-    const fmt2 = v => v===null?'—':fmt(Math.abs(v));
-    const sign  = isExpense ? '-' : (curr > 0 ? '+' : '');
-    const color = bold ? (isExpense?'var(--negative)':curr>=0?'var(--positive)':'var(--negative)') : (isExpense?'var(--gold)':'var(--ink2)');
-    const cls   = bold ? 'fin-row total-row' : (indent ? 'fin-row indent' : 'fin-row');
-    const priorFmt = prior !== null && prior !== undefined ? fmt2(prior) : '—';
-    const avgMo = (curr/nMonths);
-    const avgFmt = Math.abs(avgMo)>=1000?'$'+(Math.abs(avgMo)/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(avgMo));
-    return `<div class="${cls}" ${highlight?'style="background:rgba(245,168,0,.04);"':''}>
-      <div style="color:${bold?'var(--ink)':'inherit'};font-weight:${bold?700:400};">${label}</div>
-      <div class="fin-num ${bold?'':'neg'}" style="color:${color};">${sign}${fmt2(curr)}</div>
-      <div class="fin-num" style="color:var(--ink4);">${priorFmt!=='—'?(isExpense?'-':'')+priorFmt:'—'}</div>
-      <div class="fin-num" style="color:var(--ink4);">${avgFmt}/mo</div>
-    </div>`;
-  }
-
-  const { balances } = computeBSFromTxns();
-  const totalAssets = Object.entries(BS_ACCOUNTS).filter(([,v])=>v.class==='asset').reduce((s,[a,])=>s+(balances[a]||0),0);
-  const totalLiabs  = Object.entries(BS_ACCOUNTS).filter(([,v])=>v.class==='liability').reduce((s,[a,])=>s+Math.abs(balances[a]||0),0);
-  const netWorth    = totalAssets - totalLiabs;
-
-  const liquid = (balances['Checking - PNC']||0)+(balances['Savings - PNC']||0);
-  const monthlyExp = totalExp/nMonths;
-  const runway = liquid/Math.max(monthlyExp,1);
-
-  let out = '';
-
-  // ── Cover block ───────────────────────────────────────────────────
-  out += `<div style="background:var(--float);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:var(--r-lg);padding:24px 28px;margin-bottom:12px;">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-      <div>
-        <div style="font-family:var(--font-d);font-size:28px;font-weight:600;color:var(--ink);margin-bottom:4px;">Luka Family Office</div>
-        <div style="font-size:13px;color:var(--ink3);">Consolidated Financial Statements · ${periodLabel}</div>
-        <div style="font-size:11px;color:var(--ink4);font-family:var(--font-m);margin-top:4px;">Pittsburgh, PA · Prepared from Quicken register data · For internal use</div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-size:11px;color:var(--ink4);font-family:var(--font-m);">Net Worth</div>
-        <div style="font-size:32px;font-weight:700;color:var(--positive);font-family:var(--font-d);">${fmt(netWorth)}</div>
-        <div style="font-size:11px;color:var(--ink4);">as of last data import</div>
-      </div>
-    </div>
-  </div>`;
-
-  // ── Executive KPIs ────────────────────────────────────────────────
-  out += '<div class="kpi-cluster">';
-  [
-    ['Annual Revenue', fmt(income), income>0?'var(--positive)':'var(--negative)', 'total take-home'],
-    ['EBITDA', (ebitda>=0?'+':'')+fmt(ebitda), ebitda>=0?'var(--positive)':'var(--negative)', 'income − expenses'],
-    ['Savings Rate', savingsRate.toFixed(1)+'%', savingsRate>=20?'var(--positive)':savingsRate>=10?'var(--gold)':'var(--negative)', 'target ≥20%'],
-    ['Cash Runway', runway.toFixed(1)+' mo', runway>=6?'var(--positive)':runway>=3?'var(--gold)':'var(--negative)', 'liquid ÷ monthly burn'],
-  ].forEach(([l,v,c,s])=>{
-    out += `<div class="kpi-sm"><div class="kpi-sm-lbl">${l}</div><div class="kpi-sm-val" style="color:${c};">${v}</div><div class="kpi-sm-sub">${s}</div></div>`;
+  out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;">';
+  const kpis = [
+    ['Net Worth', fmt(netWorth), netWorth>=0?'var(--positive)':'var(--negative)',
+      hasCompare && nwChange!==null ? (nwChange>=0?'↑ ':'↓ ')+fmt(Math.abs(nwChange))+(nwChangePct!==null?' ('+nwChangePct.toFixed(1)+'%)':'')+' '+compareLabel : 'assets minus liabilities'],
+    ['Total Assets', fmt(totalAssets), 'var(--ink)', hasCompare && totalPriorAssets ? 'prior: '+fmt(totalPriorAssets) : 'all owned assets'],
+    ['Total Liabilities', fmt(totalLiabs), 'var(--negative)', hasCompare && totalPriorLiabs ? 'prior: '+fmt(totalPriorLiabs) : 'all outstanding debt'],
+    ['Home Equity', fmt(homeEquity), homeEquity>=0?'var(--river)':'var(--negative)', 'property minus mortgage'],
+  ];
+  kpis.forEach(([l,v,c,s]) => {
+    out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;">';
+    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">'+l+'</div>';
+    out += '<div style="font-size:22px;font-weight:700;color:'+c+';">'+v+'</div>';
+    out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+s+'</div></div>';
   });
   out += '</div>';
 
-  // ── Income Statement ──────────────────────────────────────────────
-  out += '<div class="fin-section">';
-  out += `<div class="fin-hdr">
-    <div class="fin-hdr-title">Income Statement</div>
-    <div class="fin-hdr-sub">${periodLabel} · All figures in USD · Accrual basis (expenses dated to purchase)</div>
-  </div>`;
-  out += `<div class="fin-row" style="background:var(--lift);">
-    <div style="color:var(--ink4);"></div>
-    <div class="fin-col-hdr">Current</div>
-    <div class="fin-col-hdr">${priorYear||'Prior'}</div>
-    <div class="fin-col-hdr">Avg/Month</div>
-  </div>`;
-  out += finRow('REVENUE', null, null, false, false, false);
-  out += finRow('Employment Income (Net Salary)', salary, priorIncome?priorIncome*0.9:null, false, true, false);
-  out += finRow('Other Income (Interest, Dividends, Refunds)', otherInc, null, false, true, false);
-  out += finRow('Total Revenue', income, priorIncome, false, false, true, true);
-
-  out += finRow('OPERATING EXPENSES', null, null, true, false, false);
-  out += finRow('Housing (Mortgage, Auto Loan, Insurance, Education)', housing, null, true, true, false);
-  out += finRow('Utilities & Communications', utilities, null, true, true, false);
-  out += finRow('Food & Groceries', filtered.filter(t=>t.amount<0&&['groceries','restaurants'].includes(classifyTxn(t))).reduce((s,t)=>s+Math.abs(t.amount),0), null, true, true, false);
-  out += finRow('Transportation', filtered.filter(t=>t.amount<0&&['gas_car','transit'].includes(classifyTxn(t))).reduce((s,t)=>s+Math.abs(t.amount),0), null, true, true, false);
-  out += finRow('Healthcare', filtered.filter(t=>t.amount<0&&classifyTxn(t)==='healthcare').reduce((s,t)=>s+Math.abs(t.amount),0), null, true, true, false);
-  out += finRow('Discretionary & Lifestyle', discretion, null, true, true, false);
-  out += finRow('Total Operating Expenses', totalExp, priorExp, true, false, true, true);
-
-  out += `<div class="fin-row subtotal" style="background:rgba(245,168,0,.04);">
-    <div>EBITDA (Operating Surplus before Savings)</div>
-    <div class="fin-num" style="color:${ebitda>=0?'var(--positive)':'var(--negative)'};">${ebitda>=0?'+':'-'}${fmt(Math.abs(ebitda))}</div>
-    <div class="fin-num" style="color:var(--ink4);">${priorIncome&&priorExp?(priorIncome-priorExp>=0?'+':'-')+fmt(Math.abs(priorIncome-priorExp)):'—'}</div>
-    <div class="fin-num" style="color:var(--ink4);">${fmt(ebitda/nMonths)}/mo</div>
-  </div>`;
-
-  out += finRow('SAVINGS & INVESTMENT FLOWS', null, null, false, false, false);
-  out += finRow('Pre-committed Savings (Auto-transfer)', savings, null, false, true, false);
-  out += `<div class="fin-row total-row" style="border-top:2px solid var(--gold);">
-    <div>Net Income (Bottom Line)</div>
-    <div class="fin-num" style="color:${netIncome>=0?'var(--positive)':'var(--negative)'};">${netIncome>=0?'+':'-'}${fmt(Math.abs(netIncome))}</div>
-    <div class="fin-num">—</div>
-    <div class="fin-num" style="color:${netIncome>=0?'var(--positive)':'var(--negative)'};">${netIncome>=0?'+':'-'}${fmt(Math.abs(netIncome/nMonths))}/mo</div>
-  </div>`;
+  // Assets table
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">';
+  out += '<div style="padding:10px 16px;background:var(--lift);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">';
+  out += '<div style="font-size:13px;font-weight:600;color:var(--positive);">ASSETS</div>';
+  if (hasCompare) out += '<div style="font-size:11px;color:var(--ink4);">'+compareLabel+'</div>';
   out += '</div>';
+  out += hdrRow();
 
-  // ── Cash Flow Statement ───────────────────────────────────────────
-  const ccPaid = txns.filter(t=>t.isTransfer&&t.amount<0&&(t.category||'').includes('[Credit')).reduce((s,t)=>s+Math.abs(t.amount),0);
-  const savXfer = txns.filter(t=>t.isTransfer&&t.amount<0&&selYear!=='ttm'?t.date.startsWith(selYear):new Date(t.date)>=new Date(new Date().setFullYear(new Date().getFullYear()-1))).reduce((s,t)=>s+Math.abs(t.amount),0);
-
-  out += '<div class="fin-section">';
-  out += `<div class="fin-hdr">
-    <div class="fin-hdr-title">Statement of Cash Flows</div>
-    <div class="fin-hdr-sub">${periodLabel} · Operating + Investing + Financing activities</div>
-  </div>`;
-  out += `<div class="fin-row" style="background:var(--lift);"><div style="color:var(--ink4);">Activity</div><div class="fin-col-hdr">Amount</div><div class="fin-col-hdr">Notes</div><div></div></div>`;
-
-  function cfRow(label, amt, note, bold) {
-    const c = amt>=0?'var(--positive)':'var(--negative)';
-    return `<div class="fin-row ${bold?'total-row':''}">
-      <div>${label}</div>
-      <div class="fin-num" style="color:${c};">${amt>=0?'+':''}${fmt(amt)}</div>
-      <div style="font-size:10px;color:var(--ink4);text-align:right;">${note}</div>
-      <div></div>
-    </div>`;
-  }
-  out += cfRow('Net Employment Income', salary, 'payroll deposits to checking', false);
-  out += cfRow('Other Operating Income', otherInc, 'interest, refunds, transfers in', false);
-  out += cfRow('Operating Expenses Paid', -totalExp, 'CC charges + direct debits', false);
-  out += cfRow('Net Cash from Operations', income-totalExp, '', true);
-  out += cfRow('Savings Transfers (to savings/investment)', -savings, 'auto-transfers out of checking', false);
-  out += cfRow('Net Change in Checking Balance', income-totalExp-savings, 'estimated check register change', true);
-  out += '</div>';
-
-  // ── Key Ratios ────────────────────────────────────────────────────
-  const debtService = (housing/nMonths);
-  const dscr = income/nMonths > 0 ? (income/nMonths)/debtService : 0;
-  const grocAmt = filtered.filter(t=>t.amount<0&&classifyTxn(t)==='groceries').reduce((s,t)=>s+Math.abs(t.amount),0);
-  const restAmt = filtered.filter(t=>t.amount<0&&classifyTxn(t)==='restaurants').reduce((s,t)=>s+Math.abs(t.amount),0);
-
-  out += '<div class="fin-section">';
-  out += '<div class="fin-hdr"><div class="fin-hdr-title">Key Financial Ratios</div><div class="fin-hdr-sub">Benchmarked to household finance best practices</div></div>';
-  out += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">';
-  [
-    ['Savings Rate', savingsRate.toFixed(1)+'%', savingsRate>=20?'✓ Excellent':savingsRate>=10?'⚠ On Track':'✗ Below Target', savingsRate>=20?'var(--positive)':savingsRate>=10?'var(--gold)':'var(--negative)', 'Target: ≥20% of gross income'],
-    ['Expense Ratio', expRatio.toFixed(1)+'%', expRatio<=70?'✓ Healthy':'⚠ High', expRatio<=70?'var(--positive)':'var(--gold)', 'Target: ≤70% of income on expenses'],
-    ['Housing Cost Ratio', income>0?(housing/income*100).toFixed(1)+'%':'—', income>0&&housing/income<0.28?'✓ Under 28%':'⚠ Above guideline', income>0&&housing/income<0.28?'var(--positive)':'var(--gold)', 'Target: ≤28% on housing'],
-    ['Debt Service Coverage', dscr.toFixed(2)+'×', dscr>=2?'✓ Strong':dscr>=1.25?'⚠ Adequate':'✗ Tight', dscr>=2?'var(--positive)':dscr>=1.25?'var(--gold)':'var(--negative)', 'Monthly income ÷ debt payments'],
-    ['Cash Runway', runway.toFixed(1)+' months', runway>=6?'✓ 6mo+ emergency fund':runway>=3?'⚠ 3-6mo adequate':'✗ Under 3mo', runway>=6?'var(--positive)':runway>=3?'var(--gold)':'var(--negative)', 'Liquid cash ÷ monthly burn rate'],
-    ['Groceries vs Dining', grocAmt>0&&restAmt>0?(restAmt/grocAmt).toFixed(1)+'× dining':'—', 'Informational', 'var(--ink3)', 'Dining $ per $1 of groceries'],
-  ].forEach(([l,v,label,c,bench])=>{
-    out += `<div style="padding:12px 20px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);">
-      <div style="font-size:11px;color:var(--ink4);margin-bottom:2px;">${l}</div>
-      <div style="font-size:20px;font-weight:700;color:${c};font-family:var(--font-m);">${v}</div>
-      <div style="font-size:11px;color:${c};margin-top:2px;">${label}</div>
-      <div style="font-size:10px;color:var(--ink4);margin-top:2px;">${bench}</div>
-    </div>`;
+  const assetSubOrder = ['current','savings','investment','property','Other'];
+  let prevAssets = 0;
+  assetSubOrder.forEach(sub => {
+    const entries = assetGroups[sub];
+    if (!entries || !entries.length) return;
+    const subTotal = entries.reduce((s,e)=>s+e.amt,0);
+    const priorSubTotal = entries.reduce((s,e)=>s+(e.prior||0),0);
+    prevAssets += priorSubTotal;
+    const subLabel = GROUP_LABELS[sub] || sub;
+    out += '<div style="padding:6px 16px;font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);background:rgba(255,255,255,.01);border-bottom:1px solid rgba(255,255,255,.04);">'+subLabel+'</div>';
+    entries.sort((a,b)=>b.amt-a.amt).forEach(e => { out += acctRow(e); });
+    out += groupRow('Subtotal', subTotal, priorSubTotal);
   });
+
+  out += '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:11px 16px;background:rgba(45,212,191,.04);border-top:2px solid rgba(45,212,191,.2);">';
+  out += '<div style="font-size:13px;font-weight:700;color:var(--positive);">TOTAL ASSETS</div>';
+  out += '<div style="text-align:right;font-family:var(--font-m);font-size:14px;font-weight:700;color:var(--positive);">'+fmt(totalAssets)+'</div>';
+  if (hasCompare) {
+    const chg = totalAssets - totalPriorAssets;
+    out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;color:var(--ink4);">'+fmt(totalPriorAssets)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--font-m);font-size:13px;font-weight:700;color:'+(chg>=0?'var(--positive)':'var(--negative)')+'">'+( chg>=0?'+':'')+fmt(chg)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:'+(chg>=0?'var(--positive)':'var(--negative)')+';">'+( totalPriorAssets ? (chg/totalPriorAssets*100).toFixed(1)+'%' : '—')+'</div>';
+  } else { out += '<div></div>'; }
   out += '</div></div>';
 
-  // ── Forward Look (Projections) ────────────────────────────────────
-  const projIncome  = (income/nMonths) * 12;
-  const projExp     = (totalExp/nMonths) * 12;
-  const projSavings = (savings/nMonths) * 12;
-  const projNet     = projIncome - projSavings - projExp;
+  // Liabilities table
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">';
+  out += '<div style="padding:10px 16px;background:var(--lift);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">';
+  out += '<div style="font-size:13px;font-weight:600;color:var(--negative);">LIABILITIES</div>';
+  if (hasCompare) out += '<div style="font-size:11px;color:var(--ink4);">'+compareLabel+'</div>';
+  out += '</div>';
+  out += hdrRow();
 
-  out += `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;margin-top:4px;">
-    <div style="font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:12px;">📊 12-Month Forward Projection <span style="font-size:10px;font-weight:400;color:var(--ink4);font-family:var(--font-m);">(based on TTM run rate)</span></div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
-      ${[
-        ['Projected Income', projIncome, 'var(--positive)'],
-        ['Projected Expenses', projExp, 'var(--gold)'],
-        ['Projected Savings', projSavings, 'var(--river)'],
-        ['Projected Net', projNet, projNet>=0?'var(--positive)':'var(--negative)'],
-      ].map(([l,v,c])=>`<div class="kpi-sm"><div class="kpi-sm-lbl">${l}</div><div class="kpi-sm-val" style="color:${c};">${v>=0?'+':''}${fmt(v)}</div><div class="kpi-sm-sub">annualized</div></div>`).join('')}
-    </div>
-  </div>`;
+  const liabSubOrder = ['current','mortgage','auto','student','other'];
+  liabSubOrder.forEach(sub => {
+    const entries = liabGroups[sub];
+    if (!entries || !entries.length) return;
+    const subTotal = entries.reduce((s,e)=>s+e.amt,0);
+    const priorSub = entries.reduce((s,e)=>s+(e.prior||0),0);
+    const subLabel = GROUP_LABELS[sub] || sub;
+    out += '<div style="padding:6px 16px;font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);background:rgba(255,255,255,.01);border-bottom:1px solid rgba(255,255,255,.04);">'+subLabel+'</div>';
+    entries.sort((a,b)=>b.amt-a.amt).forEach(e => { out += acctRow(e); });
+    out += groupRow('Subtotal', subTotal, priorSub);
+  });
+
+  out += '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:11px 16px;background:rgba(248,113,113,.04);border-top:2px solid rgba(248,113,113,.2);">';
+  out += '<div style="font-size:13px;font-weight:700;color:var(--negative);">TOTAL LIABILITIES</div>';
+  out += '<div style="text-align:right;font-family:var(--font-m);font-size:14px;font-weight:700;color:var(--negative);">'+fmt(totalLiabs)+'</div>';
+  if (hasCompare) {
+    const chg = totalLiabs - totalPriorLiabs;
+    out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;color:var(--ink4);">'+fmt(totalPriorLiabs)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--font-m);font-size:13px;font-weight:700;color:'+(chg<=0?'var(--positive)':'var(--negative)')+';">'+(chg>=0?'+':'')+fmt(chg)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:'+(chg<=0?'var(--positive)':'var(--negative)')+';">'+( totalPriorLiabs ? (chg/totalPriorLiabs*100).toFixed(1)+'%' : '—')+'</div>';
+  } else { out += '<div></div>'; }
+  out += '</div></div>';
+
+  // Net Worth summary
+  const nwColor = netWorth >= 0 ? 'var(--positive)' : 'var(--negative)';
+  out += '<div style="background:var(--float);border:1px solid '+(netWorth>=0?'rgba(45,212,191,.3)':'rgba(248,113,113,.3)')+';border-radius:var(--r-lg);overflow:hidden;">';
+  out += '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:14px 16px;background:'+(netWorth>=0?'rgba(45,212,191,.06)':'rgba(248,113,113,.06)')+'">';
+  out += '<div style="font-size:15px;font-weight:700;color:'+nwColor+';">NET WORTH</div>';
+  out += '<div style="text-align:right;font-family:var(--font-m);font-size:16px;font-weight:700;color:'+nwColor+';">'+fmt(netWorth)+'</div>';
+  if (hasCompare) {
+    const nwChg = nwChange || 0;
+    const nwChgColor = nwChg >= 0 ? 'var(--positive)' : 'var(--negative)';
+    out += '<div style="text-align:right;font-family:var(--font-m);font-size:13px;color:var(--ink4);">'+fmt(priorNetWorth)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--font-m);font-size:15px;font-weight:700;color:'+nwChgColor+';">'+(nwChg>=0?'+':'')+fmt(nwChg)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;color:'+nwChgColor+';">'+(nwChangePct!==null?(nwChangePct>=0?'+':'')+nwChangePct.toFixed(1)+'%':'—')+'</div>';
+  } else { out += '<div></div>'; }
+  out += '</div>';
+  if (hasCompare && nwChange !== null) {
+    out += '<div style="padding:8px 16px;border-top:1px solid rgba(255,255,255,.06);font-size:11px;color:var(--ink4);">';
+    out += 'Net worth '+(nwChange>=0?'<strong style="color:var(--positive);">grew '+fmt(Math.abs(nwChange))+'</strong>':'<strong style="color:var(--negative);">declined '+fmt(Math.abs(nwChange))+'</strong>')+' '+compareLabel+'. ';
+    out += 'Note: comparison uses '+(Object.keys(nwHistory).length > 1 ? 'stored NW snapshots' : 'transaction-computed balances for prior period — upload a historical Net Worth CSV for accuracy')+'.';
+    out += '</div>';
+  }
+  out += '</div>';
 
   el.innerHTML = out;
 }
 
+// ════════════════════════════════════════════════
+// BUDGET VS ACTUAL
+// ════════════════════════════════════════════════
 
-// ════════════════════════════════════════════════════════════════
-// 1. NON-RECURRING REVENUE FLAGGING
-// Auto-detect and manually tag income as one-time vs recurring.
-// Flagged txns are excluded from run-rate and forward projections.
-// ════════════════════════════════════════════════════════════════
-
-// Heuristics to auto-suggest NR income
-function autoDetectNonRecurring() {
-  const sp = spendable(txns);
-  const incTxns = sp.filter(t => t.amount > 0);
-  if (!incTxns.length) return;
-
-  // Median monthly income (recurring baseline)
-  const byMonth = {};
-  incTxns.forEach(t => {
-    const k = t.date.slice(0,7);
-    byMonth[k] = (byMonth[k]||0) + t.amount;
-  });
-  const monthTotals = Object.values(byMonth).sort((a,b)=>a-b);
-  const median = monthTotals[Math.floor(monthTotals.length/2)] || 1;
-
-  // Payee frequency map
-  const payeeFreq = {};
-  incTxns.forEach(t => { payeeFreq[t.payee] = (payeeFreq[t.payee]||0) + 1; });
-
-  let flagged = 0;
-  incTxns.forEach(t => {
-    const key = txnKey(t);
-    if (nonRecurringIds.has(key)) return; // already flagged
-
-    const isLarge      = t.amount > median * 0.6;   // >60% of median monthly income in one txn
-    const isRare       = payeeFreq[t.payee] <= 2;   // payee appears rarely
-    const isBonus      = /bonus|gift|award|settlement|refund|inheritance|tax ref/i.test(t.payee+t.category);
-    const isInterest   = /interest|dividend|_divinc|_rlzdgain/i.test(t.category);
-
-    if ((isLarge && isRare) || isBonus) {
-      nonRecurringIds.add(key);
-      flagged++;
-    }
-    // Interest/dividends from investment accounts: flag as NR for run-rate purposes
-    if (isInterest && t.amount > 500) {
-      nonRecurringIds.add(key);
-      flagged++;
-    }
-  });
-  if (flagged > 0) saveSettings();
-  return flagged;
-}
-
-// Recurring income monthly average (excludes NR flagged txns)
-function recurringIncomeAvg(months) {
-  const sp = spendable(txns);
-  const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - (months||12));
-  const filtered = sp.filter(t => t.amount > 0 && new Date(t.date) >= cutoff && !nonRecurringIds.has(txnKey(t)));
-  const byMonth = {};
-  filtered.forEach(t => { const k=t.date.slice(0,7); byMonth[k]=(byMonth[k]||0)+t.amount; });
-  const vals = Object.values(byMonth);
-  return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
-}
-
-// ════════════════════════════════════════════════════════════════
-// 2. BUDGET VS ACTUAL
-// Monthly budget targets per bucket, suggested from trailing 12mo
-// seasonality-adjusted, shown vs current month actuals.
-// ════════════════════════════════════════════════════════════════
-
-// Suggest budget based on trailing 12mo with seasonality
 function suggestBudget() {
   const sp = spendable(txns);
-  const now = new Date();
-
-  // Get the same calendar month across all available years
-  const thisMonth = now.getMonth(); // 0-indexed
-
-  // For each bucket, compute: 12mo average, and same-month average (seasonality)
-  const bucketMonthly = {};  // { bucket: { month: [amounts] } }
-
+  const thisMonth = new Date().getMonth();
+  const bm = {};
   sp.filter(t => t.amount < 0).forEach(t => {
-    const bucket = classifyTxn(t);
-    const d = new Date(t.date);
-    const mo = d.getMonth();
-    const yr = d.getFullYear();
-    const k = yr + '-' + String(mo).padStart(2,'0');
-    if (!bucketMonthly[bucket]) bucketMonthly[bucket] = {};
-    if (!bucketMonthly[bucket][k]) bucketMonthly[bucket][k] = 0;
-    bucketMonthly[bucket][k] += Math.abs(t.amount);
+    const b = classifyTxn(t), d = new Date(t.date);
+    const k = d.getFullYear()+'-'+String(d.getMonth()).padStart(2,'0');
+    if (!bm[b]) bm[b] = {};
+    bm[b][k] = (bm[b][k]||0) + Math.abs(t.amount);
   });
-
-  const newTargets = {};
-  Object.entries(bucketMonthly).forEach(([bucket, months]) => {
-    const allVals = Object.values(months);
-    if (!allVals.length) return;
-
-    // 12mo trailing average
-    const avg12 = allVals.reduce((a,b)=>a+b,0) / allVals.length;
-
-    // Same-month values (seasonality signal)
-    const sameMoVals = Object.entries(months)
-      .filter(([k]) => parseInt(k.split('-')[1]) === thisMonth)
-      .map(([,v]) => v);
-
-    // Weighted: 60% 12mo avg + 40% same-month historical if we have data
-    const suggestion = sameMoVals.length > 0
-      ? avg12 * 0.6 + (sameMoVals.reduce((a,b)=>a+b,0)/sameMoVals.length) * 0.4
-      : avg12;
-
-    // Round to nearest $25
-    newTargets[bucket] = Math.round(suggestion / 25) * 25;
+  const nt = {};
+  Object.entries(bm).forEach(([b, months]) => {
+    const vals = Object.values(months);
+    if (!vals.length) return;
+    const avg = vals.reduce((a,c)=>a+c,0)/vals.length;
+    const same = Object.entries(months).filter(([k])=>parseInt(k.split('-')[1])===thisMonth).map(([,v])=>v);
+    nt[b] = Math.round((same.length ? avg*0.6+(same.reduce((a,c)=>a+c,0)/same.length)*0.4 : avg)/25)*25;
   });
-
-  // Merge with existing (don't overwrite manually set ones? Actually replace all)
-  budgetTargets = newTargets;
+  budgetTargets = nt;
   saveSettings();
   renderBudget();
   toast('✓ Budget suggested from trailing 12-month run rate with seasonality adjustment');
@@ -4451,13 +4338,7 @@ function suggestBudget() {
 function renderBudget() {
   const el = document.getElementById('budgetContent');
   if (!el) return;
-
-  if (!txns.length) {
-    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">No data loaded.</div>';
-    return;
-  }
-
-  // Month selector
+  if (!txns.length) { el.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink4);">No data loaded.</div>'; return; }
   const moSel = document.getElementById('budgetMonth');
   const sp    = spendable(txns);
   const months = [...new Set(sp.map(t=>t.date.slice(0,7)))].sort().reverse();
@@ -4470,442 +4351,252 @@ function renderBudget() {
       moSel.appendChild(opt);
     });
   }
-  const selMonth = (moSel && moSel.value) || months[0];
-  if (!selMonth) return;
-  const [yr,mo] = selMonth.split('-');
-  const monthName = new Date(yr,parseInt(mo)-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  const daysInMonth = new Date(yr, parseInt(mo), 0).getDate();
+  const sel = (moSel&&moSel.value)||months[0];
+  if (!sel) return;
+  const [yr,mo] = sel.split('-');
+  const dIM = new Date(yr,parseInt(mo),0).getDate();
   const today = new Date();
-  const isCurrentMonth = selMonth === today.toISOString().slice(0,7);
-  const daysPassed = isCurrentMonth ? today.getDate() : daysInMonth;
-  const pctMonthDone = daysPassed / daysInMonth;
-
-  // Actuals for selected month
-  const monthTxns = sp.filter(t => t.date.startsWith(selMonth) && t.amount < 0);
-  const actuals = {};
-  monthTxns.forEach(t => {
-    const b = classifyTxn(t);
-    actuals[b] = (actuals[b]||0) + Math.abs(t.amount);
+  const isCur = sel === today.toISOString().slice(0,7);
+  const daysDone = isCur ? today.getDate() : dIM;
+  const pct = daysDone/dIM;
+  const act = {};
+  sp.filter(t=>t.date.startsWith(sel)&&t.amount<0).forEach(t=>{
+    const b=classifyTxn(t); act[b]=(act[b]||0)+Math.abs(t.amount);
   });
-
-  // Monthly recurring income (for budget context)
-  const monthInc = sp.filter(t => t.date.startsWith(selMonth) && t.amount > 0
-    && !nonRecurringIds.has(txnKey(t))).reduce((s,t)=>s+t.amount,0);
-  const nrInc = sp.filter(t => t.date.startsWith(selMonth) && t.amount > 0
-    && nonRecurringIds.has(txnKey(t))).reduce((s,t)=>s+t.amount,0);
-
-  // Total budget vs actual
-  const totalBudget = Object.values(budgetTargets).reduce((a,b)=>a+b,0);
-  const totalActual = Object.values(actuals).reduce((a,b)=>a+b,0);
-  const projectedTotal = isCurrentMonth && pctMonthDone > 0 ? totalActual / pctMonthDone : totalActual;
-
+  const incR = sp.filter(t=>t.date.startsWith(sel)&&t.amount>0&&!nonRecurringIds.has(txnKey(t))).reduce((s,t)=>s+t.amount,0);
+  const incNR= sp.filter(t=>t.date.startsWith(sel)&&t.amount>0&&nonRecurringIds.has(txnKey(t))).reduce((s,t)=>s+t.amount,0);
+  const totB = Object.values(budgetTargets).reduce((a,b)=>a+b,0);
+  const totA = Object.values(act).reduce((a,b)=>a+b,0);
+  const proj = isCur&&pct>0 ? totA/pct : totA;
   let out = '';
-
-  // Header KPIs
   out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;">';
-  const surplus = monthInc - totalActual;
-  const projSurplus = monthInc - projectedTotal;
-  [
-    ['Recurring Income', fmt(monthInc), 'var(--positive)', nrInc>0?'+ '+fmt(nrInc)+' one-time':'no non-recurring items'],
-    ['Spent So Far', fmt(totalActual), 'var(--gold)', daysPassed+' of '+daysInMonth+' days ('+Math.round(pctMonthDone*100)+'%)'],
-    ['Projected Total', fmt(projectedTotal), projectedTotal>totalBudget?'var(--negative)':'var(--ink)', 'at current pace'],
-    ['Budget Remaining', fmt(Math.max(0,totalBudget-totalActual)), surplus>=0?'var(--positive)':'var(--negative)', totalBudget?'of '+fmt(totalBudget)+' budget':'no budget set — click Suggest'],
-  ].forEach(([l,v,c,s]) => {
+  [['Recurring Income',fmt(incR),'var(--positive)',incNR>0?'+ '+fmt(incNR)+' one-time':''],
+   ['Spent So Far',fmt(totA),'var(--gold)',daysDone+' of '+dIM+' days'],
+   ['Projected Total',fmt(proj),proj>totB?'var(--negative)':'var(--ink)','at current pace'],
+   ['Budget Remaining',fmt(Math.max(0,totB-totA)),'var(--ink)',totB?'of '+fmt(totB):'click Suggest'],
+  ].forEach(([l,v,c,s])=>{
     out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;">';
     out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">'+l+'</div>';
     out += '<div style="font-size:22px;font-weight:700;color:'+c+';">'+v+'</div>';
     out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+s+'</div></div>';
   });
   out += '</div>';
-
-  // Pace indicator
-  if (isCurrentMonth && totalBudget > 0) {
-    const paceOk = totalActual <= totalBudget * pctMonthDone;
-    out += '<div style="background:'+(paceOk?'rgba(45,212,191,.05)':'rgba(248,113,113,.05)')+';border:1px solid '+(paceOk?'rgba(45,212,191,.15)':'rgba(248,113,113,.15)')+';border-radius:var(--r-md);padding:10px 16px;margin-bottom:10px;font-size:12px;color:var(--ink3);">';
-    out += (paceOk?'✓ On pace — ':'⚠ Running hot — ');
-    out += 'At day '+daysPassed+' of '+daysInMonth+', you&#39;ve used '+fmt(totalActual)+' of your '+fmt(totalBudget)+' monthly budget. ';
-    const expectedByNow = totalBudget * pctMonthDone;
-    const diff = Math.abs(totalActual - expectedByNow);
-    out += paceOk
-      ? '<strong style="color:var(--positive);">'+fmt(diff)+'</strong> under expected pace.'
-      : '<strong style="color:var(--negative);">'+fmt(diff)+'</strong> over expected pace. Projected month-end: <strong style="color:var(--negative);">'+fmt(projectedTotal)+'</strong>.';
+  if (isCur&&totB>0) {
+    const ok=totA<=totB*pct, diff=Math.abs(totA-totB*pct);
+    out += '<div style="background:'+(ok?'rgba(45,212,191,.05)':'rgba(248,113,113,.05)')+';border:1px solid '+(ok?'rgba(45,212,191,.15)':'rgba(248,113,113,.15)')+';border-radius:var(--r-md);padding:10px 16px;margin-bottom:10px;font-size:12px;color:var(--ink3);">';
+    out += (ok?'✓ On pace — ':'⚠ Running hot — ')+'Day '+daysDone+' of '+dIM+' · '+fmt(totA)+' of '+fmt(totB)+'. ';
+    out += ok?'<strong style="color:var(--positive);">'+fmt(diff)+'</strong> under pace.':'<strong style="color:var(--negative);">'+fmt(diff)+'</strong> over pace.';
     out += '</div>';
   }
-
-  // Category table
   out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
-
-  // Header
   out += '<div style="display:grid;grid-template-columns:160px 1fr 90px 90px 90px 90px;gap:0;padding:9px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
-  ['Category','Progress','Budget','Spent','Projected','Status'].forEach((h,i) => {
+  ['Category','Progress','Budget','Spent','Projected','Status'].forEach((h,i)=>{
     out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);'+(i>1?'text-align:right;':'')+'">'+h+'</div>';
   });
   out += '</div>';
-
-  // Rows — include all buckets that have either a budget or actual spending
-  const BUCKET_ORDER = ['paycheck','other_inc','auto_save','mortgage','car','education',
-    'insurance','childcare','electric','gas_util','water','internet','cell',
-    'groceries','gas_car','transit','healthcare','restaurants','entertainment',
-    'household','personal','clothing','travel','subscriptions','gifts','other'];
-
-  const SECTION_COLORS = {
-    paycheck:'var(--positive)', other_inc:'var(--positive)', auto_save:'#34D399',
-    mortgage:'#60A5FA', car:'#60A5FA', education:'#60A5FA', insurance:'#60A5FA', childcare:'#60A5FA',
-    electric:'#A78BFA', gas_util:'#A78BFA', water:'#A78BFA', internet:'#A78BFA', cell:'#A78BFA',
-    groceries:'var(--gold)', gas_car:'var(--gold)', transit:'var(--gold)', healthcare:'var(--gold)',
-    restaurants:'#E879F9', entertainment:'#E879F9', household:'#E879F9', personal:'#E879F9',
-    clothing:'#E879F9', travel:'#E879F9', subscriptions:'#E879F9', gifts:'#E879F9',
-    other:'var(--ink4)',
-  };
-
-  BUCKET_ORDER.forEach(bk => {
-    if (bk === 'paycheck' || bk === 'other_inc') return; // income not in expense budget
-    const budget  = budgetTargets[bk] || 0;
-    const actual  = actuals[bk] || 0;
-    if (budget === 0 && actual === 0) return;
-
-    const meta     = BUCKET_META[bk] || { label:bk, icon:'·' };
-    const color    = SECTION_COLORS[bk] || 'var(--gold)';
-    const proj     = isCurrentMonth && pctMonthDone > 0 ? actual / pctMonthDone : actual;
-    const pct      = budget > 0 ? Math.min(actual/budget, 1) : 0;
-    const over     = budget > 0 && actual > budget;
-    const nearOver = budget > 0 && actual > budget * 0.85 && !over;
-    const barColor = over ? 'var(--negative)' : nearOver ? 'var(--gold)' : color;
-    const status   = !budget ? '-' : over ? 'Over' : nearOver ? 'Near' : 'OK';
-    const statColor= !budget ? 'var(--ink4)' : over ? 'var(--negative)' : nearOver ? 'var(--gold)' : 'var(--positive)';
-
+  ['auto_save','mortgage','car','education','insurance','childcare','electric','gas_util','water','internet','cell',
+   'groceries','gas_car','transit','healthcare','restaurants','entertainment','household','personal','clothing','travel','subscriptions','gifts','other'].forEach(bk=>{
+    const b=budgetTargets[bk]||0, a=act[bk]||0;
+    if(!b&&!a) return;
+    const meta=BUCKET_META[bk]||{label:bk,icon:'·'};
+    const pr=isCur&&pct>0?a/pct:a, pc=b>0?Math.min(a/b,1):0;
+    const over=b>0&&a>b, near=b>0&&a>b*0.85&&!over;
+    const st=!b?'-':over?'Over':near?'Near':'OK';
+    const sc=!b?'var(--ink4)':over?'var(--negative)':near?'var(--gold)':'var(--positive)';
     out += '<div style="display:grid;grid-template-columns:160px 1fr 90px 90px 90px 90px;gap:0;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;">';
-
-    // Category name
-    out += '<div style="display:flex;align-items:center;gap:6px;font-size:12px;">';
-    out += '<span>'+meta.icon+'</span><span>'+meta.label+'</span></div>';
-
-    // Progress bar + budget edit
+    out += '<div style="display:flex;align-items:center;gap:6px;font-size:12px;"><span>'+meta.icon+'</span><span>'+meta.label+'</span></div>';
     out += '<div style="padding:0 12px;">';
-    if (budget > 0) {
-      out += '<div style="height:6px;background:var(--lift);border-radius:3px;overflow:hidden;">';
-      out += '<div style="height:100%;width:'+Math.min(pct*100,100).toFixed(1)+'%;background:'+barColor+';border-radius:3px;transition:width .3s;"></div></div>';
-      out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">'+Math.round(pct*100)+'% of budget';
-      if (isCurrentMonth) out += ' · pace: '+(pctMonthDone>0?Math.round(actual/proj*100):'—')+'%';
-      out += '</div>';
-    } else {
-      out += '<div style="font-size:10px;color:var(--ink4);">no target set</div>';
-    }
+    if (b>0) {
+      out += '<div style="height:6px;background:var(--lift);border-radius:3px;overflow:hidden;"><div style="height:100%;width:'+Math.min(pc*100,100).toFixed(1)+'%;background:'+(over?'var(--negative)':near?'var(--gold)':'var(--gold)')+';border-radius:3px;"></div></div>';
+      out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">'+Math.round(pc*100)+'%</div>';
+    } else out += '<div style="font-size:10px;color:var(--ink4);">no target</div>';
     out += '</div>';
-
-    // Budget (editable)
-    out += '<div style="text-align:right;">';
-    out += '<input type="number" value="'+(budget||'')+'" placeholder="—" min="0" step="25" data-bucket="'+bk+'"'
-      + ' style="width:75px;background:var(--lift);border:1px solid var(--line);border-radius:4px;padding:3px 6px;font-family:var(--font-m);font-size:11px;color:var(--ink);text-align:right;"'
-      + ' onchange="budgetTargets[this.dataset.bucket]=parseFloat(this.value)||0;saveSettings();renderBudget();">';
-    out += '</div>';
-
-    // Actual
-    out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;color:'+(over?'var(--negative)':'var(--ink)')+'">';
-    out += actual>0 ? fmt(actual) : '—';
-    out += '</div>';
-
-    // Projected
-    out += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">';
-    out += isCurrentMonth && actual>0 ? fmt(proj) : '—';
-    out += '</div>';
-
-    // Status
-    out += '<div style="text-align:right;font-size:11px;font-weight:600;color:'+statColor+';">'+status+'</div>';
-
-    out += '</div>';
+    out += '<div style="text-align:right;"><input type="number" value="'+(b||'')+'" placeholder="—" min="0" step="25" data-bucket="'+bk+'" style="width:75px;background:var(--lift);border:1px solid var(--line);border-radius:4px;padding:3px 6px;font-family:var(--font-m);font-size:11px;color:var(--ink);text-align:right;" onchange="budgetTargets[this.dataset.bucket]=parseFloat(this.value)||0;saveSettings();renderBudget();"></div>';
+    out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;">'+(a>0?fmt(a):'—')+'</div>';
+    out += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">'+(isCur&&a>0?fmt(pr):'—')+'</div>';
+    out += '<div style="text-align:right;font-size:11px;font-weight:600;color:'+sc+';">'+st+'</div></div>';
   });
-
-  // Totals row
   out += '<div style="display:grid;grid-template-columns:160px 1fr 90px 90px 90px 90px;gap:0;padding:10px 16px;background:var(--lift);border-top:2px solid var(--line);">';
-  out += '<div style="font-size:12px;font-weight:700;">Total Expenses</div>';
-  out += '<div></div>';
-  out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;">'+fmt(totalBudget)+'</div>';
-  out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;color:'+(totalActual>totalBudget&&totalBudget>0?'var(--negative)':'var(--ink)')+';">'+fmt(totalActual)+'</div>';
-  out += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">'+(isCurrentMonth&&totalActual>0?fmt(projectedTotal):'—')+'</div>';
-  out += '<div></div></div>';
-
-  out += '</div>'; // table
-
-  // NR income section (if any in this month)
-  const nrTxns = sp.filter(t => t.date.startsWith(selMonth) && t.amount > 0 && nonRecurringIds.has(txnKey(t)));
-  if (nrTxns.length || sp.filter(t=>t.date.startsWith(selMonth)&&t.amount>0).length > 0) {
-    const allIncTxns = sp.filter(t => t.date.startsWith(selMonth) && t.amount > 0);
+  out += '<div style="font-size:12px;font-weight:700;">Total</div><div></div>';
+  out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;">'+fmt(totB)+'</div>';
+  out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;color:'+(totA>totB&&totB>0?'var(--negative)':'var(--ink)')+';">'+fmt(totA)+'</div>';
+  out += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">'+(isCur&&totA>0?fmt(proj):'—')+'</div>';
+  out += '<div></div></div></div>';
+  const allInc = sp.filter(t=>t.date.startsWith(sel)&&t.amount>0);
+  if (allInc.length) {
     out += '<div style="margin-top:10px;background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
-    out += '<div style="padding:10px 16px;background:var(--lift);border-bottom:1px solid var(--line);font-size:12px;font-weight:600;">Income This Month · click ⭐ to flag as non-recurring</div>';
-    allIncTxns.sort((a,b)=>b.amount-a.amount).forEach(t => {
-      const key = txnKey(t);
-      const isNR = nonRecurringIds.has(key);
+    out += '<div style="padding:10px 16px;background:var(--lift);border-bottom:1px solid var(--line);font-size:12px;font-weight:600;">Income This Month · click ⭐ to flag non-recurring</div>';
+    allInc.sort((a,b)=>b.amount-a.amount).forEach(t=>{
+      const key=txnKey(t),isNR=nonRecurringIds.has(key);
+      const sk=(key||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
       out += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid rgba(255,255,255,.04);">';
       out += '<div style="display:flex;align-items:center;gap:10px;">';
-      const safeKey2 = (key||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-      out += '<button class="nr-toggle-btn" data-nrkey="'+safeKey2+'" style="background:none;border:none;cursor:pointer;font-size:14px;opacity:'+(isNR?'1':'.35')+';transition:opacity .2s;">'+(isNR?'\u2B50':'\u2606')+'</button>';
-      out += '<div>';
-      out += '<div style="font-size:12px;color:var(--ink2);">'+t.payee+'</div>';
-      out += '<div style="font-size:10px;color:var(--ink4);">'+t.date+' · '+t.category+' · '+t.account+'</div>';
-      out += '</div></div>';
-      out += '<div style="font-family:var(--font-m);font-size:13px;font-weight:600;color:'+(isNR?'var(--river)':'var(--positive)')+';">+'+fmt(t.amount)+'</div>';
-      out += '</div>';
+      out += '<button class="nr-toggle-btn" data-nrkey="'+sk+'" style="background:none;border:none;cursor:pointer;font-size:14px;opacity:'+(isNR?'1':'.35')+';">'+(isNR?'⭐':'☆')+'</button>';
+      out += '<div><div style="font-size:12px;color:var(--ink2);">'+t.payee+'</div>';
+      out += '<div style="font-size:10px;color:var(--ink4);">'+t.date+' · '+t.category+'</div></div></div>';
+      out += '<div style="font-family:var(--font-m);font-size:13px;font-weight:600;color:'+(isNR?'var(--river)':'var(--positive)')+';">+'+fmt(t.amount)+'</div></div>';
     });
-    out += '<div style="padding:8px 16px;font-size:11px;color:var(--ink4);">⭐ Non-recurring items are shown on the income statement but excluded from run-rate calculations and forward projections.</div>';
-    out += '</div>';
+    out += '<div style="padding:8px 16px;font-size:11px;color:var(--ink4);">⭐ Non-recurring excluded from run-rate calculations.</div></div>';
   }
-
   el.innerHTML = out;
-
-  // NR toggle buttons — event delegation
   if (!el.dataset.nrBound) {
     el.dataset.nrBound = '1';
     el.addEventListener('click', function(e) {
       const btn = e.target.closest('.nr-toggle-btn');
-      if (btn) {
-        const key = btn.dataset.nrkey.replace(/&amp;/g,'&').replace(/&quot;/g,'"');
-        toggleNonRecurring(key);
-      }
+      if (btn) { const key=btn.dataset.nrkey.replace(/&amp;/g,'&').replace(/&quot;/g,'"'); toggleNonRecurring(key); }
     });
   }
 }
 
-// ════════════════════════════════════════════════════════════════
-// 3. RECURRING TRANSACTION DETECTION + BILL CALENDAR
-// Detects recurring charges, maps CC billing cycles using
-// user-configured statement close/due dates.
-// ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════
+// RECURRING DETECTION + BILL CALENDAR
+// ════════════════════════════════════════════════
 
 function detectRecurring() {
   const sp = spendable(txns);
-  const expenses = sp.filter(t => t.amount < 0);
-
-  // Group by payee — find those appearing every ~month at similar amount
-  const byPayee = {};
-  expenses.forEach(t => {
-    const k = t.payee + '|' + t.account;
-    if (!byPayee[k]) byPayee[k] = [];
-    byPayee[k].push(t);
+  const by = {};
+  sp.filter(t=>t.amount<0).forEach(t=>{ const k=t.payee+'|'+t.account; if(!by[k])by[k]=[]; by[k].push(t); });
+  const rec = [];
+  Object.entries(by).forEach(([,list])=>{
+    if(list.length<2) return;
+    list.sort((a,b)=>a.date.localeCompare(b.date));
+    const gaps=[];
+    for(let i=1;i<list.length;i++) gaps.push(Math.round((new Date(list[i].date)-new Date(list[i-1].date))/(864e5)));
+    const avg=gaps.reduce((a,b)=>a+b,0)/gaps.length;
+    const std=Math.sqrt(gaps.map(g=>(g-avg)**2).reduce((a,b)=>a+b,0)/gaps.length);
+    const freq=avg>=25&&avg<=40&&std<8?'monthly':avg>=6&&avg<=9&&std<3?'weekly':avg>=83&&avg<=97&&std<10?'quarterly':avg>=355&&avg<=375?'annual':null;
+    if(!freq) return;
+    const amts=list.map(t=>Math.abs(t.amount)), avgA=amts.reduce((a,b)=>a+b,0)/amts.length;
+    if(amts.some(a=>Math.abs(a-avgA)/avgA>0.25)&&freq!=='monthly') return;
+    const nd=new Date(list[list.length-1].date);
+    if(freq==='monthly')nd.setDate(nd.getDate()+Math.round(avg));
+    else if(freq==='weekly')nd.setDate(nd.getDate()+7);
+    else if(freq==='quarterly')nd.setDate(nd.getDate()+91);
+    else nd.setDate(nd.getDate()+365);
+    rec.push({payee:list[0].payee,account:list[0].account,freq,avgAmt:avgA,
+      lastDate:list[list.length-1].date,nextDate:nd.toISOString().slice(0,10),count:list.length});
   });
-
-  const recurring = [];
-  Object.entries(byPayee).forEach(([key, txList]) => {
-    if (txList.length < 2) return;
-    txList.sort((a,b) => a.date.localeCompare(b.date));
-
-    // Check spacing between transactions
-    const gaps = [];
-    for (let i = 1; i < txList.length; i++) {
-      const d1 = new Date(txList[i-1].date);
-      const d2 = new Date(txList[i].date);
-      gaps.push(Math.round((d2-d1)/(1000*60*60*24)));
-    }
-    const avgGap = gaps.reduce((a,b)=>a+b,0)/gaps.length;
-    const gapStdDev = Math.sqrt(gaps.map(g=>(g-avgGap)**2).reduce((a,b)=>a+b,0)/gaps.length);
-
-    // Monthly (25-35 days avg, low variance) or weekly (5-9 days), annual (360-370)
-    const freq = avgGap >= 25 && avgGap <= 40 && gapStdDev < 8 ? 'monthly'
-               : avgGap >= 6  && avgGap <= 9  && gapStdDev < 3 ? 'weekly'
-               : avgGap >= 83 && avgGap <= 97 && gapStdDev < 10 ? 'quarterly'
-               : avgGap >= 355 && avgGap <= 375 ? 'annual'
-               : null;
-    if (!freq) return;
-
-    const amounts = txList.map(t => Math.abs(t.amount));
-    const avgAmt  = amounts.reduce((a,b)=>a+b,0)/amounts.length;
-    const amtVariance = amounts.some(a => Math.abs(a-avgAmt)/avgAmt > 0.25);
-    if (amtVariance && freq !== 'monthly') return; // variable amounts ok for monthly (utility bills)
-
-    // Predict next occurrence
-    const last = new Date(txList[txList.length-1].date);
-    const nextDate = new Date(last);
-    if (freq === 'monthly')     nextDate.setDate(nextDate.getDate() + Math.round(avgGap));
-    else if (freq === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
-    else if (freq === 'quarterly') nextDate.setDate(nextDate.getDate() + 91);
-    else if (freq === 'annual') nextDate.setDate(nextDate.getDate() + 365);
-
-    recurring.push({
-      payee:    txList[0].payee,
-      account:  txList[0].account,
-      category: txList[0].category,
-      freq,
-      avgAmt,
-      lastDate: txList[txList.length-1].date,
-      nextDate: nextDate.toISOString().slice(0,10),
-      count:    txList.length,
-      variable: amtVariance,
-    });
-  });
-
-  return recurring.sort((a,b) => a.nextDate.localeCompare(b.nextDate));
+  return rec.sort((a,b)=>a.nextDate.localeCompare(b.nextDate));
 }
 
 function renderBillCalendar() {
   const el = document.getElementById('calendarContent');
   if (!el) return;
+  if (!txns.length) { el.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink4);">No data loaded.</div>'; return; }
+  const today=new Date(), ts=today.toISOString().slice(0,10);
+  const in30=new Date(today); in30.setDate(in30.getDate()+30);
+  const i30=in30.toISOString().slice(0,10);
+  const rec=detectRecurring(), up=rec.filter(r=>r.nextDate>=ts&&r.nextDate<=i30);
+  const ccA=Object.entries(acctMeta).filter(([,m])=>m.isCreditCard).map(([a])=>a);
+  let out='';
 
-  if (!txns.length) {
-    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">No data loaded.</div>';
-    return;
-  }
-
-  const today    = new Date();
-  const todayStr = today.toISOString().slice(0,10);
-  const in30     = new Date(today); in30.setDate(in30.getDate()+30);
-  const in30Str  = in30.toISOString().slice(0,10);
-
-  const recurring = detectRecurring();
-  const upcoming  = recurring.filter(r => r.nextDate >= todayStr && r.nextDate <= in30Str);
-  const ccAccts   = Object.entries(acctMeta).filter(([,m])=>m.isCreditCard).map(([a])=>a);
-
-  let out = '';
-
-  // ── CC Settings Panel ─────────────────────────────────────────
-  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px;">';
-  out += '<div style="padding:12px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
-  out += '<div style="font-size:13px;font-weight:600;color:var(--ink2);">Credit Card Billing Cycles</div>';
-  out += '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">Set statement close and due dates for accurate cycle tracking and projections. Changes update the Credit Card Flow page.</div>';
-  out += '</div>';
-
-  if (!ccAccts.length) {
-    out += '<div style="padding:16px;font-size:12px;color:var(--ink4);">No credit card accounts detected. Import Quicken data that includes CC accounts.</div>';
-  } else {
-    out += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0;">';
-    ccAccts.forEach((acct, idx) => {
-      const cfg = ccSettings[acct] || { closeDay:1, dueDay:25 };
-      const border = idx%2===0 ? '1px solid rgba(255,255,255,.04)' : 'none';
-      out += '<div style="padding:14px 18px;border-right:'+border+';border-bottom:1px solid rgba(255,255,255,.04);">';
-      out += '<div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:10px;">💳 '+acct+'</div>';
-      out += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
-
-      // Statement close day
-      out += '<div>';
-      out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Statement Closes</div>';
-      out += '<div style="display:flex;align-items:center;gap:6px;">';
-      out += '<input type="number" min="1" max="31" value="'+(cfg.closeDay||1)+'" data-acct="'+acct+'" data-field="closeDay"'
-        + ' style="width:55px;background:var(--lift);border:1px solid var(--line);border-radius:4px;padding:4px 8px;font-family:var(--font-m);font-size:13px;color:var(--ink);text-align:center;"'
-        + ' onchange="updateCCSetting(this)">';
-      out += '<span style="font-size:11px;color:var(--ink4);">of month</span></div></div>';
-
-      // Payment due day
-      out += '<div>';
-      out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Payment Due</div>';
-      out += '<div style="display:flex;align-items:center;gap:6px;">';
-      out += '<input type="number" min="1" max="31" value="'+(cfg.dueDay||25)+'" data-acct="'+acct+'" data-field="dueDay"'
-        + ' style="width:55px;background:var(--lift);border:1px solid var(--line);border-radius:4px;padding:4px 8px;font-family:var(--font-m);font-size:13px;color:var(--ink);text-align:center;"'
-        + ' onchange="updateCCSetting(this)">';
-      out += '<span style="font-size:11px;color:var(--ink4);">of month</span></div></div>';
-
-      out += '</div>'; // grid
-
-      // Current cycle summary
-      const closeDay = cfg.closeDay || 1;
-      const dueDay   = cfg.dueDay || 25;
-      const thisClose = new Date(today.getFullYear(), today.getMonth(), closeDay);
-      if (thisClose < today) thisClose.setMonth(thisClose.getMonth()+1);
-      const cycleStart = new Date(thisClose); cycleStart.setMonth(cycleStart.getMonth()-1);
-      const daysInCycle = Math.round((today-cycleStart)/(1000*60*60*24));
-      const cycleLenDays = Math.round((thisClose-cycleStart)/(1000*60*60*24));
-
-      // Current cycle charges
-      const cycleStartStr = cycleStart.toISOString().slice(0,10);
-      const cycleTxns = txns.filter(t =>
-        t.account === acct && t.date >= cycleStartStr && t.date <= todayStr
-        && t.amount < 0 && !isTransfer(t)
-      );
-      const cycleAmt = cycleTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
-      const dailyVel = daysInCycle > 0 ? cycleAmt / daysInCycle : 0;
-      const daysLeft = Math.max(0, Math.round((thisClose-today)/(1000*60*60*24)));
-      const projBal  = cycleAmt + dailyVel * daysLeft;
-      const dueDateStr = new Date(today.getFullYear(), today.getMonth(), dueDay).toISOString().slice(0,10);
-
-      out += '<div style="margin-top:10px;padding:8px 10px;background:var(--lift);border-radius:var(--r-sm);font-size:11px;color:var(--ink3);line-height:1.9;">';
-      out += '📅 Cycle: <strong>'+cycleStartStr+'</strong> → <strong>'+thisClose.toISOString().slice(0,10)+'</strong><br>';
-      out += '💳 '+daysInCycle+'d into cycle · '+daysLeft+'d remaining<br>';
-      out += '📊 Charges so far: <strong style="color:var(--gold);">'+fmt(cycleAmt)+'</strong> · '+fmt(dailyVel)+'/day<br>';
-      out += '🎯 Projected statement: <strong style="color:'+(projBal>1000?'var(--negative)':'var(--ink)')+'">'+fmt(projBal)+'</strong><br>';
-      out += '📆 Payment due: <strong>'+dueDateStr+'</strong>';
-      out += '</div>';
-
-      out += '</div>'; // card
+  out+='<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px;">';
+  out+='<div style="padding:12px 16px;background:var(--lift);border-bottom:1px solid var(--line);"><div style="font-size:13px;font-weight:600;color:var(--ink2);">Credit Card Billing Cycles</div></div>';
+  if(!ccA.length){out+='<div style="padding:16px;font-size:12px;color:var(--ink4);">No CC accounts detected.</div>';}
+  else{
+    out+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0;">';
+    ccA.forEach(a=>{
+      const cfg=ccSettings[a]||{closeDay:1,dueDay:25};
+      out+='<div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.04);">';
+      out+='<div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:10px;">💳 '+a+'</div>';
+      out+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+      [['closeDay','Statement Closes'],['dueDay','Payment Due']].forEach(([f,l])=>{
+        out+='<div><div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">'+l+'</div>';
+        out+='<div style="display:flex;align-items:center;gap:6px;"><input type="number" min="1" max="31" value="'+(cfg[f]||1)+'" data-acct="'+a+'" data-field="'+f+'" style="width:55px;background:var(--lift);border:1px solid var(--line);border-radius:4px;padding:4px 8px;font-family:var(--font-m);font-size:13px;color:var(--ink);text-align:center;" onchange="updateCCSetting(this)"><span style="font-size:11px;color:var(--ink4);">of month</span></div></div>';
+      });
+      out+='</div>';
+      const cd=cfg.closeDay||1, tc=new Date(today.getFullYear(),today.getMonth(),cd);
+      if(tc<today)tc.setMonth(tc.getMonth()+1);
+      const cs=new Date(tc);cs.setMonth(cs.getMonth()-1);
+      const dic=Math.round((today-cs)/864e5);
+      const ct=txns.filter(t=>t.account===a&&t.date>=cs.toISOString().slice(0,10)&&t.date<=ts&&t.amount<0&&!isTransfer(t));
+      const ca=ct.reduce((s,t)=>s+Math.abs(t.amount),0), dv=dic>0?ca/dic:0;
+      const dl=Math.max(0,Math.round((tc-today)/864e5));
+      out+='<div style="margin-top:10px;padding:8px 10px;background:var(--lift);border-radius:var(--r-sm);font-size:11px;color:var(--ink3);line-height:1.9;">';
+      out+='📅 '+cs.toISOString().slice(0,10)+' → '+tc.toISOString().slice(0,10)+'<br>';
+      out+='📊 Charges: <strong style="color:var(--gold);">'+fmt(ca)+'</strong> · '+fmt(dv)+'/day · '+dl+'d left<br>';
+      out+='🎯 Projected: <strong>'+fmt(ca+dv*dl)+'</strong></div></div>';
     });
-    out += '</div>'; // grid
+    out+='</div>';
   }
-  out += '</div>'; // CC section
+  out+='</div>';
 
-  // ── Upcoming 30 Days Calendar ─────────────────────────────────
-  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px;">';
-  out += '<div style="padding:12px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
-  out += '<div style="font-size:13px;font-weight:600;color:var(--ink2);">Upcoming 30 Days</div>';
-  out += '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">Predicted next occurrences based on historical transaction patterns</div>';
-  out += '</div>';
-
-  if (!upcoming.length) {
-    out += '<div style="padding:16px;font-size:12px;color:var(--ink4);">No recurring transactions predicted in the next 30 days. More data may be needed.</div>';
-  } else {
-    const totalUpcoming = upcoming.reduce((s,r)=>s+r.avgAmt,0);
-    out += '<div style="padding:10px 16px;font-size:12px;color:var(--ink3);border-bottom:1px solid var(--line);">';
-    out += '<strong style="color:var(--negative);">'+fmt(totalUpcoming)+'</strong> expected in the next 30 days from '+upcoming.length+' recurring transactions.';
-    out += '</div>';
-    out += '<div style="overflow-y:auto;max-height:400px;">';
-    upcoming.forEach(r => {
-      const d = new Date(r.nextDate);
-      const daysAway = Math.round((d-today)/(1000*60*60*24));
-      const urgColor = daysAway <= 5 ? 'var(--negative)' : daysAway <= 10 ? 'var(--gold)' : 'var(--ink3)';
-      out += '<div style="display:grid;grid-template-columns:80px 1fr auto auto;gap:0;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;">';
-      out += '<div style="font-family:var(--font-m);font-size:10px;color:'+urgColor+';">'+r.nextDate+'</div>';
-      out += '<div>';
-      out += '<div style="font-size:12px;color:var(--ink2);">'+r.payee+'</div>';
-      out += '<div style="font-size:10px;color:var(--ink4);">'+r.account+' · '+r.freq+(r.variable?' · variable amt':'')+'</div>';
-      out += '</div>';
-      out += '<div style="font-size:11px;color:'+urgColor+';padding:0 12px;">'+(daysAway===0?'Today':daysAway===1?'Tomorrow':'in '+daysAway+'d')+'</div>';
-      out += '<div style="font-family:var(--font-m);font-size:13px;font-weight:600;color:var(--negative);">−'+fmt(r.avgAmt)+'</div>';
-      out += '</div>';
+  out+='<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px;">';
+  out+='<div style="padding:12px 16px;background:var(--lift);border-bottom:1px solid var(--line);"><div style="font-size:13px;font-weight:600;color:var(--ink2);">Upcoming 30 Days</div></div>';
+  if(!up.length){out+='<div style="padding:16px;font-size:12px;color:var(--ink4);">No recurring transactions predicted.</div>';}
+  else{
+    out+='<div style="padding:10px 16px;font-size:12px;color:var(--ink3);border-bottom:1px solid var(--line);"><strong style="color:var(--negative);">'+fmt(up.reduce((s,r)=>s+r.avgAmt,0))+'</strong> expected in 30 days.</div>';
+    up.forEach(r=>{
+      const da=Math.round((new Date(r.nextDate)-today)/864e5);
+      const uc=da<=5?'var(--negative)':da<=10?'var(--gold)':'var(--ink3)';
+      out+='<div style="display:grid;grid-template-columns:80px 1fr auto auto;gap:0;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;">';
+      out+='<div style="font-family:var(--font-m);font-size:10px;color:'+uc+';">'+r.nextDate+'</div>';
+      out+='<div><div style="font-size:12px;color:var(--ink2);">'+r.payee+'</div><div style="font-size:10px;color:var(--ink4);">'+r.account+' · '+r.freq+'</div></div>';
+      out+='<div style="font-size:11px;color:'+uc+';padding:0 12px;">'+(da===0?'Today':da===1?'Tomorrow':'in '+da+'d')+'</div>';
+      out+='<div style="font-family:var(--font-m);font-size:13px;font-weight:600;color:var(--negative);">−'+fmt(r.avgAmt)+'</div></div>';
     });
-    out += '</div>';
   }
-  out += '</div>';
+  out+='</div>';
 
-  // ── All Recurring Transactions ────────────────────────────────
-  const byFreq = { monthly:[], weekly:[], quarterly:[], annual:[] };
-  recurring.forEach(r => { if (byFreq[r.freq]) byFreq[r.freq].push(r); });
-  const monthlyTotal = byFreq.monthly.reduce((s,r)=>s+r.avgAmt,0);
-  const annualTotal  = recurring.reduce((s,r) => {
-    const mult = r.freq==='monthly'?12 : r.freq==='weekly'?52 : r.freq==='quarterly'?4 : 1;
-    return s + r.avgAmt * mult;
-  }, 0);
-
-  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
-  out += '<div style="padding:12px 16px;background:var(--lift);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">';
-  out += '<div><div style="font-size:13px;font-weight:600;color:var(--ink2);">All Recurring Transactions</div>';
-  out += '<div style="font-size:11px;color:var(--ink4);">'+recurring.length+' detected · '+fmt(monthlyTotal)+'/mo · '+fmt(annualTotal)+'/yr committed spend</div></div>';
-  out += '</div>';
-
-  ['monthly','quarterly','annual','weekly'].forEach(freq => {
-    const list = byFreq[freq];
-    if (!list.length) return;
-    const freqTotal = list.reduce((s,r)=>s+r.avgAmt,0);
-    const freqLabel = {monthly:'Monthly',quarterly:'Quarterly',annual:'Annual',weekly:'Weekly'}[freq];
-    out += '<div style="padding:7px 16px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--line);font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">'+freqLabel+' · '+fmt(freqTotal)+(freq==='monthly'?'/mo':freq==='weekly'?'/wk':'/occ')+'</div>';
-    list.forEach(r => {
-      out += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0;padding:8px 16px;border-bottom:1px solid rgba(255,255,255,.03);align-items:center;">';
-      out += '<div><div style="font-size:12px;color:var(--ink2);">'+r.payee+'</div>';
-      out += '<div style="font-size:10px;color:var(--ink4);">'+r.account+' · last: '+r.lastDate+' · '+r.count+' occurrences</div></div>';
-      out += '<div style="font-size:11px;color:var(--ink4);padding:0 16px;">next: '+r.nextDate+'</div>';
-      out += '<div style="font-size:11px;color:var(--ink4);padding:0 8px;">'+(r.variable?'~':'')+'</div>';
-      out += '<div style="font-family:var(--font-m);font-size:12px;font-weight:600;color:var(--negative);">−'+fmt(r.avgAmt)+'</div>';
-      out += '</div>';
+  const bf={monthly:[],weekly:[],quarterly:[],annual:[]};
+  rec.forEach(r=>{if(bf[r.freq])bf[r.freq].push(r);});
+  const mt=bf.monthly.reduce((s,r)=>s+r.avgAmt,0);
+  const at=rec.reduce((s,r)=>s+r.avgAmt*(r.freq==='monthly'?12:r.freq==='weekly'?52:r.freq==='quarterly'?4:1),0);
+  out+='<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
+  out+='<div style="padding:12px 16px;background:var(--lift);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">';
+  out+='<div><div style="font-size:13px;font-weight:600;color:var(--ink2);">All Recurring</div><div style="font-size:11px;color:var(--ink4);">'+rec.length+' detected · '+fmt(mt)+'/mo · '+fmt(at)+'/yr</div></div></div>';
+  ['monthly','quarterly','annual','weekly'].forEach(f=>{
+    const list=bf[f];if(!list.length)return;
+    const ft=list.reduce((s,r)=>s+r.avgAmt,0);
+    const fl={monthly:'Monthly',quarterly:'Quarterly',annual:'Annual',weekly:'Weekly'}[f];
+    out+='<div style="padding:7px 16px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--line);font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">'+fl+' · '+fmt(ft)+(f==='monthly'?'/mo':'/occ')+'</div>';
+    list.forEach(r=>{
+      out+='<div style="display:grid;grid-template-columns:1fr auto auto;gap:0;padding:8px 16px;border-bottom:1px solid rgba(255,255,255,.03);align-items:center;">';
+      out+='<div><div style="font-size:12px;color:var(--ink2);">'+r.payee+'</div><div style="font-size:10px;color:var(--ink4);">'+r.account+' · next: '+r.nextDate+'</div></div>';
+      out+='<div style="font-size:11px;color:var(--ink4);padding:0 12px;">'+r.count+'x</div>';
+      out+='<div style="font-family:var(--font-m);font-size:12px;font-weight:600;color:var(--negative);">−'+fmt(r.avgAmt)+'</div></div>';
     });
   });
-  out += '</div>';
-
-  el.innerHTML = out;
+  out+='</div>';
+  el.innerHTML=out;
 }
 
 function updateCCSetting(input) {
-  const acct  = input.dataset.acct;
-  const field = input.dataset.field;
-  const val   = parseInt(input.value) || 1;
-  if (!ccSettings[acct]) ccSettings[acct] = { closeDay:1, dueDay:25 };
-  ccSettings[acct][field] = Math.min(Math.max(val,1),31);
-  saveSettings();
-  renderBillCalendar();
+  const a=input.dataset.acct, f=input.dataset.field, v=parseInt(input.value)||1;
+  if(!ccSettings[a])ccSettings[a]={closeDay:1,dueDay:25};
+  ccSettings[a][f]=Math.min(Math.max(v,1),31);
+  saveSettings(); renderBillCalendar();
+}
+
+// ════════════════════════════════════════════════
+// NON-RECURRING INCOME HELPERS
+// ════════════════════════════════════════════════
+
+function autoDetectNonRecurring() {
+  const sp=spendable(txns), inc=sp.filter(t=>t.amount>0);
+  if(!inc.length) return 0;
+  const bm={};
+  inc.forEach(t=>{const k=t.date.slice(0,7);bm[k]=(bm[k]||0)+t.amount;});
+  const med=Object.values(bm).sort((a,b)=>a-b)[Math.floor(Object.keys(bm).length/2)]||1;
+  const pf={};
+  inc.forEach(t=>{pf[t.payee]=(pf[t.payee]||0)+1;});
+  let n=0;
+  inc.forEach(t=>{
+    const k=txnKey(t);
+    if(nonRecurringIds.has(k)) return;
+    if((t.amount>med*0.6&&pf[t.payee]<=2)||/bonus|gift|award|settlement|refund|inheritance|tax ref/i.test(t.payee+t.category)){
+      nonRecurringIds.add(k);n++;
+    }
+  });
+  if(n>0)saveSettings();
+  return n;
+}
+
+function recurringIncomeAvg(months) {
+  const sp=spendable(txns), c=new Date();c.setMonth(c.getMonth()-(months||12));
+  const f=sp.filter(t=>t.amount>0&&new Date(t.date)>=c&&!nonRecurringIds.has(txnKey(t)));
+  const bm={};f.forEach(t=>{const k=t.date.slice(0,7);bm[k]=(bm[k]||0)+t.amount;});
+  const v=Object.values(bm);return v.length?v.reduce((a,b)=>a+b,0)/v.length:0;
 }
 
 // ════════════════════════════════════════════════
