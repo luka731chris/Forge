@@ -38,8 +38,6 @@
   --safe-top:  env(safe-area-inset-top, 44px);
   --safe-bot:  env(safe-area-inset-bottom, 34px);
   --tab-h:     62px;
-  --card:var(--float);--bg:var(--base);--border:var(--line);--muted:var(--ink3);
-  --mono:'Fira Code',monospace;--serif:'Cormorant Garamond',Georgia,serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -61,7 +59,6 @@ body {
 .status-fill { position: fixed; top: 0; left: 0; right: 0; height: var(--safe-top); background: var(--void); z-index: 300; }
 .shell { flex: 1; position: relative; overflow: hidden; }
 .page { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; display: none; background: var(--base); }
-.page::-webkit-scrollbar{width:4px}.page::-webkit-scrollbar-track{background:transparent}.page::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
 .page.active { display: block;  }
 @keyframes pgIn { from { transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
 
@@ -331,7 +328,6 @@ body {
   height: 13px;
   flex-shrink: 0;
 }
-[style*="position:relative"] > canvas { display:block; width:100%; height:100%; }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -353,6 +349,28 @@ body {
       <div class="pg-sub" id="alerts-sub">Intelligence alerts · updated on import</div>
     </div>
     <div style="padding:16px 0;" id="alerts-out"></div>
+  </div>
+
+  <!-- ══ INCOME STATEMENT ══ -->
+  <div class="page" id="pg-income">
+    <div style="padding:14px 14px 100px;">
+      <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div><div style="font-size:10px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.7;margin-bottom:4px;">$id · P&amp;L</div><div style="font-family:var(--serif);font-size:20px;font-weight:600;color:var(--ink);">Money In<span style="color:var(--gold);font-style:italic;">, Money Out</span></div></div>
+        <select id="incomeMoSel" onchange="renderPulseIncome()" style="background:var(--lift);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--ink);font-size:12px;padding:6px 10px;max-width:140px;"></select>
+      </div>
+      <div id="income-out"></div>
+    </div>
+  </div>
+
+  <!-- ══ BALANCE SHEET ══ -->
+  <div class="page" id="pg-bs">
+    <div style="padding:14px 14px 100px;">
+      <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div><div style="font-size:10px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.7;margin-bottom:4px;">Net Worth</div><div style="font-family:var(--serif);font-size:20px;font-weight:600;color:var(--ink);">Balance <span style="color:var(--gold);font-style:italic;">Sheet</span></div></div>
+        <select id="bsComparePulse" onchange="renderPulseBS()" style="background:var(--lift);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--ink);font-size:12px;padding:6px 10px;max-width:140px;"></select>
+      </div>
+      <div id="bs-out"></div>
+    </div>
   </div>
 
   <!-- ══ AMAZON WATCHLIST ══ -->
@@ -457,44 +475,42 @@ body {
 
 <!-- ══ TAB BAR ══ -->
 <div class="tab-bar">
-  <button class="tab-btn active" id="tab-snapshot" onclick="go('snapshot')">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="8" height="8" rx="1"/></svg>
-    The Gauge
-  </button>
-  <button class="tab-btn" id="tab-alerts" onclick="go('alerts')">
-    <div class="tab-dot" id="alertDot"></div>
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-    Furnace
-  </button>
-  <button class="tab-btn" id="tab-amazon" onclick="go('amazon')">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-    Detail Lens
-  </button>
-  <button class="tab-btn" id="tab-analytics" onclick="go('analytics')">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
-    Analytics
-  </button>
-  <button class="tab-btn" id="tab-chat" onclick="go('chat')">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="8" cy="10" r="1" fill="currentColor"/><circle cx="12" cy="10" r="1" fill="currentColor"/><circle cx="16" cy="10" r="1" fill="currentColor"/></svg>
-    Ask $id
-  </button>
+  <button class="tab-btn active" id="tab-snapshot" onclick="go('snapshot')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="8" height="8" rx="1"/></svg>Gauge</button>
+  <button class="tab-btn" id="tab-income" onclick="go('income')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>P&amp;L</button>
+  <button class="tab-btn" id="tab-bs" onclick="go('bs')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Net Worth</button>
+  <button class="tab-btn" id="tab-analytics" onclick="go('analytics')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</button>
+  <button class="tab-btn" id="tab-chat" onclick="go('chat')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="8" cy="10" r="1" fill="currentColor"/><circle cx="12" cy="10" r="1" fill="currentColor"/><circle cx="16" cy="10" r="1" fill="currentColor"/></svg>Ask $id</button>
 </div>
-<div class="toast" id="toast"></div>
+
+<div class="toast" id="toast">  <!-- LukaLab attribution -->
+  <div id="ll-attr" style="text-align:center;padding:6px 0 2px;opacity:0.3;">
+    <span class="ll-badge">
+      <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><polygon points="8,1 14,8 8,15 2,8" stroke="#F5A800" stroke-width="1.5" fill="none"/><circle cx="8" cy="8" r="2.2" fill="#F5A800"/></svg>
+      LukaLab · AI Creativity Lab
+    </span>
+  </div>
+</div>
 
 <script>
 // ════════════════════════════════════════════
 // FORGE PULSE — DATA BRIDGE
 // Reads from same localStorage as desktop app
 // ════════════════════════════════════════════
-const DB          = 'ledger_v3';
+const DB       = 'forge_prod_v1';
+const DB_LEGACY = 'ledger_v3';
 const FBR         = 'ledger_fbr_v2';
-const SETTINGS_DB = 'forge_settings_v1';
+const SETTINGS_DB     = 'forge_settings_v2';
+const SETTINGS_LEGACY = 'forge_settings_v1';
+const NW_KEY          = 'forge_networth';
+const NW_HIST_KEY     = 'forge_networth_hist';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const COLS   = ['#FFB612','#4A9EFF','#10B981','#F97316','#A78BFA','#F43F5E','#06B6D4','#EAB308','#8B5CF6','#10B981','#FB923C','#60A5FA'];
 const IMP_CATS = new Set(['Health & Beauty','Toys & Games','Books','Electronics Accessories','Home','Kitchen','Sports','Pet Supplies','Clothing','Beauty','Grocery & Gourmet Food']);
 
 let txns = [], amzItems = [], accounts = [], goals = [];
+let nwHistory = {}, netWorthOverrides = {};
+let isDrillOpen = {}, isBucketOpen = {};
 let history = [], amzF = 'all', chatReady = false;
 
 // ── SETTINGS (reads from Forge desktop settings) ──
@@ -519,7 +535,7 @@ let family = { ...DEFAULT_FAMILY };
 
 function loadFamily() {
   try {
-    const raw = localStorage.getItem(SETTINGS_DB);
+    const raw = localStorage.getItem(SETTINGS_DB)||localStorage.getItem(SETTINGS_LEGACY);
     if (raw) family = { ...DEFAULT_FAMILY, ...JSON.parse(raw) };
   } catch(e) {}
   try {
@@ -531,11 +547,15 @@ function loadFamily() {
 // ── DATA LOADERS ──
 function load() {
   try {
-    const d = JSON.parse(localStorage.getItem(DB) || '{}');
+    let raw = localStorage.getItem(DB);
+    if (!raw || raw === '{}') raw = localStorage.getItem(DB_LEGACY);
+    const d = JSON.parse(raw || '{}');
     txns     = d.txns     || [];
-    amzItems = d.amzItems || [];
     accounts = d.accounts || [];
-    return txns.length > 0 || amzItems.length > 0;
+    amzItems = d.amzItems || txns.filter(t=>t.itemDetail&&t.amount<0).slice(0,200);
+    try { nwHistory         = JSON.parse(localStorage.getItem(NW_HIST_KEY)||'{}'); } catch(e2) { nwHistory={}; }
+    try { netWorthOverrides = JSON.parse(localStorage.getItem(NW_KEY)||'{}'); }     catch(e2) { netWorthOverrides={}; }
+    return txns.length > 0;
   } catch(e) { return false; }
 }
 
@@ -619,6 +639,8 @@ function go(tab) {
   if (tab==='alerts')   safe(function(){ renderAlerts(); }, 'alerts');
   if (tab==='amazon')   safe(function(){ renderAmazon(); }, 'amazon');
   if (tab==='analytics') safe(function(){ renderPulseAnalytics(); }, 'analytics');
+  if (tab==='income')    safe(function(){ renderPulseIncome(); }, 'income');
+  if (tab==='bs')        safe(function(){ renderPulseBS(); }, 'bs');
   if (tab==='chat' && !chatReady) { chatReady=true; safe(function(){ sendWelcome(); }, 'welcome'); }
 }
 
@@ -1198,14 +1220,6 @@ function destroyPulseAna() {
   pCatChart=pTrendChart=pPurchaserChart=pDowChart=pSavRateChart=null;
 }
 
-
-function setH(canvas) {
-  if (!canvas) return;
-  const par = canvas.parentElement;
-  if (!par) return;
-  const m = (par.style.height || '').match(/^(\d+)px$/);
-  if (m) { canvas.style.height = m[0]; canvas.style.width = '100%'; }
-}
 function renderPulseAnalytics() {
   if (!txns.length) return;
   destroyPulseAna();
@@ -1217,7 +1231,7 @@ function renderPulseAnalytics() {
 }
 
 function renderPulseCategories() {
-  const _c_p_cat_chart = document.getElementById('p-cat-chart'); setH(_c_p_cat_chart); const ctx = _c_p_cat_chart?.getContext('2d');
+  const ctx = document.getElementById('p-cat-chart')?.getContext('2d');
   if (!ctx) return;
   if (pCatChart) { try { pCatChart.destroy(); } catch(e) {} }
   const since = getPulseSince(pCatRange);
@@ -1245,7 +1259,7 @@ function renderPulseCategories() {
 }
 
 function renderPulseTrend() {
-  const _c_p_trend_chart = document.getElementById('p-trend-chart'); setH(_c_p_trend_chart); const ctx = _c_p_trend_chart?.getContext('2d');
+  const ctx = document.getElementById('p-trend-chart')?.getContext('2d');
   if (!ctx) return;
   const mos = [];
   for (let i=11;i>=0;i--) { const d=new Date(); d.setMonth(d.getMonth()-i); mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`); }
@@ -1268,7 +1282,7 @@ function renderPulseTrend() {
 }
 
 function renderPulsePurchaser() {
-  const _c_p_purchaser_chart = document.getElementById('p-purchaser-chart'); setH(_c_p_purchaser_chart); const ctx = _c_p_purchaser_chart?.getContext('2d');
+  const ctx = document.getElementById('p-purchaser-chart')?.getContext('2d');
   if (!ctx) return;
   if (pPurchaserChart) { try { pPurchaserChart.destroy(); } catch(e) {} }
   const since = getPulseSince(pPurchaserRange);
@@ -1301,7 +1315,7 @@ function renderPulsePurchaser() {
 }
 
 function renderPulseDow() {
-  const _c_p_dow_chart = document.getElementById('p-dow-chart'); setH(_c_p_dow_chart); const ctx = _c_p_dow_chart?.getContext('2d');
+  const ctx = document.getElementById('p-dow-chart')?.getContext('2d');
   if (!ctx) return;
   const since = new Date(); since.setFullYear(since.getFullYear()-1);
   const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -1326,7 +1340,7 @@ function renderPulseDow() {
 }
 
 function renderPulseSavRate() {
-  const _c_p_savrate_chart = document.getElementById('p-savrate-chart'); setH(_c_p_savrate_chart); const ctx = _c_p_savrate_chart?.getContext('2d');
+  const ctx = document.getElementById('p-savrate-chart')?.getContext('2d');
   if (!ctx) return;
   const mos=[];
   for(let i=11;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
@@ -1429,12 +1443,496 @@ window.addEventListener('DOMContentLoaded', function() {
   try { loadFamily(); } catch(e) { console.warn('loadFamily:', e); }
   try { load(); } catch(e) { console.warn('load:', e); }
   try { renderSnapshot(); } catch(e) { console.warn('renderSnapshot:', e); }
+  setTimeout(function(){try{renderPulseIncome();}catch(e){}try{renderPulseBS();}catch(e){}},500);
   try {
     const alerts = buildAlerts();
     const dot = document.getElementById('alertDot');
     if (dot) dot.className = 'tab-dot' + (alerts.some(function(a){ return a.sev==='danger'; }) ? ' show' : '');
   } catch(e) { console.warn('alerts:', e); }
 });
+
+// ═══ CLASSIFICATION (lean_4.0) ═════════════════════════════════
+const QUICKEN_CAT_MAP = {
+  // ── Income ──────────────────────────────────────────────────────
+  'net salary':                    'paycheck',
+  'salary':                        'paycheck',
+  'wages':                         'paycheck',
+  'paycheck':                      'paycheck',
+  'bonus':                         'paycheck',
+  'other inc':                     'other_inc',
+  'interest inc':                  'other_inc',
+  '_divinc':                       'other_inc',   // Quicken dividend income
+  '_rlzdgain':                     'other_inc',   // Quicken realized gain
+  'interest income':               'other_inc',
+  'dividend income':               'other_inc',
+  'rental income':                 'other_inc',
+  'freelance':                     'other_inc',
+  'consulting':                    'other_inc',
+  'fees & charges:bank fee':       'other_inc',   // reimbursements sometimes coded here
+
+  // ── Fixed ────────────────────────────────────────────────────────
+  'home:mortgage':                 'mortgage',
+  'mortgage':                      'mortgage',
+  'home:rent':                     'mortgage',
+  'rent':                          'mortgage',
+  'hoa':                           'mortgage',
+  'auto & transport:auto payment': 'car',
+  'auto & transport:auto insurance':'car',
+  'auto & transport:registration': 'car',
+  'financial:life insurance':      'insurance',
+  'financial':                     'insurance',
+  'insurance':                     'insurance',
+  'education:tuition':             'education',
+  'education':                     'education',
+  'kids:kids activities':          'childcare',
+  'kids':                          'childcare',
+  'kids:toys':                     'childcare',
+
+  // ── Utilities ────────────────────────────────────────────────────
+  'bills & utilities:utilities':   'electric',
+  'bills & utilities':             'electric',
+  'bills & utilities:mobile phone':'cell',
+  'bills & utilities:credit card payment': 'other', // not a real expense category
+
+  // ── Food ─────────────────────────────────────────────────────────
+  'food & dining:groceries':       'groceries',
+  'food & dining:restaurants':     'restaurants',
+  'food & dining:fast food':       'restaurants',
+  'food & dining:coffee shops':    'restaurants',
+  'food & dining:alcohol & bars':  'restaurants',
+  'food & dining':                 'groceries',
+
+  // ── Transport ────────────────────────────────────────────────────
+  'auto & transport:gas & fuel':   'gas_car',
+  'auto & transport:parking':      'transit',
+  'auto & transport:tolls':        'transit',
+  'auto & transport:rental car & taxi':'transit',
+  'auto & transport:car wash':     'transit',
+  'auto & transport:service & parts':'car',
+  'auto & transport':              'gas_car',
+
+  // ── Health ───────────────────────────────────────────────────────
+  'health & fitness:pharmacy':     'healthcare',
+  'health & fitness:doctor':       'healthcare',
+  'health & fitness:dentist':      'healthcare',
+  'health & fitness:eyecare':      'healthcare',
+  'health & fitness:gym':          'personal',
+  'health & fitness:sports':       'entertainment',
+  'health & fitness':              'healthcare',
+
+  // ── Discretionary ────────────────────────────────────────────────
+  'entertainment':                 'entertainment',
+  'entertainment:amusement':       'entertainment',
+  'entertainment:movies & dvds':   'entertainment',
+  'entertainment:music':           'subscriptions',
+  'entertainment:arts':            'entertainment',
+  'media subscriptions':           'subscriptions',
+  'shopping':                      'household',
+  'shopping:clothing':             'clothing',
+  'shopping:electronics & software':'household',
+  'shopping:books':                'household',
+  'shopping:sporting goods':       'entertainment',
+  'shopping:hobbies':              'entertainment',
+  'shopping:clothing:jewelry insurance':'clothing',
+  'home:home supplies':            'household',
+  'home:home improvement':         'household',
+  'home:home services':            'household',
+  'home:furnishings':              'household',
+  'home:lawn & garden':            'household',
+  'personal care':                 'personal',
+  'personal care:hair':            'personal',
+  'personal care:spa & massage':   'personal',
+  'kira self care':                'personal',
+  'chris self care':               'personal',
+  'gifts & donations:gift':        'gifts',
+  'gifts & donations:charity':     'gifts',
+  'gifts & donations':             'gifts',
+  'travel':                        'travel',
+  'travel:hotel':                  'travel',
+  'travel:air travel':             'travel',
+  'travel:vacation':               'travel',
+  'travel:rental car & taxi':      'transit',
+  'pets:vet':                      'healthcare',
+  'pets:pet food & supplies':      'household',
+  'shipping':                      'household',
+  'cash & atm':                    'other',
+  'fees & charges':                'other',
+  'fees & charges:trade commissions':'other_inc',
+  'dues':                          'other',
+  'tax:fed':                       'other',
+  'tax:state':                     'other',
+  // '--split--' intentionally NOT in this map — handled by special case in classifyTxn
+  'transfer':                      'other',
+};
+
+
+const KW_MAP = [
+  // paycheck income
+  ['paycheck',     ['direct deposit','payroll','employer','salary','wages','adp','gusto','paychex']],
+  ['other_inc',    ['interest','dividend','refund','reimbursement','rental','freelance','venmo','paypal','zelle']],
+  // savings
+  ['auto_save',    ['savings account','investment account','fidelity','vanguard','schwab','401k','ira','roth','hsa','529','college fund']],
+  // fixed
+  ['mortgage',     ['mortgage','rent ','hoa','association fee']],
+  ['car',          ['car payment','auto loan','gm financial','ally auto','ford credit','toyota financial','honda financial','auto insurance','geico','progressive','state farm auto']],
+  ['education',    ['tuition','student loan','sallie mae','navient','pitt ','cmu ','carnegie']],
+  ['insurance',    ['highmark','aetna','cigna','anthem','bcbs','upmc insurance','health plan','life insurance','disability ins']],
+  ['childcare',    ['daycare','childcare','babysit','nanny','preschool','after school','camp ']],
+  // utilities
+  ['electric',     ['duquesne','ppl electric','dominion light','con edison','pepco']],
+  ['gas_util',     ['peoples gas','equitable gas','national fuel','columbia gas','piedmont natural']],
+  ['water',        ['pwsa','water authority','municipal water','aqua pa']],
+  ['internet',     ['comcast','xfinity','spectrum','cox cable','verizon fios','at&t internet','directv','dish network']],
+  ['cell',         ['verizon wireless','at&t wireless','t-mobile','sprint','metro pcs','cricket wireless','boost mobile']],
+  // food
+  ['groceries',    ['giant eagle','whole foods','trader joe','aldi','costco','kroger','safeway','wegmans','market district','fresh market','sprouts','food lion']],
+  ['restaurants',  ['restaurant','doordash','grubhub','ubereats','seamless','chipotle','mcdonald','starbucks','panera','subway','chick-fil','taco bell','pizza','sushi','primanti','condado','noodlehead']],
+  // transport
+  ['gas_car',      ['shell ','bp ','gulf ','exxon','mobil ','sunoco','speedway','wawa','sheetz','marathon gas']],
+  ['transit',      ['uber ','lyft ','ezpass','parking ','port authority','amtrak','greyhound','airport ']],
+  // health
+  ['healthcare',   ['cvs ','walgreens','rite aid','pharmacy','upmc ','hospital','clinic','dental','orthodont','vision','optometrist','doctor ']],
+  // discretionary
+  ['entertainment',['movie','cinema','amc ','regal ','concert','ticketmaster','stubhub','pnc park','ppg arena','bowling','golf ','museum','zoo ','aquarium']],
+  ['household',    ['amazon','home depot','lowes ','target ','walmart','ikea','wayfair','bed bath','ace hardware','menards','container store']],
+  ['personal',     ['salon','barber','hair ','nail ','spa ','massage','sephora','ulta','planet fitness',"gold's gym",'anytime fitness','ymca']],
+  ['clothing',     ['nordstrom','macy','gap ','old navy','h&m','zara','tj maxx','ross ','marshalls','nike ','adidas ','lululemon','under armour']],
+  ['travel',       ['airbnb','vrbo','marriott','hilton','hyatt','expedia','booking.com','southwest air','united air','delta air','american air','frontier','spirit air','cruise','resort ']],
+  ['subscriptions',['netflix','hulu','disney+','disney plus','spotify','apple music','amazon prime','youtube premium','hbo','paramount+','peacock','apple icloud']],
+  ['gifts',        ['gift ','hallmark','1-800-flowers','donation','charity','church ','tithe','gofundme','npo ']],
+];
+
+function classifyTxn(t) {
+  const cat  = (t.category || '').toLowerCase().trim();
+  const pay  = (t.payee    || '').toLowerCase().trim();
+
+  // 1. Direct Quicken category match — highest trust, exact or substring
+  if (QUICKEN_CAT_MAP[cat]) return QUICKEN_CAT_MAP[cat];
+
+  // 2. Partial match: Quicken subcategory hierarchy (e.g. "Food & Dining:Restaurants" matches "food & dining")
+  for (const [qcat, bucket] of Object.entries(QUICKEN_CAT_MAP)) {
+    if (cat.includes(qcat)) return bucket;
+  }
+
+  // 3. Special handling for Quicken --Split-- transactions.
+  //    Quicken uses --Split-- when a single payment is split across multiple
+  //    categories (e.g. mortgage = principal + interest + escrow).
+  //    The checking outflow is the FULL payment — exactly what we want for the IS.
+  //    We classify by payee name since the category is lost.
+  if (cat === '--split--') {
+    // Mortgage payments
+    if (/house loan|rocket mortgage|mortgage|pmi|escrow/i.test(pay)) return 'mortgage';
+    // Car loan payments (car payment split across principal + interest)
+    if (/palisade|hyundai|auto loan|car loan|hmf|chevrolet/i.test(pay)) return 'car';
+    // Investment account splits (retirement fund rebalancing — $0 entries, but just in case)
+    if (/retirement|fidelity|vanguard|401k|ira|lifepath|blackrock|dodge|t rowe/i.test(pay)) return 'auto_save';
+    // 529 college contributions
+    if (/529|college|sam college|whitney college|will college/i.test(pay)) return 'auto_save';
+    // ATM withdrawals (cash)
+    if (/atm/i.test(pay)) return 'other';
+    // Salary splits (sometimes payroll is split into take-home + deductions)
+    if (/upmc|highmark|employer|payroll|direct dep/i.test(pay)) return 'paycheck';
+    // Fall through to payee keyword match below
+    for (const [bucket, keywords] of KW_MAP) {
+      if (keywords.some(kw => pay.includes(kw))) return bucket;
+    }
+    return 'other';
+  }
+
+  // 4. Payee keyword match
+  for (const [bucket, keywords] of KW_MAP) {
+    if (keywords.some(kw => pay.includes(kw) || cat.includes(kw))) return bucket;
+  }
+
+  // 5. Income heuristic
+  if (t.amount > 0) return 'other_inc';
+
+  return 'other';
+}
+
+
+function isTransfer(t) {
+  if (t.isTransfer) return true;
+  const cat = (t.category || '').trim();
+  if (/^\[.*\]$/.test(cat)) return true;
+  if (/^transfer$/i.test(cat)) return true;
+  return false;
+}
+
+// "Spendable" = transactions that represent real money flowing to/from the outside world.
+// Excludes internal transfers. This is the accrual view:
+// CC charges on the CC account = real expenses (dated to purchase)
+// CC payment from checking = transfer (excluded)
+// So each dollar is counted exactly once, at the time of purchase.
+function spendable(arr) {
+  return (arr || []).filter(t => !isTransfer(t));
+}
+
+// Income = non-transfer positive transactions (payroll, freelance, dividends, etc.)
+const WATERFALL = [
+  {
+    id: 'income', label: 'Total Household Income', type: 'income',
+    sub: 'All money coming in — payroll, freelance, interest, refunds',
+    color: 'var(--positive)', sign: '+',
+    buckets: ['paycheck','other_inc'],
+  },
+  {
+    id: 'auto_save', label: 'Pre-Committed Savings', type: 'saving',
+    sub: 'Auto-deposits to savings, 401k, IRA, HSA, 529 — money set aside before you spend',
+    color: '#34D399', sign: '−',
+    buckets: ['auto_save'],
+    note: 'These are intentional — they leave checking automatically on payday.',
+  },
+  {
+    id: 'fixed', label: 'Fixed Living Expenses', type: 'expense',
+    sub: 'Mortgage (full payment incl. principal+interest+escrow), car loans, insurance, education, childcare',
+    color: '#60A5FA', sign: '−',
+    buckets: ['mortgage','car','education','insurance','childcare'],
+  },
+  {
+    id: 'utilities', label: 'Utilities & Communications', type: 'expense',
+    sub: 'Electric, gas, water, internet, cell — largely fixed month to month',
+    color: '#A78BFA', sign: '−',
+    buckets: ['electric','gas_util','water','internet','cell'],
+  },
+  {
+    id: 'necessities', label: 'Variable Necessities', type: 'expense',
+    sub: 'Groceries, gas, healthcare — must-haves but amounts vary by your choices',
+    color: '#F5A800', sign: '−',
+    buckets: ['groceries','gas_car','transit','healthcare'],
+  },
+  {
+    id: 'discretionary', label: 'Discretionary Spending', type: 'expense',
+    sub: 'Restaurants, entertainment, shopping, subscriptions, travel — your biggest lever for change',
+    color: '#E879F9', sign: '−',
+    buckets: ['restaurants','entertainment','household','personal','clothing','travel','subscriptions','gifts'],
+  },
+  {
+    id: 'other', label: 'Other / Uncategorized', type: 'expense',
+    sub: 'Review these — better Quicken categories will move them into the right section',
+    color: 'var(--ink4)', sign: '−',
+    buckets: ['other'],
+  },
+];
+
+
+const BUCKET_META = {
+  paycheck:      { label:'Payroll & Wages',               icon:'💵' },
+  other_inc:     { label:'Other Income',                  icon:'💰' },
+  auto_save:     { label:'Auto-Savings & Retirement',     icon:'🏦' },
+  mortgage:      { label:'Mortgage & Housing',             icon:'🏠' },
+  car:           { label:'Car Payments & Insurance',      icon:'🚗' },
+  education:     { label:'Education & Tuition',           icon:'🎓' },
+  insurance:     { label:'Health & Life Insurance',       icon:'🛡️' },
+  childcare:     { label:'Childcare & Activities',        icon:'👶' },
+  electric:      { label:'Electric',                      icon:'⚡' },
+  gas_util:      { label:'Gas / Heat',                    icon:'🔥' },
+  water:         { label:'Water & Sewer',                 icon:'💧' },
+  internet:      { label:'Internet / Cable',              icon:'📡' },
+  cell:          { label:'Cell Phones',                   icon:'📱' },
+  groceries:     { label:'Groceries',                     icon:'🛒' },
+  gas_car:       { label:'Vehicle Fuel',                  icon:'⛽' },
+  transit:       { label:'Parking, Tolls & Transit',      icon:'🚌' },
+  healthcare:    { label:'Healthcare & Pharmacy',         icon:'⚕️' },
+  restaurants:   { label:'Restaurants & Dining',          icon:'🍕' },
+  entertainment: { label:'Entertainment & Recreation',    icon:'🎭' },
+  household:     { label:'Household & Shopping',          icon:'🔧' },
+  personal:      { label:'Personal Care & Wellness',      icon:'💅' },
+  clothing:      { label:'Clothing & Accessories',        icon:'👕' },
+  travel:        { label:'Travel & Vacation',             icon:'✈️' },
+  subscriptions: { label:'Subscriptions & Streaming',    icon:'📺' },
+  gifts:         { label:'Gifts & Giving',               icon:'🎁' },
+  other:         { label:'Uncategorized',                 icon:'❓' },
+};
+
+
+function classifyTxn(t) {
+  const cat  = (t.category || '').toLowerCase().trim();
+  const pay  = (t.payee    || '').toLowerCase().trim();
+
+  // 1. Direct Quicken category match — highest trust, exact or substring
+  if (QUICKEN_CAT_MAP[cat]) return QUICKEN_CAT_MAP[cat];
+
+  // 2. Partial match: Quicken subcategory hierarchy (e.g. "Food & Dining:Restaurants" matches "food & dining")
+  for (const [qcat, bucket] of Object.entries(QUICKEN_CAT_MAP)) {
+    if (cat.includes(qcat)) return bucket;
+  }
+
+  // 3. Special handling for Quicken --Split-- transactions.
+  //    Quicken uses --Split-- when a single payment is split across multiple
+  //    categories (e.g. mortgage = principal + interest + escrow).
+  //    The checking outflow is the FULL payment — exactly what we want for the IS.
+  //    We classify by payee name since the category is lost.
+  if (cat === '--split--') {
+    // Mortgage payments
+    if (/house loan|rocket mortgage|mortgage|pmi|escrow/i.test(pay)) return 'mortgage';
+    // Car loan payments (car payment split across principal + interest)
+    if (/palisade|hyundai|auto loan|car loan|hmf|chevrolet/i.test(pay)) return 'car';
+    // Investment account splits (retirement fund rebalancing — $0 entries, but just in case)
+    if (/retirement|fidelity|vanguard|401k|ira|lifepath|blackrock|dodge|t rowe/i.test(pay)) return 'auto_save';
+    // 529 college contributions
+    if (/529|college|sam college|whitney college|will college/i.test(pay)) return 'auto_save';
+    // ATM withdrawals (cash)
+    if (/atm/i.test(pay)) return 'other';
+    // Salary splits (sometimes payroll is split into take-home + deductions)
+    if (/upmc|highmark|employer|payroll|direct dep/i.test(pay)) return 'paycheck';
+    // Fall through to payee keyword match below
+    for (const [bucket, keywords] of KW_MAP) {
+      if (keywords.some(kw => pay.includes(kw))) return bucket;
+    }
+    return 'other';
+  }
+
+  // 4. Payee keyword match
+  for (const [bucket, keywords] of KW_MAP) {
+    if (keywords.some(kw => pay.includes(kw) || cat.includes(kw))) return bucket;
+  }
+
+  // 5. Income heuristic
+  if (t.amount > 0) return 'other_inc';
+
+  return 'other';
+}
+
+// ── Section definitions ──────────────────────────────────────────
+// Waterfall order: income → auto_save → fixed → variable → discretionary → surplus
+
+// ═══ PULSE ACCOUNTS + HELPERS ══════════════════════════════════
+const PULSE_BS_ACCOUNTS = {
+  'Checking - PNC':        {class:'asset',    sub:'current',   label:'PNC Checking',  icon:'🏦'},
+  'Savings - PNC':         {class:'asset',    sub:'current',   label:'PNC Savings',   icon:'💰'},
+  'Savings - Sam':         {class:'asset',    sub:'current',   label:'Savings—Sam',   icon:'💰'},
+  'Savings - Whit':        {class:'asset',    sub:'current',   label:'Savings—Whit',  icon:'💰'},
+  'Savings - Will':        {class:'asset',    sub:'current',   label:'Savings—Will',  icon:'💰'},
+  '529 - Sam':             {class:'asset',    sub:'education', label:'529—Sam',       icon:'🎓'},
+  '529 - Whit':            {class:'asset',    sub:'education', label:'529—Whitney',   icon:'🎓'},
+  '529 - Will':            {class:'asset',    sub:'education', label:'529—Will',      icon:'🎓'},
+  'Investing - NR':        {class:'asset',    sub:'investment',label:'Investing—NR',  icon:'📈'},
+  'Investing - C&K':       {class:'asset',    sub:'investment',label:'Investing—C&K', icon:'📈'},
+  'Retirement - Chris HH': {class:'asset',    sub:'retirement',label:'401k—Chris',    icon:'🔒'},
+  'Retirement - NR IRA':   {class:'asset',    sub:'retirement',label:'IRA—NR',        icon:'🔒'},
+  'Retirement - NR Roth':  {class:'asset',    sub:'retirement',label:'Roth—NR',       icon:'🔒'},
+  'House':                 {class:'asset',    sub:'property',  label:'Primary Home',  icon:'🏠'},
+  'House Loan':            {class:'liability',sub:'mortgage',  label:'Mortgage',      icon:'🏠'},
+  'Palisade Loan':         {class:'liability',sub:'auto',      label:'Auto Loan',     icon:'🚗'},
+  'Credit - Allegiant4':   {class:'liability',sub:'current',   label:'Allegiant CC',  icon:'💳'},
+  'Credit - Amazon17':     {class:'liability',sub:'current',   label:'Amazon CC',     icon:'💳'},
+  'Credit - ChPNC1':       {class:'liability',sub:'current',   label:'Chase CC',      icon:'💳'},
+  'Credit - Flag17':       {class:'liability',sub:'current',   label:'Flag CC',       icon:'💳'},
+  'Credit - KiPNC28':      {class:'liability',sub:'current',   label:"Kira's CC",     icon:'💳'},
+  'Credit - Kohls27':      {class:'liability',sub:'current',   label:"Kohl's CC",     icon:'💳'},
+};
+
+// Toggle helpers called from onclick attrs (avoids quoting issues in HTML strings)
+function piToggleSec(id) { isDrillOpen['pi_'+id]=!isDrillOpen['pi_'+id]; renderPulseIncome(); }
+function piToggleBkt(bk) { isBucketOpen['pi_'+bk]=!isBucketOpen['pi_'+bk]; renderPulseIncome(); }
+
+// ═══ INCOME STATEMENT ══════════════════════════════════════════
+function renderPulseIncome() {
+  const el=document.getElementById('income-out');
+  if(!el)return;
+  if(!txns.length){el.innerHTML=emptyHTML('income');return;}
+  const moSel=document.getElementById('incomeMoSel');
+  const sp=spendable(txns);
+  const months=[...new Set(sp.map(t=>t.date.slice(0,7)))].sort().reverse();
+  if(moSel&&moSel.options.length===0){months.forEach(m=>{const[yr,mo]=m.split('-'),opt=document.createElement('option');opt.value=m;opt.textContent=new Date(yr,parseInt(mo)-1,1).toLocaleDateString('en-US',{month:'short',year:'numeric'});moSel.appendChild(opt);});}
+  const sel=(moSel&&moSel.value)||months[0];if(!sel)return;
+  const[yr,mo]=sel.split('-');
+  const mSp=sp.filter(t=>t.date.startsWith(sel));
+  const bt={};
+  mSp.filter(t=>t.amount<0).forEach(t=>{const b=classifyTxn(t);bt[b]=(bt[b]||0)+Math.abs(t.amount);});
+  const mInc=mSp.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+  const secs=WATERFALL.map(sec=>{let tot=sec.type==='income'?mInc:0;if(sec.type!=='income')sec.buckets.forEach(bk=>{tot+=(bt[bk]||0);});return{...sec,total:tot};});
+  const totExp=secs.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.total,0);
+  const auto=secs.find(s=>s.id==='auto_save')?.total||0,net=mInc-auto-totExp,nc=net>=0?'var(--grn)':'var(--red)';
+  const sr=mInc>0?((auto+Math.max(0,net))/mInc*100):0;
+  let out='';
+  // Hero
+  out+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">';
+  [['Income',mInc,'var(--grn)'],['Expenses',totExp,'var(--gold)'],[net>=0?'Surplus':'Deficit',Math.abs(net),nc]].forEach(function(a){out+='<div style="background:var(--card);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:9px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">'+a[0]+'</div><div style="font-size:18px;font-weight:700;color:'+a[2]+';font-family:var(--serif);">'+fmtK(a[1])+'</div></div>';});
+  out+='</div><div style="background:var(--card);border-radius:10px;padding:9px 14px;margin-bottom:10px;font-size:12px;color:var(--ink3);">Savings rate: <strong style="color:'+(sr>=20?'var(--grn)':sr>=10?'var(--gold)':'var(--red)')+';">'+sr.toFixed(1)+'%</strong> · target 20%</div>';
+  // Sections
+  secs.forEach(function(sec){
+    if(sec.id==='other'&&sec.total<1)return;
+    var open=!!isDrillOpen['pi_'+sec.id],sign=sec.type==='income'?'+':'−';
+    var bkList=sec.buckets.filter(function(bk){return(bt[bk]||0)>0;}).sort(function(a,b){return(bt[b]||0)-(bt[a]||0);});
+    out+='<div style="background:var(--card);border-radius:12px;margin-bottom:8px;overflow:hidden;">';
+    out+='<div onclick="piToggleSec('+JSON.stringify(sec.id)+')" style="display:flex;justify-content:space-between;align-items:center;padding:13px 16px;cursor:pointer;">';
+    out+='<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:'+sec.color+';">'+sec.label+'</div><div style="font-size:10px;color:var(--ink4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+sec.sub.slice(0,55)+'</div></div>';
+    out+='<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><div style="font-family:var(--mono);font-size:15px;font-weight:700;color:'+sec.color+';">'+sign+fmtK(sec.total)+'</div>';
+    if(bkList.length)out+='<div style="color:var(--ink4);font-size:12px;transform:rotate('+(open?'0':'180')+'deg);transition:transform .2s;">⌃</div>';
+    out+='</div></div>';
+    if(open&&bkList.length){
+      out+='<div style="border-top:1px solid rgba(255,255,255,.06);">';
+      bkList.forEach(function(bk){
+        var meta=BUCKET_META[bk]||{label:bk,icon:'·'},amt=bt[bk]||0,bOpen=!!isBucketOpen['pi_'+bk];
+        var bTxns=mSp.filter(function(t){return t.amount<0&&classifyTxn(t)===bk;}).sort(function(a,b){return Math.abs(b.amount)-Math.abs(a.amount);});
+        out+='<div onclick="piToggleBkt('+JSON.stringify(bk)+')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px 10px 22px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;">';
+        out+='<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:14px;">'+meta.icon+'</span><div><div style="font-size:12px;color:var(--ink2);">'+meta.label+'</div><div style="font-size:10px;color:var(--ink4);">'+bTxns.length+'tx</div></div></div>';
+        out+='<div style="display:flex;align-items:center;gap:6px;"><div style="font-family:var(--mono);font-size:13px;color:'+sec.color+';">'+fmtK(amt)+'</div>';
+        if(bTxns.length)out+='<div style="color:var(--ink4);font-size:11px;transform:rotate('+(bOpen?'0':'180')+'deg);">⌃</div>';
+        out+='</div></div>';
+        if(bOpen){
+          bTxns.forEach(function(t){
+            out+='<div style="padding:7px 16px 7px 46px;border-bottom:1px solid rgba(255,255,255,.03);display:flex;justify-content:space-between;align-items:center;">';
+            out+='<div style="flex:1;min-width:0;"><div style="font-size:11px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+t.payee+'</div>';
+            if(t.itemDetail&&t.itemDetail!==t.payee)out+='<div style="font-size:10px;color:var(--river);font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+t.itemDetail.slice(0,50)+'</div>';
+            out+='<div style="font-size:9px;color:var(--ink4);">'+t.date+'</div></div>';
+            out+='<div style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--gold);margin-left:8px;flex-shrink:0;">'+fmtK(Math.abs(t.amount))+'</div></div>';
+          });
+        }
+      });
+      out+='</div>';
+    }
+    out+='</div>';
+  });
+  // Net row
+  out+='<div style="background:var(--card);border-radius:12px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center;">';
+  out+='<div><div style="font-size:13px;font-weight:700;color:'+nc+';">'+(net>=0?'✓ Surplus':'⚠ Deficit')+'</div><div style="font-size:10px;color:var(--ink4);">'+(net>=0?'unallocated':'over budget')+'</div></div>';
+  out+='<div style="font-family:var(--mono);font-size:18px;font-weight:700;color:'+nc+';">'+(net>=0?'+':'')+fmtK(net)+'</div></div>';
+  el.innerHTML=out;
+}
+
+// ═══ BALANCE SHEET ═════════════════════════════════════════════
+function renderPulseBS() {
+  var el=document.getElementById('bs-out');if(!el)return;
+  if(!txns.length&&Object.keys(netWorthOverrides).length===0){el.innerHTML=emptyHTML('balance sheet');return;}
+  var bal={};txns.forEach(function(t){bal[t.account]=(bal[t.account]||0)+t.amount;});
+  var selEl=document.getElementById('bsComparePulse'),mode=selEl?selEl.value:'none';
+  if(selEl&&selEl.options.length===0){
+    var n2=new Date(),cy=n2.getFullYear(),mo2=n2.getMonth()+1;
+    var opts=[{v:'none',l:'— None —'},{v:'ye'+(cy-2),l:'YE '+(cy-2)},{v:'ye'+(cy-1),l:'YE '+(cy-1)},{v:'q1'+(cy-1),l:'Q1 '+(cy-1)},{v:'q2'+(cy-1),l:'Q2 '+(cy-1)},{v:'q3'+(cy-1),l:'Q3 '+(cy-1)}];
+    if(mo2>3)opts.push({v:'q1'+cy,l:'Q1 '+cy});if(mo2>6)opts.push({v:'q2'+cy,l:'Q2 '+cy});if(mo2>9)opts.push({v:'q3'+cy,l:'Q3 '+cy});
+    Object.keys(nwHistory).sort().reverse().forEach(function(d){var dt2=new Date(d+'T12:00:00');opts.push({v:'snap_'+d,l:dt2.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})});});
+    selEl.innerHTML=opts.map(function(o){return'<option value="'+o.v+'">'+o.l+'</option>';}).join('');
+  }
+  function rd(m2){if(!m2||m2==='none')return null;if(m2.startsWith('snap_'))return m2.slice(5);var mx=m2.match(/^(ye|q[1-4])(d{4})$/);if(!mx)return null;var y2=parseInt(mx[2]);if(mx[1]==='ye')return y2+'-12-31';if(mx[1]==='q1')return y2+'-03-31';if(mx[1]==='q2')return y2+'-06-30';if(mx[1]==='q3')return y2+'-09-30';return null;}
+  var cd=rd(mode);
+  function gv(acct,meta,asOf){if(!asOf){var nw=netWorthOverrides[acct];if(nw&&nw.value!==undefined)return meta.class==='liability'?Math.abs(nw.value):nw.value;return meta.class==='liability'?Math.abs(bal[acct]||0):(bal[acct]||0);}var snaps=Object.keys(nwHistory).filter(function(d){return d<=asOf;}).sort();if(snaps.length){var s=nwHistory[snaps[snaps.length-1]];if(s[acct]!==undefined)return meta.class==='liability'?Math.abs(s[acct]):s[acct];}return meta.class==='liability'?Math.abs(txns.filter(function(t){return t.account===acct&&t.date<=asOf;}).reduce(function(s,t){return s+t.amount;},0)):txns.filter(function(t){return t.account===acct&&t.date<=asOf;}).reduce(function(s,t){return s+t.amount;},0);}
+  var ta=0,tl=0,pa=0,pl=0;
+  var rows=Object.entries(PULSE_BS_ACCOUNTS).map(function(e){var a=e[0],m=e[1];var cur=gv(a,m,null),prev=cd?gv(a,m,cd):null;if(m.class==='asset'){ta+=cur;if(prev!==null)pa+=prev;}else{tl+=cur;if(prev!==null)pl+=prev;}return{acct:a,meta:m,cur:cur,prev:prev};});
+  var nw=ta-tl,pnw=cd?pa-pl:null,nwc=nw>=0?'var(--grn)':'var(--red)';
+  var hv=gv('House',PULSE_BS_ACCOUNTS['House'],null),mv=gv('House Loan',PULSE_BS_ACCOUNTS['House Loan'],null),eq=hv-mv;
+  var out='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">';
+  [['Net Worth',fmtK(nw),nwc,pnw!==null?(nw-pnw>=0?'↑ ':'↓ ')+fmtK(Math.abs(nw-pnw)):null],['Total Assets',fmtK(ta),'var(--grn)',cd?'prior: '+fmtK(pa):null],['Total Debt',fmtK(tl),'var(--red)',cd?'prior: '+fmtK(pl):null],['Home Equity',fmtK(eq),eq>=0?'var(--river)':'var(--red)',null]].forEach(function(a){out+='<div style="background:var(--card);border-radius:10px;padding:12px 14px;"><div style="font-size:9px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">'+a[0]+'</div><div style="font-size:20px;font-weight:700;color:'+a[2]+';font-family:var(--serif);">'+a[1]+'</div>'+(a[3]?'<div style="font-size:9px;color:var(--ink4);margin-top:1px;">'+a[3]+'</div>':'')+'</div>';});
+  out+='</div>';
+  var GRP=[{lbl:'ASSETS',cls:'asset',col:'var(--grn)',subs:{'Cash & Savings':['current'],'Investments':['investment','retirement'],'Education':['education'],'Real Estate':['property']}},{lbl:'LIABILITIES',cls:'liability',col:'var(--red)',subs:{'Credit Cards':['current'],'Long-Term Debt':['mortgage','auto','student']}}];
+  GRP.forEach(function(g){
+    out+='<div style="margin-bottom:12px;"><div style="font-size:9px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:'+g.col+';margin-bottom:6px;">'+g.lbl+'</div>';
+    Object.entries(g.subs).forEach(function(e){
+      var sl=e[0],subs=e[1];
+      var sr=rows.filter(function(r){return r.meta.class===g.cls&&subs.includes(r.meta.sub)&&(r.cur>0||g.cls==='liability');});if(!sr.length)return;
+      var st=sr.reduce(function(s,r){return s+r.cur;},0);
+      out+='<div style="background:var(--card);border-radius:10px;overflow:hidden;margin-bottom:6px;"><div style="display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.05);"><div style="font-size:11px;font-weight:600;color:var(--ink3);">'+sl+'</div><div style="font-family:var(--mono);font-size:12px;font-weight:700;color:'+g.col+';">'+fmtK(st)+'</div></div>';
+      sr.forEach(function(r){var chg=r.prev!==null?r.cur-r.prev:null,cc=chg===null?'var(--ink4)':chg>=0?'var(--grn)':'var(--red)';out+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px 8px 22px;border-bottom:1px solid rgba(255,255,255,.03);"><div style="font-size:12px;color:var(--ink2);">'+r.meta.icon+' '+r.meta.label+'</div><div style="text-align:right;"><div style="font-family:var(--mono);font-size:12px;font-weight:600;">'+fmtK(r.cur)+'</div>'+(chg!==null?'<div style="font-family:var(--mono);font-size:10px;color:'+cc+';">'+(chg>=0?'+':'')+fmtK(chg)+'</div>':'')+'</div></div>';});
+      out+='</div>';
+    });
+    out+='</div>';
+  });
+  el.innerHTML=out;
+}
+
+
 </script>
 
   <!-- LukaLab credit — fixed bottom -->
