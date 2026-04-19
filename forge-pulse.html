@@ -706,6 +706,20 @@ body, .stat-val, .scat-amt {
 /* Touch feedback */
 .tab-btn, .p-dim-chip { -webkit-tap-highlight-color: rgba(245,168,0,.12); }
 
+
+/* ── Chart containment ── */
+.p-ana-card { overflow: hidden; min-width: 0; }
+.p-ana-canvas-wrap { overflow: hidden; min-width: 0; position: relative; }
+.p-ana-canvas-wrap svg { display: block; width: 100% !important; max-width: 100%; overflow: hidden; }
+.p-ana-canvas-wrap canvas { display: block; width: 100% !important; max-width: 100%; }
+
+/* ── P&L drilldown — cap transaction lists ── */
+#income-out { overflow-x: hidden; }
+#income-out > div { overflow: hidden; }
+
+/* ── BS drilldown ── */
+#bs-out { overflow-x: hidden; }
+
 </style>
 
 </head>
@@ -1134,9 +1148,26 @@ function renderSnapshot() {
       </div>` : ''}
 
       <!-- ── DATA FRESHNESS ── -->
-      <div class="snap-footer">
-        <span class="snap-footer-dot"></span>
-        ${txns.length.toLocaleString()} transactions · ${accounts.length} account${accounts.length!==1?'s':''}
+      <!-- Thru date footer -->
+      <div class="snap-footer" style="flex-direction:column;align-items:flex-start;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;width:100%;">
+          <span class="snap-footer-dot"></span>
+          <span>${txns.length.toLocaleString()} transactions · ${accounts.length} account${accounts.length!==1?'s':''}</span>
+          <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink4);">thru ${(() => { const d=txns[0]?.date||''; if(!d) return '—'; const [y,m,dy]=d.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]+' '+parseInt(dy)+', '+y; })()}</span>
+        </div>
+        ${(()=>{
+          const latest=txns[0]?.date||'';
+          if(!latest) return '';
+          const latestD=new Date(latest+'T12:00:00');
+          const daysSince=Math.floor((Date.now()-latestD)/86400000);
+          if(daysSince<=35) return '';
+          const nextD=new Date(latestD); nextD.setDate(nextD.getDate()+1);
+          const fmt=d=>{const[y,m,dy]=d.toISOString().slice(0,10).split('-');return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]+' '+parseInt(dy)+', '+y;};
+          return '<div style="width:100%;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);border-radius:8px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;">'
+            +'<span style="font-size:12px;color:var(--red);">⚠ Data is '+daysSince+' days old</span>'
+            +'<span style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--gold);">Export from '+fmt(nextD)+'</span>'
+            +'</div>';
+        })()}
       </div>
 
     </div>`;
@@ -1979,19 +2010,15 @@ function classifyTxn(t) {
   //    The checking outflow is the FULL payment — exactly what we want for the IS.
   //    We classify by payee name since the category is lost.
   if (cat === '--split--') {
-    // Mortgage payments
-    if (/house loan|rocket mortgage|mortgage|pmi|escrow/i.test(pay)) return 'mortgage';
-    // Car loan payments (car payment split across principal + interest)
-    if (/palisade|hyundai|auto loan|car loan|hmf|chevrolet/i.test(pay)) return 'car';
-    // Investment account splits (retirement fund rebalancing — $0 entries, but just in case)
-    if (/retirement|fidelity|vanguard|401k|ira|lifepath|blackrock|dodge|t rowe/i.test(pay)) return 'auto_save';
-    // 529 college contributions
-    if (/529|college|sam college|whitney college|will college/i.test(pay)) return 'auto_save';
-    // ATM withdrawals (cash)
-    if (/atm/i.test(pay)) return 'other';
-    // Salary splits (sometimes payroll is split into take-home + deductions)
-    if (/upmc|highmark|employer|payroll|direct dep/i.test(pay)) return 'paycheck';
-    // Fall through to payee keyword match below
+    if (/house loan|rocket mortg|wells fargo home|chase home|pennymac|mr cooper|nationstar/i.test(pay)) return 'mortgage';
+    if (/palisade|hyundai|auto loan|car loan|hmf|chevrolet|ford motor|toyota|nissan|honda financial|gm financial/i.test(pay)) return 'car';
+    if (/retirement|fidelity|vanguard|schwab|401k|ira|lifepath|blackrock|t rowe|merrill/i.test(pay)) return 'auto_save';
+    if (/529|college|education|edvest|bright|ohio tuition/i.test(pay)) return 'auto_save';
+    if (/insurance|liberty mutual|state farm|allstate|geico|nationwide|progressive/i.test(pay)) return 'insurance';
+    if (/electric|gas|water|energy|utilities|pge|duke|comed|peoples/i.test(pay)) return 'electric';
+    if (/comcast|xfinity|verizon|at&t|tmobile|spectrum|frontier/i.test(pay)) return 'internet';
+    if (/atm|cash/i.test(pay)) return 'other';
+    if (/payroll|employer|direct dep|paycheck|salary|wages|adp|paychex/i.test(pay)) return 'paycheck';
     for (const [bucket, keywords] of KW_MAP) {
       if (keywords.some(kw => pay.includes(kw))) return bucket;
     }
@@ -2123,19 +2150,15 @@ function classifyTxn(t) {
   //    The checking outflow is the FULL payment — exactly what we want for the IS.
   //    We classify by payee name since the category is lost.
   if (cat === '--split--') {
-    // Mortgage payments
-    if (/house loan|rocket mortgage|mortgage|pmi|escrow/i.test(pay)) return 'mortgage';
-    // Car loan payments (car payment split across principal + interest)
-    if (/palisade|hyundai|auto loan|car loan|hmf|chevrolet/i.test(pay)) return 'car';
-    // Investment account splits (retirement fund rebalancing — $0 entries, but just in case)
-    if (/retirement|fidelity|vanguard|401k|ira|lifepath|blackrock|dodge|t rowe/i.test(pay)) return 'auto_save';
-    // 529 college contributions
-    if (/529|college|sam college|whitney college|will college/i.test(pay)) return 'auto_save';
-    // ATM withdrawals (cash)
-    if (/atm/i.test(pay)) return 'other';
-    // Salary splits (sometimes payroll is split into take-home + deductions)
-    if (/upmc|highmark|employer|payroll|direct dep/i.test(pay)) return 'paycheck';
-    // Fall through to payee keyword match below
+    if (/house loan|rocket mortg|wells fargo home|chase home|pennymac|mr cooper|nationstar/i.test(pay)) return 'mortgage';
+    if (/palisade|hyundai|auto loan|car loan|hmf|chevrolet|ford motor|toyota|nissan|honda financial|gm financial/i.test(pay)) return 'car';
+    if (/retirement|fidelity|vanguard|schwab|401k|ira|lifepath|blackrock|t rowe|merrill/i.test(pay)) return 'auto_save';
+    if (/529|college|education|edvest|bright|ohio tuition/i.test(pay)) return 'auto_save';
+    if (/insurance|liberty mutual|state farm|allstate|geico|nationwide|progressive/i.test(pay)) return 'insurance';
+    if (/electric|gas|water|energy|utilities|pge|duke|comed|peoples/i.test(pay)) return 'electric';
+    if (/comcast|xfinity|verizon|at&t|tmobile|spectrum|frontier/i.test(pay)) return 'internet';
+    if (/atm|cash/i.test(pay)) return 'other';
+    if (/payroll|employer|direct dep|paycheck|salary|wages|adp|paychex/i.test(pay)) return 'paycheck';
     for (const [bucket, keywords] of KW_MAP) {
       if (keywords.some(kw => pay.includes(kw))) return bucket;
     }
@@ -2225,7 +2248,7 @@ function renderPulseIncome() {
       out+='<div style="border-top:1px solid rgba(255,255,255,.06);">';
       bkList.forEach(function(bk){
         var meta=BUCKET_META[bk]||{label:bk,icon:'·'},amt=bt[bk]||0,bOpen=!!isBucketOpen['pi_'+bk];
-        var bTxns=mSp.filter(function(t){return t.amount<0&&classifyTxn(t)===bk;}).sort(function(a,b){return Math.abs(b.amount)-Math.abs(a.amount);});
+        var bTxns=mSp.filter(function(t){return t.amount<0&&classifyTxn(t)===bk;}).sort(function(a,b){return b.date.localeCompare(a.date);}); // newest first
         out+='<div onclick="piToggleBkt('+JSON.stringify(bk)+')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px 10px 22px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;">';
         out+='<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:14px;">'+meta.icon+'</span><div><div style="font-size:12px;color:var(--ink2);">'+meta.label+'</div><div style="font-size:10px;color:var(--ink4);">'+bTxns.length+'tx</div></div></div>';
         out+='<div style="display:flex;align-items:center;gap:6px;"><div style="font-family:var(--mono);font-size:13px;color:'+sec.color+';">'+fmtK(amt)+'</div>';
@@ -2235,6 +2258,11 @@ function renderPulseIncome() {
           bTxns.forEach(function(t){
             out+='<div style="padding:7px 16px 7px 46px;border-bottom:1px solid rgba(255,255,255,.03);display:flex;justify-content:space-between;align-items:center;">';
             out+='<div style="flex:1;min-width:0;"><div style="font-size:11px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+t.payee+'</div>';
+            var dispPayee=t.payee;
+            if((t.category||'').toLowerCase()==='--split--'){
+              if(/house loan|rocket mortg|pennymac|mr cooper/i.test(t.payee)){dispPayee=t.payee;}
+              else{dispPayee=t.payee||'Split transaction';}
+            }
             if(t.itemDetail&&t.itemDetail!==t.payee)out+='<div style="font-size:10px;color:var(--river);font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+t.itemDetail.slice(0,50)+'</div>';
             out+='<div style="font-size:9px;color:var(--ink4);">'+t.date+'</div></div>';
             out+='<div style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--gold);margin-left:8px;flex-shrink:0;">'+fmtK(Math.abs(t.amount))+'</div></div>';
@@ -2386,7 +2414,7 @@ function svgBar(elId, labels, datasets) {
   const zY = (PAD.t + zeroY).toFixed(1);
   const zeroLine = `<line x1="${PAD.l}" y1="${zY}" x2="${W-PAD.r}" y2="${zY}" stroke="rgba(255,255,255,.18)" stroke-width="1"/>`;
 
-  el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;overflow:visible;">
+  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:hidden;">
     ${grid}${zeroLine}${bars}${yLbls}${xLbls}${legend}${hitAreas}
   </svg>`;
   bindChartTips(el);
@@ -2461,7 +2489,7 @@ function svgLine(elId, labels, datasets) {
     hitAreas+='<rect x="'+(stripCx-sw/2).toFixed(1)+'" y="'+PAD.t+'" width="'+sw.toFixed(1)+'" height="'+cH+'" fill="transparent" style="cursor:crosshair;" data-tip="'+tp.join('  |  ').replace(/"/g,'&quot;')+'"/>';
   });
 
-  el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;overflow:visible;">
+  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:hidden;">
     ${grid}${areas}${paths}${dots}${yLbls}${xLbls}${hitAreas}
   </svg>`;
   bindChartTips(el);
@@ -2507,7 +2535,7 @@ function svgWaterfall(elId, items) {
     el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
     return;
   }
-  var PAD = {t:20,r:16,b:52,l:64};
+  var PAD = {t:14,r:20,b:60,l:64};
   var cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b, n = items.length;
   var running = 0;
   var segs = items.map(function(item) {
@@ -2552,7 +2580,7 @@ function svgWaterfall(elId, items) {
     bars+='<rect x="'+x+'" y="'+yTop+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="2" fill="'+color+'"/>';
     var valY=s.value>=0?(parseFloat(yTop)-4).toFixed(1):(parseFloat(yTop)+parseFloat(bH)+11).toFixed(1);
     var sign=s.value>=0?'+':'';
-    bars+='<text x="'+cx.toFixed(1)+'" y="'+valY+'" text-anchor="middle" fill="rgba(255,255,255,.75)" font-size="9" font-family="monospace">'+sign+fmtM(s.value)+'</text>';
+    if(parseFloat(bH)>=16){bars+='<text x="'+cx.toFixed(1)+'" y="'+valY+'" text-anchor="middle" fill="rgba(255,255,255,.8)" font-size="9" font-family="var(--font-ui,sans-serif)">'+sign+fmtM(s.value)+'</text>';}
     if(s.type!=='total'){bars+='<circle cx="'+cx.toFixed(1)+'" cy="'+toY(s.end).toFixed(1)+'" r="3" fill="rgba(245,168,0,.8)"/>';}
     var tipT=s.type==='total'?'Net total':(s.value>=0?'Adds':'Reduces');
     var tip=s.label+': '+sign+fmtM(s.value)+' | '+tipT+' | Running: '+(s.type!=='total'?fmtM(s.end):'final');
@@ -2560,7 +2588,7 @@ function svgWaterfall(elId, items) {
     var sl=s.label.length>11?s.label.slice(0,10)+String.fromCharCode(8230):s.label;
     xLbls+='<text x="'+cx.toFixed(1)+'" y="'+(H-PAD.b+16)+'" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="9" font-family="monospace">'+sl+'</text>';
   });
-  el.innerHTML='<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'+grid+zeroLine+connectors+bars+yLbls+xLbls+hitAreas+'</svg>';
+  el.innerHTML='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:'+H+'px;display:block;overflow:hidden;">'+grid+zeroLine+connectors+bars+yLbls+xLbls+hitAreas+'</svg>';
   bindChartTips(el);
 }
 
