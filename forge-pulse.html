@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -29,9 +32,10 @@
   --negative:  #F87171;
   --river:     #60A5FA;
   --font-d:    'Cormorant Garamond', Georgia, serif;
-  --font-num:  'Sora', 'Outfit', system-ui, sans-serif;
-  --font-ui:   'DM Sans', system-ui, sans-serif;
-  --font-m:    'Fira Code', monospace;
+  --font-num:  'Inter', system-ui, sans-serif;
+  --font-ui:   'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-m:    'JetBrains Mono', 'Fira Code', monospace;
+  --serif:     'Cormorant Garamond', Georgia, serif;
   --ease:      cubic-bezier(0.16, 1, 0.3, 1);
   --r-sm:      4px; --r: 8px; --r-lg: 14px;
   --accent: var(--gold); --accent2: var(--river); --accent3: var(--positive); --accent4: var(--gold); --slate: var(--ink3); --cream: var(--lift);
@@ -43,6 +47,8 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { height: 100%; overflow: hidden; }
 body {
+  font-size: 15px;
+  text-rendering: optimizeLegibility;
   opacity: 1 !important;
   visibility: visible !important;
   font-family: var(--font-ui);
@@ -80,7 +86,7 @@ body {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   padding: 6px 14px; border: none; background: transparent;
   color: var(--ink3); cursor: pointer;
-  font-family: var(--font-ui); font-size: 11px; font-weight: 500;
+  font-family: var(--font-ui); font-size: 10.5px; font-weight: 500; letter-spacing: 0.02em;
   transition: color .2s var(--ease); position: relative; min-width: 68px;
   letter-spacing: 0.03em;
 }
@@ -91,8 +97,8 @@ body {
 
 .pg-head { background: rgba(8,8,8,.9); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); padding: 18px 22px 14px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--line); }
 .pg-head::after { content:''; position:absolute; bottom:-1px; left:22px; right:22px; height:1px; background:linear-gradient(90deg,transparent,var(--gold-line),transparent); }
-.pg-title { font-family: var(--font-d); font-size: 30px; font-weight: 600; color: var(--ink); line-height: 1; }
-.pg-sub   { font-size: 12px; color: var(--ink3); margin-top: 4px; font-family: var(--font-m); letter-spacing: 0.06em; }
+.pg-title { font-family: var(--serif); font-size: 32px; font-weight: 300; color: var(--ink); line-height: 1.05; letter-spacing: -0.015em; }
+.pg-sub   { font-size: 12.5px; font-weight: 400; color: var(--ink3); letter-spacing: 0.01em; margin-top: 4px; font-family: var(--font-m); letter-spacing: 0.06em; }
 
 .snap-hero { background: linear-gradient(160deg, #0F0E09 0%, #0C0B07 60%, var(--void) 100%); padding: 28px 22px 30px; position: relative; overflow: hidden; }
 .snap-hero::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(45deg,transparent,transparent 28px,rgba(245,168,0,.01) 28px,rgba(245,168,0,.01) 29px),repeating-linear-gradient(-45deg,transparent,transparent 28px,rgba(245,168,0,.01) 28px,rgba(245,168,0,.01) 29px); }
@@ -234,6 +240,10 @@ body {
   margin-bottom: 12px;
 }
 .p-ana-header {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-family: var(--font-ui);
   font-size: 10px;
   font-family: var(--mono);
   letter-spacing: .12em;
@@ -259,7 +269,9 @@ body {
   margin-bottom: 10px;
 }
 .p-dim-chip {
-  font-size: 11px;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   padding: 5px 10px;
   border-radius: 20px;
   border: 1px solid var(--border);
@@ -413,7 +425,8 @@ select, input, textarea { font-size: 16px !important; }
   overflow: hidden;
 }
 .hero2-eyebrow {
-  font-family: var(--font-m);
+  font-family: var(--font-ui);
+  font-weight: 600;
   font-size: 10px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -422,16 +435,18 @@ select, input, textarea { font-size: 16px !important; }
   position: relative; z-index: 1;
 }
 .hero2-net {
-  font-family: var(--font-d);
-  font-size: 68px;
-  font-weight: 700;
+  font-family: var(--serif);
+  font-size: 72px;
+  font-weight: 300;
   letter-spacing: -0.03em;
   line-height: 1;
   position: relative; z-index: 1;
 }
 .hero2-label {
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 400;
   color: var(--ink4);
+  letter-spacing: 0.01em;
   margin-top: 6px;
   position: relative; z-index: 1;
 }
@@ -450,9 +465,11 @@ select, input, textarea { font-size: 16px !important; }
   gap: 12px;
 }
 .stat-lbl {
-  font-size: 12px;
+  font-size: 12.5px;
+  font-weight: 500;
   color: var(--ink4);
   font-family: var(--font-ui);
+  letter-spacing: 0.01em;
 }
 .stat-bar-wrap {
   height: 4px;
@@ -467,15 +484,18 @@ select, input, textarea { font-size: 16px !important; }
   min-width: 2px;
 }
 .stat-val {
-  font-family: var(--font-m);
-  font-size: 14px;
-  font-weight: 600;
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 500;
   color: var(--ink);
   text-align: right;
   white-space: nowrap;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
 }
 .stat-delta {
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 500;
   margin-left: 5px;
   font-weight: 400;
 }
@@ -502,7 +522,8 @@ select, input, textarea { font-size: 16px !important; }
   flex-shrink: 0;
 }
 .scat-name {
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--ink3);
   font-family: var(--font-ui);
   white-space: nowrap;
@@ -522,10 +543,13 @@ select, input, textarea { font-size: 16px !important; }
   min-width: 2px;
 }
 .scat-amt {
-  font-family: var(--font-m);
-  font-size: 12px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
   color: var(--ink3);
   text-align: right;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Footer */
@@ -534,7 +558,7 @@ select, input, textarea { font-size: 16px !important; }
   align-items: center;
   gap: 7px;
   padding: 20px 20px 0;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink4);
   font-family: var(--font-m);
 }
@@ -550,12 +574,12 @@ select, input, textarea { font-size: 16px !important; }
 /* ── Empty state ── */
 .empty-wrap { padding: 48px 28px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; }
 .empty-icon { font-size: 36px; margin-bottom: 16px; opacity: .7; }
-.empty-title { font-family: var(--font-d); font-size: 28px; font-weight: 600; color: var(--ink); margin-bottom: 10px; }
-.empty-sub { font-size: 14px; color: var(--ink4); line-height: 1.6; max-width: 300px; margin-bottom: 28px; }
+.empty-title { font-family: var(--serif); font-size: 32px; font-weight: 300; letter-spacing: -0.01em; color: var(--ink); margin-bottom: 10px; }
+.empty-sub { font-size: 14.5px; color: var(--ink4); line-height: 1.6; max-width: 300px; margin-bottom: 28px; }
 .empty-steps { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
 .empty-step {
   display: flex; align-items: flex-start; gap: 12px;
-  font-size: 13px; color: var(--ink3); line-height: 1.5;
+  font-size: 14px; color: var(--ink3); line-height: 1.5;
 }
 .empty-step-n {
   flex-shrink: 0; width: 22px; height: 22px;
@@ -566,11 +590,123 @@ select, input, textarea { font-size: 16px !important; }
 }
 .empty-hint { font-size: 11px; color: var(--ink4); font-family: var(--font-m); }
 
+
+
+/* ═══════════════════════════════════════════════════════════════
+   PULSE TYPOGRAPHY — Professional Edition
+   Inter / Cormorant Garamond / JetBrains Mono
+═══════════════════════════════════════════════════════════════ */
+
+/* Hero gradient — warm gold bloom */
+.hero2-net {
+  background: linear-gradient(150deg, #F0EDE8 0%, #F5A800 140%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Page section titles */
+.pg-title {
+  font-family: var(--serif) !important;
+  font-size: 28px !important;
+  font-weight: 300 !important;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+  background: linear-gradient(150deg, #F0EDE8 0%, #C8C3BA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.pg-sub {
+  font-size: 13px !important;
+  color: var(--ink4);
+  font-family: var(--font-ui) !important;
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: 0.005em;
+}
+
+/* P&L section headers — Inter 600 */
+#income-out [style*="font-size:13px;font-weight:600"],
+#income-out [style*="font-size:14px;font-weight:600"] {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
+}
+
+/* BS KPI tiles */
+#bs-out [style*="font-size:20px;font-weight:700"],
+#bs-out [style*="font-size:24px"] {
+  font-size: 26px !important;
+  font-weight: 300 !important;
+  font-family: var(--serif) !important;
+  letter-spacing: -0.02em;
+}
+#bs-out [style*="font-size:9px"],
+#bs-out [style*="font-size:10px"] {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  font-family: var(--font-ui) !important;
+  letter-spacing: 0.14em;
+  opacity: 0.7;
+}
+#bs-out [style*="font-size:12px;color:var(--ink2)"] {
+  font-size: 13.5px !important;
+  font-weight: 400;
+}
+
+/* Analytics card pill labels */
+.p-ana-pill {
+  font-size: 10.5px !important;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+/* Month / compare selectors */
+#incomeMoSel, #bsComparePulse {
+  font-size: 13.5px !important;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* Section eyebrow text */
+.sec-lbl {
+  font-size: 9.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.20em;
+  font-family: var(--font-ui) !important;
+}
+
+/* Drilldown transaction rows */
+#income-out [style*="font-size:11px;color:var(--ink3)"] { font-size: 13px !important; }
+#income-out [style*="font-size:12px;font-weight:600"]   { font-size: 13.5px !important; }
+#income-out [style*="font-size:10px;color:var(--river)"] { font-size: 11px !important; }
+
+/* SVG chart axis text */
+svg text {
+  font-family: var(--font-ui, 'Inter', sans-serif) !important;
+  font-weight: 400;
+}
+
+/* Empty state steps numbers */
+.empty-step-n {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* Font feature settings */
+body, .stat-val, .scat-amt {
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}
+.stat-val, .scat-amt {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Touch feedback */
+.tab-btn, .p-dim-chip { -webkit-tap-highlight-color: rgba(245,168,0,.12); }
+
 </style>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap">
 
 </head>
 <body>
