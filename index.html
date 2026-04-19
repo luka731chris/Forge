@@ -1199,13 +1199,7 @@ h1, h2, h3, .kpi-val, .display-num {
     <div style="display:flex;align-items:center;gap:10px;">
       <span style="font-size:11px;color:var(--ink4);font-family:var(--font-m);">Month:</span>
       <select id="isMonth" onchange="renderIncomeStatement()" style="font-size:12px;padding:5px 10px;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);color:var(--ink);"></select>
-  <span style="font-size:11px;color:var(--ink4);margin-left:4px;">Sort:</span>
-  <select id="isSortField" onchange="isSort.field=this.value;renderIncomeStatement()" style="font-size:12px;padding:5px 8px;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);color:var(--ink);">
-    <option value="date">Date ↓</option>
-    <option value="amount">Amount</option>
-    <option value="payee">Payee A–Z</option>
-  </select>
-  <button id="isSortDir" onclick="isSort.dir=isSort.dir==='desc'?'asc':'desc';document.getElementById('isSortDir').textContent=isSort.dir==='desc'?'↓':'↑';renderIncomeStatement()" style="font-size:11px;padding:5px 9px;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);color:var(--ink4);cursor:pointer;">↓</button>
+
     </div>
   </div>
   <div id="incomeStatement"></div>
@@ -1393,7 +1387,7 @@ function getCCProjections() {
 
     // Spending by category on this card (last 30 days)
     const byCat = {};
-    last30.forEach(t => { byCat[t.category||'Other'] = (byCat[t.category||'Other']||0) + Math.abs(t.amount); });
+    last30.forEach(t => { const _b=classifyTxn(t);const _l=(BUCKET_META[_b]&&BUCKET_META[_b].label)||_b;byCat[_l]=(byCat[_l]||0)+Math.abs(t.amount); });
     const topCats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,3);
 
     results.push({ acct, vel30, estBalance, topCats, chargeCount: last30.length });
@@ -1863,7 +1857,9 @@ function renderDashboard() {
   try {
     const cats = {};
     filtered.filter(t => t.amount < 0).forEach(t => {
-      cats[t.category||'Other'] = (cats[t.category||'Other']||0) + Math.abs(t.amount);
+      const bucket = classifyTxn(t);
+      const lbl    = (BUCKET_META[bucket] && BUCKET_META[bucket].label) || bucket;
+      cats[lbl] = (cats[lbl]||0) + Math.abs(t.amount);
     });
     const top = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,9);
     donutDash = makeDonut('dashDonut', top.map(([l])=>l), top.map(([,v])=>v), donutDash);
@@ -1979,7 +1975,11 @@ function renderCategories() {
 
   const filtered = spendable(txns).filter(t => inRange(t, catRange) && t.amount < 0);
   const cats = {};
-  filtered.forEach(t => { cats[t.category||'Other'] = (cats[t.category||'Other']||0)+Math.abs(t.amount); });
+  filtered.forEach(t => {
+    const bucket = classifyTxn(t);
+    const lbl    = (BUCKET_META[bucket] && BUCKET_META[bucket].label) || bucket;
+    cats[lbl] = (cats[lbl]||0) + Math.abs(t.amount);
+  });
   const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]);
   const total  = sorted.reduce((s,[,v])=>s+v,0);
   const months = Math.max(1, Math.round((new Date()-rangeStart(catRange))/(1000*60*60*24*30)));
@@ -2044,7 +2044,7 @@ function renderTxns() {
     return `<tr>
       <td class="td-num" style="text-align:left;color:var(--ink4)">${t.date}</td>
       <td>${t.payee||'—'}${t.itemDetail&&t.itemDetail!==t.payee?'<div style="font-size:10px;color:var(--river);font-style:italic;">'+t.itemDetail.slice(0,70)+'</div>':''}</td>
-      <td style="color:var(--ink4)">${t.category||'—'}</td>
+      <td style="color:var(--ink4)">${(()=>{const _c=(t.category||'').toLowerCase();if(_c==='--split--'){const _b=classifyTxn(t);return (BUCKET_META[_b]&&BUCKET_META[_b].label)||_b;}return t.category||'—';})()}</td>
       <td style="color:var(--ink4);font-size:11px">${t.account||'—'}</td>
       <td class="td-num ${amtCls}">${amtSign}${fmt(t.amount)}</td>
       <td>${xfer?'<span class="xfer-badge">Transfer</span>':''}</td>
@@ -4021,7 +4021,36 @@ const BUCKET_META = {
 let isDrillOpen = {};   // { sectionId: true/false }
 let isBucketOpen = {};  // { bucketKey: true/false }
 let isTxnOpen    = {};  // { payeeKey: true/false }
-let isSort       = { field: 'date', dir: 'desc' }; // default: newest first
+let isSort = { field: 'date', dir: 'desc' }; // newest first default
+
+function isSetSort(f) {
+  isSort = { field: f, dir: isSort.field===f && isSort.dir==='desc' ? 'asc' : f==='payee' ? 'asc' : 'desc' };
+  renderIncomeStatement();
+}
+
+function isSortHeader() {
+  function col(label, field, alignRight) {
+    var active = isSort.field === field;
+    var arrow  = active ? (isSort.dir==='desc' ? ' ↓' : ' ↑') : ' <span style=\'opacity:.3\'>↕</span>';
+    var color  = active ? 'var(--gold)' : 'var(--ink4)';
+    var weight = active ? '600' : '500';
+    var align  = alignRight ? 'text-align:right;justify-content:flex-end;' : '';
+    return '<div onclick=\'isSetSort(\"'+field+'\")\' style=\'font-size:9px;font-family:var(--font-ui);'
+      + 'font-weight:'+weight+';letter-spacing:.15em;text-transform:uppercase;'
+      + 'color:'+color+';cursor:pointer;user-select:none;display:flex;align-items:center;gap:2px;'+align+'\''
+      + '>'+label+arrow+'</div>';
+  }
+  return '<div style=\'display:grid;grid-template-columns:90px 1fr 120px 110px;'
+    + 'padding:5px 16px 5px 72px;background:var(--lift);'
+    + 'border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid var(--line);'
+    + 'position:sticky;top:0;z-index:2;\'>'
+    + col('Date',   'date',   false)
+    + col('Payee',  'payee',  false)
+    + '<div style=\'font-size:9px;font-family:var(--font-ui);font-weight:500;'
+    + 'letter-spacing:.15em;text-transform:uppercase;color:var(--ink4);\'>Details</div>'
+    + col('Amount', 'amount', true)
+    + '</div>';
+}
 
 function toggleSection(id) {
   isDrillOpen[id] = !isDrillOpen[id];
@@ -4248,6 +4277,7 @@ function renderIncomeStatement() {
             // Individual transactions (level 3) — scrollable if many
             if (pOpen || pd.txns.length === 1) {
               out += '<div class="is-txn-list" style="' + (pd.txns.length > 8 ? 'max-height:320px;overflow-y:auto;' : '') + '">';
+              out += isSortHeader();
               pd.txns.slice().sort((a,b)=>{
                 const field = (typeof isSort !== 'undefined') ? isSort.field : 'date';
                 const dir   = (typeof isSort !== 'undefined') ? isSort.dir   : 'desc';
