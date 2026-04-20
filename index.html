@@ -1344,7 +1344,7 @@ const COLORS = [
 // Detect account type from name — used to handle CC payments correctly
 function detectAcctType(name) {
   const n = (name || '').toLowerCase();
-  if (/credit|visa|mastercard|amex|american express|discover|card|cc|sapphire|freedom|venture|cash back|rewards|platinum/.test(n)) return 'credit';
+  if (/credit|visa|mastercard|amex|american express|apple card|discover|card|cc|sapphire|freedom|venture|cash back|rewards|platinum/.test(n)) return 'credit';
   if (/savings|save|marcus|ally|high.yield|money.market/.test(n)) return 'savings';
   if (/401k|403b|ira|roth|brokerage|fidelity|vanguard|schwab|investment|retirement|hsa/.test(n)) return 'investment';
   return 'checking';
@@ -1365,12 +1365,25 @@ function isCreditAcct(acctName) {
 function isTransfer(t) {
   if (t.isTransfer) return true;
   const cat = (t.category || '').trim().toLowerCase();
-  // Bracket syntax [AccountName] = Quicken transfer
+  const pay = (t.payee   || '').trim().toLowerCase();
+
+  // Bracket syntax [AccountName] = Quicken transfer to a linked account
   if (/^\[.*\]$/.test(t.category || '')) return true;
-  // Explicit transfer categories
+
+  // Explicit transfer category names
   if (/^transfer$/i.test(cat)) return true;
-  // CC payment categories
+
+  // CC payment category (Quicken standard)
   if (cat.includes('credit card payment')) return true;
+
+  // Payee-based CC payment detection — catches unlinked CC payments
+  // (e.g. Apple Card, any CC not set up as a Quicken account)
+  // These are outflows from checking that pay a credit card bill
+  if (t.amount < 0 && /apple card|apple\.com\/bill|creditcard payment|cc payment/i.test(pay)) return true;
+
+  // Generic payee patterns for unlinked CC payments
+  if (t.amount < 0 && /^(payment|autopay|online payment|bill payment)$/i.test(pay.trim())) return true;
+
   return false;
 }
 
@@ -3879,7 +3892,8 @@ const QUICKEN_CAT_MAP = {
   'bills & utilities:utilities':   'electric',
   'bills & utilities':             'electric',
   'bills & utilities:mobile phone':'cell',
-  'bills & utilities:credit card payment': 'other', // not a real expense category
+  // 'bills & utilities:credit card payment' is caught by isTransfer() before classifyTxn
+  // If it somehow reaches here (shouldn't), route to other and it'll be filtered
 
   // ── Food ─────────────────────────────────────────────────────────
   'food & dining:groceries':       'groceries',
@@ -4099,11 +4113,10 @@ function classifyTxn(t) {
     if (/401k|403b|ira|roth|brokerage|fidelity|vanguard|schwab|investment|retirement|hsa|529/.test(acct)) {
       return 'invest_inc';
     }
-    // CC account credits = rewards/cashback/refunds applied to statement
-    if (/credit|visa|mastercard|amex|american express|discover|card|sapphire|freedom|venture|cash back|rewards|platinum/.test(acct)) {
-      // Small positive on CC = likely reward/cashback, not paycheck
-      if (Math.abs(t.amount) < 500) return 'cc_reward';
-      return 'other_inc'; // large CC credits could be refunds
+    // CC account credits = rewards, cashback, or purchase refunds posted to statement
+    // All of these reduce what you owe — none are spendable deposited cash
+    if (/credit|visa|mastercard|amex|american express|apple card|discover|card|sapphire|freedom|venture|cash back|rewards|platinum/.test(acct)) {
+      return 'cc_reward';
     }
     return 'other_inc';
   }
@@ -4292,9 +4305,10 @@ function renderIncomeStatement() {
   const hasAccrual   = accrualFactor > 0;
 
   // Build accrued estimates from current-month run rate by bucket
-  // Only accrue expense buckets (not income — paycheck timing is known)
   const accrualByBucket = {};
   if (hasAccrual) {
+
+    // ── Expense accrual: daily run-rate projection ──────────────────
     const expenseSp = monthSp.filter(t => t.amount < 0);
     const tempBuckets = {};
     expenseSp.forEach(t => {
@@ -4305,6 +4319,138 @@ function renderIncomeStatement() {
     // Only accrue buckets with meaningful spend (>$50 so far this month)
     Object.entries(tempBuckets).forEach(([b, amt]) => {
       if (amt > 50) accrualByBucket[b] = Math.round(amt * accrualFactor);
+    });
+
+    // ── Income accrual: normalized per-paycheck projection ──────────
+    // Strategy:
+    //   1. Gather individual paycheck transactions from trailing 12 months
+    //   2. Group by account/payee (one group per earner)
+    //   3. Detect pay cadence (bi-weekly ~14d, semi-monthly ~15d, monthly ~30d)
+    //   4. Remove outliers per earner using IQR method (bonuses, catch-up pay)
+    //   5. Normalized per-paycheck average from clean set
+    //   6. Project remaining pay dates this month, multiply by normalized avg
+    //   7. Subtract what's already arrived → pending income
+
+    const sp12 = spendable(txns);
+    const cutoff12 = new Date(today.getFullYear(), today.getMonth() - 12, 1).toISOString().slice(0,10);
+
+    // All paycheck-classified positive transactions in trailing 12 months
+    const allChecks = sp12.filter(t =>
+      t.amount > 0 &&
+      t.date >= cutoff12 &&
+      classifyTxn(t) === 'paycheck'
+    ).sort((a, b) => a.date.localeCompare(b.date));
+
+    // Group by payee+account as a proxy for individual earner
+    const earnerGroups = {};
+    allChecks.forEach(t => {
+      const key = (t.payee || 'payroll') + '|' + (t.account || '');
+      if (!earnerGroups[key]) earnerGroups[key] = [];
+      earnerGroups[key].push(t);
+    });
+
+    // IQR outlier removal: returns filtered array
+    function removeOutliers(vals) {
+      if (vals.length < 4) return vals; // too few to reliably remove outliers
+      const sorted = vals.slice().sort((a, b) => a - b);
+      const q1 = sorted[Math.floor(sorted.length * 0.25)];
+      const q3 = sorted[Math.floor(sorted.length * 0.75)];
+      const iqr = q3 - q1;
+      const lo  = q1 - 1.5 * iqr;
+      const hi  = q3 + 1.5 * iqr;
+      return vals.filter(v => v >= lo && v <= hi);
+    }
+
+    // Detect cadence from inter-arrival gaps (in days)
+    function detectCadence(txnList) {
+      if (txnList.length < 2) return null;
+      const gaps = [];
+      for (let i = 1; i < txnList.length; i++) {
+        const d1 = new Date(txnList[i-1].date);
+        const d2 = new Date(txnList[i].date);
+        gaps.push(Math.round((d2 - d1) / 86400000));
+      }
+      // Remove gap outliers (missed pay periods create double gaps)
+      const cleanGaps = removeOutliers(gaps);
+      if (!cleanGaps.length) return null;
+      const avgGap = cleanGaps.reduce((s, v) => s + v, 0) / cleanGaps.length;
+      if (avgGap >= 6  && avgGap <= 9)  return { type:'weekly',       period: 7  };
+      if (avgGap >= 12 && avgGap <= 17) return { type:'biweekly',     period: 14 };
+      if (avgGap >= 13 && avgGap <= 17) return { type:'semimonthly',  period: 15 };
+      if (avgGap >= 28 && avgGap <= 32) return { type:'monthly',      period: 30 };
+      return { type:'other', period: Math.round(avgGap) };
+    }
+
+    // For each earner: compute normalized avg and project remaining paychecks
+    let totalPendingPaycheck = 0;
+    const monthStart = new Date(parseInt(yr), parseInt(mo) - 1, 1);
+    const monthEnd   = new Date(parseInt(yr), parseInt(mo), 0);
+
+    Object.values(earnerGroups).forEach(earnerTxns => {
+      if (earnerTxns.length < 2) return;
+
+      const cadence = detectCadence(earnerTxns);
+      if (!cadence || cadence.period < 6) return;
+
+      // Normalized per-paycheck amount (outliers removed)
+      const rawAmounts = earnerTxns.map(t => t.amount);
+      const cleanAmounts = removeOutliers(rawAmounts);
+      if (!cleanAmounts.length) return;
+      const normalizedAvg = cleanAmounts.reduce((s, v) => s + v, 0) / cleanAmounts.length;
+
+      // Paychecks that have already arrived this month for this earner
+      const arrivedThisMonth = earnerTxns.filter(t => t.date.startsWith(selMonth));
+      const arrivedCount = arrivedThisMonth.length;
+      const arrivedTotal = arrivedThisMonth.reduce((s, t) => s + t.amount, 0);
+
+      // Project expected remaining pay dates this month
+      // Starting from the last known paycheck date, step forward by cadence period
+      // Count how many expected dates fall: after today AND within this month
+      const lastKnownDate = new Date(earnerTxns[earnerTxns.length - 1].date + 'T12:00:00');
+      let expectedRemaining = 0;
+      let cursor = new Date(lastKnownDate);
+      // Step forward from last known paycheck until past month end
+      for (let steps = 1; steps <= 10; steps++) {
+        cursor = new Date(cursor.getTime() + cadence.period * 86400000);
+        if (cursor > monthEnd) break;
+        if (cursor >= monthStart && cursor > today) {
+          expectedRemaining++;
+        }
+      }
+
+      // Pending = normalized avg × remaining paychecks not yet arrived
+      // Sanity check: don't project more than 3 paychecks per earner per month
+      const projectedRemaining = Math.min(expectedRemaining, 3);
+      if (projectedRemaining > 0 && daysRemain > 2) {
+        totalPendingPaycheck += normalizedAvg * projectedRemaining;
+      }
+    });
+
+    if (totalPendingPaycheck > 100) {
+      accrualByBucket['paycheck'] = Math.round(totalPendingPaycheck);
+    }
+
+    // other_inc and interest_inc: simple trailing-average approach
+    // (less predictable than paychecks — just use 6-month average minus arrived)
+    ['other_inc', 'interest_inc'].forEach(bk => {
+      const cutoff6 = new Date(today.getFullYear(), today.getMonth() - 6, 1).toISOString().slice(0,10);
+      const trailing = [];
+      for (let i = 1; i <= 6; i++) {
+        const mo = new Date(today.getFullYear(), today.getMonth() - i, 1).toISOString().slice(0,7);
+        const tot = sp12.filter(t => t.date.startsWith(mo) && t.amount > 0 && classifyTxn(t) === bk)
+                        .reduce((s,t) => s + t.amount, 0);
+        if (tot > 0) trailing.push(tot);
+      }
+      if (!trailing.length) return;
+      const cleanTrailing = removeOutliers(trailing);
+      if (!cleanTrailing.length) return;
+      const avg = cleanTrailing.reduce((s,v) => s+v, 0) / cleanTrailing.length;
+      const arrived = monthSp.filter(t => t.amount > 0 && classifyTxn(t) === bk)
+                             .reduce((s,t) => s + t.amount, 0);
+      const pending = avg - arrived;
+      if (pending > 50 && daysRemain > 2) {
+        accrualByBucket[bk] = Math.round(pending);
+      }
     });
   }
 
@@ -4428,14 +4574,15 @@ function renderIncomeStatement() {
   out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
 
   // Header
-  out += '<div style="display:grid;grid-template-columns:1fr 120px 110px;padding:9px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
+  out += '<div style="display:grid;grid-template-columns:1fr 110px 90px 100px;padding:9px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
   out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Category</div>';
   out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Actual</div>';
   if (hasAccrual) {
     out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--river);text-align:right;">+ Est.</div>';
     out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);text-align:right;">Projected</div>';
   } else {
-    out += '<div></div><div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Running</div>';
+    out += '<div></div>';
+    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Running</div>';
   }
   out += '</div>';
 
@@ -4469,21 +4616,25 @@ function renderIncomeStatement() {
     } else { out += '<div style="font-size:13px;color:var(--ink4);">—</div>'; }
     out += '</div>';
     // Estimated column
-    const secAccrual = (hasAccrual && sec.type === 'expense')
+    // secAccrual: works for both income and expense buckets
+    const secAccrual = hasAccrual
       ? sec.buckets.reduce((s, bk) => s + (accrualByBucket[bk] || 0), 0) : 0;
     out += '<div style="text-align:right;padding-left:4px;">';
     if (secAccrual > 0) {
-      out += '<div style="font-size:12px;font-weight:600;color:var(--river);font-family:var(--font-m);">+'+fmt(secAccrual)+'</div>';
-      out += '<div style="font-size:9px;color:var(--river);opacity:.7;">estimated</div>';
+      const estColor = sec.type === 'income' ? 'var(--positive)' : 'var(--river)';
+      const estSign  = sec.type === 'income' ? '+' : '+';
+      out += '<div style="font-size:12px;font-weight:600;color:'+estColor+';font-family:var(--font-m);">'+estSign+fmt(secAccrual)+'</div>';
+      out += '<div style="font-size:9px;color:'+estColor+';opacity:.7;">expected</div>';
     } else { out += '<div style="font-size:13px;color:var(--ink4);">—</div>'; }
     out += '</div>';
 
     out += '<div style="text-align:right;padding-left:4px;">';
     if (isInfoSection) {
       out += '<div style="font-size:9px;color:var(--river);font-style:italic;white-space:nowrap;">excl. totals</div>';
-    } else if (secAccrual > 0 && sec.type === 'expense') {
+    } else if (secAccrual > 0) {
       const projTotal = sec.total + secAccrual;
-      out += '<div style="font-size:13px;font-weight:700;color:var(--ink);font-family:var(--font-m);">'+sec.sign+fmt(projTotal)+'</div>';
+      const projColor = sec.type === 'income' ? 'var(--positive)' : 'var(--ink)';
+      out += '<div style="font-size:13px;font-weight:700;color:'+projColor+';font-family:var(--font-m);">'+sec.sign+fmt(projTotal)+'</div>';
       out += '<div style="font-size:9px;color:var(--ink4);">projected</div>';
     } else {
       out += '<div style="font-size:13px;font-weight:600;color:'+balColor+';font-family:var(--font-m);">'+(sec.runningBalance>=0?'+':'')+fmt(sec.runningBalance)+'</div>';
@@ -4502,7 +4653,7 @@ function renderIncomeStatement() {
         const bMeta = BUCKET_META[bk] || {label:bk, icon:'·'};
         const bOpen = !!isBucketOpen[bk];
 
-        const bkAccrualAmt = (hasAccrual && sec.type === 'expense') ? (accrualByBucket[bk] || 0) : 0;
+        const bkAccrualAmt = hasAccrual ? (accrualByBucket[bk] || 0) : 0;
         out += '<div data-bkid="'+bk+'" class="is-bk-row" style="display:grid;grid-template-columns:1fr 110px 90px 100px;padding:8px 16px 8px 40px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.012);cursor:pointer;">';
         out += '<div style="display:flex;align-items:center;gap:6px;">';
         out += chevron(bOpen, bk, 'toggleBucket');
@@ -4518,7 +4669,8 @@ function renderIncomeStatement() {
         // Estimated column
         out += '<div style="text-align:right;padding-left:4px;">';
         if (bkAccrualAmt > 0) {
-          out += '<div style="font-size:11px;font-weight:600;color:var(--river);font-family:var(--font-m);">+'+fmt(bkAccrualAmt)+'</div>';
+          const bkEstColor = sec.type === 'income' ? 'var(--positive)' : 'var(--river)';
+          out += '<div style="font-size:11px;font-weight:600;color:'+bkEstColor+';font-family:var(--font-m);">+'+fmt(bkAccrualAmt)+'</div>';
         } else {
           out += '<div style="font-size:11px;color:var(--ink4);">—</div>';
         }
@@ -4526,7 +4678,8 @@ function renderIncomeStatement() {
         // Projected Total column
         out += '<div style="text-align:right;padding-left:4px;">';
         if (bkAccrualAmt > 0) {
-          out += '<div style="font-size:12px;font-weight:700;color:var(--ink);font-family:var(--font-m);">'+fmt(bd.total + bkAccrualAmt)+'</div>';
+          const bkProjColor = sec.type === 'income' ? 'var(--positive)' : 'var(--ink)';
+          out += '<div style="font-size:12px;font-weight:700;color:'+bkProjColor+';font-family:var(--font-m);">'+fmt(bd.total + bkAccrualAmt)+'</div>';
         } else {
           out += '<div style="font-size:11px;color:var(--ink4);">—</div>';
         }
@@ -5609,6 +5762,130 @@ function recurringIncomeAvg(months) {
 // ════════════════════════════════════════════════
 // BOOT
 // ════════════════════════════════════════════════
+// ════════════════════════════════════════════════
+// FAMILY FINANCIALS
+// ════════════════════════════════════════════════
+function renderFinancials() {
+  const el = document.getElementById('financialsContent');
+  if (!el) return;
+
+  const yrSel = document.getElementById('finYear');
+  const sp    = spendable(txns);
+  if (!sp.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);font-family:var(--font-m);font-size:13px;">No data loaded</div>';
+    return;
+  }
+
+  // Populate year selector
+  const years = [...new Set(sp.map(t=>t.date.slice(0,4)))].sort().reverse();
+  if (yrSel && yrSel.options.length === 0) {
+    yrSel.innerHTML = '<option value="ttm">Trailing 12 Months</option>' +
+      years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  }
+  const selYr = yrSel ? yrSel.value : 'ttm';
+
+  // Filter transactions for the selected period
+  let filtered;
+  if (selYr === 'ttm') {
+    const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear()-1);
+    const cutStr = cutoff.toISOString().slice(0,10);
+    filtered = sp.filter(t => t.date >= cutStr);
+  } else {
+    filtered = sp.filter(t => t.date.startsWith(selYr));
+  }
+
+  const inc  = filtered.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+  const exp  = filtered.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+  const net  = inc - exp;
+  const rate = inc>0 ? (net/inc*100).toFixed(1) : '0.0';
+
+  // By bucket
+  const byBucket = {};
+  filtered.filter(t=>t.amount<0).forEach(t=>{
+    const b = classifyTxn(t);
+    const lbl = (BUCKET_META[b]&&BUCKET_META[b].label)||b;
+    if (!byBucket[lbl]) byBucket[lbl] = 0;
+    byBucket[lbl] += Math.abs(t.amount);
+  });
+  const topExp = Object.entries(byBucket).sort((a,b)=>b[1]-a[1]);
+
+  const periodLabel = selYr==='ttm' ? 'Trailing 12 Months' : selYr;
+  const mo = Math.max(1, selYr==='ttm' ? 12 : filtered.length ? [...new Set(filtered.map(t=>t.date.slice(0,7)))].length : 12);
+
+  el.innerHTML = `
+  <div style="max-width:900px;margin:0 auto;padding-bottom:40px;">
+
+    <!-- Cover block -->
+    <div style="padding:32px 0 24px;border-bottom:1px solid var(--line);margin-bottom:28px;">
+      <div style="font-family:var(--font-d);font-size:38px;font-weight:300;color:var(--ink);letter-spacing:-.02em;">Luka Family Office</div>
+      <div style="font-family:var(--font-ui);font-size:14px;color:var(--ink4);margin-top:6px;letter-spacing:.06em;text-transform:uppercase;">${periodLabel} · Pittsburgh, PA</div>
+    </div>
+
+    <!-- Executive KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;">
+      ${[
+        {label:'Annual Revenue',    val:fmtK(inc),  sub:fmt(inc/mo)+'/mo',    cls:'positive'},
+        {label:'Operating Expenses',val:fmtK(exp),  sub:fmt(exp/mo)+'/mo',    cls:''},
+        {label:'Net Surplus',       val:(net>=0?'+':'')+fmtK(net), sub:fmt(net/mo)+'/mo', cls:net>=0?'positive':'negative'},
+        {label:'Savings Rate',      val:rate+'%',   sub:'of gross income',    cls:parseFloat(rate)>=20?'positive':parseFloat(rate)>=10?'':'negative'},
+      ].map(k=>`
+        <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;">
+          <div style="font-size:9px;font-family:var(--font-ui);font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">${k.label}</div>
+          <div style="font-family:var(--font-d);font-size:28px;font-weight:300;color:var(--${k.cls||'ink'});letter-spacing:-.02em;">${k.val}</div>
+          <div style="font-size:11px;color:var(--ink4);margin-top:4px;">${k.sub}</div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Income Statement -->
+    <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:24px;">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--line);background:var(--lift);">
+        <div style="font-family:var(--font-d);font-size:20px;font-weight:400;color:var(--ink);">Income Statement</div>
+        <div style="font-size:11px;color:var(--ink4);margin-top:2px;">${periodLabel}</div>
+      </div>
+      <div style="padding:0 20px;">
+        <!-- Income row -->
+        <div style="display:grid;grid-template-columns:1fr 120px 100px;padding:14px 0;border-bottom:1px solid var(--line);">
+          <div style="font-size:13px;font-weight:600;color:var(--ink);">Total Revenue</div>
+          <div style="text-align:right;font-family:var(--font-m);font-size:13px;font-weight:600;color:var(--positive);">${fmt(inc)}</div>
+          <div style="text-align:right;font-size:11px;color:var(--ink4);">${fmt(inc/mo)}/mo</div>
+        </div>
+        <!-- Top expense categories -->
+        ${topExp.slice(0,8).map(([lbl,amt])=>`
+        <div style="display:grid;grid-template-columns:1fr 120px 100px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+          <div style="font-size:12px;color:var(--ink3);padding-left:16px;">${lbl}</div>
+          <div style="text-align:right;font-family:var(--font-m);font-size:12px;color:var(--ink2);">(${fmt(amt)})</div>
+          <div style="text-align:right;font-size:11px;color:var(--ink4);">${fmt(amt/mo)}/mo</div>
+        </div>`).join('')}
+        <!-- Net -->
+        <div style="display:grid;grid-template-columns:1fr 120px 100px;padding:14px 0;border-top:2px solid var(--line);margin-top:4px;">
+          <div style="font-size:13px;font-weight:700;color:var(--ink);">Net Surplus / (Deficit)</div>
+          <div style="text-align:right;font-family:var(--font-m);font-size:14px;font-weight:700;color:${net>=0?'var(--positive)':'var(--negative)'};">${net>=0?'+':''}${fmt(net)}</div>
+          <div style="text-align:right;font-size:11px;color:var(--ink4);">${fmt(net/mo)}/mo</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Ratios -->
+    <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--line);background:var(--lift);">
+        <div style="font-family:var(--font-d);font-size:20px;font-weight:400;color:var(--ink);">Key Financial Ratios</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;">
+        ${[
+          {label:'Savings Rate',       val:rate+'%',           bench:'Target ≥20%', ok:parseFloat(rate)>=20},
+          {label:'Expense Ratio',      val:(inc>0?(exp/inc*100).toFixed(1):0)+'%', bench:'Target <80%', ok:(exp/Math.max(inc,1))<0.8},
+          {label:'Housing Cost Ratio', val:(inc>0?((byBucket['Mortgage & Housing']||0)/inc*100).toFixed(1):0)+'%', bench:'Target <28%', ok:((byBucket['Mortgage & Housing']||0)/Math.max(inc,1))<0.28},
+        ].map((r,i)=>`
+          <div style="padding:20px;${i<2?'border-right:1px solid var(--line);':''}">
+            <div style="font-size:9px;font-family:var(--font-ui);font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">${r.label}</div>
+            <div style="font-family:var(--font-d);font-size:28px;font-weight:300;color:${r.ok?'var(--positive)':'var(--negative)'};">${r.val}</div>
+            <div style="font-size:10px;color:var(--ink4);margin-top:6px;">${r.bench}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   netWorthOverrides = loadNetWorthOverrides();
   if (loadData(false) && txns.length) {
