@@ -1878,15 +1878,22 @@ const QUICKEN_CAT_MAP = {
   'paycheck':                      'paycheck',
   'bonus':                         'paycheck',
   'other inc':                     'other_inc',
-  'interest inc':                  'other_inc',
-  '_divinc':                       'other_inc',   // Quicken dividend income
-  '_rlzdgain':                     'other_inc',   // Quicken realized gain
-  'interest income':               'other_inc',
-  'dividend income':               'other_inc',
+  'interest inc':                  'interest_inc',
+  '_divinc':                       'invest_inc',
+  '_rlzdgain':                     'invest_inc',
+  '_unrealzedgain':                'invest_inc',
+  'div income':                    'invest_inc',
+  'interest income':               'interest_inc',
+  'dividend income':               'invest_inc',
+  'cap gain distribution':         'invest_inc',
+  'miscellaneous income':          'other_inc',
   'rental income':                 'other_inc',
   'freelance':                     'other_inc',
   'consulting':                    'other_inc',
-  'fees & charges:bank fee':       'other_inc',   // reimbursements sometimes coded here
+  'fees & charges:bank fee':       'other_inc',
+  'credit card reward':            'cc_reward',
+  'cashback':                      'cc_reward',
+  'rewards':                       'cc_reward',
 
   // ── Fixed ────────────────────────────────────────────────────────
   'home:mortgage':                 'mortgage',
@@ -1979,6 +1986,24 @@ const QUICKEN_CAT_MAP = {
   'dues':                          'other',
   'tax:fed':                       'other',
   'tax:state':                     'other',
+  // Additional savings/retirement
+  '401k':                          'auto_save',
+  '401k contribution':             'auto_save',
+  '403b':                          'auto_save',
+  'retirement contribution':       'auto_save',
+  'ira contribution':              'auto_save',
+  'roth ira':                      'auto_save',
+  'hsa contribution':              'auto_save',
+  '529 contribution':              'auto_save',
+  // Additional expense categories
+  'tax:fed':                       'tax',
+  'tax:state':                     'tax',
+  'tax:property':                  'tax',
+  'charity':                       'gifts',
+  'bills & utilities:internet':    'internet',
+  'bills & utilities:cable tv':    'internet',
+  'bills & utilities:water':       'water',
+  'bills & utilities:gas & electric': 'electric',
   // '--split--' intentionally NOT in this map — handled by special case in classifyTxn
   'transfer':                      'other',
 };
@@ -1987,7 +2012,10 @@ const QUICKEN_CAT_MAP = {
 const KW_MAP = [
   // paycheck income
   ['paycheck',     ['direct deposit','payroll','employer','salary','wages','adp','gusto','paychex']],
-  ['other_inc',    ['interest','dividend','refund','reimbursement','rental','freelance','venmo','paypal','zelle']],
+  ['invest_inc',   ['dividend reinvest','cap gain','capital gain','fund distribution','etf distribution']],
+  ['cc_reward',    ['cashback reward','cash back reward','statement credit','rewards redemption','annual reward']],
+  ['interest_inc', ['interest earned','interest paid to you','savings interest','money market interest']],
+  ['other_inc',    ['refund','reimbursement','rental income','freelance','venmo received','paypal received','zelle received']],
   // savings
   ['auto_save',    ['savings account','investment account','fidelity','vanguard','schwab','401k','ira','roth','hsa','529','college fund']],
   // fixed
@@ -2058,8 +2086,18 @@ function classifyTxn(t) {
     if (keywords.some(kw => pay.includes(kw) || cat.includes(kw))) return bucket;
   }
 
-  // 5. Income heuristic
-  if (t.amount > 0) return 'other_inc';
+  // 5. Income heuristic — classify by account type
+  if (t.amount > 0) {
+    const acct = (t.account || '').toLowerCase();
+    if (/401k|403b|ira|roth|brokerage|fidelity|vanguard|schwab|investment|retirement|hsa|529/.test(acct)) {
+      return 'invest_inc';
+    }
+    if (/credit|visa|mastercard|amex|american express|discover|card|sapphire|freedom|venture|cash back|rewards|platinum/.test(acct)) {
+      if (Math.abs(t.amount) < 500) return 'cc_reward';
+      return 'other_inc';
+    }
+    return 'other_inc';
+  }
 
   return 'other';
 }
@@ -2067,9 +2105,10 @@ function classifyTxn(t) {
 
 function isTransfer(t) {
   if (t.isTransfer) return true;
-  const cat = (t.category || '').trim();
-  if (/^\[.*\]$/.test(cat)) return true;
+  const cat = (t.category || '').trim().toLowerCase();
+  if (/^\[.*\]$/.test(t.category || '')) return true;
   if (/^transfer$/i.test(cat)) return true;
+  if (cat.includes('credit card payment')) return true;
   return false;
 }
 
@@ -2086,9 +2125,23 @@ function spendable(arr) {
 const WATERFALL = [
   {
     id: 'income', label: 'Total Household Income', type: 'income',
-    sub: 'All money coming in — payroll, freelance, interest, refunds',
+    sub: 'Payroll, freelance, interest, and other cash deposits',
     color: 'var(--positive)', sign: '+',
-    buckets: ['paycheck','other_inc'],
+    buckets: ['paycheck','other_inc','interest_inc'],
+  },
+  {
+    id: 'invest_inc', label: 'Investment Income', type: 'info',
+    sub: 'Reinvested dividends and gains — not spendable cash',
+    color: 'var(--river)', sign: '',
+    note: 'Excluded from operating totals',
+    buckets: ['invest_inc'],
+  },
+  {
+    id: 'cc_reward', label: 'CC Rewards', type: 'info',
+    sub: 'Statement credits — not deposited cash',
+    color: 'var(--ink4)', sign: '',
+    note: 'Excluded from operating totals',
+    buckets: ['cc_reward'],
   },
   {
     id: 'auto_save', label: 'Pre-Committed Savings', type: 'saving',
@@ -2125,7 +2178,7 @@ const WATERFALL = [
     id: 'other', label: 'Other / Uncategorized', type: 'expense',
     sub: 'Review these — better Quicken categories will move them into the right section',
     color: 'var(--ink4)', sign: '−',
-    buckets: ['other'],
+    buckets: ['tax','other'],
   },
 ];
 
@@ -2133,6 +2186,10 @@ const WATERFALL = [
 const BUCKET_META = {
   paycheck:      { label:'Payroll & Wages',               icon:'💵' },
   other_inc:     { label:'Other Income',                  icon:'💰' },
+  interest_inc:  { label:'Interest Income',               icon:'🏦' },
+  invest_inc:    { label:'Investment Income',             icon:'📈' },
+  cc_reward:     { label:'CC Rewards & Cashback',         icon:'💳' },
+  tax:           { label:'Taxes',                         icon:'🏛' },
   auto_save:     { label:'Auto-Savings & Retirement',     icon:'🏦' },
   mortgage:      { label:'Mortgage & Housing',             icon:'🏠' },
   car:           { label:'Car Payments & Insurance',      icon:'🚗' },
@@ -2198,8 +2255,18 @@ function classifyTxn(t) {
     if (keywords.some(kw => pay.includes(kw) || cat.includes(kw))) return bucket;
   }
 
-  // 5. Income heuristic
-  if (t.amount > 0) return 'other_inc';
+  // 5. Income heuristic — classify by account type
+  if (t.amount > 0) {
+    const acct = (t.account || '').toLowerCase();
+    if (/401k|403b|ira|roth|brokerage|fidelity|vanguard|schwab|investment|retirement|hsa|529/.test(acct)) {
+      return 'invest_inc';
+    }
+    if (/credit|visa|mastercard|amex|american express|discover|card|sapphire|freedom|venture|cash back|rewards|platinum/.test(acct)) {
+      if (Math.abs(t.amount) < 500) return 'cc_reward';
+      return 'other_inc';
+    }
+    return 'other_inc';
+  }
 
   return 'other';
 }

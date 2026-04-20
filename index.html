@@ -1333,9 +1333,13 @@ function isCreditAcct(acctName) {
 // CC payments from checking to CC account = transfer (the CC charges are the real expenses).
 function isTransfer(t) {
   if (t.isTransfer) return true;
-  const cat = (t.category || '').trim();
-  if (/^\[.*\]$/.test(cat)) return true;
+  const cat = (t.category || '').trim().toLowerCase();
+  // Bracket syntax [AccountName] = Quicken transfer
+  if (/^\[.*\]$/.test(t.category || '')) return true;
+  // Explicit transfer categories
   if (/^transfer$/i.test(cat)) return true;
+  // CC payment categories
+  if (cat.includes('credit card payment')) return true;
   return false;
 }
 
@@ -3744,15 +3748,22 @@ const QUICKEN_CAT_MAP = {
   'paycheck':                      'paycheck',
   'bonus':                         'paycheck',
   'other inc':                     'other_inc',
-  'interest inc':                  'other_inc',
-  '_divinc':                       'other_inc',   // Quicken dividend income
-  '_rlzdgain':                     'other_inc',   // Quicken realized gain
-  'interest income':               'other_inc',
-  'dividend income':               'other_inc',
+  'interest inc':                  'interest_inc', // bank interest — accessible but minor
+  '_divinc':                       'invest_inc',   // Quicken dividend income — reinvested, not spendable
+  '_rlzdgain':                     'invest_inc',   // Quicken realized gain — reinvested
+  '_unrealzedgain':                'invest_inc',   // Quicken unrealized gain
+  'div income':                    'invest_inc',
+  'interest income':               'interest_inc',
+  'dividend income':               'invest_inc',
+  'cap gain distribution':         'invest_inc',
+  'miscellaneous income':          'other_inc',
   'rental income':                 'other_inc',
   'freelance':                     'other_inc',
   'consulting':                    'other_inc',
-  'fees & charges:bank fee':       'other_inc',   // reimbursements sometimes coded here
+  'fees & charges:bank fee':       'other_inc',   // reimbursements
+  'credit card reward':            'cc_reward',    // CC cashback / rewards — not real income
+  'cashback':                      'cc_reward',
+  'rewards':                       'cc_reward',
 
   // ── Fixed ────────────────────────────────────────────────────────
   'home:mortgage':                 'mortgage',
@@ -3845,6 +3856,58 @@ const QUICKEN_CAT_MAP = {
   'dues':                          'other',
   'tax:fed':                       'other',
   'tax:state':                     'other',
+  // Savings / retirement contributions (deducted from paycheck)
+  '401k':                          'auto_save',
+  '401k contribution':             'auto_save',
+  '403b':                          'auto_save',
+  'retirement contribution':       'auto_save',
+  'ira contribution':              'auto_save',
+  'roth ira':                      'auto_save',
+  'hsa contribution':              'auto_save',
+  '529 contribution':              'auto_save',
+  'savings transfer':              'auto_save',
+  'investment transfer':           'auto_save',
+  // Additional Quicken categories commonly used ──────────────────
+  // Auto & Transport
+  'auto & transport:service & parts': 'car',
+  'auto & transport:auto loan':    'car',
+  // Food & Dining
+  'food & dining:food & dining':   'groceries',
+  'food & dining:delivery':        'restaurants',
+  // Home
+  'home:garden':                   'household',
+  'home:security':                 'household',
+  'home:home emergency':           'household',
+  // Health
+  'health & fitness:life insurance': 'insurance',
+  'health & fitness:health insurance': 'insurance',
+  'health & fitness:sports & fitness': 'personal',
+  // Education
+  'education:books & supplies':    'education',
+  'education:student loan':        'education',
+  // Shopping
+  'shopping:gifts':                'gifts',
+  'shopping:toys':                 'household',
+  // Business
+  'business services':             'other_inc',
+  'business services:advertising': 'subscriptions',
+  // Taxes (not a real expense in household P&L context — tax withholding)
+  'tax:fed':                       'tax',
+  'tax:state':                     'tax',
+  'tax:property':                  'tax',
+  'tax:local':                     'tax',
+  // Misc
+  'charity':                       'gifts',
+  'charitable giving':             'gifts',
+  'donations':                     'gifts',
+  'clothing:clothing':             'clothing',
+  'home:cable tv':                 'internet',
+  'home:telephone':                'cell',
+  'bills & utilities:telephone':   'cell',
+  'bills & utilities:cable tv':    'internet',
+  'bills & utilities:internet':    'internet',
+  'bills & utilities:gas & electric': 'electric',
+  'bills & utilities:water':       'water',
   // '--split--' intentionally NOT in this map — handled by special case in classifyTxn
   'transfer':                      'other',
 };
@@ -3853,7 +3916,10 @@ const QUICKEN_CAT_MAP = {
 const KW_MAP = [
   // paycheck income
   ['paycheck',     ['direct deposit','payroll','employer','salary','wages','adp','gusto','paychex']],
-  ['other_inc',    ['interest','dividend','refund','reimbursement','rental','freelance','venmo','paypal','zelle']],
+  ['invest_inc',   ['dividend reinvest','cap gain','capital gain','fund distribution','etf distribution']],
+  ['cc_reward',    ['cashback reward','cash back reward','statement credit','rewards redemption','annual reward']],
+  ['interest_inc', ['interest earned','interest paid to you','savings interest','money market interest']],
+  ['other_inc',    ['refund','reimbursement','rental income','freelance','venmo received','paypal received','zelle received']],
   // savings
   ['auto_save',    ['savings account','investment account','fidelity','vanguard','schwab','401k','ira','roth','hsa','529','college fund']],
   // fixed
@@ -3934,8 +4000,21 @@ function classifyTxn(t) {
     if (keywords.some(kw => pay.includes(kw) || cat.includes(kw))) return bucket;
   }
 
-  // 5. Income heuristic
-  if (t.amount > 0) return 'other_inc';
+  // 5. Income heuristic — classify positive amounts by account type
+  if (t.amount > 0) {
+    const acct = (t.account || '').toLowerCase();
+    // Investment account credits = reinvested income, not spendable
+    if (/401k|403b|ira|roth|brokerage|fidelity|vanguard|schwab|investment|retirement|hsa|529/.test(acct)) {
+      return 'invest_inc';
+    }
+    // CC account credits = rewards/cashback/refunds applied to statement
+    if (/credit|visa|mastercard|amex|american express|discover|card|sapphire|freedom|venture|cash back|rewards|platinum/.test(acct)) {
+      // Small positive on CC = likely reward/cashback, not paycheck
+      if (Math.abs(t.amount) < 500) return 'cc_reward';
+      return 'other_inc'; // large CC credits could be refunds
+    }
+    return 'other_inc';
+  }
 
   return 'other';
 }
@@ -3945,9 +4024,23 @@ function classifyTxn(t) {
 const WATERFALL = [
   {
     id: 'income', label: 'Total Household Income', type: 'income',
-    sub: 'All money coming in — payroll, freelance, interest, refunds',
+    sub: 'Payroll, freelance, bank interest, and other cash deposits',
     color: 'var(--positive)', sign: '+',
-    buckets: ['paycheck','other_inc'],
+    buckets: ['paycheck','other_inc','interest_inc'],
+  },
+  {
+    id: 'invest_inc', label: 'Investment Income', type: 'info',
+    sub: 'Reinvested dividends and realized gains — not spendable cash',
+    color: 'var(--river)', sign: '',
+    note: 'Excluded from P&L totals — these do not flow through your checking account',
+    buckets: ['invest_inc'],
+  },
+  {
+    id: 'cc_reward', label: 'CC Rewards & Cashback', type: 'info',
+    sub: 'Statement credits applied to card balance — not deposited cash',
+    color: 'var(--ink4)', sign: '',
+    note: 'Excluded from P&L totals — offsets expenses on your card statement',
+    buckets: ['cc_reward'],
   },
   {
     id: 'auto_save', label: 'Pre-Committed Savings', type: 'saving',
@@ -3984,7 +4077,7 @@ const WATERFALL = [
     id: 'other', label: 'Other / Uncategorized', type: 'expense',
     sub: 'Review these — better Quicken categories will move them into the right section',
     color: 'var(--ink4)', sign: '−',
-    buckets: ['other'],
+    buckets: ['tax','other'],
   },
 ];
 
@@ -4014,6 +4107,10 @@ const BUCKET_META = {
   travel:        { label:'Travel & Vacation',             icon:'✈️' },
   subscriptions: { label:'Subscriptions & Streaming',    icon:'📺' },
   gifts:         { label:'Gifts & Giving',               icon:'🎁' },
+  interest_inc:  { label:'Interest Income',               icon:'🏦' },
+  invest_inc:    { label:'Investment Income',             icon:'📈' },
+  cc_reward:     { label:'CC Rewards & Cashback',         icon:'💳' },
+  tax:           { label:'Taxes',                         icon:'🏛' },
   other:         { label:'Uncategorized',                 icon:'❓' },
 };
 
@@ -4091,6 +4188,34 @@ function renderIncomeStatement() {
   // Classify all spendable txns for this month (accrual by purchase date)
   const monthSp = sp.filter(t => t.date.startsWith(selMonth));
 
+  // ── Accrual logic for partial months ─────────────────────────────
+  // If viewing the current month and we're not at month-end, project the remaining days
+  const todayStr = new Date().toISOString().slice(0,7); // YYYY-MM
+  const isCurrentMonth = selMonth === todayStr;
+  const today = new Date();
+  const daysInMonth  = new Date(parseInt(yr), parseInt(mo), 0).getDate();
+  const dayOfMonth   = isCurrentMonth ? today.getDate() : daysInMonth;
+  const daysRemain   = isCurrentMonth ? daysInMonth - dayOfMonth : 0;
+  const accrualFactor = isCurrentMonth && dayOfMonth > 0 ? daysRemain / dayOfMonth : 0;
+  const hasAccrual   = accrualFactor > 0;
+
+  // Build accrued estimates from current-month run rate by bucket
+  // Only accrue expense buckets (not income — paycheck timing is known)
+  const accrualByBucket = {};
+  if (hasAccrual) {
+    const expenseSp = monthSp.filter(t => t.amount < 0);
+    const tempBuckets = {};
+    expenseSp.forEach(t => {
+      const b = classifyTxn(t);
+      if (!tempBuckets[b]) tempBuckets[b] = 0;
+      tempBuckets[b] += Math.abs(t.amount);
+    });
+    // Only accrue buckets with meaningful spend (>$50 so far this month)
+    Object.entries(tempBuckets).forEach(([b, amt]) => {
+      if (amt > 50) accrualByBucket[b] = Math.round(amt * accrualFactor);
+    });
+  }
+
   // Savings transfers (auto-deposits to savings/investment accounts)
   const monthXfers = txns.filter(t =>
     t.date.startsWith(selMonth) && isTransfer(t) && t.amount < 0
@@ -4124,12 +4249,16 @@ function renderIncomeStatement() {
       const bTotal = bTxns.reduce((s,t) => s + Math.abs(t.amount), 0);
       if (bTotal > 0.01) { bucketData[bk] = {txns:bTxns, total:bTotal}; secTotal += bTotal; }
     });
+    // 'info' sections (invest_inc, cc_reward) are informational only — don't affect running balance
+    if (sec.type === 'info') {
+      return {...sec, bucketData, total:secTotal, runningBalance:running};
+    }
     if (sec.type === 'income') running = secTotal;
     else running -= secTotal;
     return {...sec, bucketData, total:secTotal, runningBalance:running};
   });
 
-  const totalIncome  = sectionData.find(s=>s.id==='income')?.total || 0;
+  const totalIncome  = sectionData.filter(s=>s.type==='income').reduce((s,sec)=>s+sec.total,0);
   const autoSave     = sectionData.find(s=>s.id==='auto_save')?.total || 0;
   const totalExp     = sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.total,0);
   const netSurplus   = totalIncome - autoSave - totalExp;
@@ -4159,6 +4288,19 @@ function renderIncomeStatement() {
 
   // ── Build income statement HTML ─────────────────────────────────
   let out = '';
+
+  // Accrual banner — only on current month
+  if (hasAccrual) {
+    const totalAccrued = Object.values(accrualByBucket).reduce((s,v)=>s+v,0);
+    out += '<div style="margin-bottom:8px;padding:8px 16px;background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.2);border-radius:var(--r-md);display:flex;align-items:center;gap:10px;">';
+    out += '<span style="font-size:14px;">📊</span>';
+    out += '<div style="font-size:12px;color:var(--river);line-height:1.5;">';
+    out += '<strong>Partial month view.</strong> ';
+    out += 'Day '+dayOfMonth+' of '+daysInMonth+'. ';
+    out += 'Estimated '+daysRemain+' days remaining. ';
+    out += '<em>'+fmt(totalAccrued)+' in estimated expenses shown in river blue</em> — based on current daily pace.';
+    out += '</div></div>';
+  }
 
   // Hero row
   out += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">';
@@ -4207,8 +4349,15 @@ function renderIncomeStatement() {
     const opacity  = sec.total < 0.01 ? 'opacity:.3;' : '';
     const secOnclick = hasBuckets ? ' data-sid="'+sec.id+'" class="is-sec-row"' : '';
 
-    // Section row
-    out += '<div'+secOnclick+' style="'+opacity+'display:grid;grid-template-columns:1fr 120px 110px;padding:11px 16px;border-bottom:1px solid var(--line);background:var(--lift);'+(hasBuckets?'cursor:pointer;':'')+'">';
+    // Section row — info sections (invest_inc, cc_reward) styled differently
+    const isInfoSection = sec.type === 'info';
+    const secBg = isInfoSection
+      ? 'background:rgba(96,165,250,.04);'
+      : 'background:var(--lift);';
+    const secBorderLeft = isInfoSection
+      ? 'border-left:3px solid rgba(96,165,250,.3);'
+      : '';
+    out += '<div'+secOnclick+' style="'+opacity+secBorderLeft+'display:grid;grid-template-columns:1fr 120px 110px;padding:11px 16px;border-bottom:1px solid var(--line);'+secBg+(hasBuckets?'cursor:pointer;':'')+'">';
     out += '<div style="display:flex;align-items:center;gap:6px;">';
     out += hasBuckets ? chevron(open, sec.id, 'toggleSection') : '<span style="width:20px;display:inline-block;"></span>';
     out += '<div><div style="font-size:13px;font-weight:600;color:var(--ink2);">'+sec.label+'</div>';
@@ -4216,14 +4365,28 @@ function renderIncomeStatement() {
 
     out += '<div style="text-align:right;padding-left:8px;">';
     if (sec.total > 0.01) {
+      // Show accrual if current month and this is an expense section
+      const secAccrual = hasAccrual && sec.type === 'expense'
+        ? sec.buckets.reduce((s, bk) => s + (accrualByBucket[bk] || 0), 0) : 0;
       out += '<div style="font-size:14px;font-weight:700;color:'+sec.color+';font-family:var(--font-m);">'+sec.sign+fmt(sec.total)+'</div>';
+      if (secAccrual > 0) {
+        out += '<div style="font-size:10px;color:var(--river);font-family:var(--font-m);" title="Estimated remainder of month based on current pace">+'+fmt(secAccrual)+' est.</div>';
+      }
       out += '<div style="font-size:9px;color:var(--ink4);">'+pct(sec.total)+'</div>';
     } else { out += '<div style="font-size:13px;color:var(--ink4);">—</div>'; }
     out += '</div>';
 
     out += '<div style="text-align:right;padding-left:8px;">';
-    out += '<div style="font-size:13px;font-weight:600;color:'+balColor+';font-family:var(--font-m);">'+(sec.runningBalance>=0?'+':'')+fmt(sec.runningBalance)+'</div>';
+    if (isInfoSection) {
+      out += '<div style="font-size:9px;color:var(--river);font-style:italic;white-space:nowrap;">excl. from totals</div>';
+    } else {
+      out += '<div style="font-size:13px;font-weight:600;color:'+balColor+';font-family:var(--font-m);">'+(sec.runningBalance>=0?'+':'')+fmt(sec.runningBalance)+'</div>';
+    }
     out += '</div></div>';
+    // Show note for info sections
+    if (isInfoSection && sec.note) {
+      out += '<div style="padding:5px 16px 8px 46px;font-size:11px;color:var(--river);font-style:italic;background:rgba(96,165,250,.04);border-bottom:1px solid var(--line);">ⓘ '+sec.note+'</div>';
+    }
 
     // Bucket rows (level 1 drilldown)
     if (open && hasBuckets) {
@@ -4233,7 +4396,7 @@ function renderIncomeStatement() {
         const bMeta = BUCKET_META[bk] || {label:bk, icon:'·'};
         const bOpen = !!isBucketOpen[bk];
 
-        out += '<div data-bkid="'+bk+'" class="is-bk-row" style="display:grid;grid-template-columns:1fr 120px 110px;padding:8px 16px 8px 36px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.012);cursor:pointer;">';
+        out += '<div data-bkid="'+bk+'" class="is-bk-row" style="display:grid;grid-template-columns:1fr 120px 110px;padding:8px 16px 8px 40px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.012);cursor:pointer;">';
         out += '<div style="display:flex;align-items:center;gap:6px;">';
         out += chevron(bOpen, bk, 'toggleBucket');
         out += '<span style="font-size:14px;">'+bMeta.icon+'</span>';
@@ -4242,6 +4405,8 @@ function renderIncomeStatement() {
 
         out += '<div style="text-align:right;padding-left:8px;">';
         out += '<div style="font-size:13px;font-weight:600;color:'+sec.color+';font-family:var(--font-m);">'+sec.sign+fmt(bd.total)+'</div>';
+        const bkAccrual = (hasAccrual && sec.type === 'expense') ? (accrualByBucket[bk] || 0) : 0;
+        if (bkAccrual > 0) { out += '<div style="font-size:10px;color:var(--river);font-family:var(--font-m);">+'+fmt(bkAccrual)+' est.</div>'; }
         out += pbar(bd.total, sec.color);
         out += '</div><div style="text-align:right;padding-left:8px;"></div></div>';
 
