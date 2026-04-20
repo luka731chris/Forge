@@ -2116,9 +2116,8 @@ function classifyTxn(t) {
     if (/401k|403b|ira|roth|brokerage|fidelity|vanguard|schwab|investment|retirement|hsa|529/.test(acct)) {
       return 'invest_inc';
     }
-    if (/credit|visa|mastercard|amex|american express|discover|card|sapphire|freedom|venture|cash back|rewards|platinum/.test(acct)) {
-      if (Math.abs(t.amount) < 500) return 'cc_reward';
-      return 'other_inc';
+    if (/credit|visa|mastercard|amex|american express|apple card|discover|card|sapphire|freedom|venture|cash back|rewards|platinum/.test(acct)) {
+      return 'cc_reward';
     }
     return 'other_inc';
   }
@@ -2130,9 +2129,12 @@ function classifyTxn(t) {
 function isTransfer(t) {
   if (t.isTransfer) return true;
   const cat = (t.category || '').trim().toLowerCase();
+  const pay = (t.payee   || '').trim().toLowerCase();
   if (/^\[.*\]$/.test(t.category || '')) return true;
   if (/^transfer$/i.test(cat)) return true;
   if (cat.includes('credit card payment')) return true;
+  if (t.amount < 0 && /apple card|apple\.com\/bill|creditcard payment|cc payment/i.test(pay)) return true;
+  if (t.amount < 0 && /^(payment|autopay|online payment|bill payment)$/i.test(pay.trim())) return true;
   return false;
 }
 
@@ -2285,9 +2287,8 @@ function classifyTxn(t) {
     if (/401k|403b|ira|roth|brokerage|fidelity|vanguard|schwab|investment|retirement|hsa|529/.test(acct)) {
       return 'invest_inc';
     }
-    if (/credit|visa|mastercard|amex|american express|discover|card|sapphire|freedom|venture|cash back|rewards|platinum/.test(acct)) {
-      if (Math.abs(t.amount) < 500) return 'cc_reward';
-      return 'other_inc';
+    if (/credit|visa|mastercard|amex|american express|apple card|discover|card|sapphire|freedom|venture|cash back|rewards|platinum/.test(acct)) {
+      return 'cc_reward';
     }
     return 'other_inc';
   }
