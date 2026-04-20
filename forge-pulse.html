@@ -886,7 +886,8 @@ body, .stat-val, .scat-amt {
 // Reads from same localStorage as desktop app
 // ════════════════════════════════════════════
 const DB       = 'forge_prod_v1';
-const DB_LEGACY = 'ledger_v3';
+const DEMO_KEY  = 'forge_demo_v1'; // demo data written by index.html
+const DB_LEGACY = 'forge_lean_v1'; // index.html legacy migration key
 const FBR         = 'ledger_fbr_v2';
 const SETTINGS_DB     = 'forge_settings_v2';
 const SETTINGS_LEGACY = 'forge_settings_v1';
@@ -900,6 +901,7 @@ const IMP_CATS = new Set(['Health & Beauty','Toys & Games','Books','Electronics 
 let txns = [], amzItems = [], accounts = [], goals = [];
 let nwHistory = {}, netWorthOverrides = {};
 let isDrillOpen = {}, isBucketOpen = {};
+let isDemoMode  = false;
 let pSort = { field:'date', dir:'desc' };
 
 function pSetSort(f) {
@@ -963,17 +965,39 @@ function loadFamily() {
 
 // ── DATA LOADERS ──
 function load() {
+  // Try all known storage keys in priority order:
+  // forge_prod_v1 (real data from index.html) → forge_demo_v1 (demo) → forge_lean_v1 (legacy)
   try {
-    let raw = localStorage.getItem(DB);
-    if (!raw || raw === '{}') raw = localStorage.getItem(DB_LEGACY);
-    const d = JSON.parse(raw || '{}');
-    txns     = d.txns     || [];
-    accounts = d.accounts || [];
-    amzItems = d.amzItems || txns.filter(t=>t.itemDetail&&t.amount<0).slice(0,200);
+    const prodRaw = localStorage.getItem(DB);
+    const demoRaw = localStorage.getItem(DEMO_KEY);
+    const legcRaw = localStorage.getItem(DB_LEGACY);
+
+    let raw       = prodRaw || demoRaw || legcRaw || null;
+    let loadedFrom = prodRaw ? 'prod' : demoRaw ? 'demo' : legcRaw ? 'legacy' : null;
+
+    if (!raw) return false;
+
+    const d = JSON.parse(raw);
+    if (!d || !Array.isArray(d.txns) || !d.txns.length) return false;
+
+    txns       = d.txns     || [];
+    accounts   = d.accounts || [];
+    isDemoMode = (loadedFrom === 'demo') || !!d.isDemoMode;
+
+    // amzItems: not stored separately by index.html — derive from itemDetail txns
+    amzItems = txns.filter(function(t){ return t.itemDetail && t.amount < 0; }).slice(0, 500);
+
     try { nwHistory         = JSON.parse(localStorage.getItem(NW_HIST_KEY)||'{}'); } catch(e2) { nwHistory={}; }
-    try { netWorthOverrides = JSON.parse(localStorage.getItem(NW_KEY)||'{}'); }     catch(e2) { netWorthOverrides={}; }
-    return txns.length > 0;
-  } catch(e) { return false; }
+    try { netWorthOverrides = JSON.parse(localStorage.getItem(NW_KEY)||'{}');       } catch(e2) { netWorthOverrides={}; }
+
+    if (loadedFrom !== 'prod') {
+      console.log('[Forge Pulse] Loaded from:', loadedFrom, '| txns:', txns.length);
+    }
+    return true;
+  } catch(e) {
+    console.warn('[Forge Pulse] load() error:', e);
+    return false;
+  }
 }
 
 // ════════════════════════════════════════════

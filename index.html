@@ -1093,9 +1093,13 @@ h1, h2, h3, .kpi-val, .display-num {
   </div>
   <div class="table-card">
     <div style="overflow-x:auto;max-height:calc(100vh - 280px);overflow-y:auto;">
-      <table><thead><tr>
-        <th>Date</th><th>Payee</th><th>Category</th><th>Account</th>
-        <th style="text-align:right">Amount</th><th>Type</th>
+      <table id="txnSortTable"><thead><tr>
+        <th onclick="txnSetSort('date')" style="cursor:pointer;user-select:none;" id="thDate">Date</th>
+        <th onclick="txnSetSort('payee')" style="cursor:pointer;user-select:none;" id="thPayee">Payee</th>
+        <th onclick="txnSetSort('category')" style="cursor:pointer;user-select:none;" id="thCat">Category</th>
+        <th onclick="txnSetSort('account')" style="cursor:pointer;user-select:none;" id="thAcct">Account</th>
+        <th onclick="txnSetSort('amount')" style="cursor:pointer;user-select:none;text-align:right;" id="thAmt">Amount</th>
+        <th>Type</th>
       </tr></thead>
       <tbody id="txnTable"></tbody></table>
     </div>
@@ -1234,28 +1238,43 @@ function applyChartDrill() {
   window._lastDrill = d;
   window._chartDrill = null;
 
-  // Reset all filters first
+  // Reset all filters
   const searchEl = document.getElementById('txnSearch');
   const catEl    = document.getElementById('txnCat');
   const acctEl   = document.getElementById('txnAcct');
   if (searchEl) searchEl.value = '';
   if (acctEl)   acctEl.value   = 'all';
+  if (catEl)    catEl.value    = 'all';
 
-  // Apply month filter via search — date field matching
+  // Month filter — labels come in as YY-MM (e.g. "25-04") or YYYY-MM
   if (d.month && searchEl) {
-    // labels are "25-04" format → convert to "2025-04" for date matching
     const prefix = /^\d{2}-\d{2}$/.test(d.month) ? '20' + d.month : d.month;
     searchEl.value = prefix;
-    // txnSub is updated later in renderTxns after filtering
   }
 
-  // Apply category filter
-  if (d.cat && catEl) {
-    for (let i = 0; i < catEl.options.length; i++) {
-      if (catEl.options[i].value === d.cat || catEl.options[i].text === d.cat) {
-        catEl.value = catEl.options[i].value; break;
+  // Category/bucket filter
+  // d.cat can be a bucket label (e.g. "Groceries") or raw Quicken cat
+  // Strategy: filter in renderTxns via _drillBucket if it's a bucket label
+  if (d.cat) {
+    // Try to match against raw Quicken category in dropdown first
+    let matched = false;
+    if (catEl) {
+      for (let i = 0; i < catEl.options.length; i++) {
+        if (catEl.options[i].value === d.cat || catEl.options[i].text === d.cat) {
+          catEl.value = catEl.options[i].value;
+          matched = true;
+          break;
+        }
       }
     }
+    // If not matched (it's a bucket label) — store for bucket-level filtering in renderTxns
+    if (!matched) {
+      window._drillBucket = d.cat; // renderTxns will check classifyTxn(t)
+    } else {
+      window._drillBucket = null;
+    }
+  } else {
+    window._drillBucket = null;
   }
 }
 
@@ -1290,6 +1309,18 @@ let nwHistory         = {};   // dateKey → { acctName: value } — all snapsho
 let range    = '1y';
 let catRange = '1y';
 let txnPage  = 0;
+let txnSort  = { field: 'date', dir: 'desc' };
+
+function txnSetSort(field) {
+  if (txnSort.field === field) {
+    txnSort.dir = txnSort.dir === 'desc' ? 'asc' : 'desc';
+  } else {
+    txnSort.field = field;
+    txnSort.dir   = (field === 'payee' || field === 'category' || field === 'account') ? 'asc' : 'desc';
+  }
+  txnPage = 0;
+  renderTxns();
+}
 const PAGE_SZ = 100;
 let pendingFiles = [];
 let donutDash = null;
@@ -1867,6 +1898,20 @@ function renderDashboard() {
     });
     const top = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,9);
     donutDash = makeDonut('dashDonut', top.map(([l])=>l), top.map(([,v])=>v), donutDash);
+    // Add click drill-through to donut segments
+    if (donutDash) {
+      const dashCanvas = document.getElementById('dashDonut');
+      if (dashCanvas) {
+        dashCanvas.style.cursor = 'pointer';
+        dashCanvas.onclick = function(evt) {
+          const pts = donutDash.getElementsAtEventForMode(evt, 'nearest', {intersect:true}, false);
+          if (pts.length) {
+            const lbl = donutDash.data.labels[pts[0].index];
+            drillFromChart(JSON.stringify({cat: lbl}));
+          }
+        };
+      }
+    }
   } catch(e) { console.warn('[Forge] donut error:', e.message); }
 
   // Merchants
@@ -1989,7 +2034,12 @@ function renderCategories() {
   const months = Math.max(1, Math.round((new Date()-rangeStart(catRange))/(1000*60*60*24*30)));
 
   svgHBar('catBarWrap', sorted.map(([l])=>l), sorted.map(([,v])=>v), COLORS);
-  try { donutCat = makeDonut('catDonut', sorted.slice(0,9).map(([l])=>l), sorted.slice(0,9).map(([,v])=>v), donutCat); } catch(e) { console.warn('[Forge] catDonut error:', e.message); }
+  try { donutCat = makeDonut('catDonut', sorted.slice(0,9).map(([l])=>l), sorted.slice(0,9).map(([,v])=>v), donutCat);
+      if (donutCat) {
+        const catC = document.getElementById('catDonut');
+        if (catC) { catC.style.cursor='pointer'; catC.onclick=function(evt){ const pts=donutCat.getElementsAtEventForMode(evt,'nearest',{intersect:true},false); if(pts.length){drillFromChart(JSON.stringify({cat:donutCat.data.labels[pts[0].index]}));} }; }
+      }
+    } catch(e) { console.warn('[Forge] catDonut error:', e.message); }
 
   document.getElementById('catTable').innerHTML = sorted.map(([cat,val]) =>
     `<tr><td>${cat}</td>
@@ -2034,6 +2084,48 @@ function renderTxns() {
 
   // Apply any pending chart drill-through filter
   applyChartDrill();
+
+  // Apply bucket-label drill filter (set by applyChartDrill for category charts)
+  if (window._drillBucket) {
+    const dBucket = window._drillBucket;
+    window._drillBucket = null;
+    src = src.filter(function(t) {
+      const b = classifyTxn(t);
+      const lbl = (BUCKET_META[b] && BUCKET_META[b].label) || b;
+      return lbl === dBucket;
+    });
+  }
+
+  // Apply sort
+  src = src.slice().sort((a, b) => {
+    const field = txnSort.field, dir = txnSort.dir;
+    let cmp = 0;
+    if (field === 'date')     cmp = (a.date||'').localeCompare(b.date||'');
+    if (field === 'payee')    cmp = (a.payee||'').toLowerCase().localeCompare((b.payee||'').toLowerCase());
+    if (field === 'category') cmp = (a.category||'').toLowerCase().localeCompare((b.category||'').toLowerCase());
+    if (field === 'account')  cmp = (a.account||'').toLowerCase().localeCompare((b.account||'').toLowerCase());
+    if (field === 'amount')   cmp = Math.abs(a.amount) - Math.abs(b.amount);
+    return dir === 'desc' ? -cmp : cmp;
+  });
+
+  // Update column header arrows
+  ['Date','Payee','Cat','Acct','Amt'].forEach(function(id) {
+    const el = document.getElementById('th'+id);
+    if (el) { const t = el.textContent.replace(/ [↑↓↕]$/,''); el.textContent = t; }
+  });
+  const activeThId = {date:'thDate',payee:'thPayee',category:'thCat',account:'thAcct',amount:'thAmt'}[txnSort.field];
+  if (activeThId) {
+    const activeEl = document.getElementById(activeThId);
+    if (activeEl) {
+      const t = activeEl.textContent.replace(/ [↑↓↕]$/,'');
+      activeEl.textContent = t + ' ' + (txnSort.dir === 'desc' ? '↓' : '↑');
+      activeEl.style.color = 'var(--gold)';
+    }
+  }
+  // Reset non-active header colors
+  ['thDate','thPayee','thCat','thAcct','thAmt'].forEach(function(id) {
+    if (id !== activeThId) { const el=document.getElementById(id); if(el) el.style.color=''; }
+  });
 
   const drillLabel = window._lastDrill ? ' · filtered from chart' : '';
   window._lastDrill = null;
@@ -4338,8 +4430,14 @@ function renderIncomeStatement() {
   // Header
   out += '<div style="display:grid;grid-template-columns:1fr 120px 110px;padding:9px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
   out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Category</div>';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Amount</div>';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Running</div></div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Actual</div>';
+  if (hasAccrual) {
+    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--river);text-align:right;">+ Est.</div>';
+    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);text-align:right;">Projected</div>';
+  } else {
+    out += '<div></div><div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Running</div>';
+  }
+  out += '</div>';
 
   sectionData.forEach(sec => {
     if (sec.id === 'other' && sec.total < 0.01) return;
@@ -4357,28 +4455,36 @@ function renderIncomeStatement() {
     const secBorderLeft = isInfoSection
       ? 'border-left:3px solid rgba(96,165,250,.3);'
       : '';
-    out += '<div'+secOnclick+' style="'+opacity+secBorderLeft+'display:grid;grid-template-columns:1fr 120px 110px;padding:11px 16px;border-bottom:1px solid var(--line);'+secBg+(hasBuckets?'cursor:pointer;':'')+'">';
+    out += '<div'+secOnclick+' style="'+opacity+secBorderLeft+'display:grid;grid-template-columns:1fr 110px 90px 100px;padding:11px 16px;border-bottom:1px solid var(--line);'+secBg+(hasBuckets?'cursor:pointer;':'')+'">';
     out += '<div style="display:flex;align-items:center;gap:6px;">';
     out += hasBuckets ? chevron(open, sec.id, 'toggleSection') : '<span style="width:20px;display:inline-block;"></span>';
     out += '<div><div style="font-size:13px;font-weight:600;color:var(--ink2);">'+sec.label+'</div>';
     out += '<div style="font-size:10px;color:var(--ink4);">'+sec.sub+'</div></div></div>';
 
+    // Actual column
     out += '<div style="text-align:right;padding-left:8px;">';
     if (sec.total > 0.01) {
-      // Show accrual if current month and this is an expense section
-      const secAccrual = hasAccrual && sec.type === 'expense'
-        ? sec.buckets.reduce((s, bk) => s + (accrualByBucket[bk] || 0), 0) : 0;
       out += '<div style="font-size:14px;font-weight:700;color:'+sec.color+';font-family:var(--font-m);">'+sec.sign+fmt(sec.total)+'</div>';
-      if (secAccrual > 0) {
-        out += '<div style="font-size:10px;color:var(--river);font-family:var(--font-m);" title="Estimated remainder of month based on current pace">+'+fmt(secAccrual)+' est.</div>';
-      }
       out += '<div style="font-size:9px;color:var(--ink4);">'+pct(sec.total)+'</div>';
     } else { out += '<div style="font-size:13px;color:var(--ink4);">—</div>'; }
     out += '</div>';
+    // Estimated column
+    const secAccrual = (hasAccrual && sec.type === 'expense')
+      ? sec.buckets.reduce((s, bk) => s + (accrualByBucket[bk] || 0), 0) : 0;
+    out += '<div style="text-align:right;padding-left:4px;">';
+    if (secAccrual > 0) {
+      out += '<div style="font-size:12px;font-weight:600;color:var(--river);font-family:var(--font-m);">+'+fmt(secAccrual)+'</div>';
+      out += '<div style="font-size:9px;color:var(--river);opacity:.7;">estimated</div>';
+    } else { out += '<div style="font-size:13px;color:var(--ink4);">—</div>'; }
+    out += '</div>';
 
-    out += '<div style="text-align:right;padding-left:8px;">';
+    out += '<div style="text-align:right;padding-left:4px;">';
     if (isInfoSection) {
-      out += '<div style="font-size:9px;color:var(--river);font-style:italic;white-space:nowrap;">excl. from totals</div>';
+      out += '<div style="font-size:9px;color:var(--river);font-style:italic;white-space:nowrap;">excl. totals</div>';
+    } else if (secAccrual > 0 && sec.type === 'expense') {
+      const projTotal = sec.total + secAccrual;
+      out += '<div style="font-size:13px;font-weight:700;color:var(--ink);font-family:var(--font-m);">'+sec.sign+fmt(projTotal)+'</div>';
+      out += '<div style="font-size:9px;color:var(--ink4);">projected</div>';
     } else {
       out += '<div style="font-size:13px;font-weight:600;color:'+balColor+';font-family:var(--font-m);">'+(sec.runningBalance>=0?'+':'')+fmt(sec.runningBalance)+'</div>';
     }
@@ -4396,19 +4502,35 @@ function renderIncomeStatement() {
         const bMeta = BUCKET_META[bk] || {label:bk, icon:'·'};
         const bOpen = !!isBucketOpen[bk];
 
-        out += '<div data-bkid="'+bk+'" class="is-bk-row" style="display:grid;grid-template-columns:1fr 120px 110px;padding:8px 16px 8px 40px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.012);cursor:pointer;">';
+        const bkAccrualAmt = (hasAccrual && sec.type === 'expense') ? (accrualByBucket[bk] || 0) : 0;
+        out += '<div data-bkid="'+bk+'" class="is-bk-row" style="display:grid;grid-template-columns:1fr 110px 90px 100px;padding:8px 16px 8px 40px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.012);cursor:pointer;">';
         out += '<div style="display:flex;align-items:center;gap:6px;">';
         out += chevron(bOpen, bk, 'toggleBucket');
         out += '<span style="font-size:14px;">'+bMeta.icon+'</span>';
         out += '<div><div style="font-size:12px;color:var(--ink2);">'+bMeta.label+'</div>';
         out += '<div style="font-size:10px;color:var(--ink4);">'+bd.txns.length+' transaction'+(bd.txns.length!==1?'s':'')+'</div></div></div>';
 
+        // Actual column
         out += '<div style="text-align:right;padding-left:8px;">';
         out += '<div style="font-size:13px;font-weight:600;color:'+sec.color+';font-family:var(--font-m);">'+sec.sign+fmt(bd.total)+'</div>';
-        const bkAccrual = (hasAccrual && sec.type === 'expense') ? (accrualByBucket[bk] || 0) : 0;
-        if (bkAccrual > 0) { out += '<div style="font-size:10px;color:var(--river);font-family:var(--font-m);">+'+fmt(bkAccrual)+' est.</div>'; }
         out += pbar(bd.total, sec.color);
-        out += '</div><div style="text-align:right;padding-left:8px;"></div></div>';
+        out += '</div>';
+        // Estimated column
+        out += '<div style="text-align:right;padding-left:4px;">';
+        if (bkAccrualAmt > 0) {
+          out += '<div style="font-size:11px;font-weight:600;color:var(--river);font-family:var(--font-m);">+'+fmt(bkAccrualAmt)+'</div>';
+        } else {
+          out += '<div style="font-size:11px;color:var(--ink4);">—</div>';
+        }
+        out += '</div>';
+        // Projected Total column
+        out += '<div style="text-align:right;padding-left:4px;">';
+        if (bkAccrualAmt > 0) {
+          out += '<div style="font-size:12px;font-weight:700;color:var(--ink);font-family:var(--font-m);">'+fmt(bd.total + bkAccrualAmt)+'</div>';
+        } else {
+          out += '<div style="font-size:11px;color:var(--ink4);">—</div>';
+        }
+        out += '</div></div>';
 
         // Transaction rows (level 2 drilldown)
         if (bOpen) {
@@ -4429,7 +4551,7 @@ function renderIncomeStatement() {
             const pKey = bk+'_p_'+payee.replace(/[^a-zA-Z0-9]/g,'_');
             const pOpen = !!isBucketOpen[pKey];
 
-            out += '<div data-bkid="'+pKey+'" class="is-bk-row" style="display:grid;grid-template-columns:1fr 120px 110px;padding:6px 16px 6px 56px;border-bottom:1px solid rgba(255,255,255,.03);background:rgba(0,0,0,.12);cursor:pointer;">';
+            out += '<div data-bkid="'+pKey+'" class="is-bk-row" style="display:grid;grid-template-columns:1fr 110px 90px 100px;padding:6px 16px 6px 56px;border-bottom:1px solid rgba(255,255,255,.03);background:rgba(0,0,0,.12);cursor:pointer;">';
             out += '<div style="display:flex;align-items:center;gap:5px;">';
             out += pd.txns.length > 1 ? chevron(pOpen, pKey, 'toggleBucket') : '<span style="width:20px;display:inline-block;"></span>';
             out += '<div>';
@@ -4501,7 +4623,7 @@ function renderIncomeStatement() {
   });
 
   // Net surplus row
-  out += '<div style="display:grid;grid-template-columns:1fr 120px 110px;padding:13px 16px;background:'+(netSurplus>=0?'rgba(45,212,191,.06)':'rgba(248,113,113,.06)')+';border-top:2px solid '+(netSurplus>=0?'rgba(45,212,191,.3)':'rgba(248,113,113,.3)')+';">';
+  out += '<div style="display:grid;grid-template-columns:1fr 110px 90px 100px;padding:13px 16px;background:'+(netSurplus>=0?'rgba(45,212,191,.06)':'rgba(248,113,113,.06)')+';border-top:2px solid '+(netSurplus>=0?'rgba(45,212,191,.3)':'rgba(248,113,113,.3)')+';">';
   out += '<div style="font-size:14px;font-weight:700;color:'+surpColor+';display:flex;align-items:center;gap:8px;">';
   out += (netSurplus>=0?'✓ Net Surplus':'⚠ Net Deficit');
   out += '<span style="font-size:10px;font-weight:400;color:var(--ink4);">'+(netSurplus>=0?'unallocated — deploy to savings or investments':'expenses exceed available income')+'</span></div>';
