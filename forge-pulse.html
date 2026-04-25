@@ -552,12 +552,7 @@ function load() {
   } catch(e) { return false; }
 }
 
-// ── PORTED FROM DESKTOP (P&L + Net Worth tabs) ─────────────────────────────
-function fmt(v)  { const a=Math.abs(v); if(!a)return '$0'; return a>=10 ? '$'+Math.round(a).toLocaleString('en-US') : '$'+a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-
-function fmtK(v) { return Math.abs(v)>=1000 ? '$'+(Math.abs(v)/1000).toFixed(1)+'K' : '$'+Math.abs(v).toFixed(0); }
-
-// ════════════════════════════════════════════════
+// ── PORTED FROM DESKTOP (P&L + Net Worth tabs) ─────────────────────────────// ════════════════════════════════════════════════
 // NAVIGATION
 // ════════════════════════════════════════════════
 
@@ -621,19 +616,24 @@ function classifyTxn(t) {
   //    The checking outflow is the FULL payment — exactly what we want for the IS.
   //    We classify by payee name since the category is lost.
   if (cat === '--split--') {
-    // Mortgage payments
-    if (/house loan|rocket mortgage|mortgage|pmi|escrow/i.test(pay)) return 'mortgage';
-    // Car loan payments (car payment split across principal + interest)
-    if (/palisade|hyundai|auto loan|car loan|hmf|chevrolet/i.test(pay)) return 'car';
-    // Investment account splits (retirement fund rebalancing — $0 entries, but just in case)
-    if (/retirement|fidelity|vanguard|401k|ira|lifepath|blackrock|dodge|t rowe/i.test(pay)) return 'auto_save';
-    // 529 college contributions
+    // Mortgage servicers
+    if (/house loan|rocket mortgage|pennymac|mr\.? cooper|nationstar|wells fargo home|chase home|quicken loan|loancare|freedom mortgage|newrez|loanDepot|flagstar|sps |select portfolio/i.test(pay)) return 'mortgage';
+    // Car loans
+    if (/palisade|hyundai|honda financial|hmf |gm financial|ford motor credit|toyota financial|nissan motor|chrysler capital|ally financial.*auto|auto loan|car loan|chevrolet/i.test(pay)) return 'car';
+    // Insurance
+    if (/liberty mutual|state farm|allstate|geico|nationwide|progressive|usaa|travelers|amica|erie insurance|auto-owners|farmers insurance|chubb|metlife|prudential.*ins|new york life|guardian.*ins/i.test(pay)) return 'insurance';
+    // Utilities
+    if (/duquesne light|peoples gas|equitable gas|columbia gas|dominion energy|atmos energy|pg&e|con ed|national grid|water authority|municipal auth|sewage|peco|pseg/i.test(pay)) return 'utilities';
+    // Internet / phone / cable
+    if (/comcast|xfinity|verizon|at&t|t-mobile|spectrum|cox communications|dish network|directv|frontier comm|centurylink|lumen/i.test(pay)) return 'subscriptions';
+    // Investment / retirement
+    if (/retirement|fidelity|vanguard|401k|ira|lifepath|blackrock|dodge|t rowe|schwab|merrill|empower|principal financial/i.test(pay)) return 'auto_save';
+    // 529
     if (/529|college|sam college|whitney college|will college/i.test(pay)) return 'auto_save';
-    // ATM withdrawals (cash)
+    // Payroll
+    if (/upmc|highmark|employer|payroll|adp |paychex|direct dep|gusto|bamboo/i.test(pay)) return 'paycheck';
+    // ATM
     if (/atm/i.test(pay)) return 'other';
-    // Salary splits (sometimes payroll is split into take-home + deductions)
-    if (/upmc|highmark|employer|payroll|direct dep/i.test(pay)) return 'paycheck';
-    // Fall through to payee keyword match below
     for (const [bucket, keywords] of KW_MAP) {
       if (keywords.some(kw => pay.includes(kw))) return bucket;
     }
@@ -1458,13 +1458,40 @@ function destroyPulseAna() {
 }
 
 // ── MOBILE P&L ───────────────────────────────────────────────────────────────
-function renderPulsePL() {
+function renderPulsePL(drillSection) {
   const el = document.getElementById('pl-out');
   const moSel = document.getElementById('plMonth');
   if (!el) return;
 
   const sp = spendable(txns);
   if (!sp.length) { el.innerHTML = '<div style="padding:40px 22px;text-align:center;color:var(--ink4);font-size:13px;">Import data to view P&L.</div>'; return; }
+
+  // If drilling to transaction list for a specific section
+  if (drillSection) {
+    const secTxns = sp.filter(t => classifyTxn(t) === drillSection.key && t.date.startsWith(drillSection.month));
+    const sorted = secTxns.slice().sort((a,b)=>b.date.localeCompare(a.date));
+    let out = `<div style="padding:0 0 100px;">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 22px;border-bottom:1px solid var(--line);background:var(--void);position:sticky;top:0;z-index:10;">
+        <button onclick="renderPulsePL()" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink3);padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;">← Back</button>
+        <div style="font-size:13px;font-weight:600;color:var(--ink);">${drillSection.label}</div>
+        <div style="margin-left:auto;font-size:11px;color:var(--ink4);">${sorted.length} transactions</div>
+      </div>`;
+    sorted.forEach(t => {
+      const isSplit = (t.category||'').toLowerCase()==='--split--';
+      let sub = isSplit ? 'Split payment' : (t.category||'');
+      out += `<div style="padding:10px 22px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.payee||'—'}</div>
+          <div style="font-size:10px;color:var(--ink4);margin-top:1px;">${t.date} · ${sub}</div>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:${t.amount>0?'var(--positive)':'var(--negative)'};font-family:var(--mono);white-space:nowrap;">${t.amount>0?'+':''}${fmtK(t.amount)}</div>
+      </div>`;
+    });
+    if (!sorted.length) out += '<div style="padding:30px 22px;text-align:center;color:var(--ink4);font-size:12px;">No transactions</div>';
+    out += '</div>';
+    el.innerHTML = out;
+    return;
+  }
 
   const months = [...new Set(sp.map(t=>t.date.slice(0,7)))].sort().reverse();
   if (moSel && moSel.options.length === 0) {
@@ -1508,8 +1535,10 @@ function renderPulsePL() {
   const surpColor = netSav >= 0 ? 'var(--positive)' : 'var(--negative)';
 
   // Track open state
-  if (!window._plOpen) window._plOpen = {};
-  const plOpen = window._plOpen;
+  if (!window._plOpen)    window._plOpen = {};
+  if (!window._plSortDir) window._plSortDir = 'desc'; // desc = largest first
+  const plOpen    = window._plOpen;
+  const plSortDir = window._plSortDir;
 
   let out = '';
 
@@ -1526,6 +1555,7 @@ function renderPulsePL() {
     <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
       <span style="font-size:10px;color:var(--ink4);font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;">Savings Rate</span>
       <span style="font-size:11px;font-weight:600;color:${savRate>=20?'var(--positive)':'var(--negative)'};">${savRate.toFixed(1)}%</span>
+      <button onclick="window._plSortDir=window._plSortDir==='desc'?'asc':'desc';renderPulsePL()" style="margin-left:auto;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);padding:3px 10px;border-radius:4px;font-size:10px;cursor:pointer;">${plSortDir==='desc'?'↓ Largest':'↑ Smallest'}</button>
     </div>
     <div style="height:4px;background:var(--lift);border-radius:2px;overflow:hidden;">
       <div style="height:100%;width:${rateW}%;background:${savRate>=20?'var(--positive)':'var(--negative)'};border-radius:2px;transition:width .4s;"></div>
@@ -1533,20 +1563,30 @@ function renderPulsePL() {
   </div>`;
 
   // Section rows
-  SECTIONS.forEach(sec => {
+  // Sort sections
+  const sortedSections = SECTIONS.slice().sort((a, b) => {
+    const ta = Math.abs(buckets[a.key]?.total || 0);
+    const tb = Math.abs(buckets[b.key]?.total || 0);
+    return plSortDir === 'desc' ? tb - ta : ta - tb;
+  });
+
+  sortedSections.forEach(sec => {
     const bd = buckets[sec.key];
     if (!bd.txns.length) return;
     const isOpen = !!plOpen[sec.key];
     const total = sec.isIncome ? bd.total : Math.abs(bd.total);
     const pct = totInc > 0 ? (total/totInc*100).toFixed(0) : 0;
 
-    out += `<div onclick="window._plOpen=window._plOpen||{};window._plOpen['${sec.key}']=!window._plOpen['${sec.key}'];renderPulsePL()" style="display:flex;align-items:center;padding:13px 22px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;gap:10px;">
-      <span style="font-size:14px;color:var(--ink3);transform:rotate(${isOpen?90:0}deg);display:inline-block;transition:transform .2s;">›</span>
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:500;color:var(--ink);">${sec.label}</div>
-        <div style="font-size:10px;color:var(--ink4);margin-top:1px;">${bd.txns.length} transactions · ${pct}% of income</div>
+    out += `<div style="display:flex;align-items:center;padding:13px 22px;border-bottom:1px solid rgba(255,255,255,.04);gap:10px;">
+      <div onclick="window._plOpen=window._plOpen||{};window._plOpen['${sec.key}']=!window._plOpen['${sec.key}'];renderPulsePL()" style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;">
+        <span style="font-size:14px;color:var(--ink3);transform:rotate(${isOpen?90:0}deg);display:inline-block;transition:transform .2s;">›</span>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:500;color:var(--ink);">${sec.label}</div>
+          <div style="font-size:10px;color:var(--ink4);margin-top:1px;">${bd.txns.length} transactions · ${pct}% of income</div>
+        </div>
       </div>
-      <div style="font-size:14px;font-weight:600;color:${sec.color};font-family:var(--mono);">${sec.isIncome?'':'-'}${fmtK(total)}</div>
+      <button onclick="renderPulsePL({key:'${sec.key}',label:'${sec.label}',month:selMonth})" style="font-size:10px;color:var(--river);background:transparent;border:1px solid rgba(96,165,250,.3);padding:3px 8px;border-radius:4px;cursor:pointer;flex-shrink:0;">→</button>
+      <div style="font-size:14px;font-weight:600;color:${sec.color};font-family:var(--mono);min-width:60px;text-align:right;">${sec.isIncome?'':'-'}${fmtK(total)}</div>
     </div>`;
 
     if (isOpen) {
@@ -1568,10 +1608,23 @@ function renderPulsePL() {
         </div>`;
         // Latest 3 transactions
         pd.txns.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3).forEach(t => {
-          out += `<div style="padding:6px 22px 6px 68px;border-bottom:1px solid rgba(255,255,255,.02);background:rgba(0,0,0,.25);display:flex;justify-content:space-between;">
-            <div style="font-size:10px;color:var(--ink4);">${t.date}</div>
-            <div style="font-size:10px;color:var(--ink3);font-family:var(--mono);">${fmtK(Math.abs(t.amount))}</div>
+          let txnLabel = t.date;
+          let txnSub = '';
+          if ((t.category||'').toLowerCase()==='--split--') {
+            if (/house loan|rocket mortgage|pennymac|mr\.? cooper|nationstar|wells fargo home|chase home|quicken loan|freedom mortgage|newrez|loandepot|flagstar/i.test(t.payee)) txnSub = 'Mortgage · principal + interest + escrow';
+            else if (/palisade|hyundai|honda financial|hmf |gm financial|ford motor credit|toyota financial|nissan motor|ally.*auto|auto loan|car loan/i.test(t.payee)) txnSub = 'Auto loan · principal + interest';
+            else if (/liberty mutual|state farm|allstate|geico|nationwide|progressive|usaa|travelers|amica|erie|farmers|chubb|metlife|prudential.*ins/i.test(t.payee)) txnSub = 'Insurance · split payment';
+            else if (/comcast|xfinity|verizon|at&t|t-mobile|spectrum|cox|dish|directv|frontier|centurylink/i.test(t.payee)) txnSub = 'Internet / phone';
+            else if (/duquesne|peoples gas|equitable gas|columbia gas|dominion|atmos|pg&e|con ed|national grid|water authority/i.test(t.payee)) txnSub = 'Utility · split payment';
+            else txnSub = 'Split payment';
+          }
+          out += `<div style="padding:6px 22px 6px 68px;border-bottom:1px solid rgba(255,255,255,.02);background:rgba(0,0,0,.25);">
+            <div style="display:flex;justify-content:space-between;">
+              <div style="font-size:10px;color:var(--ink4);">${txnLabel}${txnSub ? ' · <span style="color:var(--river);">'+txnSub+'</span>' : ''}</div>
+              <div style="font-size:10px;color:var(--ink3);font-family:var(--mono);">${fmtK(Math.abs(t.amount))}</div>
+            </div>
           </div>`;
+
         });
       });
     }

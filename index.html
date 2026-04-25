@@ -1059,8 +1059,9 @@ h1, h2, h3, .kpi-val, .display-num {
     </label>
   </div>
   <div class="table-card">
-    <div style="overflow-x:auto;max-height:calc(100vh - 280px);overflow-y:auto;">
-      <table><thead><tr>
+    <div id="txnDrillBanner" style="display:none;align-items:center;padding:8px 14px;background:rgba(245,168,0,.08);border-bottom:1px solid rgba(245,168,0,.2);gap:8px;"></div>
+    <div style="overflow-x:auto;max-height:calc(100vh - 300px);overflow-y:auto;">
+      <table><thead><tr id="txnHead">
         <th>Date</th><th>Payee</th><th>Category</th><th>Account</th>
         <th style="text-align:right">Amount</th><th>Type</th>
       </tr></thead>
@@ -1201,6 +1202,18 @@ function drillFromChart(drillJSON) {
   } catch(e) { console.warn('drillFromChart parse error', e); }
 }
 
+function drillToCategory(bucket, label) {
+  txnDrillCat = { bucket, label };
+  txnPage = 0;
+  showPage('transactions');
+}
+
+function clearDrill() {
+  txnDrillCat = null;
+  txnPage = 0;
+  renderTxns();
+}
+
 function applyChartDrill() {
   const d = window._chartDrill;
   if (!d) return;
@@ -1242,7 +1255,7 @@ const BUILD    = 'lean_4.0';        // bump to clear stale storage
 const BLD_KEY  = 'forge_build';
 
 // ── WORKER + SYNC ─────────────────────────────────────────────────────────────
-const WORKER_URL = 'https://forge-sid.luka731chris.workers.dev';  // ← paste your Cloudflare Worker URL here
+const WORKER_URL = '';  // ← paste your Cloudflare Worker URL here
 
 function getSyncToken() {
   let t = localStorage.getItem('forge_sync_token');
@@ -1311,7 +1324,9 @@ let netWorthOverrides = {};   // account name → { value, date, source } — cu
 let nwHistory         = {};   // dateKey → { acctName: value } — all snapshots for comparison
 let range    = '1y';
 let catRange = '1y';
-let isSort   = { field: 'date', dir: 'desc' };  // Income Statement sort state
+let isSort      = { field: 'date', dir: 'desc' };  // Income Statement sort state
+let txnSort     = { field: 'date', dir: 'desc' };  // Transactions sort state
+let txnDrillCat = null;  // { bucket, label } — set by IS drill-through, sticky until cleared
 let txnPage  = 0;
 const PAGE_SZ = 100;
 let pendingFiles = [];
@@ -2215,10 +2230,19 @@ function renderTxns() {
   let src = txns;
   if (!showXfer) src = spendable(src);
   if (acctF !== 'all') src = src.filter(t=>t.account===acctF);
-  if (catF  !== 'all') src = src.filter(t=>t.category===catF);
+
+  // Category dropdown filter (raw Quicken category)
+  if (catF !== 'all') src = src.filter(t=>t.category===catF);
+
+  // Sticky drill-through filter from IS (uses classifyTxn bucket)
+  if (txnDrillCat) src = src.filter(t => classifyTxn(t) === txnDrillCat.bucket);
+
   if (search) src = src.filter(t=>(t.payee||'').toLowerCase().includes(search)||(t.category||'').toLowerCase().includes(search)||(t.date||'').includes(search));
 
-  // Populate filters on first run
+  // Apply chart drill-through
+  applyChartDrill();
+
+  // Populate dropdowns on first run
   const acctSel = document.getElementById('txnAcct');
   if (acctSel && acctSel.options.length <= 1) {
     acctSel.innerHTML = '<option value="all">All Accounts</option>'+
@@ -2228,14 +2252,51 @@ function renderTxns() {
       cats.map(c=>`<option>${c}</option>`).join('');
   }
 
-  // Apply any pending chart drill-through filter
-  applyChartDrill();
+  // Sort
+  const sf = txnSort.field, sd = txnSort.dir;
+  src = src.slice().sort((a,b) => {
+    let va, vb;
+    if (sf==='date')    { va=a.date||''; vb=b.date||''; }
+    else if (sf==='payee')   { va=(a.payee||'').toLowerCase(); vb=(b.payee||'').toLowerCase(); }
+    else if (sf==='cat')     { va=(a.category||'').toLowerCase(); vb=(b.category||'').toLowerCase(); }
+    else if (sf==='acct')    { va=(a.account||'').toLowerCase(); vb=(b.account||'').toLowerCase(); }
+    else if (sf==='amount')  { va=a.amount; vb=b.amount; }
+    else { va=a.date||''; vb=b.date||''; }
+    if (va<vb) return sd==='asc'?-1:1;
+    if (va>vb) return sd==='asc'?1:-1;
+    return 0;
+  });
 
   const drillLabel = window._lastDrill ? ' · filtered from chart' : '';
   window._lastDrill = null;
-  document.getElementById('txnSub').textContent = src.length.toLocaleString()+' transactions'+drillLabel;
+  const drillInfo = txnDrillCat ? ` · <span style="color:var(--gold);">filtered: ${txnDrillCat.label}</span>` : '';
+  document.getElementById('txnSub').innerHTML = src.length.toLocaleString()+' transactions'+drillLabel+drillInfo;
+
+  // Drill banner
+  const bannerEl = document.getElementById('txnDrillBanner');
+  if (bannerEl) {
+    if (txnDrillCat) {
+      bannerEl.style.display = 'flex';
+      bannerEl.innerHTML = `<span style="font-size:12px;color:var(--ink2);">Showing <strong style="color:var(--gold);">${txnDrillCat.label}</strong> transactions</span><button onclick="clearDrill()" style="margin-left:auto;background:var(--lift);border:1px solid var(--line2);color:var(--ink3);padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer;">✕ Clear filter</button>`;
+    } else {
+      bannerEl.style.display = 'none';
+    }
+  }
+
+  // Sortable header helper
+  function thSort(field, label) {
+    const active = sf===field;
+    const arrow = active ? (sd==='asc'?'↑':'↓') : '<span style="opacity:.25;">↕</span>';
+    return `<th style="cursor:pointer;user-select:none;${active?'color:var(--gold);':''}" onclick="txnSort.field='${field}';txnSort.dir=(txnSort.field==='${field}'&&txnSort.dir==='desc')?'asc':'desc';txnSort.field='${field}';renderTxns()">${label} ${arrow}</th>`;
+  }
+
   const page = txnPage;
   const slice = src.slice(page*PAGE_SZ, (page+1)*PAGE_SZ);
+
+  document.getElementById('txnHead').innerHTML =
+    thSort('date','Date') + thSort('payee','Payee') + thSort('cat','Category') + thSort('acct','Account') +
+    `<th style="text-align:right;cursor:pointer;user-select:none;${sf==='amount'?'color:var(--gold);':''}" onclick="txnSort.field='amount';txnSort.dir=(txnSort.field==='amount'&&txnSort.dir==='desc')?'asc':'desc';txnSort.field='amount';renderTxns()">Amount ${sf==='amount'?(sd==='asc'?'↑':'↓'):'<span style=\'opacity:.25;\'>↕</span>'}</th>` +
+    '<th>Type</th>';
 
   document.getElementById('txnTable').innerHTML = slice.map(t => {
     const xfer = isTransfer(t);
@@ -2262,7 +2323,7 @@ function renderTxns() {
   } catch(e) {
     console.error('[Forge] renderTxns error:', e);
     const _el = document.getElementById('txnTable');
-    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderTxns: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error: ' + e.message + '</div>';
   }
 }
 
@@ -3944,19 +4005,25 @@ function classifyTxn(t) {
   //    The checking outflow is the FULL payment — exactly what we want for the IS.
   //    We classify by payee name since the category is lost.
   if (cat === '--split--') {
-    // Mortgage payments
-    if (/house loan|rocket mortgage|mortgage|pmi|escrow/i.test(pay)) return 'mortgage';
-    // Car loan payments (car payment split across principal + interest)
-    if (/palisade|hyundai|auto loan|car loan|hmf|chevrolet/i.test(pay)) return 'car';
-    // Investment account splits (retirement fund rebalancing — $0 entries, but just in case)
-    if (/retirement|fidelity|vanguard|401k|ira|lifepath|blackrock|dodge|t rowe/i.test(pay)) return 'auto_save';
+    // Mortgage servicers
+    if (/house loan|rocket mortgage|pennymac|mr\.? cooper|nationstar|wells fargo home|chase home|quicken loan|loancare|freedom mortgage|newrez|loanDepot|flagstar|sps |select portfolio/i.test(pay)) return 'mortgage';
+    // Car loans
+    if (/palisade|hyundai|honda financial|hmf |gm financial|ford motor credit|toyota financial|nissan motor|chrysler capital|ally financial.*auto|auto loan|car loan|chevrolet/i.test(pay)) return 'car';
+    // Insurance (home, auto, life, umbrella)
+    if (/liberty mutual|state farm|allstate|geico|nationwide|progressive|usaa|travelers|amica|erie insurance|auto-owners|farmers insurance|chubb|metlife|prudential.*ins|new york life|guardian.*ins/i.test(pay)) return 'insurance';
+    // Utilities (electric, gas, water)
+    if (/duquesne light|peoples gas|equitable gas|columbia gas|dominion energy|atmos energy|pg&e|con ed|national grid|water authority|municipal auth|sewage|peco|pseg/i.test(pay)) return 'utilities';
+    // Internet / phone / cable
+    if (/comcast|xfinity|verizon|at&t|t-mobile|spectrum|cox communications|dish network|directv|frontier comm|centurylink|lumen/i.test(pay)) return 'subscriptions';
+    // Investment / retirement splits
+    if (/retirement|fidelity|vanguard|401k|ira|lifepath|blackrock|dodge|t rowe|schwab|merrill|empower|principal financial/i.test(pay)) return 'auto_save';
     // 529 college contributions
     if (/529|college|sam college|whitney college|will college/i.test(pay)) return 'auto_save';
-    // ATM withdrawals (cash)
+    // Payroll processors (net pay split across deductions)
+    if (/upmc|highmark|employer|payroll|adp |paychex|direct dep|gusto|bamboo/i.test(pay)) return 'paycheck';
+    // ATM / cash
     if (/atm/i.test(pay)) return 'other';
-    // Salary splits (sometimes payroll is split into take-home + deductions)
-    if (/upmc|highmark|employer|payroll|direct dep/i.test(pay)) return 'paycheck';
-    // Fall through to payee keyword match below
+    // Fall through to payee keyword match
     for (const [bucket, keywords] of KW_MAP) {
       if (keywords.some(kw => pay.includes(kw))) return bucket;
     }
@@ -4214,7 +4281,9 @@ function renderIncomeStatement() {
     out += '<div'+secOnclick+' style="'+opacity+'display:grid;grid-template-columns:1fr 120px 110px;padding:11px 16px;border-bottom:1px solid var(--line);background:var(--lift);'+(hasBuckets?'cursor:pointer;':'')+'">';
     out += '<div style="display:flex;align-items:center;gap:6px;">';
     out += hasBuckets ? chevron(open, sec.id, 'toggleSection') : '<span style="width:20px;display:inline-block;"></span>';
-    out += '<div><div style="font-size:13px;font-weight:600;color:var(--ink2);">'+sec.label+'</div>';
+    out += '<div><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;font-weight:600;color:var(--ink2);">'+sec.label+'</span>'
+         + (sec.total>0.01?'<span onclick="event.stopPropagation();drillToCategory(\''+sec.id+'\',\''+sec.label+'\')" style="font-size:10px;color:var(--river);cursor:pointer;padding:1px 6px;border:1px solid rgba(96,165,250,.3);border-radius:3px;flex-shrink:0;" title="View transactions">→ txns</span>':'')
+         + '</div>';
     out += '<div style="font-size:10px;color:var(--ink4);">'+sec.sub+'</div></div></div>';
 
     out += '<div style="text-align:right;padding-left:8px;">';
@@ -4240,7 +4309,9 @@ function renderIncomeStatement() {
         out += '<div style="display:flex;align-items:center;gap:6px;">';
         out += chevron(bOpen, bk, 'toggleBucket');
         out += '<span style="font-size:14px;">'+bMeta.icon+'</span>';
-        out += '<div><div style="font-size:12px;color:var(--ink2);">'+bMeta.label+'</div>';
+        out += '<div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:12px;color:var(--ink2);">'+bMeta.label+'</span>'
+             + '<span onclick="event.stopPropagation();drillToCategory(\''+bk+'\',\''+bMeta.label+'\')" style="font-size:9px;color:var(--river);cursor:pointer;padding:1px 5px;border:1px solid rgba(96,165,250,.3);border-radius:3px;flex-shrink:0;">→</span>'
+             + '</div>';
         out += '<div style="font-size:10px;color:var(--ink4);">'+bd.txns.length+' transaction'+(bd.txns.length!==1?'s':'')+'</div></div></div>';
 
         out += '<div style="text-align:right;padding-left:8px;">';
@@ -4291,8 +4362,24 @@ function renderIncomeStatement() {
                 let sub2 = '';  // category · account meta line
 
                 if ((t.category||'').toLowerCase()==='--split--') {
-                  if (/house loan|rocket/i.test(t.payee)) disp = 'Rocket Mortgage';
-                  sub2 = 'Principal + interest + escrow · ' + t.account;
+                  const p = (t.payee||'').toLowerCase();
+                  if (/house loan|rocket mortgage|pennymac|mr\.? cooper|nationstar|wells fargo home|chase home|quicken loan|loancare|freedom mortgage|newrez|loandepot|flagstar|sps |select portfolio/i.test(t.payee)) {
+                    disp = t.payee; sub2 = 'Mortgage · principal + interest + escrow · ' + t.account;
+                  } else if (/palisade|hyundai|honda financial|hmf |gm financial|ford motor credit|toyota financial|nissan motor|chrysler capital|ally.*auto|auto loan|car loan|chevrolet/i.test(t.payee)) {
+                    disp = t.payee; sub2 = 'Auto loan · principal + interest · ' + t.account;
+                  } else if (/liberty mutual|state farm|allstate|geico|nationwide|progressive|usaa|travelers|amica|erie|auto-owners|farmers|chubb|metlife|prudential.*ins|new york life|guardian.*ins/i.test(t.payee)) {
+                    disp = t.payee; sub2 = 'Insurance · split payment · ' + t.account;
+                  } else if (/comcast|xfinity|verizon|at&t|t-mobile|spectrum|cox|dish network|directv|frontier|centurylink|lumen/i.test(t.payee)) {
+                    disp = t.payee; sub2 = 'Internet / phone · split payment · ' + t.account;
+                  } else if (/duquesne|peoples gas|equitable gas|columbia gas|dominion energy|atmos|pg&e|con ed|national grid|water authority|sewage|peco|pseg/i.test(t.payee)) {
+                    disp = t.payee; sub2 = 'Utility · split payment · ' + t.account;
+                  } else if (/retirement|fidelity|vanguard|401k|ira|lifepath|blackrock|t rowe|schwab|merrill|empower|principal financial/i.test(t.payee)) {
+                    disp = t.payee; sub2 = 'Retirement contribution · ' + t.account;
+                  } else if (/upmc|highmark|adp |paychex|gusto|payroll|direct dep/i.test(t.payee)) {
+                    disp = t.payee; sub2 = 'Payroll · net pay split · ' + t.account;
+                  } else {
+                    disp = t.payee || 'Split transaction'; sub2 = 'Split payment · ' + t.account;
+                  }
                 } else {
                   // Item detail: real item name from merchant CSVs (Amazon title, HD item, etc.)
                   if (t.itemDetail && t.itemDetail !== t.payee) {
