@@ -2018,7 +2018,7 @@ select option { background: var(--float); color: var(--ink2); }
     <div id="scanResult" style="display:none;margin-top:10px;"></div>
     <div id="scanWorkerNote" style="display:none;margin-top:10px;padding:12px 16px;background:rgba(167,139,250,.04);border:1px solid rgba(167,139,250,.12);border-radius:var(--r-sm);font-size:12px;color:var(--ink4);line-height:1.65;">
       <strong style="color:var(--purple);">Smart Scan requires the AI Worker.</strong>
-      Set <code style="font-family:var(--font-m);font-size:11px;color:var(--ink3);">WORKER_URL</code> in forge.html to your deployed Cloudflare Worker URL. See SID-SETUP.md for setup.
+      Set <code style="font-family:var(--font-m);font-size:11px;color:var(--ink3);">forge-sid.luka731chris.workers.dev</code> in forge.html to your deployed Cloudflare Worker URL. See SID-SETUP.md for setup.
     </div>
   </div>
 
@@ -3642,8 +3642,8 @@ function imageMime(fname) {
 }
 
 async function callSmartScan(file) {
-  if (!WORKER_URL) {
-    return { ok: false, reason: 'Smart Scan requires the AI worker URL. Set WORKER_URL in forge.html or ask your admin.' };
+  if (!forge-sid.luka731chris.workers.dev) {
+    return { ok: false, reason: 'Smart Scan requires the AI worker URL. Set forge-sid.luka731chris.workers.dev in forge.html or ask your admin.' };
   }
 
   try {
@@ -3707,7 +3707,7 @@ File name: "${fname}"`;
     }
 
     // Call the worker
-    const resp = await fetch(WORKER_URL + '/scan', {
+    const resp = await fetch(forge-sid.luka731chris.workers.dev + '/scan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: contentBlocks })
@@ -3837,7 +3837,7 @@ async function processAll() {
 
       // Unknown extension: try Smart Scan if worker is configured
       if (!validExts.includes(ext)) {
-        if (WORKER_URL) {
+        if (forge-sid.luka731chris.workers.dev) {
           if (lbl2) lbl2.textContent = 'Smart Scanning ' + f.name + '...';
           const sr = await callSmartScan(f);
           if (sr.ok && sr.transactions.length > 0) {
@@ -3865,7 +3865,7 @@ async function processAll() {
       
 
       // AI fallback: if zero rows parsed, try Smart Scan
-      if (parsed.length === 0 && WORKER_URL) {
+      if (parsed.length === 0 && forge-sid.luka731chris.workers.dev) {
         if (lbl2) lbl2.textContent = 'AI fallback for ' + f.name + '...';
         const sr = await callSmartScan(f);
         if (sr.ok && sr.transactions.length > 0) {
@@ -3879,7 +3879,7 @@ async function processAll() {
       }
 
       const reason = parsed.length === 0
-        ? (WORKER_URL
+        ? (forge-sid.luka731chris.workers.dev
             ? 'Could not parse automatically. Try the Smart Scan zone for AI-powered extraction.'
             : 'Could not parse. Ensure columns include Date, Payee, and Amount.')
         : null;
@@ -3927,7 +3927,7 @@ async function processAll() {
 function initSmartScan() {
   const note = document.getElementById('scanWorkerNote');
   const status = document.getElementById('scanWorkerStatus');
-  if (WORKER_URL) {
+  if (forge-sid.luka731chris.workers.dev) {
     if (status) {
       status.textContent = '✦ AI worker connected';
       status.style.color = 'var(--positive)';
@@ -3944,7 +3944,7 @@ function initSmartScan() {
 
 async function handleSmartScan(files) {
   if (!files || files.length === 0) return;
-  if (!WORKER_URL) {
+  if (!forge-sid.luka731chris.workers.dev) {
     const note = document.getElementById('scanWorkerNote');
     if (note) { note.style.display = 'block'; note.scrollIntoView({behavior:'smooth',block:'nearest'}); }
     showToast('⚠ Smart Scan needs the Worker URL — see SID-SETUP.md', 'warn');
@@ -6784,7 +6784,7 @@ const SETTINGS_KEY = 'forge_settings_v1';
 const FBR_KEY      = 'ledger_fbr_v2';
 // ── AI Smart Scan proxy URL — set this to your deployed Cloudflare Worker URL
 // Example: 'https://forge-sid.YOUR-SUBDOMAIN.workers.dev'
-const WORKER_URL   = '';  // ← paste your Worker URL here
+const forge-sid.luka731chris.workers.dev   = '';  // ← paste your Worker URL here
 // ── CLOUD SYNC ───────────────────────────────────────────────────────────────
 function getSyncToken() {
   let t = localStorage.getItem('forge_sync_token');
@@ -6796,14 +6796,14 @@ function getSyncToken() {
 }
 
 async function syncPush() {
-  if (!WORKER_URL) { alert('Sync not configured. Set WORKER_URL in index.html.'); return; }
+  if (!forge-sid.luka731chris.workers.dev) { alert('Sync not configured. Set forge-sid.luka731chris.workers.dev in index.html.'); return; }
   const token = getSyncToken();
   if (!token) return;
   const ledger   = JSON.parse(localStorage.getItem('ledger_v3') || 'null');
   const settings = JSON.parse(localStorage.getItem('forge_settings_v1') || 'null');
   if (!ledger) { alert('No data loaded. Import data before pushing.'); return; }
   try {
-    const resp = await fetch(WORKER_URL + '/sync/push', {
+    const resp = await fetch(forge-sid.luka731chris.workers.dev + '/sync/push', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Sync-Token': token },
       body: JSON.stringify({ ledger, settings })
@@ -6815,11 +6815,11 @@ async function syncPush() {
 }
 
 async function syncPull() {
-  if (!WORKER_URL) { alert('Sync not configured. Set WORKER_URL in index.html.'); return; }
+  if (!forge-sid.luka731chris.workers.dev) { alert('Sync not configured. Set forge-sid.luka731chris.workers.dev in index.html.'); return; }
   const token = getSyncToken();
   if (!token) return;
   try {
-    const resp = await fetch(WORKER_URL + '/sync/pull', {
+    const resp = await fetch(forge-sid.luka731chris.workers.dev + '/sync/pull', {
       headers: { 'X-Sync-Token': token }
     });
     const data = await resp.json();
