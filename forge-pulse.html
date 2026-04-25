@@ -344,15 +344,26 @@ body {
 
   <!-- ══ ALERTS / FURNACE ══ -->
   <div class="page" id="pg-alerts">
-    <div class="pg-head">
-      <div class="pg-title">The Furnace</div>
-      <div class="pg-sub" id="alerts-sub">Intelligence alerts · updated on import</div>
+    <div class="pg-head" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div>
+        <div class="pg-title">P&amp;L</div>
+        <div class="pg-sub">Monthly income statement · tap to drill down</div>
+      </div>
+      <select id="plMonth" onchange="renderPulsePL()" style="font-size:11px;padding:4px 8px;background:var(--lift);color:var(--ink);border:1px solid var(--line2);border-radius:5px;"></select>
     </div>
-    <div style="padding:16px 0;" id="alerts-out"></div>
+    <div id="pl-out" style="padding:0 0 100px;"></div>
   </div>
 
   <!-- ══ AMAZON WATCHLIST ══ -->
-  <div class="page" id="pg-amazon"><div id="amz-out"></div></div>
+  <div class="page" id="pg-amazon">
+    <div class="pg-head" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div>
+        <div class="pg-title">Net Worth</div>
+        <div class="pg-sub">Assets · Liabilities · Equity</div>
+      </div>
+    </div>
+    <div id="nw-out" style="padding:0 14px 100px;"></div>
+  </div>
 
   <!-- ══ ANALYTICS ══ -->
   <div class="page" id="pg-analytics">
@@ -458,13 +469,12 @@ body {
     The Gauge
   </button>
   <button class="tab-btn" id="tab-alerts" onclick="go('alerts')">
-    <div class="tab-dot" id="alertDot"></div>
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-    Furnace
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    P&amp;L
   </button>
   <button class="tab-btn" id="tab-amazon" onclick="go('amazon')">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-    Detail Lens
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    Net Worth
   </button>
   <button class="tab-btn" id="tab-analytics" onclick="go('analytics')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
@@ -540,6 +550,201 @@ function load() {
     accounts = d.accounts || [];
     return txns.length > 0 || amzItems.length > 0;
   } catch(e) { return false; }
+}
+
+// ── PORTED FROM DESKTOP (P&L + Net Worth tabs) ─────────────────────────────
+function fmt(v)  { const a=Math.abs(v); if(!a)return '$0'; return a>=10 ? '$'+Math.round(a).toLocaleString('en-US') : '$'+a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function fmtK(v) { return Math.abs(v)>=1000 ? '$'+(Math.abs(v)/1000).toFixed(1)+'K' : '$'+Math.abs(v).toFixed(0); }
+
+// ════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════
+
+function spendable(arr) {
+  return (arr || []).filter(t => !isTransfer(t));
+}
+
+// Income = non-transfer positive transactions (payroll, freelance, dividends, etc.)
+
+function isTransfer(t) {
+  if (t.isTransfer) return true;
+  const cat = (t.category || '').trim();
+  if (/^\[.*\]$/.test(cat)) return true;
+  if (/^transfer$/i.test(cat)) return true;
+  return false;
+}
+
+// "Spendable" = transactions that represent real money flowing to/from the outside world.
+// Excludes internal transfers. This is the accrual view:
+// CC charges on the CC account = real expenses (dated to purchase)
+// CC payment from checking = transfer (excluded)
+// So each dollar is counted exactly once, at the time of purchase.
+
+function detectAcctType(name) {
+  const n = (name || '').toLowerCase();
+  if (/credit|visa|mastercard|amex|american express|discover|card|cc|sapphire|freedom|venture|cash back|rewards|platinum/.test(n)) return 'credit';
+  if (/savings|save|marcus|ally|high.yield|money.market/.test(n)) return 'savings';
+  if (/401k|403b|ira|roth|brokerage|fidelity|vanguard|schwab|investment|retirement|hsa/.test(n)) return 'investment';
+  return 'checking';
+}
+
+
+function isCreditAcct(acctName) {
+  const meta = acctMeta[acctName];
+  if (meta) return meta.isCreditCard;
+  return detectAcctType(acctName) === 'credit';
+}
+
+// ════════════════════════════════════════════════
+// TRANSFER DETECTION
+// ════════════════════════════════════════════════
+// A transfer is an internal move between accounts — NOT a real expense.
+// Quicken marks these with [AccountName] bracket syntax in the category.
+// CC payments from checking to CC account = transfer (the CC charges are the real expenses).
+
+function classifyTxn(t) {
+  const cat  = (t.category || '').toLowerCase().trim();
+  const pay  = (t.payee    || '').toLowerCase().trim();
+
+  // 1. Direct Quicken category match — highest trust, exact or substring
+  if (QUICKEN_CAT_MAP[cat]) return QUICKEN_CAT_MAP[cat];
+
+  // 2. Partial match: Quicken subcategory hierarchy (e.g. "Food & Dining:Restaurants" matches "food & dining")
+  for (const [qcat, bucket] of Object.entries(QUICKEN_CAT_MAP)) {
+    if (cat.includes(qcat)) return bucket;
+  }
+
+  // 3. Special handling for Quicken --Split-- transactions.
+  //    Quicken uses --Split-- when a single payment is split across multiple
+  //    categories (e.g. mortgage = principal + interest + escrow).
+  //    The checking outflow is the FULL payment — exactly what we want for the IS.
+  //    We classify by payee name since the category is lost.
+  if (cat === '--split--') {
+    // Mortgage payments
+    if (/house loan|rocket mortgage|mortgage|pmi|escrow/i.test(pay)) return 'mortgage';
+    // Car loan payments (car payment split across principal + interest)
+    if (/palisade|hyundai|auto loan|car loan|hmf|chevrolet/i.test(pay)) return 'car';
+    // Investment account splits (retirement fund rebalancing — $0 entries, but just in case)
+    if (/retirement|fidelity|vanguard|401k|ira|lifepath|blackrock|dodge|t rowe/i.test(pay)) return 'auto_save';
+    // 529 college contributions
+    if (/529|college|sam college|whitney college|will college/i.test(pay)) return 'auto_save';
+    // ATM withdrawals (cash)
+    if (/atm/i.test(pay)) return 'other';
+    // Salary splits (sometimes payroll is split into take-home + deductions)
+    if (/upmc|highmark|employer|payroll|direct dep/i.test(pay)) return 'paycheck';
+    // Fall through to payee keyword match below
+    for (const [bucket, keywords] of KW_MAP) {
+      if (keywords.some(kw => pay.includes(kw))) return bucket;
+    }
+    return 'other';
+  }
+
+  // 4. Payee keyword match
+  for (const [bucket, keywords] of KW_MAP) {
+    if (keywords.some(kw => pay.includes(kw) || cat.includes(kw))) return bucket;
+  }
+
+  // 5. Income heuristic
+  if (t.amount > 0) return 'other_inc';
+
+  return 'other';
+}
+
+// ── Section definitions ──────────────────────────────────────────
+// Waterfall order: income → auto_save → fixed → variable → discretionary → surplus
+const WATERFALL = [
+  {
+    id: 'income', label: 'Total Household Income', type: 'income',
+    sub: 'All money coming in — payroll, freelance, interest, refunds',
+    color: 'var(--positive)', sign: '+',
+    buckets: ['paycheck','other_inc'],
+  },
+  {
+    id: 'auto_save', label: 'Pre-Committed Savings', type: 'saving',
+    sub: 'Auto-deposits to savings, 401k, IRA, HSA, 529 — money set aside before you spend',
+    color: '#34D399', sign: '−',
+    buckets: ['auto_save'],
+    note: 'These are intentional — they leave checking automatically on payday.',
+  },
+  {
+    id: 'fixed', label: 'Fixed Living Expenses', type: 'expense',
+    sub: 'Mortgage (full payment incl. principal+interest+escrow), car loans, insurance, education, childcare',
+    color: '#60A5FA', sign: '−',
+    buckets: ['mortgage','car','education','insurance','childcare'],
+  },
+  {
+    id: 'utilities', label: 'Utilities & Communications', type: 'expense',
+    sub: 'Electric, gas, water, internet, cell — largely fixed month to month',
+    color: '#A78BFA', sign: '−',
+    buckets: ['electric','gas_util','water','internet','cell'],
+  },
+  {
+    id: 'necessities', label: 'Variable Necessities', type: 'expense',
+    sub: 'Groceries, gas, healthcare — must-haves but amounts vary by your choices',
+    color: '#F5A800', sign: '−',
+    buckets: ['groceries','gas_car','transit','healthcare'],
+  },
+  {
+    id: 'discretionary', label: 'Discretionary Spending', type: 'expense',
+    sub: 'Restaurants, entertainment, shopping, subscriptions, travel — your biggest lever for change',
+    color: '#E879F9', sign: '−',
+    buckets: ['restaurants','entertainment','household','personal','clothing','travel','subscriptions','gifts'],
+  },
+  {
+    id: 'other', label: 'Other / Uncategorized', type: 'expense',
+    sub: 'Review these — better Quicken categories will move them into the right section',
+    color: 'var(--ink4)', sign: '−',
+    buckets: ['other'],
+  },
+];
+
+const BUCKET_META = {
+  paycheck:      { label:'Payroll & Wages',               icon:'💵' },
+  other_inc:     { label:'Other Income',                  icon:'💰' },
+  auto_save:     { label:'Auto-Savings & Retirement',     icon:'🏦' },
+  mortgage:      { label:'Mortgage & Housing',             icon:'🏠' },
+  car:           { label:'Car Payments & Insurance',      icon:'🚗' },
+  education:     { label:'Education & Tuition',           icon:'🎓' },
+  insurance:     { label:'Health & Life Insurance',       icon:'🛡️' },
+  childcare:     { label:'Childcare & Activities',        icon:'👶' },
+  electric:      { label:'Electric',                      icon:'⚡' },
+  gas_util:      { label:'Gas / Heat',                    icon:'🔥' },
+  water:         { label:'Water & Sewer',                 icon:'💧' },
+  internet:      { label:'Internet / Cable',              icon:'📡' },
+  cell:          { label:'Cell Phones',                   icon:'📱' },
+  groceries:     { label:'Groceries',                     icon:'🛒' },
+  gas_car:       { label:'Vehicle Fuel',                  icon:'⛽' },
+  transit:       { label:'Parking, Tolls & Transit',      icon:'🚌' },
+  healthcare:    { label:'Healthcare & Pharmacy',         icon:'⚕️' },
+  restaurants:   { label:'Restaurants & Dining',          icon:'🍕' },
+  entertainment: { label:'Entertainment & Recreation',    icon:'🎭' },
+  household:     { label:'Household & Shopping',          icon:'🔧' },
+  personal:      { label:'Personal Care & Wellness',      icon:'💅' },
+  clothing:      { label:'Clothing & Accessories',        icon:'👕' },
+  travel:        { label:'Travel & Vacation',             icon:'✈️' },
+  subscriptions: { label:'Subscriptions & Streaming',    icon:'📺' },
+  gifts:         { label:'Gifts & Giving',               icon:'🎁' },
+  other:         { label:'Uncategorized',                 icon:'❓' },
+};
+
+// ── Drilldown state ──────────────────────────────────────────────
+let isDrillOpen = {};  // { sectionId: true/false }
+let isBucketOpen = {}; // { bucketKey: true/false }
+
+
+function balanceAsOfDate(acct, asOfDate) {
+  // Find the closest nwHistory snapshot on or before asOfDate
+  const snapDates = Object.keys(nwHistory).filter(d => d <= asOfDate).sort();
+  if (snapDates.length > 0) {
+    const snap = nwHistory[snapDates[snapDates.length - 1]];
+    if (snap[acct] !== undefined) return { value: snap[acct], source: 'snapshot' };
+  }
+  // Fall back: sum transactions up to asOfDate
+  const bal = txns
+    .filter(t => t.account === acct && t.date <= asOfDate)
+    .reduce((s, t) => s + t.amount, 0);
+  return { value: bal, source: 'transactions' };
 }
 
 // ════════════════════════════════════════════
@@ -619,8 +824,8 @@ function go(tab) {
   active = tab;
   const safe = function(fn, lbl) { try { fn(); } catch(e) { console.error('Pulse '+lbl+' error:', e); } };
   if (tab==='snapshot') safe(function(){ renderSnapshot(); }, 'snapshot');
-  if (tab==='alerts')   safe(function(){ renderAlerts(); }, 'alerts');
-  if (tab==='amazon')   safe(function(){ renderAmazon(); }, 'amazon');
+  if (tab==='alerts')   safe(function(){ renderPulsePL(); }, 'pl');
+  if (tab==='amazon')   safe(function(){ renderPulseNW(); }, 'nw');
   if (tab==='analytics') safe(function(){ renderPulseAnalytics(); }, 'analytics');
   if (tab==='chat' && !chatReady) { chatReady=true; safe(function(){ sendWelcome(); }, 'welcome'); }
 }
@@ -1082,7 +1287,7 @@ NEVER: Say "I cannot" or "I apologize." Never be vague when data is available. $
 // Replace this URL with your Cloudflare Worker URL after setup.
 // See forge_worker.js for setup instructions (takes ~10 min, free).
 // Until configured, $id will show a setup prompt instead of an error.
-const forge-sid.luka731chris.workers.dev = 'forge-sid.luka731chris.workers.dev_HERE';
+const SID_PROXY_URL = 'WORKER_URL_HERE';
 // ── CLOUD SYNC ───────────────────────────────────────────────────────────────
 function getSyncToken() {
   let t = localStorage.getItem('forge_sync_token');
@@ -1094,14 +1299,14 @@ function getSyncToken() {
 }
 
 async function syncPush() {
-  if (!forge-sid.luka731chris.workers.dev || forge-sid.luka731chris.workers.dev === 'forge-sid.luka731chris.workers.dev_HERE') { alert('Sync not configured. Set forge-sid.luka731chris.workers.dev in forge-pulse.html.'); return; }
+  if (!SID_PROXY_URL || SID_PROXY_URL === 'WORKER_URL_HERE') { alert('Sync not configured. Set SID_PROXY_URL in forge-pulse.html.'); return; }
   const token = getSyncToken();
   if (!token) return;
   const ledger   = JSON.parse(localStorage.getItem('ledger_v3') || 'null');
   const settings = JSON.parse(localStorage.getItem('forge_settings_v1') || 'null');
   if (!ledger) { alert('No data loaded. Import data before pushing.'); return; }
   try {
-    const resp = await fetch(forge-sid.luka731chris.workers.dev + '/sync/push', {
+    const resp = await fetch(SID_PROXY_URL + '/sync/push', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Sync-Token': token },
       body: JSON.stringify({ ledger, settings })
@@ -1113,11 +1318,11 @@ async function syncPush() {
 }
 
 async function syncPull() {
-  if (!forge-sid.luka731chris.workers.dev || forge-sid.luka731chris.workers.dev === 'forge-sid.luka731chris.workers.dev_HERE') { alert('Sync not configured. Set forge-sid.luka731chris.workers.dev in forge-pulse.html.'); return; }
+  if (!SID_PROXY_URL || SID_PROXY_URL === 'WORKER_URL_HERE') { alert('Sync not configured. Set SID_PROXY_URL in forge-pulse.html.'); return; }
   const token = getSyncToken();
   if (!token) return;
   try {
-    const resp = await fetch(forge-sid.luka731chris.workers.dev + '/sync/pull', {
+    const resp = await fetch(SID_PROXY_URL + '/sync/pull', {
       headers: { 'X-Sync-Token': token }
     });
     const data = await resp.json();
@@ -1132,7 +1337,7 @@ async function syncPull() {
 
 async function callSid(msg) {
   // Check if proxy has been configured
-  if (!forge-sid.luka731chris.workers.dev || forge-sid.luka731chris.workers.dev === 'forge-sid.luka731chris.workers.dev_HERE') {
+  if (!SID_PROXY_URL || SID_PROXY_URL === 'WORKER_URL_HERE') {
     return getSidSetupMessage();
   }
 
@@ -1148,7 +1353,7 @@ async function callSid(msg) {
   const timeout = setTimeout(() => controller.abort(), 30000);
 
   try {
-    const r = await fetch(forge-sid.luka731chris.workers.dev, {
+    const r = await fetch(SID_PROXY_URL, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
@@ -1196,7 +1401,7 @@ STEP 4 — Add your API key to the Worker
 On the Worker detail page, click Settings → Variables and Secrets → Add. Set the type to Secret. Name it ANTHROPIC_API_KEY. Paste your sk-ant- key as the value. Click Deploy.
 
 STEP 5 — Update Forge Pulse
-Open forge-pulse.html in a text editor. Find the line that says forge-sid.luka731chris.workers.dev_HERE and replace it with your Worker URL — something like https://forge-sid.yourname.workers.dev. Save the file and upload it to GitHub in place of the old version.
+Open forge-pulse.html in a text editor. Find the line that says WORKER_URL_HERE and replace it with your Worker URL — something like https://forge-sid.yourname.workers.dev. Save the file and upload it to GitHub in place of the old version.
 
 Once those five steps are done, come back here and I will be fully ready. The snapshot, alerts, and Amazon watchlist all work right now — no setup needed for those.`;
 }
@@ -1250,6 +1455,209 @@ function destroyPulseAna() {
     try { if(c) c.destroy(); } catch(e) {}
   });
   pCatChart=pTrendChart=pPurchaserChart=pDowChart=pSavRateChart=null;
+}
+
+// ── MOBILE P&L ───────────────────────────────────────────────────────────────
+function renderPulsePL() {
+  const el = document.getElementById('pl-out');
+  const moSel = document.getElementById('plMonth');
+  if (!el) return;
+
+  const sp = spendable(txns);
+  if (!sp.length) { el.innerHTML = '<div style="padding:40px 22px;text-align:center;color:var(--ink4);font-size:13px;">Import data to view P&L.</div>'; return; }
+
+  const months = [...new Set(sp.map(t=>t.date.slice(0,7)))].sort().reverse();
+  if (moSel && moSel.options.length === 0) {
+    months.forEach(m => {
+      const [yr,mo] = m.split('-');
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = new Date(yr, parseInt(mo)-1, 1).toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+      moSel.appendChild(opt);
+    });
+  }
+  const selMonth = moSel ? (moSel.value || months[0]) : months[0];
+  const monthSp = sp.filter(t => t.date.startsWith(selMonth));
+
+  // Bucket income and expenses
+  const SECTIONS = [
+    { key:'income',    label:'Income',           color:'var(--positive)', isIncome:true },
+    { key:'fixed',     label:'Fixed Expenses',   color:'var(--negative)', isIncome:false },
+    { key:'utilities', label:'Utilities',         color:'var(--negative)', isIncome:false },
+    { key:'food',      label:'Food & Dining',    color:'var(--negative)', isIncome:false },
+    { key:'health',    label:'Health & Wellness',color:'var(--negative)', isIncome:false },
+    { key:'shopping',  label:'Shopping',         color:'var(--negative)', isIncome:false },
+    { key:'transport', label:'Transportation',   color:'var(--negative)', isIncome:false },
+    { key:'other',     label:'Other',            color:'var(--negative)', isIncome:false },
+  ];
+
+  const buckets = {};
+  SECTIONS.forEach(s => buckets[s.key] = { total:0, txns:[] });
+
+  monthSp.forEach(t => {
+    const cls = classifyTxn(t);
+    const sec = buckets[cls] ? cls : 'other';
+    buckets[sec].total += t.amount;
+    buckets[sec].txns.push(t);
+  });
+
+  const totInc = buckets.income.total;
+  const totExp = Object.entries(buckets).filter(([k])=>k!=='income').reduce((s,[,v])=>s+v.total,0);
+  const netSav = totInc + totExp; // expenses are negative so this is correct
+  const savRate = totInc > 0 ? (netSav/totInc*100) : 0;
+  const surpColor = netSav >= 0 ? 'var(--positive)' : 'var(--negative)';
+
+  // Track open state
+  if (!window._plOpen) window._plOpen = {};
+  const plOpen = window._plOpen;
+
+  let out = '';
+
+  // Summary bar
+  out += `<div style="padding:16px 22px;background:linear-gradient(135deg,#0F0E09,var(--void));border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+    <div><div style="font-size:9px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Income</div><div style="font-size:18px;font-weight:700;color:var(--positive);font-family:var(--mono);">${fmtK(totInc)}</div></div>
+    <div><div style="font-size:9px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Expenses</div><div style="font-size:18px;font-weight:700;color:var(--negative);font-family:var(--mono);">${fmtK(Math.abs(totExp))}</div></div>
+    <div><div style="font-size:9px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Net</div><div style="font-size:18px;font-weight:700;color:${surpColor};font-family:var(--mono);">${netSav>=0?'+':''}${fmtK(netSav)}</div></div>
+  </div>`;
+
+  // Savings rate bar
+  const rateW = Math.min(Math.max(savRate,0),100);
+  out += `<div style="padding:10px 22px;border-bottom:1px solid var(--line);background:var(--void);">
+    <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+      <span style="font-size:10px;color:var(--ink4);font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;">Savings Rate</span>
+      <span style="font-size:11px;font-weight:600;color:${savRate>=20?'var(--positive)':'var(--negative)'};">${savRate.toFixed(1)}%</span>
+    </div>
+    <div style="height:4px;background:var(--lift);border-radius:2px;overflow:hidden;">
+      <div style="height:100%;width:${rateW}%;background:${savRate>=20?'var(--positive)':'var(--negative)'};border-radius:2px;transition:width .4s;"></div>
+    </div>
+  </div>`;
+
+  // Section rows
+  SECTIONS.forEach(sec => {
+    const bd = buckets[sec.key];
+    if (!bd.txns.length) return;
+    const isOpen = !!plOpen[sec.key];
+    const total = sec.isIncome ? bd.total : Math.abs(bd.total);
+    const pct = totInc > 0 ? (total/totInc*100).toFixed(0) : 0;
+
+    out += `<div onclick="window._plOpen=window._plOpen||{};window._plOpen['${sec.key}']=!window._plOpen['${sec.key}'];renderPulsePL()" style="display:flex;align-items:center;padding:13px 22px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;gap:10px;">
+      <span style="font-size:14px;color:var(--ink3);transform:rotate(${isOpen?90:0}deg);display:inline-block;transition:transform .2s;">›</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500;color:var(--ink);">${sec.label}</div>
+        <div style="font-size:10px;color:var(--ink4);margin-top:1px;">${bd.txns.length} transactions · ${pct}% of income</div>
+      </div>
+      <div style="font-size:14px;font-weight:600;color:${sec.color};font-family:var(--mono);">${sec.isIncome?'':'-'}${fmtK(total)}</div>
+    </div>`;
+
+    if (isOpen) {
+      // Group by payee
+      const byPayee = {};
+      bd.txns.forEach(t => {
+        const p = t.payee || 'Unknown';
+        if (!byPayee[p]) byPayee[p] = { total:0, txns:[] };
+        byPayee[p].total += Math.abs(t.amount);
+        byPayee[p].txns.push(t);
+      });
+      Object.entries(byPayee).sort((a,b)=>b[1].total-a[1].total).forEach(([payee, pd]) => {
+        out += `<div style="padding:9px 22px 9px 52px;border-bottom:1px solid rgba(255,255,255,.02);background:rgba(0,0,0,.15);display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:12px;color:var(--ink2);">${payee}</div>
+            <div style="font-size:10px;color:var(--ink4);">${pd.txns.length} txn${pd.txns.length>1?'s':''}</div>
+          </div>
+          <div style="font-size:12px;color:var(--ink3);font-family:var(--mono);">${fmtK(pd.total)}</div>
+        </div>`;
+        // Latest 3 transactions
+        pd.txns.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3).forEach(t => {
+          out += `<div style="padding:6px 22px 6px 68px;border-bottom:1px solid rgba(255,255,255,.02);background:rgba(0,0,0,.25);display:flex;justify-content:space-between;">
+            <div style="font-size:10px;color:var(--ink4);">${t.date}</div>
+            <div style="font-size:10px;color:var(--ink3);font-family:var(--mono);">${fmtK(Math.abs(t.amount))}</div>
+          </div>`;
+        });
+      });
+    }
+  });
+
+  // Net row
+  out += `<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 22px;background:${netSav>=0?'rgba(45,212,191,.06)':'rgba(248,113,113,.06)'};border-top:2px solid ${netSav>=0?'rgba(45,212,191,.3)':'rgba(248,113,113,.3)'};">
+    <div style="font-size:14px;font-weight:700;color:${surpColor};">${netSav>=0?'✓ Net Surplus':'⚠ Net Deficit'}</div>
+    <div style="font-size:16px;font-weight:700;color:${surpColor};font-family:var(--mono);">${netSav>=0?'+':''}${fmtK(netSav)}</div>
+  </div>`;
+
+  el.innerHTML = out;
+}
+
+// ── MOBILE NET WORTH ──────────────────────────────────────────────────────────
+function renderPulseNW() {
+  const el = document.getElementById('nw-out');
+  if (!el) return;
+
+  if (!txns.length) { el.innerHTML = '<div style="padding:40px 0;text-align:center;color:var(--ink4);font-size:13px;">Import data to view Net Worth.</div>'; return; }
+
+  // Compute balances by account
+  const acctBals = {};
+  txns.forEach(t => {
+    if (!acctBals[t.account]) acctBals[t.account] = 0;
+    acctBals[t.account] += t.amount;
+  });
+
+  const assets = [], liabs = [];
+  Object.entries(acctBals).forEach(([name, bal]) => {
+    const type = detectAcctType(name);
+    const isCC = isCreditAcct(name);
+    if (isCC || type === 'liability') {
+      liabs.push({ name, bal: Math.abs(bal) });
+    } else {
+      assets.push({ name, bal });
+    }
+  });
+
+  assets.sort((a,b)=>b.bal-a.bal);
+  liabs.sort((a,b)=>b.bal-a.bal);
+
+  const totalAssets = assets.reduce((s,a)=>s+a.bal,0);
+  const totalLiabs  = liabs.reduce((s,l)=>s+l.bal,0);
+  const netWorth    = totalAssets - totalLiabs;
+  const nwColor     = netWorth >= 0 ? 'var(--positive)' : 'var(--negative)';
+
+  const acctRow = (name, bal, color) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+      <div style="font-size:12px;color:var(--ink3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</div>
+      <div style="font-size:12px;font-weight:600;color:${color};font-family:var(--mono);">${fmt(bal)}</div>
+    </div>`;
+
+  const section = (title, rows, total, color) => `
+    <div style="margin-bottom:18px;">
+      <div style="font-size:10px;font-family:var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line);">${title}</div>
+      ${rows}
+      <div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:2px;">
+        <div style="font-size:12px;font-weight:600;color:var(--ink2);">Total</div>
+        <div style="font-size:13px;font-weight:700;color:${color};font-family:var(--mono);">${fmt(total)}</div>
+      </div>
+    </div>`;
+
+  el.innerHTML = `
+    <div style="padding:16px 0 100px;">
+      <!-- Net Worth hero -->
+      <div style="background:linear-gradient(135deg,#0F0E09,var(--void));border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;margin-bottom:20px;">
+        <div style="font-size:9px;font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Net Worth</div>
+        <div style="font-size:36px;font-weight:700;color:${nwColor};font-family:var(--mono);letter-spacing:-.02em;">${netWorth>=0?'+':''}${fmtK(netWorth)}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;">
+          <div><div style="font-size:9px;color:var(--ink4);font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;">Assets</div><div style="font-size:16px;font-weight:600;color:var(--positive);font-family:var(--mono);">${fmtK(totalAssets)}</div></div>
+          <div><div style="font-size:9px;color:var(--ink4);font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;">Liabilities</div><div style="font-size:16px;font-weight:600;color:var(--negative);font-family:var(--mono);">${fmtK(totalLiabs)}</div></div>
+        </div>
+      </div>
+
+      ${section(
+        'Assets',
+        assets.map(a=>acctRow(a.name,a.bal,'var(--positive)')).join(''),
+        totalAssets, 'var(--positive)'
+      )}
+      ${section(
+        'Liabilities',
+        liabs.map(l=>acctRow(l.name,l.bal,'var(--negative)')).join(''),
+        totalLiabs, 'var(--negative)'
+      )}
+    </div>`;
 }
 
 function renderPulseAnalytics() {
