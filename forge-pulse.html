@@ -1082,7 +1082,7 @@ NEVER: Say "I cannot" or "I apologize." Never be vague when data is available. $
 // Replace this URL with your Cloudflare Worker URL after setup.
 // See forge_worker.js for setup instructions (takes ~10 min, free).
 // Until configured, $id will show a setup prompt instead of an error.
-const SID_PROXY_URL = 'WORKER_URL_HERE';
+const forge-sid.luka731chris.workers.dev = 'forge-sid.luka731chris.workers.dev_HERE';
 // ── CLOUD SYNC ───────────────────────────────────────────────────────────────
 function getSyncToken() {
   let t = localStorage.getItem('forge_sync_token');
@@ -1094,14 +1094,14 @@ function getSyncToken() {
 }
 
 async function syncPush() {
-  if (!SID_PROXY_URL || SID_PROXY_URL === 'WORKER_URL_HERE') { alert('Sync not configured. Set SID_PROXY_URL in forge-pulse.html.'); return; }
+  if (!forge-sid.luka731chris.workers.dev || forge-sid.luka731chris.workers.dev === 'forge-sid.luka731chris.workers.dev_HERE') { alert('Sync not configured. Set forge-sid.luka731chris.workers.dev in forge-pulse.html.'); return; }
   const token = getSyncToken();
   if (!token) return;
   const ledger   = JSON.parse(localStorage.getItem('ledger_v3') || 'null');
   const settings = JSON.parse(localStorage.getItem('forge_settings_v1') || 'null');
   if (!ledger) { alert('No data loaded. Import data before pushing.'); return; }
   try {
-    const resp = await fetch(SID_PROXY_URL + '/sync/push', {
+    const resp = await fetch(forge-sid.luka731chris.workers.dev + '/sync/push', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Sync-Token': token },
       body: JSON.stringify({ ledger, settings })
@@ -1113,11 +1113,11 @@ async function syncPush() {
 }
 
 async function syncPull() {
-  if (!SID_PROXY_URL || SID_PROXY_URL === 'WORKER_URL_HERE') { alert('Sync not configured. Set SID_PROXY_URL in forge-pulse.html.'); return; }
+  if (!forge-sid.luka731chris.workers.dev || forge-sid.luka731chris.workers.dev === 'forge-sid.luka731chris.workers.dev_HERE') { alert('Sync not configured. Set forge-sid.luka731chris.workers.dev in forge-pulse.html.'); return; }
   const token = getSyncToken();
   if (!token) return;
   try {
-    const resp = await fetch(SID_PROXY_URL + '/sync/pull', {
+    const resp = await fetch(forge-sid.luka731chris.workers.dev + '/sync/pull', {
       headers: { 'X-Sync-Token': token }
     });
     const data = await resp.json();
@@ -1132,7 +1132,7 @@ async function syncPull() {
 
 async function callSid(msg) {
   // Check if proxy has been configured
-  if (!SID_PROXY_URL || SID_PROXY_URL === 'WORKER_URL_HERE') {
+  if (!forge-sid.luka731chris.workers.dev || forge-sid.luka731chris.workers.dev === 'forge-sid.luka731chris.workers.dev_HERE') {
     return getSidSetupMessage();
   }
 
@@ -1148,7 +1148,7 @@ async function callSid(msg) {
   const timeout = setTimeout(() => controller.abort(), 30000);
 
   try {
-    const r = await fetch(SID_PROXY_URL, {
+    const r = await fetch(forge-sid.luka731chris.workers.dev, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
@@ -1196,7 +1196,7 @@ STEP 4 — Add your API key to the Worker
 On the Worker detail page, click Settings → Variables and Secrets → Add. Set the type to Secret. Name it ANTHROPIC_API_KEY. Paste your sk-ant- key as the value. Click Deploy.
 
 STEP 5 — Update Forge Pulse
-Open forge-pulse.html in a text editor. Find the line that says WORKER_URL_HERE and replace it with your Worker URL — something like https://forge-sid.yourname.workers.dev. Save the file and upload it to GitHub in place of the old version.
+Open forge-pulse.html in a text editor. Find the line that says forge-sid.luka731chris.workers.dev_HERE and replace it with your Worker URL — something like https://forge-sid.yourname.workers.dev. Save the file and upload it to GitHub in place of the old version.
 
 Once those five steps are done, come back here and I will be fully ready. The snapshot, alerts, and Amazon watchlist all work right now — no setup needed for those.`;
 }
