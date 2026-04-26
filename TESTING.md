@@ -1,211 +1,258 @@
-# Forge v3.12 — Testing Report
-
-**Test run date:** April 2026
-**Total tests:** 572 across three suites
-**Pass rate:** 572/572 (100%)
-
----
-
-## Test Suites
-
-### Suite A — Core Parser & Logic (`forge_tests.js`)
-
-**149 tests · 14 suites**
-
-| Suite | Tests | Coverage |
-|-------|-------|----------|
-| parseDate | 18 | ISO, US, European, abbreviated month, day-first, quoted, nulls, garbage |
-| splitCSV | 8 | Quoted commas, empty fields, dollar-sign amounts, multi-field |
-| parseCSV happy path | 10 | Quicken Mac/Windows formats, income/expense, category, account |
-| parseCSV train wrecks | 6 | Empty file, header-only, missing columns, CRLF, BOM |
-| parseQIF | 6 | Bank type, date, amount, payee, category, empty |
-| parseAmazon | 14 | New 2023 format, legacy format, multi-unit qty, ASIN, empty, zero-filtered |
-| parseOFX | 8 | OFX/QFX envelope, DTPOSTED, TRNAMT, FITID |
-| Age & Life Stage | 18 | calcAge, calcAgeInYears, all life stages (child through retirement) |
-| scoreImpulse | 10 | Empty/null guard, category bonuses, price tiers, qty multiplier, title signals, max cap |
-| guessType | 8 | checking, savings, credit, CC, 401k, brokerage, HYSA, unknown |
-| Formatters | 13 | fmt, fmtK (K/M), fmtPct, zeros, negatives, NaN |
-| Settings & Family | 12 | DEFAULT_SETTINGS schema, kid structure, account owners, sensitivity |
-| Deduplication | 8 | Txn key uniqueness, amzItem key with purchaser |
-| Real-world edge cases | 10 | 2-digit years, CRLF, BOM, missing Grand Total, undefined fields |
+# Forge Pre-Launch Testing Record
+## Kona Ironman Edition — Full End-to-End Audit
+**Date:** April 26, 2026  
+**Versions:** index.html (lean_4.0 / 5,431 lines / 273KB) · forge-pulse.html (2,590 lines / 139KB)  
+**Status: ✓ ALL STRUCTURAL CHECKS PASSING**
 
 ---
 
-### Suite B — v3.4 Exhaustive (`forge_tests_v2.js`)
+## 1. Structural Integrity
 
-**325 tests · 26 suites** — Written for v3.2–v3.4 new features and edge cases
-
-| Suite | Tests | Coverage |
-|-------|-------|----------|
-| 1 · parseDate (extended) | 24 | All 8 input formats, leap year, invalid months/days, edge nulls |
-| 2 · splitCSV | 8 | Quoted commas, empty fields, 10-field rows, newlines |
-| 3 · parseCSV | 13 | Standard format, alt columns (Description/Debit/Credit/Account Name), empty |
-| 4 · parseAmazon | 13 | New + legacy formats, title, date, total, qty, ASIN, orderId, zero-filter |
-| 5 · parseAppleCard | 14 | Merchant extraction, ISO dates, purchaser attribution, null purchaser, payments filtered, empty |
-| 6 · parseGenericDetail | 10 | Standard, PayPal-style, missing columns, zeros, negatives, source from filename |
-| 7 · sniffFile | 15 | All 4 output types, filename signals, header signals, empty/whitespace defaults |
-| 8 · parseDetailFile | 9 | Amazon routing, Apple Card routing, generic routing, source stamps, purchaser passthrough |
-| 9 · scoreImpulse | 11 | Null/empty guards, category bonuses, price tiers, qty multiplier, pack/bundle, cap at 100 |
-| 10 · impulseBadge | 9 | All 3 severity bands, lbl/cls structure, boundary values (29, 30, 59, 60) |
-| 11 · Age & Life Stage | 21 | calcAge edge cases, all parent/child life stages, null safety, icons/labels |
-| 12 · guessType | 8 | All account types including brokerage, roth, HYSA |
-| 13 · Formatters | 13 | fmt, fmtK (under/over thresholds), fmtPct signs, NaN safety |
-| 14 · getRange / inRange | 8 | 3m/6m/1y/all ranges, recent vs old transactions, end-of-month boundary |
-| 15 · groupByDimension | 11 | All 8 dimensions, income/expense tracking, count, empty array, missing fields |
-| 16 · computeMetric | 11 | All 6 metrics, zero-count avg, negative net, negative savings rate |
-| 17 · personSummary | 10 | Total, item count, topCat, monthlyAvg, impulseRate, dateFrom filter, unknown person |
-| 18 · inferTxnOwner | 5 | Mapped/unmapped accounts, empty map, null map, multiple owners |
-| 19 · detectPersonTrends | 6 | Spike detection, severity levels, empty data, result structure |
-| 20 · predictMonthlyDetail | 7 | Null when empty, result fields, daysLeft, mtdTotal, histAvg, projection |
-| 21 · Deduplication | 8 | Txn key uniqueness by all 4 fields, amzItem key with purchaser variants |
-| 22 · getSavingsRate / getAnnualNet | 6 | Empty, known rate, overspend scenario |
-| 23 · DEFAULT_SETTINGS schema | 21 | All settings keys, correct defaults, kids array structure, Pittsburgh family |
-| 24 · parseQIF | 6 | Standard bank type, all record types, empty |
-| 25 · Edge cases & regression | 18 | 2-digit years, CRLF, BOM, undefined fields, large numbers, NaN safety |
-| 26 · Blank Columns & CSV Edge Cases | 39 | Blank header cols, quoted blanks, whitespace-only, comma-only rows, `sep=,` strip, BOM, semicolon/pipe delimiters, European decimal, mid-file repeated headers, `N/A`/`--` amounts, truncated rows |
+| Check | Desktop | Pulse |
+|---|---|---|
+| Static HTML div balance | ✓ 169/169 | ✓ 72/72 |
+| CSS brace balance | ✓ 156/156 | ✓ 171/171 |
+| Undefined CSS variables | ✓ NONE | ✓ NONE |
+| Duplicate functions | ✓ NONE | ✓ NONE |
+| Missing critical functions | ✓ NONE | ✓ NONE |
+| Total functions defined | 102 | 67 |
 
 ---
 
-### Suite C — AI / $id Layer (`forge_sid_tests.js`)
+## 2. Pages & Navigation
 
-**98 tests · 8 suites**
+### Desktop (12 pages)
+`upload` · `dashboard` · `cashflow` · `categories` · `transactions` · `creditflow` · `balancesheet` · `financials` · `budget` · `calendar` · `validate` · `income`
 
-| Suite | Tests | Coverage |
-|-------|-------|----------|
-| buildSidSystemPrompt | 12 | All 3 modes, family context, savings target, life stage integration |
-| buildAlerts | 14 | All alert types, severity levels, purchaser alerts, empty data |
-| getKidsContext | 8 | Age calculation, life stage labels, empty kids, null DOB |
-| buildContext | 16 | Txn summary, amz summary, purchaser breakdown, source breakdown |
-| getSidSetupMessage | 6 | Configured/unconfigured states |
-| History management | 10 | Append, truncate at 16, role alternation |
-| Error routing | 18 | 401, 429, timeout, network error, generic fallback |
-| Welcome message | 12 | With/without data, savings rate, kids context |
+### Pulse (5 tabs)
+`snapshot` (The Gauge) · `alerts` (P&L) · `amazon` (Net Worth) · `analytics` · `chat` (Ask $id)
 
 ---
 
-## Bugs Found and Fixed
+## 3. Data Layer
 
-Five code defects were identified by the test suite and fixed in the production code:
-
-### BUG-001 · `scoreImpulse` — empty object scores 25 (was: medium severity)
-**Symptom:** Calling `scoreImpulse({})` or `scoreImpulse({total:0})` returned 25 instead of 0. Any structurally empty or zero-total item received a "Medium Impulse" badge in Detail Lens.  
-**Root cause:** The condition `if(total < 15) s += 25` evaluated true for `total=0` (since `0 < 15`).  
-**Fix:** Added `total > 0` guard: `if(total > 0 && total < 15) s += 25`.  
-**Impact:** Detail Lens — impulse badges on all items, particularly Apple Card items parsed with empty totals.
-
-### BUG-002 · `guessType` — brokerage accounts classified as `other`
-**Symptom:** `guessType('Fidelity Brokerage')` returned `'other'` instead of `'investment'`. Brokerage and Roth accounts appeared in the wrong bucket in account type filtering, the sidebar, and the Analytics account filter.  
-**Root cause:** The investment detection pattern checked for `invest`, `401`, `ira` but not `brokerage` or `roth`.  
-**Fix:** Added both keywords to the investment branch.  
-**Impact:** Account type display, filtering, investment account grouping in analytics.
-
-### BUG-003 · `parseCSV` — standalone `debit`/`credit` columns not detected
-**Symptom:** Apple Card-style bank CSV exports with separate `Debit` and `Credit` columns (instead of a single `Amount` column) imported with all amounts as $0.  
-**Root cause:** The amount column detector included `debit/credit` (combined) but not standalone `debit` or `credit`.  
-**Fix:** Added `'debit'` and `'credit'` to the `col()` lookup list.  
-**Impact:** Bank exports and Apple Card CSVs with split debit/credit columns.
-
-### BUG-004 · `parseAppleCard` — `null` purchaser replaced by filename
-**Symptom:** Calling `parseAppleCard(csv, 'filename.csv', null)` attributed all items to `'filename'` (derived from the filename) instead of preserving `null`.  
-**Root cause:** `const owner = purchaser || fname.replace(...)` — JavaScript's `||` treats `null` as falsy and falls through to the filename fallback.  
-**Fix:** Changed to `(purchaser !== undefined && purchaser !== null) ? purchaser : fname.replace(...)`.  
-**Impact:** Any caller explicitly passing `null` to indicate "unattributed/shared" would have items incorrectly attributed. Affects the unified import pipeline.
-
-### BUG-005 · `parseGenericDetail` — same null-purchaser issue
-**Symptom:** Same as BUG-004, in the generic CSV detail parser.  
-**Fix:** Same guard applied.  
-**Impact:** Consistent null-purchaser behavior across all detail parsers.
+| Feature | Desktop | Pulse | Notes |
+|---|---|---|---|
+| Primary storage key | `forge_prod_v1` | reads `forge_prod_v1` first | Then falls back to `ledger_v3` |
+| Settings key | `forge_settings_v2` | reads `forge_settings_v2` | Falls back to v1 |
+| `spendable()` excludes transfers | ✓ | ✓ | Core dedup function |
+| `isTransfer()` catches `[AccountName]` | ✓ | ✓ | Quicken bracket notation |
+| `isTransfer()` catches Apple Card | ✓ | ✓ | Both category and payee-based |
+| `isTransfer()` catches CC Payment category | ✓ | ✓ | Without brackets |
+| `classifyTxn()` handles `--Split--` | ✓ | ✓ | 30+ payee patterns |
+| `QUICKEN_CAT_MAP` defined | ✓ | ✓ | Raw Quicken → bucket mapping |
+| `KW_MAP` defined | ✓ | ✓ | Keyword → bucket fallback |
+| `BUCKET_META` defined | ✓ | ✓ | Bucket → label/icon/color |
+| `WATERFALL` 7 sections | ✓ | ✓ | Income/Saving/Fixed/Util/Nec/Disc/Other |
+| `acctMeta` declared | N/A | ✓ | Safe default `{}` |
+| `acctMeta` populated from ledger | N/A | ✓ | From `d.acctMeta` in `load()` |
+| `isCreditAcct()` null-safe | N/A | ✓ | Guards with `typeof acctMeta !== 'undefined'` |
 
 ---
 
-## Test Design Notes
+## 4. Desktop Feature Matrix
 
-**State isolation:** Suites 17, 19, 20 each save and restore the global `amzItems` array to prevent cross-suite contamination. Each suite that modifies global state clears it with `amzItems.length = 0` before planting test data.
+### Import & Upload
+- ✓ `handleFiles()` drop zone wiring
+- ✓ `autoDetect` file format detection (Quicken CSV/QIF/QFX, Amazon, Apple Card, generic)
+- ✓ `parseCSV()` with BOM, sep=, semicolon/pipe, European decimal
+- ✓ Import hard-replaces data (no merge) — wipes stale data on each import
+- ✓ Smart Scan via `WORKER_URL` → Cloudflare Worker `/scan` endpoint
+- ✓ Demo data loads cleanly without contaminating real data
 
-**Timing-safe tests:** Date-dependent tests (Suite 22 getSavingsRate, Suite 14 getRange, Suite 20 predictMonthlyDetail) use relative date construction (`new Date()` with month offsets) rather than hardcoded dates. Assertions use `near()` with appropriate tolerances rather than exact equality.
+### Charts & Visualizations
+- ✓ `svgBar()` with viewBox, overflow:hidden, bindChartTips
+- ✓ `svgLine()` with fill areas and dash lines
+- ✓ `svgHBar()` horizontal bars
+- ✓ `svgWaterfall()` waterfall chart
+- ✓ `makeDonut()` Chart.js donut for dashboard
+- ✓ `showChartTip()` / `hideChartTip()` / `positionChartTip()` hover tooltips
+- ✓ `bindChartTips()` post-render event binding (avoids SVG scope issue)
+- ✓ `#chartTip` div in static HTML
 
-**Edge case philosophy:** Every parser has a corresponding "train wreck" test: empty string, null, whitespace-only, header-only (no data rows), missing required columns, and zero-value rows. All must return `[]` or `null` without throwing.
+### Income Statement Drilldown
+- ✓ 3-level expansion: Section → Bucket → Payee → Individual Transactions
+- ✓ `isDrillOpen` / `isBucketOpen` state dictionaries
+- ✓ `chevron()` animated SVG chevrons
+- ✓ `toggleSection()` / `toggleBucket()` click handlers
+- ✓ `isSort` state for sort field + direction
+- ✓ Sort dropdown (Date / Amount / Payee A-Z) in IS header
+- ✓ 320px cap with scroll on payee transaction lists > 8 items
+- ✓ `--Split--` transactions unmasked to real payee + descriptive sub-label
+- ✓ `→ txns` drill link on every section row
+- ✓ `→` drill link on every bucket row
+- ✓ `drillToCategory()` navigates to Transactions page pre-filtered
 
-**Regression anchoring:** The 149 existing tests in `forge_tests.js` serve as a regression baseline. Running all three suites in sequence confirms no regressions from v3.2–v3.12 additions.
+### Transactions Page
+- ✓ `txnSort` state — clickable `↑/↓` headers on all 5 columns
+- ✓ `txnDrillCat` sticky drill filter from IS
+- ✓ `txnDrillBanner` shows active filter + ✕ Clear button
+- ✓ `drillToCategory()` → `clearDrill()` full drill cycle
+- ✓ Pagination (PAGE_SZ rows per page)
+- ✓ Search, account filter, category filter
+
+### Categories Page
+- ✓ Groups by `classifyTxn()` bucket, not raw Quicken category string
+- ✓ `--Split--` never appears as a category
+- ✓ Clickable rows drill to Transactions filtered by bucket
+- ✓ SVG horizontal bar + donut both use classified labels
+
+### Balance Sheet
+- ✓ `renderBalanceSheet()` with historical comparison dropdown
+- ✓ Assets / Liabilities / Net Worth calculation
+
+### Family Financial Statements
+- ✓ `renderFinancials()` VC-grade P&L with YTD and prior period comparison
+- ✓ Uses `classifyTxn()` for category buckets (not raw strings)
+- ✓ Top 10 categories, savings rate, expense ratio, 12-month projection
+- ✓ Year selector and TTM mode
+
+### Cloud Sync
+- ✓ `WORKER_URL` constant (single place to set)
+- ✓ `getSyncToken()` — prompts once, stores to `forge_sync_token` in localStorage
+- ✓ `syncPush()` — reads `forge_prod_v1` → `forge_lean_v1` → `ledger_v3` (priority chain)
+- ✓ `syncPull()` — writes to both `forge_prod_v1` and `ledger_v3`
+- ✓ Push to Cloud + Pull from Cloud buttons on Import page
+- ✓ Cloudflare Worker endpoints: `/sync/push` (POST) and `/sync/pull` (GET)
+- ✓ `SYNC_TOKEN` secret in Cloudflare, never in committed code
+- ✓ KV namespace `FORGE_SYNC` bound to Worker
 
 ---
 
-## Pulse Mobile — Manual Verification Checklist
+## 5. Pulse Feature Matrix
 
-The following items were structurally verified in `forge-pulse.html`:
+### Data & State
+- ✓ `load()` reads `forge_prod_v1` first, falls back to `ledger_v3` / `forge_lean_v1`
+- ✓ `acctMeta = {}` declared, populated from `d.acctMeta`
+- ✓ `goals`, `accounts`, `txns`, `amzItems` all declared
+- ✓ `_piDrillOpen`, `_piBktOpen` state for P&L drilldown
+- ✓ All classification constants ported: `WATERFALL`, `BUCKET_META`, `KW_MAP`, `QUICKEN_CAT_MAP`, `COLORS`
 
-- ✅ All 5 tabs (`snapshot`, `alerts`, `amazon`, `analytics`, `chat`) have matching page divs  
-- ✅ `go('analytics')` calls `renderPulseAnalytics()` before returning  
-- ✅ `renderPulseAnalytics()` calls all 5 sub-renderers and destroys prior charts first  
-- ✅ `pPurchaserRange` and `pCatRange` are scoped module-level (no reset on re-render)  
-- ✅ `setPulseRange()` destroys and re-creates only the affected chart  
-- ✅ Purchaser card auto-hides when `people.length === 0`  
-- ✅ `family.accountOwners` is read from loaded settings (correct storage key)  
-- ✅ `destroyPulseAna()` catches and ignores errors from charts that may not exist yet  
-- ✅ `renderPulseSavRate()` includes a dashed target reference line  
-- ✅ All 5 canvas elements exist in HTML before JS references them  
-- ✅ localStorage keys match desktop: `ledger_v3`, `forge_settings_v1`, `ledger_fbr_v2`
+### The Gauge (Snapshot)
+- ✓ Pull from Cloud button always visible (static HTML, not template-dependent)
+- ✓ Pull-to-refresh gesture (touchstart → touchend, 72px threshold)
+- ✓ Sister bridges watermark SVG (opacity .05)
+- ✓ Forge three-rivers logo mark in eyebrow
+- ✓ LukaLab badge right-aligned in eyebrow
+- ✓ Net figure hero: +/- prefix, `fmtK()` formatting
+- ✓ 4 chips: income, expenses, savings rate, vs prior month
+- ✓ Life-stage intelligence banner (`lsBannerHtml`)
+- ✓ Goal progress rings (conditional — only shown when goals exist)
+- ✓ KPI scroll cards: Spending MTD, Savings Rate, 12-Month Avg, Transactions
+- ✓ Top Spending categories (uses `classifyTxn()` + `BUCKET_META` labels)
+- ✓ `cats3m()` uses `spendable()` + `classifyTxn()` (no raw categories)
+- ✓ Error display panel (debug mode — shows renderSnapshot crashes on-screen)
+- ✓ Storage status strip (shows txn counts per key for debugging)
+
+### P&L Tab (3-Level Drilldown)
+- ✓ Month selector auto-populated from data
+- ✓ Hero summary: Income / Expenses / Net grid
+- ✓ Savings rate progress bar
+- ✓ `WATERFALL.map()` drives section list
+- ✓ Level 1: Section rows (7 sections) with animated chevrons
+- ✓ Level 2: Bucket rows grouped by `BUCKET_META` key with icons
+- ✓ Level 3: Payee rows with multi-txn expand
+- ✓ Level 4: Individual transaction rows with date + category sub-label
+- ✓ `→` button on every section and bucket row → filtered transaction view
+- ✓ Filtered view has `← Back` button returning to full P&L
+- ✓ `piToggleSec()` / `piToggleBkt()` chevron toggle functions
+- ✓ `--Split--` transactions show descriptive sub-label (not raw string)
+- ✓ Net Surplus / Net Deficit footer row
+
+### Net Worth Tab
+- ✓ `renderPulseNW()` — assets vs liabilities from transaction sums
+- ✓ `detectAcctType()` used for account classification
+- ✓ `isCreditAcct()` null-safe (guards `acctMeta` access)
+- ✓ Hero tile: net worth in gold, assets green, liabilities red
+- ✓ Assets section with per-account balances
+- ✓ Liabilities section with per-account balances
+
+### Analytics Tab
+- ✓ **Zero Chart.js usage** in analytics — all pure SVG
+- ✓ `svgBar()` for Monthly Cash Flow trend (6 months)
+- ✓ `svgHBar()` for Spending by Person and Day of Week
+- ✓ `svgLine()` for 12-Month Savings Rate trend
+- ✓ SVG donut for Spending by Category (with `data-tip` attributes)
+- ✓ `renderPulseCategories()` uses `classifyTxn()` + `BUCKET_META`
+- ✓ `bindChartTips()` wires tap tooltips post-render
+- ✓ `initPulseTips()` tap-to-reveal tooltip system (mobile-native)
+- ✓ `#pulseTip` overlay positioned viewport-aware
+- ✓ `#chartTip` for desktop hover
+
+### Ask $id Tab
+- ✓ `getWorkerUrl()` — prompts once, stores to `forge_worker_url` in localStorage
+- ✓ `getSyncToken()` — prompts once, stores to `forge_sync_token`
+- ✓ `callSid()` routes through Cloudflare Worker `/chat` endpoint
+- ✓ `buildContext()` passes full financial context per query
+- ✓ `sendWelcome()` on first load
+- ✓ 5 suggestion pills (none reference Amazon or outdated copy)
+
+### Mobile UX
+- ✓ `min-height: 44px` on all tappable elements
+- ✓ `touch-action: pan-y` on pages, `none` on tab bar
+- ✓ `font-size: 16px !important` on all inputs — prevents iOS Safari auto-zoom
+- ✓ `-webkit-tap-highlight-color: rgba(245,168,0,.12)` gold tap flash
+- ✓ `env(safe-area-inset-bottom)` bottom padding for home indicator
+- ✓ `-webkit-overflow-scrolling: touch` momentum scrolling
+- ✓ PWA: `apple-mobile-web-app-capable`, status bar `black-translucent`
+
+### Sync
+- ✓ `getWorkerUrl()` — localStorage-backed, no hardcoded URL
+- ✓ `getSyncToken()` — localStorage-backed, no hardcoded token
+- ✓ `syncPull()` writes `forge_prod_v1` + `ledger_v3` (both keys for compatibility)
+- ✓ Pull from Cloud button always visible on The Gauge
+- ✓ Pull-to-refresh gesture on all tabs
+- ✓ No "Push to Cloud" button in Pulse (desktop-only workflow)
 
 ---
 
-## v3.4 – v3.12 Structural Verification
+## 6. Known Gaps
 
-The following items were verified across development sessions v3.4 through v3.12:
+| Item | Status |
+|---|---|
+| Forge Word documents (User Manual, Quick Start, Sid Setup) | Not updated past v3.2 |
+| forge_module.js for test harness | Not rebuilt since lean build |
+| Visual regression testing | Manual verification only |
+| Real-time cross-device sync | Last-write-wins; no conflict resolution |
+| Smart Scan (WORKER_URL must be set) | Works when configured |
 
-### v3.12 — Dead Code Audit
+---
 
-- ✅ 11 dead functions confirmed absent from `index.html` via full-file string search: `buildSidSystemPrompt`, `calcAgeInYears`, `getAmzSensitivityThreshold`, `getAnaFiltered`, `getCategoryBudget`, `getFamilyReportHeader`, `getFamilyReportSubtitle`, `getLargePurchaseThreshold`, `getSavingsRateTarget`, `isTextFile`, `refreshKidAge`
-- ✅ 22 unused CSS class selectors confirmed absent; 12 unused CSS custom properties confirmed absent
-- ✅ Duplicate `@keyframes pop-in` definition removed — one definition remains, referenced by active animations
-- ✅ All `-webkit-` vendor prefixes retained (Safari/iOS compatibility required)
-- ✅ All remaining `@keyframes` definitions confirmed referenced by active animations
-- ✅ Forge Pulse: 3 unused classes and 3 unused variables removed; all active selectors retained
+## 7. Pre-Launch Checklist
 
-### v3.11 — Analytics Chart Guards
+Before every GitHub push:
 
-- ✅ `Chart.getChart(canvasEl)` guard present before every chart creation in `renderMiniStack`, `renderMiniDow`, `renderMiniPurchaserChart`, `renderMainChart`
-- ✅ Waterfall config is lazy — only computed when `anaChartType === 'waterfall'`
-- ✅ Analytics page navigable multiple times without blank charts
+- [ ] Static HTML div balance: `<div>` opens == closes in non-script HTML
+- [ ] CSS brace balance: `{` == `}` in `<style>` blocks
+- [ ] No undefined CSS variables (check with `var(--X)` vs `:root {--X:}`)
+- [ ] No duplicate function definitions
+- [ ] `WORKER_URL` set in index.html
+- [ ] `SID_PROXY_URL` is `'WORKER_URL_HERE'` (getWorkerUrl handles it at runtime)
+- [ ] No hardcoded `SYNC_TOKEN` in either file
+- [ ] Pull from Cloud button visible in Pulse before data loads
+- [ ] Hard refresh in Safari after upload (don't reopen from home screen icon)
 
-### v3.10 — HTML Structure Integrity
+---
 
-- ✅ `<div id="page-upload">` has matching closing `</div>` immediately before `<!-- ══ DASHBOARD ══ -->`
-- ✅ All page divs confirmed siblings (not nested); verified by offsetHeight > 0 in browser
-- ✅ Total open/close div balance confirmed even
+## 8. Cloudflare Worker Configuration
 
-### v3.9 — Smart Scan Integration
+**Worker:** `forge-sid.luka731chris.workers.dev`
 
-- ✅ `smartScan()` function present in `index.html`
-- ✅ `WORKER_URL` constant present (line ~6771); defaults to empty string
-- ✅ Three integration points in `processAll()`: images/PDFs, unknown extensions, zero-row CSV fallback
-- ✅ `forge_worker_v2.js` handles both `POST /chat` and `POST /scan` routes
-- ✅ Scan zone renders "✦ AI worker connected" when `WORKER_URL` is set
+| Secret | Purpose |
+|---|---|
+| `ANTHROPIC_API_KEY` | $id chat + Smart Scan |
+| `SYNC_TOKEN` | Cloud sync authentication |
 
-### v3.8 / v3.4 — CSV Parser
+| Binding | Type | Namespace |
+|---|---|---|
+| `FORGE_SYNC` | KV Namespace | `FORGE_SYNC` |
 
-- ✅ `parseCSV` header scanner loops first 30 lines for date + amount column pair
-- ✅ Preamble rows (report title, date range) naturally skipped by column test
-- ✅ Blank header columns, BOM, `sep=,`, semicolon/pipe delimiters, European decimal all handled
-- ✅ `sniffFile()` skips `sep=`, `#` comments, and BOM before reading format detection line
+**Endpoints:**
+- `POST /chat` — $id AI chat
+- `POST /scan` — Smart Scan document extraction
+- `POST /sync/push` — write ledger to KV
+- `GET /sync/pull` — read ledger from KV
 
-### v3.6 / v3.5 — Boot Sequence Integrity
+---
 
-- ✅ No `Chart.defaults.*` assignments at top level of script; all inside `applyChartDefaults()`
-- ✅ `applyChartDefaults()` called from `DOMContentLoaded` only
-- ✅ No orphaned CSS `to { }` fragments; CSS brace count balanced
-- ✅ `showPage()` sets visibility via inline style (`display`, `opacity`, `visibility`); CSS class is fallback
-- ✅ `document.body.style.opacity = '1'` is first instruction in `DOMContentLoaded`
-- ✅ All 14 render functions have outer `try/catch`
-- ✅ Pulse `go()` sets `display:block` via inline style, not CSS class alone
-
-- ✅ 11 page IDs all have matching nav IDs (10 nav items + upload page with no nav)
-- ✅ `showPage('analytics')` renders correctly and calls `loadSettings()` first
-- ✅ `renderAnalytics()` calls `populateAnaFilters()` which reads live txns data
-- ✅ `destroyAnaCharts()` handles null chart instances gracefully
-- ✅ `renderHeatmap()` renders pure HTML into `ana-heatmap-wrap` when type is `'heatmap'`
-- ✅ All 8 chart types have configs in `renderMainChart()` with no missing keys
-- ✅ `exportAnaChart()` uses `toDataURL` — safe in all modern browsers
-- ✅ Demo data generates without throwing (tested via module extraction)
-- ✅ `loadDemo()` writes to `localStorage` under `SETTINGS_KEY` after setting accountOwners
-- ✅ `sniffFile()` returns one of exactly 4 valid strings: `'amazon'`, `'applecard'`, `'detail'`, `'quicken'`
-- ✅ `processAll()` calls `sniffFile()` on every file before routing
+*Generated April 26, 2026 — lean_4.0 / Forge Pulse v2.0*
