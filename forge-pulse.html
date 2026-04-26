@@ -1328,6 +1328,16 @@ NEVER: Say "I cannot" or "I apologize." Never be vague when data is available. $
 // Replace this URL with your Cloudflare Worker URL after setup.
 // See forge_worker.js for setup instructions (takes ~10 min, free).
 // Until configured, $id will show a setup prompt instead of an error.
+// ── WORKER URL — stored in localStorage, prompted once ───────────────────────
+function getWorkerUrl() {
+  let u = localStorage.getItem('forge_worker_url');
+  if (!u) {
+    u = prompt('Enter Forge Worker URL (e.g. https://forge-sid.xxx.workers.dev):');
+    if (u) localStorage.setItem('forge_worker_url', u.trim());
+  }
+  return u || '';
+}
+// Legacy constant — replaced by getWorkerUrl() at runtime
 const SID_PROXY_URL = 'WORKER_URL_HERE';
 // ── CLOUD SYNC ───────────────────────────────────────────────────────────────
 function getSyncToken() {
@@ -1340,14 +1350,15 @@ function getSyncToken() {
 }
 
 async function syncPush() {
-  if (!SID_PROXY_URL || SID_PROXY_URL === 'WORKER_URL_HERE') { alert('Sync not configured. Set SID_PROXY_URL in forge-pulse.html.'); return; }
+  const workerUrl = getWorkerUrl();
+  if (!workerUrl) return;
   const token = getSyncToken();
   if (!token) return;
   const ledger   = JSON.parse(localStorage.getItem('ledger_v3') || 'null');
   const settings = JSON.parse(localStorage.getItem('forge_settings_v1') || 'null');
   if (!ledger) { alert('No data loaded. Import data before pushing.'); return; }
   try {
-    const resp = await fetch(SID_PROXY_URL + '/sync/push', {
+    const resp = await fetch(workerUrl + '/sync/push', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Sync-Token': token },
       body: JSON.stringify({ ledger, settings })
@@ -1359,11 +1370,12 @@ async function syncPush() {
 }
 
 async function syncPull() {
-  if (!SID_PROXY_URL || SID_PROXY_URL === 'WORKER_URL_HERE') { alert('Sync not configured. Set SID_PROXY_URL in forge-pulse.html.'); return; }
+  const workerUrl = getWorkerUrl();
+  if (!workerUrl) return;
   const token = getSyncToken();
   if (!token) return;
   try {
-    const resp = await fetch(SID_PROXY_URL + '/sync/pull', {
+    const resp = await fetch(workerUrl + '/sync/pull', {
       headers: { 'X-Sync-Token': token }
     });
     const data = await resp.json();
@@ -1378,7 +1390,8 @@ async function syncPull() {
 
 async function callSid(msg) {
   // Check if proxy has been configured
-  if (!SID_PROXY_URL || SID_PROXY_URL === 'WORKER_URL_HERE') {
+  const _workerUrl = getWorkerUrl();
+  if (!_workerUrl) {
     return getSidSetupMessage();
   }
 
@@ -1394,7 +1407,7 @@ async function callSid(msg) {
   const timeout = setTimeout(() => controller.abort(), 30000);
 
   try {
-    const r = await fetch(SID_PROXY_URL, {
+    const r = await fetch(_workerUrl, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
