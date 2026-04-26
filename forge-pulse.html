@@ -569,7 +569,44 @@ function load() {
   } catch(e) { return false; }
 }
 
-// ── PORTED FROM DESKTOP (P&L + Net Worth tabs) ─────────────────────────────// ════════════════════════════════════════════════
+// ── PORTED FROM DESKTOP (P&L + Net Worth tabs) ─────────────────────────────
+QUICKEN_CAT_MAP = {
+  'net salary':'paycheck','salary':'paycheck','wages':'paycheck','paycheck':'paycheck','bonus':'paycheck',
+  'other inc':'other_inc','interest inc':'other_inc','_divinc':'other_inc','_rlzdgain':'other_inc',
+  'interest income':'other_inc','dividend income':'other_inc','rental income':'other_inc',
+  'freelance':'other_inc','consulting':'other_inc','fees & charges:bank fee':'other_inc',
+  'home:mortgage':'mortgage','mortgage':'mortgage','home:rent':'mortgage','rent':'mortgage','hoa':'mortgage',
+  'auto & transport:auto payment':'car','auto & transport:auto insurance':'car','auto & transport:registration':'car',
+  'financial:life insurance':'insurance','financial':'insurance','insurance':'insurance',
+  'education:tuition':'education','education':'education',
+  'kids:kids activities':'childcare','kids':'childcare','kids:toys':'childcare',
+  'bills & utilities:utilities':'electric','bills & utilities':'electric',
+  'bills & utilities:mobile phone':'cell','bills & utilities:credit card payment':'other',
+  'food & dining:groceries':'groceries','food & dining:restaurants':'restaurants',
+  'food & dining:fast food':'restaurants','food & dining:coffee shops':'restaurants',
+  'food & dining:alcohol & bars':'restaurants','food & dining':'groceries',
+  'auto & transport:gas & fuel':'gas_car','auto & transport:parking':'transit',
+  'auto & transport:tolls':'transit','auto & transport:rental car & taxi':'transit',
+  'auto & transport:car wash':'transit','auto & transport:service & parts':'car','auto & transport':'gas_car',
+  'health & fitness:pharmacy':'healthcare','health & fitness:doctor':'healthcare',
+  'health & fitness:dentist':'healthcare','health & fitness:eyecare':'healthcare',
+  'health & fitness:gym':'personal','health & fitness:sports':'entertainment','health & fitness':'healthcare',
+  'entertainment':'entertainment','entertainment:amusement':'entertainment',
+  'entertainment:movies & dvds':'entertainment','entertainment:music':'subscriptions',
+  'entertainment:arts':'entertainment','media subscriptions':'subscriptions',
+  'shopping':'household','shopping:clothing':'clothing','shopping:electronics & software':'household',
+  'shopping:books':'household','shopping:sporting goods':'entertainment','shopping:hobbies':'entertainment',
+  'home:home supplies':'household','home:home improvement':'household','home:home services':'household',
+  'home:furnishings':'household','home:lawn & garden':'household',
+  'personal care':'personal','personal care:hair':'personal','personal care:spa & massage':'personal',
+  'kira self care':'personal','chris self care':'personal',
+  'gifts & donations:gift':'gifts','gifts & donations:charity':'gifts','gifts & donations':'gifts',
+  'travel':'travel','travel:hotel':'travel','travel:air travel':'travel','travel:vacation':'travel',
+  'travel:rental car & taxi':'transit','pets:vet':'healthcare','pets:pet food & supplies':'household',
+  'shipping':'household','cash & atm':'other','fees & charges':'other',
+  'fees & charges:trade commissions':'other_inc','dues':'other','tax:fed':'other','tax:state':'other',
+  'transfer':'other',
+};// ════════════════════════════════════════════════
 // NAVIGATION
 // ════════════════════════════════════════════════
 
