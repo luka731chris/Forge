@@ -1255,7 +1255,7 @@ const BUILD    = 'lean_4.0';        // bump to clear stale storage
 const BLD_KEY  = 'forge_build';
 
 // ── WORKER + SYNC ─────────────────────────────────────────────────────────────
-const WORKER_URL = 'https://forge-sid.luka731chris.workers.dev';  // ← paste your Cloudflare Worker URL here
+const WORKER_URL = '';  // ← paste your Cloudflare Worker URL here
 
 function getSyncToken() {
   let t = localStorage.getItem('forge_sync_token');
@@ -1270,14 +1270,20 @@ async function syncPush() {
   if (!WORKER_URL) { alert('Sync not configured. Set WORKER_URL in index.html.'); return; }
   const token = getSyncToken();
   if (!token) return;
-  const ledger   = localStorage.getItem('forge_lean_v1') || localStorage.getItem('ledger_v3');
-  const settings = localStorage.getItem('forge_settings_v1');
-  if (!ledger) { alert('No data loaded. Import data before pushing.'); return; }
+  // Read from correct key — lean build stores to forge_prod_v1
+  const rawLedger = localStorage.getItem('forge_prod_v1')
+                 || localStorage.getItem('forge_lean_v1')
+                 || localStorage.getItem('ledger_v3');
+  const rawSettings = localStorage.getItem('forge_settings_v2')
+                   || localStorage.getItem('forge_settings_v1');
+  if (!rawLedger) { alert('No data loaded. Import data before pushing.'); return; }
   try {
+    const ledger   = JSON.parse(rawLedger);
+    const settings = rawSettings ? JSON.parse(rawSettings) : null;
     const resp = await fetch(WORKER_URL + '/sync/push', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Sync-Token': token },
-      body: JSON.stringify({ ledger: JSON.parse(ledger), settings: settings ? JSON.parse(settings) : null })
+      body: JSON.stringify({ ledger, settings })
     });
     const data = await resp.json();
     if (data.ok) alert('Pushed to cloud. Pull on any device to load.');

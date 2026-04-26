@@ -549,10 +549,15 @@ function loadFamily() {
 // ── DATA LOADERS ──
 function load() {
   try {
-    const d = JSON.parse(localStorage.getItem(DB) || '{}');
+    // Try all known storage keys — lean build uses forge_prod_v1
+    const raw = localStorage.getItem('forge_prod_v1')
+             || localStorage.getItem(DB)
+             || localStorage.getItem('forge_lean_v1');
+    if (!raw) return false;
+    const d = JSON.parse(raw);
     txns     = d.txns     || [];
     amzItems = d.amzItems || [];
-    accounts = d.accounts || [];
+    accounts = d.accounts || [...new Set(txns.map(t=>t.account).filter(Boolean))];
     return txns.length > 0 || amzItems.length > 0;
   } catch(e) { return false; }
 }
@@ -1380,8 +1385,14 @@ async function syncPull() {
     });
     const data = await resp.json();
     if (!data.ledger) { alert('No sync data found. Push from desktop first.'); return; }
+    // Store under forge_prod_v1 — the key the lean build reads on load
+    localStorage.setItem('forge_prod_v1', data.ledger);
+    // Also write to ledger_v3 for compatibility
     localStorage.setItem('ledger_v3', data.ledger);
-    if (data.settings) localStorage.setItem('forge_settings_v1', data.settings);
+    if (data.settings) {
+      localStorage.setItem('forge_settings_v1', data.settings);
+      localStorage.setItem('forge_settings_v2', data.settings);
+    }
     const when = data.syncedAt ? new Date(data.syncedAt).toLocaleString() : 'unknown time';
     alert('Data loaded from ' + when + '. Reloading.');
     location.reload();
