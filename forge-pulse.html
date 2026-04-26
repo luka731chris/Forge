@@ -31,6 +31,13 @@
   --font-d:    'Cormorant Garamond', Georgia, serif;
   --font-num:  'Sora', 'Outfit', system-ui, sans-serif;
   --font-ui:   'DM Sans', system-ui, sans-serif;
+  /* Aliases used by ported desktop components */
+  --card:      #1C1C1C;
+  --border:    #2A2A2A;
+  --mono:      'DM Mono', 'Fira Code', monospace;
+  --muted:     #6E6A65;
+  --bg:        #0E0E0E;
+  --serif:     'Cormorant Garamond', Georgia, serif;
   --font-m:    'Fira Code', monospace;
   --ease:      cubic-bezier(0.16, 1, 0.3, 1);
   --r-sm:      4px; --r: 8px; --r-lg: 14px;
@@ -451,7 +458,7 @@ body {
         <div class="s-pill" onclick="sendQ(this)">Where is the money going?</div>
         <div class="s-pill" onclick="sendQ(this)">What should I watch out for?</div>
         <div class="s-pill" onclick="sendQ(this)">Are we on track with our goals?</div>
-        <div class="s-pill" onclick="sendQ(this)">What did we spend on Amazon lately?</div>
+        <div class="s-pill" onclick="sendQ(this)">Where did we spend the most last month?</div>
         <div class="s-pill" onclick="sendQ(this)">Give me the big picture</div>
         <div class="s-pill" onclick="sendQ(this)">How's our savings rate trending?</div>
         <div class="s-pill" onclick="sendQ(this)">What should we talk about at Confluence?</div>
@@ -939,75 +946,84 @@ function renderSnapshot() {
     </div>` : '';
 
   el.innerHTML = `
-    <div class="snap-hero">
-      <div class="hero-eyebrow">${family.familyName} Family · ${mo} <span style="font-family:monospace;font-size:8px;opacity:.35;">#87</span></div>
-      <div class="hero-net${net<0?' neg':''}">${net>=0?'+':''}${fmtK(net)}</div>
-      <div class="hero-sub">net saved this month <span style="font-size:10px;opacity:.45;">· $id reads the play</span></div>
-      <div class="hero-chips">
-        <div class="chip chip-gold">💰 ${fmtK(cmI)} in</div>
-        <div class="chip ${cmE>cmI?'chip-red':'chip-grn'}">📤 ${fmtK(cmE)} out</div>
-        <div class="chip ${sr>=(family.savingsTarget||20)?'chip-grn':'chip-red'}">${sr.toFixed(0)}% saved</div>
-        <div class="chip ${pct>10?'chip-red':pct<-5?'chip-grn':'chip-gold'}">${pct>0?'↑':'↓'}${Math.abs(pct).toFixed(0)}% vs last mo</div>
-      </div>
-      <svg class="bridge-wm" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- River surface -->
-        <rect x="0" y="46" width="200" height="14" fill="#FFB612" opacity="0.05"/>
-        <line x1="0" y1="46" x2="200" y2="46" stroke="#FFB612" stroke-width="0.5" opacity="0.2"/>
-        <!-- Bridge 1: Rachel Carson -->
-        <line x1="8" y1="44" x2="62" y2="44" stroke="#FFB612" stroke-width="1.5"/>
-        <rect x="20" y="20" width="3" height="24" fill="#FFB612" opacity="0.9"/>
-        <rect x="47" y="20" width="3" height="24" fill="#FFB612" opacity="0.9"/>
-        <path d="M21.5 20 Q35 10 48.5 20" stroke="#FFB612" stroke-width="1" fill="none" opacity="0.8"/>
-        <line x1="26" y1="17" x2="26" y2="44" stroke="#FFB612" stroke-width="0.6" opacity="0.5"/>
-        <line x1="30" y1="14.5" x2="30" y2="44" stroke="#FFB612" stroke-width="0.6" opacity="0.5"/>
-        <line x1="35" y1="13" x2="35" y2="44" stroke="#FFB612" stroke-width="0.6" opacity="0.5"/>
-        <line x1="40" y1="14.5" x2="40" y2="44" stroke="#FFB612" stroke-width="0.6" opacity="0.5"/>
-        <line x1="44" y1="17" x2="44" y2="44" stroke="#FFB612" stroke-width="0.6" opacity="0.5"/>
-        <circle cx="26" cy="17" r="1.2" fill="#FFB612"/>
-        <circle cx="30" cy="14.5" r="1.2" fill="#FFB612"/>
-        <circle cx="35" cy="13" r="1.5" fill="#FFB612"/>
-        <circle cx="40" cy="14.5" r="1.2" fill="#FFB612"/>
-        <circle cx="44" cy="17" r="1.2" fill="#FFB612"/>
-        <circle cx="22" cy="19" r="1.5" fill="#FFB612"/>
-        <circle cx="49" cy="19" r="1.5" fill="#FFB612"/>
-        <!-- Bridge 2: Andy Warhol -->
-        <line x1="74" y1="44" x2="128" y2="44" stroke="#FFB612" stroke-width="1.5"/>
-        <rect x="86" y="20" width="3" height="24" fill="#FFB612" opacity="0.9"/>
-        <rect x="113" y="20" width="3" height="24" fill="#FFB612" opacity="0.9"/>
-        <path d="M87.5 20 Q101 10 114.5 20" stroke="#FFB612" stroke-width="1" fill="none" opacity="0.8"/>
-        <line x1="92" y1="17" x2="92" y2="44" stroke="#FFB612" stroke-width="0.6" opacity="0.5"/>
-        <line x1="96" y1="14.5" x2="96" y2="44" stroke="#FFB612" stroke-width="0.6" opacity="0.5"/>
-        <line x1="101" y1="13" x2="101" y2="44" stroke="#FFB612" stroke-width="0.6" opacity="0.5"/>
-        <line x1="106" y1="14.5" x2="106" y2="44" stroke="#FFB612" stroke-width="0.6" opacity="0.5"/>
-        <line x1="110" y1="17" x2="110" y2="44" stroke="#FFB612" stroke-width="0.6" opacity="0.5"/>
-        <circle cx="92" cy="17" r="1.2" fill="#FFB612"/>
-        <circle cx="96" cy="14.5" r="1.2" fill="#FFB612"/>
-        <circle cx="101" cy="13" r="1.5" fill="#FFB612"/>
-        <circle cx="106" cy="14.5" r="1.2" fill="#FFB612"/>
-        <circle cx="110" cy="17" r="1.2" fill="#FFB612"/>
-        <circle cx="88" cy="19" r="1.5" fill="#FFB612"/>
-        <circle cx="115" cy="19" r="1.5" fill="#FFB612"/>
-        <!-- Bridge 3: Roberto Clemente -->
-        <line x1="140" y1="44" x2="194" y2="44" stroke="#FFB612" stroke-width="1.5"/>
-        <rect x="152" y="20" width="3" height="24" fill="#FFB612" opacity="0.9"/>
-        <rect x="179" y="20" width="3" height="24" fill="#FFB612" opacity="0.9"/>
-        <path d="M153.5 20 Q167 10 180.5 20" stroke="#FFB612" stroke-width="1" fill="none" opacity="0.8"/>
-        <line x1="158" y1="17" x2="158" y2="44" stroke="#FFB612" stroke-width="0.6" opacity="0.5"/>
-        <line x1="162" y1="14.5" x2="162" y2="44" stroke="#FFB612" stroke-width="0.6" opacity="0.5"/>
-        <line x1="167" y1="13" x2="167" y2="44" stroke="#FFB612" stroke-width="0.6" opacity="0.5"/>
-        <line x1="172" y1="14.5" x2="172" y2="44" stroke="#FFB612" stroke-width="0.6" opacity="0.5"/>
-        <line x1="176" y1="17" x2="176" y2="44" stroke="#FFB612" stroke-width="0.6" opacity="0.5"/>
-        <circle cx="158" cy="17" r="1.2" fill="#FFB612"/>
-        <circle cx="162" cy="14.5" r="1.2" fill="#FFB612"/>
-        <circle cx="167" cy="13" r="1.5" fill="#FFB612"/>
-        <circle cx="172" cy="14.5" r="1.2" fill="#FFB612"/>
-        <circle cx="176" cy="17" r="1.2" fill="#FFB612"/>
-        <circle cx="154" cy="19" r="1.5" fill="#FFB612"/>
-        <circle cx="181" cy="19" r="1.5" fill="#FFB612"/>
+    <div class="snap-hero" style="position:relative;overflow:hidden;">
+
+      <!-- Sister bridges watermark -->
+      <svg style="position:absolute;bottom:0;right:-8px;width:210px;height:54px;opacity:.05;pointer-events:none;" viewBox="0 0 200 54" fill="none">
+        <rect x="0" y="40" width="200" height="14" fill="#F5A800"/>
+        <line x1="0" y1="40" x2="200" y2="40" stroke="#F5A800" stroke-width="0.5"/>
+        <line x1="6" y1="39" x2="62" y2="39" stroke="#F5A800" stroke-width="1.5"/>
+        <rect x="18" y="16" width="3" height="24" fill="#F5A800"/>
+        <rect x="47" y="16" width="3" height="24" fill="#F5A800"/>
+        <path d="M19.5 16 Q33.5 6 48.5 16" stroke="#F5A800" stroke-width="1" fill="none"/>
+        <line x1="24" y1="13" x2="24" y2="39" stroke="#F5A800" stroke-width="0.5"/>
+        <line x1="29" y1="10" x2="29" y2="39" stroke="#F5A800" stroke-width="0.5"/>
+        <line x1="34" y1="8.5" x2="34" y2="39" stroke="#F5A800" stroke-width="0.5"/>
+        <line x1="39" y1="10" x2="39" y2="39" stroke="#F5A800" stroke-width="0.5"/>
+        <line x1="44" y1="13" x2="44" y2="39" stroke="#F5A800" stroke-width="0.5"/>
+        <line x1="72" y1="39" x2="128" y2="39" stroke="#F5A800" stroke-width="1.5"/>
+        <rect x="84" y="16" width="3" height="24" fill="#F5A800"/>
+        <rect x="113" y="16" width="3" height="24" fill="#F5A800"/>
+        <path d="M85.5 16 Q99.5 6 114.5 16" stroke="#F5A800" stroke-width="1" fill="none"/>
+        <line x1="90" y1="13" x2="90" y2="39" stroke="#F5A800" stroke-width="0.5"/>
+        <line x1="95" y1="10" x2="95" y2="39" stroke="#F5A800" stroke-width="0.5"/>
+        <line x1="100" y1="8.5" x2="100" y2="39" stroke="#F5A800" stroke-width="0.5"/>
+        <line x1="105" y1="10" x2="105" y2="39" stroke="#F5A800" stroke-width="0.5"/>
+        <line x1="110" y1="13" x2="110" y2="39" stroke="#F5A800" stroke-width="0.5"/>
+        <line x1="138" y1="39" x2="194" y2="39" stroke="#F5A800" stroke-width="1.5"/>
+        <rect x="150" y="16" width="3" height="24" fill="#F5A800"/>
+        <rect x="179" y="16" width="3" height="24" fill="#F5A800"/>
+        <path d="M151.5 16 Q165.5 6 180.5 16" stroke="#F5A800" stroke-width="1" fill="none"/>
+        <line x1="156" y1="13" x2="156" y2="39" stroke="#F5A800" stroke-width="0.5"/>
+        <line x1="161" y1="10" x2="161" y2="39" stroke="#F5A800" stroke-width="0.5"/>
+        <line x1="166" y1="8.5" x2="166" y2="39" stroke="#F5A800" stroke-width="0.5"/>
+        <line x1="171" y1="10" x2="171" y2="39" stroke="#F5A800" stroke-width="0.5"/>
+        <line x1="176" y1="13" x2="176" y2="39" stroke="#F5A800" stroke-width="0.5"/>
       </svg>
+
+      <!-- Eyebrow: Forge logo + month + LukaLab -->
+      <div class="hero-eyebrow" style="display:flex;align-items:center;gap:8px;">
+        <svg width="13" height="13" viewBox="0 0 22 22" fill="none" style="flex-shrink:0;">
+          <path d="M3 3 L3 14 L14 14" stroke="#F5A800" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <path d="M19 19 L19 8 L8 8" stroke="#F5A800" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="3" cy="3" r="1.5" fill="#F5A800"/>
+          <circle cx="14" cy="14" r="1.5" fill="#F5A800"/>
+          <circle cx="19" cy="19" r="1.5" fill="#F5A800"/>
+          <circle cx="8" cy="8" r="1.5" fill="#F5A800"/>
+        </svg>
+        <span>${mo}</span>
+        <span class="ll-badge" style="margin-left:auto;">LukaLab</span>
+      </div>
+
+      <div class="hero-net${net<0?' neg':''}"><span style="font-size:28px;opacity:.5;">${net>=0?'+':'-'}</span>${fmtK(Math.abs(net))}</div>
+      <div class="hero-sub">net this month</div>
+      <div class="hero-chips">
+        <div class="chip chip-gold">↑ ${fmtK(cmI)}</div>
+        <div class="chip ${cmE>cmI?'chip-red':'chip-grn'}">↓ ${fmtK(cmE)}</div>
+        <div class="chip ${sr>=(family.savingsTarget||20)?'chip-grn':'chip-red'}">${sr.toFixed(0)}% saved</div>
+        <div class="chip ${pct>10?'chip-red':pct<-5?'chip-grn':'chip-gold'}">${pct>0?'↑':'↓'}${Math.abs(pct).toFixed(0)}% vs prior</div>
+      </div>
     </div>
 
     ${lsBannerHtml}
+
+    ${goals.length ? `
+    <div class="sec-lbl">Goals</div>
+    <div class="rings-row">
+      ${goals.slice(0,5).map(g=>{
+        const p=Math.min(100,(g.current/g.target)*100);
+        const circ=2*Math.PI*24, off=circ*(1-p/100);
+        const col=p>=80?'#10B981':p>=40?'#FFB612':'#4A9EFF';
+        return `<div class="ring-card">
+          <svg class="ring-svg" viewBox="0 0 60 60">
+            <circle class="ring-bg" cx="30" cy="30" r="24"/>
+            <circle class="ring-fill" cx="30" cy="30" r="24" stroke="${col}" stroke-dasharray="${circ}" stroke-dashoffset="${off}"/>
+            <text class="ring-pct" x="30" y="35" text-anchor="middle">${p.toFixed(0)}%</text>
+          </svg>
+          <div class="ring-name">${g.name.replace(/College Fund — /,'').replace(/Home Improvement/,'Home').substring(0,14)}</div>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
 
     <div class="sec-lbl">Key Numbers</div>
     <div class="hscroll">
@@ -1019,37 +1035,31 @@ function renderSnapshot() {
       <div class="kpi-card">
         <div class="kpi-lbl">Savings Rate</div>
         <div class="kpi-val">${sr.toFixed(0)}%</div>
-        <div class="kpi-sub">Target: ${family.savingsTarget||20}%</div>
         <div class="kpi-delta ${sr>=(family.savingsTarget||20)?'pos':'neg-c'}">${sr>=(family.savingsTarget||20)?'✓ On track':'Below target'}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-lbl">12-Mo Rate</div>
+        <div class="kpi-lbl">12-Month Avg</div>
         <div class="kpi-val">${yr.toFixed(0)}%</div>
-        <div class="kpi-sub">Annual avg</div>
+        <div class="kpi-sub">savings rate</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-lbl">Accounts</div>
-        <div class="kpi-val">${accounts.length}</div>
-        <div class="kpi-sub">${txns.length.toLocaleString()} transactions</div>
+        <div class="kpi-lbl">Transactions</div>
+        <div class="kpi-val">${txns.length.toLocaleString()}</div>
+        <div class="kpi-sub">${accounts.length} accounts</div>
       </div>
     </div>
 
-    <div class="sec-lbl">Where the Money Went — This Month</div>
+    <div class="sec-lbl">Top Spending — This Month</div>
     <div style="background:var(--card);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
-      ${cd.map(([cat,amt],i)=>`
+      ${cd.length ? cd.map(([cat,amt],i)=>`
         <div class="cat-row">
           <div class="cat-dot" style="background:${COLS[i]};"></div>
-          <div class="cat-info"><div class="cat-name">${cat}</div><div class="cat-pct">${((amt/cmE)*100).toFixed(0)}% of spending</div></div>
+          <div class="cat-info"><div class="cat-name">${cat}</div><div class="cat-pct">${cmE>0?((amt/cmE)*100).toFixed(0):0}% of spending</div></div>
           <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${Math.round(amt/mx*100)}%;background:${COLS[i]};"></div></div>
           <div class="cat-amt">${fmtK(amt)}</div>
-        </div>`).join('')}
+        </div>`).join('') : '<div style="padding:16px 22px;font-size:12px;color:var(--ink4);">No spending data for this month.</div>'}
     </div>
 
-    ${goalsHtml}
-
-    <div class="data-note">
-      <strong>The Pour:</strong> Import last 30 days from Quicken + Amazon Items CSV in the Forge desktop app and this view updates instantly.
-    </div>
     <div style="height:24px;"></div>`;
 }
 
@@ -1159,7 +1169,7 @@ function buildAlerts() {
 
 function renderAlerts() {
   const alerts = buildAlerts();
-  document.getElementById('alerts-sub').textContent = `${alerts.length} active flag${alerts.length!==1?'s':''} · updated on import · <span style='font-family:monospace;font-size:9px;opacity:.4;'>#87</span>`;
+  document.getElementById('alerts-sub').textContent = `${alerts.length} active flag${alerts.length!==1?'s':''} · updated on import`;
   const dot = document.getElementById('alertDot');
   dot.className = 'tab-dot' + (alerts.some(a=>a.sev==='danger') ? ' show' : '');
   const el = document.getElementById('alerts-out');
@@ -1201,7 +1211,7 @@ function renderAmazon() {
 
   el.innerHTML=`
     <div class="amz-hero">
-      <div class="amz-eyebrow">${family.familyName} Family · Detail Lens</div>
+      <div class="amz-eyebrow">Net Worth · All Accounts</div>
       <div class="amz-title">🔍 Detail<span> Lens</span></div>
       <div class="amz-big">${fmtK(total)}</div>
       <div class="amz-big-sub">total · ${amzItems.length.toLocaleString()} items · ${[...new Set(amzItems.map(i=>i.source||'Amazon'))].join('/')}</div>
@@ -1984,14 +1994,10 @@ function autoSize(el) { el.style.height='auto'; el.style.height=Math.min(el.scro
 // EMPTY STATE
 // ════════════════════════════════════════════
 function emptyHTML(tab) {
-  const icons={snapshot:'⚡',alerts:'🔥',amazon:'🔍'};
   return `<div class="empty-wrap">
-    <div class="empty-icon">${icons[tab]||'⚡'}</div>
-    <div class="empty-title">No data yet</div>
-    <div class="empty-sub">Open <strong style="color:var(--gold);">Forge</strong> on a laptop or computer, run The Pour to import your files, then come back here.</div>
-    <div class="data-note" style="margin-top:20px;text-align:left;">
-      <strong style="color:var(--gold);">Quick start:</strong> Open Forge on a desktop browser and load the demo. To import real data: Quicken CSV or QIF, plus <strong>Retail.OrderHistory.1.csv</strong> from Amazon's "Request your data" portal (Account → Manage your data → Request your data → Your Orders).
-    </div>
+    <div class="empty-icon">⚡</div>
+    <div class="empty-title">No data loaded</div>
+    <div class="empty-sub">Open <strong style="color:var(--gold);">Forge</strong> on desktop, import your data, then tap <strong>↓ Pull from Cloud</strong> above — or pull down from the top of any page.</div>
   </div>`;
 }
 
@@ -2002,14 +2008,46 @@ window.addEventListener('DOMContentLoaded', function() {
   // Force visible immediately
   document.body.style.opacity = '1';
   document.body.style.visibility = 'visible';
-  try { loadFamily(); } catch(e) { console.warn('loadFamily:', e); }
-  try { load(); } catch(e) { console.warn('load:', e); }
-  try { renderSnapshot(); } catch(e) { console.warn('renderSnapshot:', e); }
+
+  // On-screen error reporter for mobile debugging
+  function showError(label, e) {
+    console.warn(label, e);
+    const el = document.getElementById('snap-out');
+    if (!el) return;
+    const existing = el.querySelector('.debug-error-panel');
+    const panel = existing || document.createElement('div');
+    panel.className = 'debug-error-panel';
+    panel.style.cssText = 'padding:14px 18px;margin:12px;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.4);border-radius:8px;font-family:monospace;font-size:11px;color:#f87171;white-space:pre-wrap;word-break:break-all;';
+    panel.textContent = (panel.textContent ? panel.textContent + '\n\n' : '') + label + ':\n' + (e?.message || e) + '\n' + (e?.stack || '').split('\n').slice(0,4).join('\n');
+    if (!existing) el.prepend(panel);
+  }
+
+  try { loadFamily(); } catch(e) { showError('loadFamily', e); }
+  try { load(); } catch(e) { showError('load', e); }
+
+  // Show data status on screen always
+  const el = document.getElementById('snap-out');
+  if (el) {
+    const status = document.createElement('div');
+    status.style.cssText = 'padding:8px 18px;font-size:11px;color:rgba(255,255,255,.4);font-family:monospace;';
+    const keys = ['forge_prod_v1','ledger_v3','forge_lean_v1'].map(k => {
+      try {
+        const v = localStorage.getItem(k);
+        if (!v) return k + ': empty';
+        const parsed = JSON.parse(v);
+        return k + ': ' + (parsed?.txns?.length ?? '?') + ' txns';
+      } catch(e) { return k + ': parse error'; }
+    });
+    status.textContent = keys.join(' | ');
+    el.prepend(status);
+  }
+
+  try { renderSnapshot(); } catch(e) { showError('renderSnapshot', e); }
   try {
     const alerts = buildAlerts();
     const dot = document.getElementById('alertDot');
     if (dot) dot.className = 'tab-dot' + (alerts.some(function(a){ return a.sev==='danger'; }) ? ' show' : '');
-  } catch(e) { console.warn('alerts:', e); }
+  } catch(e) { showError('buildAlerts', e); }
 });
 </script>
 
