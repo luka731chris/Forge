@@ -37,8 +37,7 @@
   --mono:      'DM Mono', 'Fira Code', monospace;
   --muted:     #6E6A65;
   --bg:        #0E0E0E;
-  --serif:     'Cormorant Garamond', Georgia, serif;
-  --font-m:    'Fira Code', monospace;
+  --serif:     'Cormorant Garamond', Georgia, serif;  --font-m:    'Fira Code', monospace;
   --ease:      cubic-bezier(0.16, 1, 0.3, 1);
   --r-sm:      4px; --r: 8px; --r-lg: 14px;
   --accent: var(--gold); --accent2: var(--river); --accent3: var(--positive); --accent4: var(--gold); --slate: var(--ink3); --cream: var(--lift);
@@ -46,6 +45,30 @@
   --safe-bot:  env(safe-area-inset-bottom, 34px);
   --tab-h:     62px;
 }
+
+/* ── Chart tooltip ─────────────────────────────────────────── */
+#chartTip {
+  position: fixed;
+  background: var(--float);
+  border: 1px solid var(--line2);
+  border-left: 3px solid var(--gold);
+  border-radius: 6px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-family: var(--font-m, monospace);
+  color: var(--ink);
+  pointer-events: none;
+  z-index: 9000;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,.6);
+  display: none;
+}
+
+/* ── Touch UX ──────────────────────────────────────────────── */
+.tab-btn, .s-pill, .cat-row, .kpi-card { min-height: 44px; }
+.page { touch-action: pan-y; }
+.tab-bar { touch-action: none; }
+select, input[type="text"], input[type="search"] { font-size: 16px !important; }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { height: 100%; overflow: hidden; }
@@ -340,9 +363,11 @@ body {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap">
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
+<div id="chartTip"></div>
+<div id="pulseTip" style="position:fixed;background:var(--float);border:1px solid rgba(245,168,0,.3);border-radius:10px;padding:10px 14px;font-size:13px;font-family:var(--font-ui);color:var(--ink);max-width:260px;z-index:9999;pointer-events:none;box-shadow:0 4px 24px rgba(0,0,0,.5);display:none;white-space:pre-line;line-height:1.5;"></div>
 <div class="status-fill"></div>
 <div class="shell">
 
@@ -692,6 +717,357 @@ KW_MAP = [
 ];
 
 
+
+// ── SVG CHART ENGINE (ported from desktop) ──────────────────────────────────
+const COLORS = [
+  '#F5A800','#60A5FA','#2DD4BF','#F87171','#A78BFA',
+  '#34D399','#FB923C','#E879F9','#38BDF8','#4ADE80',
+  '#FCD34D','#F472B6','#818CF8','#6EE7B7','#FCA5A5'
+];
+
+function svgBar(elId, labels, datasets) {
+  const el = document.getElementById(elId);
+  if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
+  const W = Math.max(el.offsetWidth || 0, 300);
+  const H = Math.max(el.offsetHeight || 0, 180);
+  if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;font-family:var(--font-m);">No data</div>'; return; }
+
+  const PAD = { t:12, r:16, b:52, l:58 };
+  const cW = W - PAD.l - PAD.r;
+  const cH = H - PAD.t - PAD.b;
+  const n  = labels.length;
+  const allVals = datasets.flatMap(d => d.data || []).filter(v => isFinite(v));
+  if (!allVals.length) return;
+
+  const maxV = Math.max(...allVals.map(Math.abs), 1);
+  const minV = Math.min(0, ...allVals);
+  const span = maxV - minV || 1;
+  const zeroY = cH * (maxV / span);
+
+  // Y grid + labels
+  const YTICKS = 4;
+  let grid = '', yLbls = '';
+  for (let i = 0; i <= YTICKS; i++) {
+    const v = minV + (span / YTICKS) * i;
+    const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
+    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
+    const lbl = Math.abs(v)>=1000 ? '$'+(v/1000).toFixed(0)+'K' : '$'+Math.round(v);
+    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="10" font-family="'DM Mono',monospace">${lbl}</text>`;
+  }
+
+  // Bars + invisible hit areas for tooltip
+  const nDS  = datasets.length;
+  const grpW = cW / n;
+  const barW = Math.max(Math.min((grpW / (nDS + 0.8)) - 1, 40), 3);
+  const off  = (grpW - barW * nDS) / 2;
+  let bars = '', hitAreas = '', legend = '';
+
+  datasets.forEach((ds, di) => {
+    const color = ds.backgroundColor || COLORS[di % COLORS.length];
+    const safeLabel = (ds.label||'').replace(/'/g, '&apos;');
+    legend += `<rect x="${di*90+PAD.l}" y="${H-16}" width="10" height="8" rx="2" fill="${color}"/>
+               <text x="${di*90+PAD.l+14}" y="${H-8}" fill="rgba(255,255,255,.5)" font-size="10" font-family="'DM Mono',monospace">${safeLabel}</text>`;
+    (ds.data || []).forEach((v, i) => {
+      if (!isFinite(v)) return;
+      const x  = (PAD.l + i * grpW + off + di * barW).toFixed(1);
+      const bH = Math.max((Math.abs(v) / span * cH).toFixed(1), 1);
+      const y  = (PAD.t + (v >= 0 ? zeroY - Math.abs(v)/span*cH : zeroY)).toFixed(1);
+      const fmtV = Math.abs(v)>=1000?'$'+(v/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
+      const tip = `${labels[i]} · ${safeLabel}: ${fmtV}`;
+      bars += `<rect x="${x}" y="${y}" width="${barW.toFixed(1)}" height="${bH}" rx="2" fill="${color}" opacity=".85"/>`;
+    });
+  });
+
+  // Per-column hit areas — all dataset values + computed net in one tooltip
+  labels.forEach(function(colLbl, ci) {
+    var parts = [String(colLbl)];
+    var incV = 0, expV = 0;
+    datasets.forEach(function(ds) {
+      var v = (ds.data||[])[ci];
+      if (!isFinite(v)) return;
+      var av=Math.abs(v), fv=av>=1000?(av/1000).toFixed(1)+'K':Math.round(av).toString();
+      var sign=v>=0?'+':'-';
+      parts.push((ds.label||'').replace(/['"&<>]/g,' ')+': '+sign+'$'+fv);
+      if(/income/i.test(ds.label||'')) incV=v;
+      if(/expense/i.test(ds.label||'')) expV=v;
+    });
+    if(incV&&expV){var net=incV-Math.abs(expV),nAbs=Math.abs(net),nFv=nAbs>=1000?(nAbs/1000).toFixed(1)+'K':Math.round(nAbs).toString();parts.push('Net: '+(net>=0?'+':'-')+'$'+nFv);}
+    var colTip=parts.join('  |  ');
+    var dd=JSON.stringify({month:String(colLbl)}).replace(/"/g,'&quot;');
+    hitAreas+='<rect x="'+(PAD.l+ci*grpW).toFixed(1)+'" y="'+PAD.t+'" width="'+grpW.toFixed(1)+'" height="'+cH+'" fill="transparent" style="cursor:pointer;" data-tip="'+colTip.replace(/"/g,'&quot;')+'" data-drill="'+dd+'"/>';
+  });
+
+  // X labels — adaptive: skip labels to prevent overlap
+  // Calculate how many chars fit per slot
+  const charsPerSlot = Math.floor(grpW / 6.5); // ~6.5px per char at font-size 10
+  const minStep = Math.ceil(n / Math.max(1, Math.floor(cW / 48)));
+  let xLbls = '';
+  labels.forEach((lbl, i) => {
+    if (i % minStep !== 0 && i !== n-1) return;
+    const x = (PAD.l + i * grpW + grpW / 2).toFixed(1);
+    const s = String(lbl).length > charsPerSlot ? String(lbl).slice(-Math.max(4, charsPerSlot)) : String(lbl);
+    xLbls += `<text x="${x}" y="${PAD.t+cH+16}" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10" font-family="'DM Mono',monospace">${s}</text>`;
+  });
+
+  const zY = (PAD.t + zeroY).toFixed(1);
+  const zeroLine = `<line x1="${PAD.l}" y1="${zY}" x2="${W-PAD.r}" y2="${zY}" stroke="rgba(255,255,255,.18)" stroke-width="1"/>`;
+
+  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:hidden;">
+    ${grid}${zeroLine}${bars}${yLbls}${xLbls}${legend}${hitAreas}
+  </svg>`;
+  bindChartTips(el);
+}
+
+
+function svgLine(elId, labels, datasets) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const W = Math.max(el.offsetWidth || 0, 300);
+  const H = Math.max(el.offsetHeight || 0, 140);
+  if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>'; return; }
+
+  const PAD = { t:10, r:16, b:30, l:58 };
+  const cW  = W - PAD.l - PAD.r;
+  const cH  = H - PAD.t - PAD.b;
+  const n   = labels.length;
+  const allVals = datasets.flatMap(d => d.data || []).filter(v => isFinite(v));
+  if (!allVals.length) return;
+
+  const maxV = Math.max(...allVals, 1);
+  const minV = Math.min(0, ...allVals);
+  const span = maxV - minV || 1;
+
+  let grid = '', yLbls = '';
+  for (let i = 0; i <= 4; i++) {
+    const v = minV + (span / 4) * i;
+    const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
+    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
+    const lbl = Math.abs(v)>=1000?'$'+(v/1000).toFixed(0)+'K':'$'+Math.round(v);
+    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="10" font-family="'DM Mono',monospace">${lbl}</text>`;
+  }
+
+  let paths = '', areas = '', dots = '', hitAreas = '';
+  datasets.forEach((ds, di) => {
+    const color = ds.color || ds.borderColor || COLORS[di];
+    const pts = (ds.data || []).map((v, i) => {
+      const x = (PAD.l + (i / Math.max(n-1,1)) * cW).toFixed(1);
+      const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
+      return {x, y, v, lbl:labels[i]};
+    });
+    if (pts.length < 2) return;
+    const d = 'M' + pts.map(p=>p.x+','+p.y).join(' L');
+    paths += `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+    if (ds.fill) {
+      const last = pts[pts.length-1];
+      areas += `<path d="${d} L${last.x},${PAD.t+cH} L${PAD.l},${PAD.t+cH} Z" fill="${color}" opacity=".12"/>`;
+    }
+    pts.forEach(function(p) {
+      dots += '<circle cx="'+p.x+'" cy="'+p.y+'" r="3" fill="'+color+'" opacity=".8"/>';
+    });
+  });
+
+  const minStep = Math.ceil(n / Math.max(1, Math.floor(cW / 48)));
+  let xLbls = '';
+  labels.forEach((lbl, i) => {
+    if (i % minStep !== 0 && i !== n-1) return;
+    const x = (PAD.l + (i / Math.max(n-1,1)) * cW).toFixed(1);
+    xLbls += `<text x="${x}" y="${H-4}" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10" font-family="'DM Mono',monospace">${String(lbl).slice(-5)}</text>`;
+  });
+  // Vertical strip hit areas — show all datasets at each x position
+  var slotPx = n > 1 ? cW / (n-1) : cW;
+  labels.forEach(function(lbl2, ii) {
+    var stripCx = PAD.l + (ii / Math.max(n-1,1)) * cW;
+    var tp = [String(lbl2)];
+    datasets.forEach(function(ds) {
+      var v=(ds.data||[])[ii];
+      if(v===undefined||!isFinite(v))return;
+      var av=Math.abs(v),fv=av>=1000?(av/1000).toFixed(1)+'K':Math.round(av).toString();
+      tp.push((ds.label||ds.color||'').replace(/['"&<>]/g,' ')+(v<0?' -':' +')+'$'+fv);
+    });
+    var sw=Math.max(slotPx*0.9,12);
+    hitAreas+='<rect x="'+(stripCx-sw/2).toFixed(1)+'" y="'+PAD.t+'" width="'+sw.toFixed(1)+'" height="'+cH+'" fill="transparent" style="cursor:crosshair;" data-tip="'+tp.join('  |  ').replace(/"/g,'&quot;')+'"/>';
+  });
+
+  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:hidden;">
+    ${grid}${areas}${paths}${dots}${yLbls}${xLbls}${hitAreas}
+  </svg>`;
+  bindChartTips(el);
+}
+
+
+function svgHBar(elId, labels, values, colors) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!labels.length) { el.innerHTML = '<div style="padding:20px;color:var(--ink4);font-size:12px;">No data</div>'; return; }
+  const W    = Math.max(el.offsetWidth || 0, 300);
+  const rowH = 34;
+  const H    = labels.length * rowH + 16;
+  const PAD  = { l:150, r:70, t:8, b:8 };
+  const cW   = W - PAD.l - PAD.r;
+  const maxV = Math.max(...values.map(Math.abs), 1);
+  let rows   = '';
+  labels.forEach((lbl, i) => {
+    const v     = values[i] || 0;
+    const bW    = Math.max((Math.abs(v) / maxV * cW), 2).toFixed(1);
+    const y     = PAD.t + i * rowH;
+    const color = colors ? colors[i % colors.length] : COLORS[i % COLORS.length];
+    const valS  = Math.abs(v)>=1000?'$'+(Math.abs(v)/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
+    const lShort= String(lbl).length > 20 ? String(lbl).slice(0,19)+'…' : String(lbl);
+    const tip   = `${lbl}: ${valS}`;
+    rows += `<text x="${PAD.l-10}" y="${(y+rowH/2).toFixed(1)}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.7)" font-size="11" font-family="'DM Sans',sans-serif">${lShort}</text>`;
+    const catDrill = JSON.stringify({cat: String(lbl)}).replace(/"/g,'&quot;');
+    rows += `<rect x="${PAD.l}" y="${(y+rowH*.18).toFixed(1)}" width="${bW}" height="${(rowH*.64).toFixed(1)}" rx="3" fill="${color}" opacity=".85"
+      style="cursor:pointer;"
+      data-tip="${tip.replace(/'/g,'&apos;').replace(/"/g,'&quot;')}"
+      data-drill="${catDrill}"/>`;
+    rows += `<text x="${(PAD.l+parseFloat(bW)+6).toFixed(1)}" y="${(y+rowH/2).toFixed(1)}" dominant-baseline="middle" fill="rgba(255,255,255,.5)" font-size="10" font-family="'DM Mono',monospace">${valS}</text>`;
+  });
+  el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;">${rows}</svg>`;
+  bindChartTips(el);
+}
+
+// ════════════════════════════════════════════════
+// CHART.JS DONUT (still using Chart.js — works fine)
+// ════════════════════════════════════════════════
+
+function svgWaterfall(elId, items) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  var W = Math.max(el.offsetWidth || 0, 300);
+  var H = Math.max(el.offsetHeight || 0, 220);
+  if (!items || !items.length) {
+    el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
+    return;
+  }
+  var PAD = {t:20,r:16,b:52,l:64};
+  var cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b, n = items.length;
+  var running = 0;
+  var segs = items.map(function(item) {
+    var val = item.value || 0;
+    var start = item.type === 'total' ? 0 : running;
+    var end2  = item.type === 'total' ? val : running + val;
+    if (item.type !== 'total') running += val;
+    return {label:item.label, value:val, type:item.type, color:item.color, start:start, end:end2};
+  });
+  var allV = [];
+  segs.forEach(function(s){allV.push(s.start,s.end);});
+  allV = allV.filter(isFinite);
+  var minV = Math.min.apply(null,[0].concat(allV));
+  var maxV = Math.max.apply(null,allV.concat([1]));
+  var span = maxV - minV || 1;
+  function toY(v){return PAD.t + cH - cH*(v-minV)/span;}
+  function fmtM(v){var a=Math.abs(v);return a>=1000?'$'+(a/1000).toFixed(1)+'K':'$'+Math.round(a);}
+  var gap=cW/n, barW=Math.max(Math.min(gap*0.65,52),6);
+  var grid='',yLbls='',connectors='',bars='',hitAreas='',xLbls='';
+  for(var gi=0;gi<=5;gi++){
+    var gv=minV+span*gi/5, gy=toY(gv).toFixed(1);
+    grid+='<line x1="'+PAD.l+'" y1="'+gy+'" x2="'+(W-PAD.r)+'" y2="'+gy+'" stroke="rgba(255,255,255,.05)" stroke-width="1"/>';
+    var gl=(gv<0?'-':'')+fmtM(gv);
+    yLbls+='<text x="'+(PAD.l-6)+'" y="'+gy+'" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="10" font-family="monospace">'+gl+'</text>';
+  }
+  var zY=toY(0).toFixed(1);
+  var zeroLine='<line x1="'+PAD.l+'" y1="'+zY+'" x2="'+(W-PAD.r)+'" y2="'+zY+'" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>';
+  for(var ci=1;ci<segs.length;ci++){
+    var prev=segs[ci-1],cur2=segs[ci];
+    var cx1=(PAD.l+(ci-1)*gap+gap/2+barW/2).toFixed(1);
+    var cx2=(PAD.l+ci*gap+gap/2-barW/2).toFixed(1);
+    var connY=cur2.type==='total'?toY(0).toFixed(1):toY(prev.end).toFixed(1);
+    connectors+='<line x1="'+cx1+'" y1="'+connY+'" x2="'+cx2+'" y2="'+connY+'" stroke="rgba(255,255,255,.12)" stroke-width="1" stroke-dasharray="3,2"/>';
+  }
+  segs.forEach(function(s,i){
+    var cx=PAD.l+i*gap+gap/2, x=(cx-barW/2).toFixed(1);
+    var yTop=toY(Math.max(s.start,s.end)).toFixed(1);
+    var yBot=toY(Math.min(s.start,s.end)).toFixed(1);
+    var bH=Math.max(parseFloat(yBot)-parseFloat(yTop),2).toFixed(1);
+    var dc=s.value>=0?'rgba(45,212,191,.85)':'rgba(248,113,113,.85)';
+    var color=s.type==='total'?'rgba(245,168,0,.9)':(s.color||dc);
+    bars+='<rect x="'+x+'" y="'+yTop+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="2" fill="'+color+'"/>';
+    var valY=s.value>=0?(parseFloat(yTop)-4).toFixed(1):(parseFloat(yTop)+parseFloat(bH)+11).toFixed(1);
+    var sign=s.value>=0?'+':'';
+    bars+='<text x="'+cx.toFixed(1)+'" y="'+valY+'" text-anchor="middle" fill="rgba(255,255,255,.75)" font-size="9" font-family="monospace">'+sign+fmtM(s.value)+'</text>';
+    if(s.type!=='total'){bars+='<circle cx="'+cx.toFixed(1)+'" cy="'+toY(s.end).toFixed(1)+'" r="3" fill="rgba(245,168,0,.8)"/>';}
+    var tipT=s.type==='total'?'Net total':(s.value>=0?'Adds':'Reduces');
+    var tip=s.label+': '+sign+fmtM(s.value)+' | '+tipT+' | Running: '+(s.type!=='total'?fmtM(s.end):'final');
+    hitAreas+='<rect x="'+(PAD.l+i*gap).toFixed(1)+'" y="'+PAD.t+'" width="'+gap.toFixed(1)+'" height="'+cH+'" fill="transparent" style="cursor:default;" data-tip="'+tip.replace(/"/g,"'")+'" />';
+    var sl=s.label.length>11?s.label.slice(0,10)+String.fromCharCode(8230):s.label;
+    xLbls+='<text x="'+cx.toFixed(1)+'" y="'+(H-PAD.b+16)+'" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="9" font-family="monospace">'+sl+'</text>';
+  });
+  el.innerHTML='<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'+grid+zeroLine+connectors+bars+yLbls+xLbls+hitAreas+'</svg>';
+  bindChartTips(el);
+}
+
+
+function makeDonut(canvasId, labels, values, existingChart) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return null;
+  if (existingChart) { try { existingChart.destroy(); } catch(e) {} }
+  // Set explicit dimensions
+  const par = canvas.parentElement;
+  const h = par ? (par.offsetHeight || 220) : 220;
+  const w = par ? (par.offsetWidth  || 300) : 300;
+  canvas.width  = w;
+  canvas.height = h;
+  canvas.style.width  = '100%';
+  canvas.style.height = '100%';
+  return new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data: values, backgroundColor: COLORS.slice(0,labels.length), borderWidth: 1, borderColor: 'rgba(255,255,255,.06)' }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '58%',
+      plugins: {
+        legend: { position: 'right', labels: { font:{size:10}, boxWidth:8, color:'rgba(255,255,255,.55)', padding:6 } }
+      }
+    }
+  });
+}
+
+// ════════════════════════════════════════════════
+// MONTHLY DATA HELPER
+// ════════════════════════════════════════════════
+
+function showChartTip(e, text) {
+  const tip = document.getElementById('chartTip');
+  if (!tip) return;
+  const hasDrill = e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.drill;
+  tip.innerHTML = (text||'').replace(/&apos;/g,"'").replace(/&quot;/g,'"') +
+    (hasDrill ? '<span style="display:block;font-size:9px;color:var(--gold);margin-top:3px;">↗ click to view transactions</span>' : '');
+  tip.style.display = 'block';
+  positionChartTip(e);
+}
+
+function hideChartTip() {
+  const tip = document.getElementById('chartTip');
+  if (tip) tip.style.display = 'none';
+}
+
+function positionChartTip(e) {
+  const tip = document.getElementById('chartTip');
+  if (!tip || tip.style.display === 'none') return;
+  const x = e.clientX + 14, y = e.clientY - 10;
+  const tw = tip.offsetWidth + 20, th = tip.offsetHeight + 10;
+  tip.style.left = (x + tw > window.innerWidth  ? e.clientX - tw : x) + 'px';
+  tip.style.top  = (y + th > window.innerHeight ? e.clientY - th : y) + 'px';
+}
+
+function bindChartTips(container) {
+  if (!container) return;
+  container.querySelectorAll('[data-tip]').forEach(function(el) {
+    el.addEventListener('mouseenter', function(e) { showChartTip(e, this.dataset.tip); });
+    el.addEventListener('mouseleave', hideChartTip);
+    if (el.dataset && el.dataset.drill) {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', function() { drillFromChart(this.dataset.drill); });
+    }
+  });
+}
+document.addEventListener('mousemove', positionChartTip);
+
+
 function classifyTxn(t) {
   const cat  = (t.category || '').toLowerCase().trim();
   const pay  = (t.payee    || '').toLowerCase().trim();
@@ -916,7 +1292,20 @@ function go(tab) {
   const tb = document.getElementById('tab-'+tab);
   if (tb) tb.classList.add('active');
   active = tab;
-  const safe = function(fn, lbl) { try { fn(); } catch(e) { console.error('Pulse '+lbl+' error:', e); } };
+  const safe = function(fn, lbl) {
+    try { fn(); } catch(e) {
+      console.error('Pulse '+lbl+' error:', e);
+      // Show error on screen in the active page
+      const activeEl = document.getElementById('pg-'+active);
+      if (activeEl) {
+        const errDiv = activeEl.querySelector('.tab-error') || document.createElement('div');
+        errDiv.className = 'tab-error';
+        errDiv.style.cssText = 'padding:14px 18px;margin:12px;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.4);border-radius:8px;font-family:monospace;font-size:11px;color:#f87171;white-space:pre-wrap;word-break:break-all;position:relative;z-index:10;';
+        errDiv.textContent = lbl + ':\n' + (e?.message||e) + '\n' + (e?.stack||'').split('\n').slice(0,3).join('\n');
+        if (!activeEl.querySelector('.tab-error')) activeEl.prepend(errDiv);
+      }
+    }
+  };
   if (tab==='snapshot') safe(function(){ renderSnapshot(); }, 'snapshot');
   if (tab==='alerts')   safe(function(){ renderPulsePL(); }, 'pl');
   if (tab==='amazon')   safe(function(){ renderPulseNW(); }, 'nw');
@@ -1570,6 +1959,595 @@ function destroyPulseAna() {
 }
 
 // ── MOBILE P&L ───────────────────────────────────────────────────────────────
+function renderPulseNW() {
+  const el = document.getElementById('nw-out');
+  if (!el) return;
+
+  if (!txns.length) { el.innerHTML = '<div style="padding:40px 0;text-align:center;color:var(--ink4);font-size:13px;">Import data to view Net Worth.</div>'; return; }
+
+  // Compute balances by account
+  const acctBals = {};
+  txns.forEach(t => {
+    if (!acctBals[t.account]) acctBals[t.account] = 0;
+    acctBals[t.account] += t.amount;
+  });
+
+  const assets = [], liabs = [];
+  Object.entries(acctBals).forEach(([name, bal]) => {
+    const type = detectAcctType(name);
+    const isCC = isCreditAcct(name);
+    if (isCC || type === 'liability') {
+      liabs.push({ name, bal: Math.abs(bal) });
+    } else {
+      assets.push({ name, bal });
+    }
+  });
+
+  assets.sort((a,b)=>b.bal-a.bal);
+  liabs.sort((a,b)=>b.bal-a.bal);
+
+  const totalAssets = assets.reduce((s,a)=>s+a.bal,0);
+  const totalLiabs  = liabs.reduce((s,l)=>s+l.bal,0);
+  const netWorth    = totalAssets - totalLiabs;
+  const nwColor     = netWorth >= 0 ? 'var(--positive)' : 'var(--negative)';
+
+  const acctRow = (name, bal, color) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+      <div style="font-size:12px;color:var(--ink3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</div>
+      <div style="font-size:12px;font-weight:600;color:${color};font-family:var(--mono);">${fmt(bal)}</div>
+    </div>`;
+
+  const section = (title, rows, total, color) => `
+    <div style="margin-bottom:18px;">
+      <div style="font-size:10px;font-family:var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line);">${title}</div>
+      ${rows}
+      <div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:2px;">
+        <div style="font-size:12px;font-weight:600;color:var(--ink2);">Total</div>
+        <div style="font-size:13px;font-weight:700;color:${color};font-family:var(--mono);">${fmt(total)}</div>
+      </div>
+    </div>`;
+
+  el.innerHTML = `
+    <div style="padding:16px 0 100px;">
+      <!-- Net Worth hero -->
+      <div style="background:linear-gradient(135deg,#0F0E09,var(--void));border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;margin-bottom:20px;">
+        <div style="font-size:9px;font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Net Worth</div>
+        <div style="font-size:36px;font-weight:700;color:${nwColor};font-family:var(--mono);letter-spacing:-.02em;">${netWorth>=0?'+':''}${fmtK(netWorth)}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;">
+          <div><div style="font-size:9px;color:var(--ink4);font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;">Assets</div><div style="font-size:16px;font-weight:600;color:var(--positive);font-family:var(--mono);">${fmtK(totalAssets)}</div></div>
+          <div><div style="font-size:9px;color:var(--ink4);font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;">Liabilities</div><div style="font-size:16px;font-weight:600;color:var(--negative);font-family:var(--mono);">${fmtK(totalLiabs)}</div></div>
+        </div>
+      </div>
+
+      ${section(
+        'Assets',
+        assets.map(a=>acctRow(a.name,a.bal,'var(--positive)')).join(''),
+        totalAssets, 'var(--positive)'
+      )}
+      ${section(
+        'Liabilities',
+        liabs.map(l=>acctRow(l.name,l.bal,'var(--negative)')).join(''),
+        totalLiabs, 'var(--negative)'
+      )}
+    </div>`;
+}
+
+function destroyPulseAna() {
+  [pCatChart,pTrendChart,pPurchaserChart,pDowChart,pSavRateChart].forEach(c=>{
+    if(c){try{c.destroy();}catch(e){}}
+  });
+  pCatChart=pTrendChart=pPurchaserChart=pDowChart=pSavRateChart=null;
+}
+
+function renderPulseAnalytics() {
+  if (!txns.length) return;
+  destroyPulseAna();
+  renderPulseCategories();
+  renderPulseTrend();
+  renderPulsePurchaser();
+  renderPulseDow();
+  renderPulseSavRate();
+}
+
+function renderPulseCategories() {
+  const el = document.getElementById('p-cat-chart');
+  if (!el) return;
+  const since = getPulseSince(pCatRange);
+  const cats = {};
+  spendable(txns).filter(t=>new Date(t.date)>=since&&t.amount<0).forEach(t=>{
+    const bk = classifyTxn(t);
+    const lbl = (BUCKET_META[bk]||{label:bk}).label;
+    cats[lbl]=(cats[lbl]||0)+Math.abs(t.amount);
+  });
+  const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const total = sorted.reduce((s,[,v])=>s+v, 0);
+  if (!total) { el.innerHTML='<div style="padding:20px;color:var(--ink4);font-size:12px;">No spending data.</div>'; return; }
+
+  // SVG donut — no Chart.js needed
+  const W=280, H=200, cx=100, cy=100, r=80, ri=52;
+  let angle=-Math.PI/2, paths='', legend='';
+  sorted.forEach(([cat,val],i) => {
+    const pct = val/total;
+    const sweep = pct * 2 * Math.PI;
+    const x1=cx+r*Math.cos(angle), y1=cy+r*Math.sin(angle);
+    const x2=cx+r*Math.cos(angle+sweep), y2=cy+r*Math.sin(angle+sweep);
+    const xi1=cx+ri*Math.cos(angle), yi1=cy+ri*Math.sin(angle);
+    const xi2=cx+ri*Math.cos(angle+sweep), yi2=cy+ri*Math.sin(angle+sweep);
+    const lg = sweep>Math.PI?1:0;
+    const color = COLORS[i%COLORS.length];
+    const tip = `${cat}: ${fmtK(val)} (${(pct*100).toFixed(0)}%)`;
+    paths += `<path d="M${xi1.toFixed(1)},${yi1.toFixed(1)} L${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 ${lg},1 ${x2.toFixed(1)},${y2.toFixed(1)} L${xi2.toFixed(1)},${yi2.toFixed(1)} A${ri},${ri} 0 ${lg},0 ${xi1.toFixed(1)},${yi1.toFixed(1)} Z" fill="${color}" opacity=".88" style="cursor:pointer;" data-tip="${tip.replace(/"/g,'&quot;')}"/>`;
+    const ly = 16+i*20;
+    legend += `<rect x="190" y="${ly}" width="8" height="8" rx="2" fill="${color}"/>
+               <text x="202" y="${ly+8}" fill="rgba(255,255,255,.7)" font-size="10" font-family="DM Sans,sans-serif">${cat.length>14?cat.slice(0,13)+'…':cat}</text>`;
+    angle += sweep;
+  });
+  // Center label
+  const centerLabel = `<text x="${cx}" y="${cy-4}" text-anchor="middle" fill="rgba(255,255,255,.5)" font-size="9" font-family="DM Mono,monospace">TOTAL</text>
+    <text x="${cx}" y="${cy+12}" text-anchor="middle" fill="var(--gold)" font-size="14" font-weight="600" font-family="DM Mono,monospace">${fmtK(total)}</text>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;">${paths}${centerLabel}${legend}</svg>`;
+  bindChartTips(el);
+
+  const insEl = document.getElementById('p-cat-insights');
+  if (insEl && sorted[0]) insEl.innerHTML = [
+    {lbl:'Total',val:fmtK(total)},
+    {lbl:'Top',val:sorted[0][0].split(' ')[0]},
+    {lbl:'Amount',val:fmtK(sorted[0][1])},
+  ].map(i=>`<div class="p-insight"><div class="p-insight-lbl">${i.lbl}</div><div class="p-insight-val">${i.val}</div></div>`).join('');
+}
+
+function renderPulseTrend() {
+  const el = document.getElementById('p-trend-chart');
+  if (!el) return;
+  const mos=[];
+  for(let i=5;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
+  const inc = mos.map(m=>spendable(txns).filter(t=>t.date.startsWith(m)&&t.amount>0).reduce((s,t)=>s+t.amount,0));
+  const exp = mos.map(m=>Math.abs(spendable(txns).filter(t=>t.date.startsWith(m)&&t.amount<0).reduce((s,t)=>s+t.amount,0)));
+  svgBar('p-trend-chart', mos.map(m=>m.slice(5)), [
+    {label:'Income', data:inc, backgroundColor:'rgba(45,212,191,.7)'},
+    {label:'Expenses', data:exp.map(v=>-v), backgroundColor:'rgba(248,113,113,.7)'},
+  ]);
+}
+
+function renderPulsePurchaser() {
+  const el = document.getElementById('p-purchaser-card');
+  if (!el) return;
+  const since = getPulseSince(pPurchaserRange);
+  const people = [...new Set(Object.values(family.accountOwners||{}))].filter(Boolean);
+  if (!people.length) { el.style.display='none'; return; }
+  el.style.display='block';
+  const data = people.map(p => {
+    const accts = Object.entries(family.accountOwners||{}).filter(([,v])=>v===p).map(([k])=>k);
+    const total = Math.abs(spendable(txns).filter(t=>new Date(t.date)>=since&&t.amount<0&&accts.includes(t.account)).reduce((s,t)=>s+t.amount,0));
+    return {p, total};
+  }).sort((a,b)=>b.total-a.total);
+  svgHBar('p-purchaser-chart', data.map(d=>d.p), data.map(d=>d.total), COLORS);
+}
+
+function renderPulseDow() {
+  const el = document.getElementById('p-dow-chart');
+  if (!el) return;
+  const since = getPulseSince(pCatRange);
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const totals = [0,0,0,0,0,0,0];
+  spendable(txns).filter(t=>new Date(t.date)>=since&&t.amount<0).forEach(t=>{
+    totals[new Date(t.date+'T12:00:00').getDay()] += Math.abs(t.amount);
+  });
+  svgHBar('p-dow-chart', DAYS, totals, COLORS);
+}
+
+function renderPulseSavRate() {
+  const el = document.getElementById('p-savrate-chart');
+  if (!el) return;
+  const mos=[];
+  for(let i=11;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
+  const rates = mos.map(m => {
+    const sp = spendable(txns).filter(t=>t.date.startsWith(m));
+    const inc = sp.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+    const exp = Math.abs(sp.filter(t=>t.amount<0).reduce((s,t)=>s+t.amount,0));
+    return inc>0 ? parseFloat(((inc-exp)/inc*100).toFixed(1)) : 0;
+  });
+  const target = family.savingsTarget || 20;
+  svgLine('p-savrate-chart', mos.map(m=>m.slice(5)), [
+    {label:'Savings %', data:rates, color:'#F5A800', fill:true},
+    {label:`Target ${target}%`, data:mos.map(()=>target), color:'rgba(255,255,255,.2)', dash:true},
+  ]);
+}
+
+
+// ── Mobile P&L state ──────────────────────────────────────────────────────────
+let _piDrillOpen = {};
+let _piBktOpen   = {};
+
+function piToggleSec(id)  { _piDrillOpen[id] = !_piDrillOpen[id]; renderPulsePL(); }
+function piToggleBkt(key) { _piBktOpen[key]  = !_piBktOpen[key];  renderPulsePL(); }
+
+function renderPulsePL(drillSection) {
+  const el = document.getElementById('pl-out');
+  const moSel = document.getElementById('plMonth');
+  if (!el) return;
+
+  const sp = spendable(txns);
+  if (!sp.length) {
+    el.innerHTML = '<div style="padding:40px 22px;text-align:center;color:var(--ink4);font-size:13px;">Import data to view P&L.</div>';
+    return;
+  }
+
+  const months = [...new Set(sp.map(t=>t.date.slice(0,7)))].sort().reverse();
+  if (moSel && moSel.options.length === 0) {
+    months.forEach(m => {
+      const [yr,mo] = m.split('-');
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = new Date(yr, parseInt(mo)-1, 1).toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+      moSel.appendChild(opt);
+    });
+  }
+  const selMonth = moSel ? (moSel.value || months[0]) : months[0];
+
+  // Drill-to-transactions view
+  if (drillSection) {
+    const secTxns = sp.filter(t => classifyTxn(t) === drillSection.key && t.date.startsWith(selMonth));
+    const sorted  = secTxns.slice().sort((a,b)=>b.date.localeCompare(a.date));
+    let out = '<div style="padding:0 0 100px;">';
+    out += '<div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--void);position:sticky;top:0;z-index:10;">';
+    out += '<button onclick="renderPulsePL()" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink3);padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;">← Back</button>';
+    out += '<div style="font-size:13px;font-weight:600;color:var(--ink);">' + drillSection.label + '</div>';
+    out += '<div style="margin-left:auto;font-size:11px;color:var(--ink4);">' + sorted.length + ' transactions</div></div>';
+    sorted.forEach(t => {
+      const isSplit = (t.category||'').toLowerCase()==='--split--';
+      const sub = isSplit ? 'Split payment' : (t.category||'');
+      out += '<div style="padding:10px 18px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">';
+      out += '<div style="flex:1;min-width:0;"><div style="font-size:12px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (t.payee||'—') + '</div>';
+      out += '<div style="font-size:10px;color:var(--ink4);margin-top:1px;">' + t.date + (sub?' · '+sub:'') + '</div></div>';
+      out += '<div style="font-size:13px;font-weight:600;color:' + (t.amount>0?'var(--positive)':'var(--negative)') + ';font-family:var(--mono);white-space:nowrap;">' + (t.amount>0?'+':'') + fmtK(t.amount) + '</div></div>';
+    });
+    if (!sorted.length) out += '<div style="padding:30px 18px;text-align:center;color:var(--ink4);font-size:12px;">No transactions</div>';
+    out += '</div>';
+    el.innerHTML = out;
+    return;
+  }
+
+  const monthSp = sp.filter(t => t.date.startsWith(selMonth));
+  const bktTxns = {};
+  monthSp.forEach(t => {
+    const bk = classifyTxn(t);
+    if (!bktTxns[bk]) bktTxns[bk] = [];
+    bktTxns[bk].push(t);
+  });
+
+  let runBal = 0;
+  const sections = WATERFALL.map(sec => {
+    const bucketData = {};
+    sec.buckets.forEach(bk => {
+      if (bktTxns[bk] && bktTxns[bk].length) bucketData[bk] = { txns:bktTxns[bk], total:bktTxns[bk].reduce((s,t)=>s+Math.abs(t.amount),0) };
+    });
+    const total = Object.values(bucketData).reduce((s,b)=>s+b.total,0);
+    if (sec.type==='income') runBal += total; else runBal -= total;
+    return Object.assign({}, sec, { bucketData, total, runBal });
+  });
+
+  const totalInc = (sections.find(s=>s.id==='income')||{total:0}).total;
+  const totalExp = sections.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.total,0);
+  const net = totalInc - totalExp;
+  const surpCol = net>=0?'var(--positive)':'var(--negative)';
+  const savPct  = totalInc>0?(net/totalInc*100):0;
+
+  let out = '';
+
+  // Hero row
+  out += '<div style="padding:14px 18px;background:linear-gradient(135deg,#0F0E09,var(--void));border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">';
+  out += '<div><div style="font-size:9px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Income</div><div style="font-size:18px;font-weight:700;color:var(--positive);font-family:var(--mono);">' + fmtK(totalInc) + '</div></div>';
+  out += '<div><div style="font-size:9px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Expenses</div><div style="font-size:18px;font-weight:700;color:var(--negative);font-family:var(--mono);">' + fmtK(totalExp) + '</div></div>';
+  out += '<div><div style="font-size:9px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Net</div><div style="font-size:18px;font-weight:700;color:' + surpCol + ';font-family:var(--mono);">' + (net>=0?'+':'') + fmtK(net) + '</div></div>';
+  out += '</div>';
+
+  // Savings rate bar
+  out += '<div style="padding:8px 18px;border-bottom:1px solid var(--line);background:var(--void);display:flex;align-items:center;gap:10px;">';
+  out += '<div style="flex:1;height:4px;background:var(--lift);border-radius:2px;overflow:hidden;"><div style="height:100%;width:' + Math.min(Math.max(savPct,0),100) + '%;background:' + (savPct>=20?'var(--positive)':'var(--negative)') + ';border-radius:2px;"></div></div>';
+  out += '<div style="font-size:11px;font-weight:600;color:' + (savPct>=20?'var(--positive)':'var(--negative)') + ';font-family:var(--mono);min-width:42px;text-align:right;">' + savPct.toFixed(1) + '%</div>';
+  out += '</div>';
+
+  // Section rows
+  sections.forEach(function(sec) {
+    if (!sec.total && sec.id!=='income') return;
+    const isOpen  = !!_piDrillOpen[sec.id];
+    const hasBkts = Object.keys(sec.bucketData).length > 0;
+    const balCol  = sec.runBal>=0?'var(--positive)':'var(--negative)';
+    const rot     = isOpen?'0deg':'-90deg';
+    const chevSvg = hasBkts
+      ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2.5" style="transform:rotate(' + rot + ');transition:transform .2s;flex-shrink:0;"><polyline points="18 15 12 9 6 15"/></svg>'
+      : '<span style="width:12px;flex-shrink:0;display:inline-block;"></span>';
+
+    out += '<div style="display:flex;align-items:center;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.05);background:var(--lift);gap:8px;">';
+    out += '<div onclick="piToggleSec(\'' + sec.id + '\')" style="display:flex;align-items:center;gap:8px;flex:1;' + (hasBkts?'cursor:pointer;':'') + 'min-width:0;">';
+    out += chevSvg;
+    out += '<div style="min-width:0;flex:1;">';
+    out += '<div style="font-size:13px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + sec.label + '</div>';
+    out += '<div style="font-size:10px;color:var(--ink4);">' + Object.values(sec.bucketData).reduce(function(s,b){return s+b.txns.length;},0) + ' transactions</div>';
+    out += '</div></div>';
+    out += '<button onclick="renderPulsePL({key:\'' + sec.id + '\',label:\'' + sec.label.replace(/'/g,"\\'") + '\',month:\'' + selMonth + '\'})" style="font-size:10px;color:var(--river);background:transparent;border:1px solid rgba(96,165,250,.3);padding:3px 8px;border-radius:4px;cursor:pointer;flex-shrink:0;">→</button>';
+    out += '<div style="text-align:right;min-width:64px;">';
+    out += '<div style="font-size:14px;font-weight:700;color:' + sec.color + ';font-family:var(--mono);">' + sec.sign + fmtK(sec.total) + '</div>';
+    out += '<div style="font-size:10px;color:' + balCol + ';font-family:var(--mono);">' + (sec.runBal>=0?'+':'') + fmtK(sec.runBal) + '</div>';
+    out += '</div></div>';
+
+    if (!isOpen || !hasBkts) return;
+
+    // Bucket rows (level 1)
+    Object.entries(sec.bucketData).sort(function(a,b){return b[1].total-a[1].total;}).forEach(function(entry) {
+      const bk   = entry[0];
+      const bd   = entry[1];
+      const bMeta = BUCKET_META[bk] || {label:bk, icon:'·'};
+      const bOpen = !!_piBktOpen[bk];
+      const bRot  = bOpen?'0deg':'-90deg';
+      const bChev = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2.5" style="transform:rotate(' + bRot + ');transition:transform .2s;flex-shrink:0;"><polyline points="18 15 12 9 6 15"/></svg>';
+
+      out += '<div style="display:flex;align-items:center;padding:9px 18px 9px 38px;border-bottom:1px solid rgba(255,255,255,.03);background:rgba(0,0,0,.15);gap:8px;">';
+      out += '<div onclick="piToggleBkt(\'' + bk + '\')" style="display:flex;align-items:center;gap:6px;flex:1;cursor:pointer;min-width:0;">';
+      out += bChev;
+      out += '<span style="font-size:14px;">' + bMeta.icon + '</span>';
+      out += '<div style="min-width:0;flex:1;">';
+      out += '<div style="font-size:12px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + bMeta.label + '</div>';
+      out += '<div style="font-size:10px;color:var(--ink4);">' + bd.txns.length + ' txn' + (bd.txns.length!==1?'s':'') + '</div>';
+      out += '</div></div>';
+      out += '<button onclick="renderPulsePL({key:\'' + bk + '\',label:\'' + bMeta.label.replace(/'/g,"\\'") + '\',month:\'' + selMonth + '\'})" style="font-size:9px;color:var(--river);background:transparent;border:1px solid rgba(96,165,250,.3);padding:2px 6px;border-radius:4px;cursor:pointer;flex-shrink:0;">→</button>';
+      out += '<div style="font-size:13px;font-weight:600;color:' + sec.color + ';font-family:var(--mono);min-width:60px;text-align:right;">' + fmtK(bd.total) + '</div>';
+      out += '</div>';
+
+      if (!bOpen) return;
+
+      // Payee rows (level 2)
+      const byPayee = {};
+      bd.txns.forEach(function(t) {
+        const p = t.payee||'Unknown';
+        if (!byPayee[p]) byPayee[p]={total:0,txns:[]};
+        byPayee[p].total += Math.abs(t.amount);
+        byPayee[p].txns.push(t);
+      });
+      Object.entries(byPayee).sort(function(a,b){return b[1].total-a[1].total;}).forEach(function(pe) {
+        const payee = pe[0];
+        const pd    = pe[1];
+        const pKey  = bk+'_p_'+payee.replace(/[^a-zA-Z0-9]/g,'_');
+        const pOpen = !!_piBktOpen[pKey];
+        const hasMul = pd.txns.length > 1;
+
+        out += '<div style="display:flex;align-items:center;padding:8px 18px 8px 58px;border-bottom:1px solid rgba(255,255,255,.02);background:rgba(0,0,0,.22);gap:8px;">';
+        if (hasMul) {
+          out += '<div onclick="piToggleBkt(\'' + pKey + '\')" style="display:flex;align-items:center;gap:6px;flex:1;cursor:pointer;min-width:0;">';
+          out += '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2.5" style="transform:rotate(' + (pOpen?'0deg':'-90deg') + ');flex-shrink:0;"><polyline points="18 15 12 9 6 15"/></svg>';
+        } else {
+          out += '<div style="display:flex;align-items:center;flex:1;min-width:0;padding-left:15px;">';
+        }
+        out += '<div style="font-size:12px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + payee + '</div>';
+        out += '</div>';
+        if (hasMul) out += '<div style="font-size:10px;color:var(--ink4);flex-shrink:0;">' + pd.txns.length + 'x</div>';
+        out += '<div style="font-size:12px;color:var(--gold);font-family:var(--mono);min-width:56px;text-align:right;">' + fmtK(pd.total) + '</div>';
+        out += '</div>';
+
+        // Transaction rows (level 3)
+        if (pOpen || !hasMul) {
+          pd.txns.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).forEach(function(t) {
+            const isSplit = (t.category||'').toLowerCase()==='--split--';
+            const subLbl  = isSplit?'Split':(t.category||t.account||'');
+            out += '<div style="display:flex;justify-content:space-between;padding:5px 18px 5px 74px;border-bottom:1px solid rgba(255,255,255,.015);background:rgba(0,0,0,.3);">';
+            out += '<div><div style="font-size:10px;color:var(--ink4);">' + t.date + '</div>';
+            if (subLbl) out += '<div style="font-size:10px;color:' + (isSplit?'var(--river)':'var(--ink4)') + ';font-style:' + (isSplit?'italic':'normal') + ';">' + subLbl.slice(0,30) + '</div>';
+            out += '</div>';
+            out += '<div style="font-size:11px;font-family:var(--mono);color:' + (t.amount>0?'var(--positive)':'var(--gold)') + ';">' + fmtK(Math.abs(t.amount)) + '</div>';
+            out += '</div>';
+          });
+        }
+      });
+    });
+  });
+
+  // Net row
+  out += '<div style="display:flex;justify-content:space-between;padding:14px 18px;background:' + (net>=0?'rgba(45,212,191,.06)':'rgba(248,113,113,.06)') + ';border-top:2px solid ' + (net>=0?'rgba(45,212,191,.3)':'rgba(248,113,113,.3)') + ';">';
+  out += '<div style="font-size:14px;font-weight:700;color:' + surpCol + ';">' + (net>=0?'✓ Net Surplus':'⚠ Net Deficit') + '</div>';
+  out += '<div style="font-size:16px;font-weight:700;color:' + surpCol + ';font-family:var(--mono);">' + (net>=0?'+':'') + fmtK(net) + '</div>';
+  out += '</div>';
+  out += '<div style="height:100px;"></div>';
+
+  el.innerHTML = out;
+}
+
+
+function renderPulseNW() {
+  const el = document.getElementById('nw-out');
+  if (!el) return;
+
+  if (!txns.length) { el.innerHTML = '<div style="padding:40px 0;text-align:center;color:var(--ink4);font-size:13px;">Import data to view Net Worth.</div>'; return; }
+
+  // Compute balances by account
+  const acctBals = {};
+  txns.forEach(t => {
+    if (!acctBals[t.account]) acctBals[t.account] = 0;
+    acctBals[t.account] += t.amount;
+  });
+
+  const assets = [], liabs = [];
+  Object.entries(acctBals).forEach(([name, bal]) => {
+    const type = detectAcctType(name);
+    const isCC = isCreditAcct(name);
+    if (isCC || type === 'liability') {
+      liabs.push({ name, bal: Math.abs(bal) });
+    } else {
+      assets.push({ name, bal });
+    }
+  });
+
+  assets.sort((a,b)=>b.bal-a.bal);
+  liabs.sort((a,b)=>b.bal-a.bal);
+
+  const totalAssets = assets.reduce((s,a)=>s+a.bal,0);
+  const totalLiabs  = liabs.reduce((s,l)=>s+l.bal,0);
+  const netWorth    = totalAssets - totalLiabs;
+  const nwColor     = netWorth >= 0 ? 'var(--positive)' : 'var(--negative)';
+
+  const acctRow = (name, bal, color) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+      <div style="font-size:12px;color:var(--ink3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</div>
+      <div style="font-size:12px;font-weight:600;color:${color};font-family:var(--mono);">${fmt(bal)}</div>
+    </div>`;
+
+  const section = (title, rows, total, color) => `
+    <div style="margin-bottom:18px;">
+      <div style="font-size:10px;font-family:var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line);">${title}</div>
+      ${rows}
+      <div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:2px;">
+        <div style="font-size:12px;font-weight:600;color:var(--ink2);">Total</div>
+        <div style="font-size:13px;font-weight:700;color:${color};font-family:var(--mono);">${fmt(total)}</div>
+      </div>
+    </div>`;
+
+  el.innerHTML = `
+    <div style="padding:16px 0 100px;">
+      <!-- Net Worth hero -->
+      <div style="background:linear-gradient(135deg,#0F0E09,var(--void));border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;margin-bottom:20px;">
+        <div style="font-size:9px;font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Net Worth</div>
+        <div style="font-size:36px;font-weight:700;color:${nwColor};font-family:var(--mono);letter-spacing:-.02em;">${netWorth>=0?'+':''}${fmtK(netWorth)}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;">
+          <div><div style="font-size:9px;color:var(--ink4);font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;">Assets</div><div style="font-size:16px;font-weight:600;color:var(--positive);font-family:var(--mono);">${fmtK(totalAssets)}</div></div>
+          <div><div style="font-size:9px;color:var(--ink4);font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;">Liabilities</div><div style="font-size:16px;font-weight:600;color:var(--negative);font-family:var(--mono);">${fmtK(totalLiabs)}</div></div>
+        </div>
+      </div>
+
+      ${section(
+        'Assets',
+        assets.map(a=>acctRow(a.name,a.bal,'var(--positive)')).join(''),
+        totalAssets, 'var(--positive)'
+      )}
+      ${section(
+        'Liabilities',
+        liabs.map(l=>acctRow(l.name,l.bal,'var(--negative)')).join(''),
+        totalLiabs, 'var(--negative)'
+      )}
+    </div>`;
+}
+
+function destroyPulseAna() {
+  [pCatChart,pTrendChart,pPurchaserChart,pDowChart,pSavRateChart].forEach(c=>{
+    if(c){try{c.destroy();}catch(e){}}
+  });
+  pCatChart=pTrendChart=pPurchaserChart=pDowChart=pSavRateChart=null;
+}
+
+function renderPulseAnalytics() {
+  if (!txns.length) return;
+  destroyPulseAna();
+  renderPulseCategories();
+  renderPulseTrend();
+  renderPulsePurchaser();
+  renderPulseDow();
+  renderPulseSavRate();
+}
+
+function renderPulseCategories() {
+  const el = document.getElementById('p-cat-chart');
+  if (!el) return;
+  const since = getPulseSince(pCatRange);
+  const cats = {};
+  spendable(txns).filter(t=>new Date(t.date)>=since&&t.amount<0).forEach(t=>{
+    const bk = classifyTxn(t);
+    const lbl = (BUCKET_META[bk]||{label:bk}).label;
+    cats[lbl]=(cats[lbl]||0)+Math.abs(t.amount);
+  });
+  const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const total = sorted.reduce((s,[,v])=>s+v, 0);
+  if (!total) { el.innerHTML='<div style="padding:20px;color:var(--ink4);font-size:12px;">No spending data.</div>'; return; }
+
+  // SVG donut — no Chart.js needed
+  const W=280, H=200, cx=100, cy=100, r=80, ri=52;
+  let angle=-Math.PI/2, paths='', legend='';
+  sorted.forEach(([cat,val],i) => {
+    const pct = val/total;
+    const sweep = pct * 2 * Math.PI;
+    const x1=cx+r*Math.cos(angle), y1=cy+r*Math.sin(angle);
+    const x2=cx+r*Math.cos(angle+sweep), y2=cy+r*Math.sin(angle+sweep);
+    const xi1=cx+ri*Math.cos(angle), yi1=cy+ri*Math.sin(angle);
+    const xi2=cx+ri*Math.cos(angle+sweep), yi2=cy+ri*Math.sin(angle+sweep);
+    const lg = sweep>Math.PI?1:0;
+    const color = COLORS[i%COLORS.length];
+    const tip = `${cat}: ${fmtK(val)} (${(pct*100).toFixed(0)}%)`;
+    paths += `<path d="M${xi1.toFixed(1)},${yi1.toFixed(1)} L${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 ${lg},1 ${x2.toFixed(1)},${y2.toFixed(1)} L${xi2.toFixed(1)},${yi2.toFixed(1)} A${ri},${ri} 0 ${lg},0 ${xi1.toFixed(1)},${yi1.toFixed(1)} Z" fill="${color}" opacity=".88" style="cursor:pointer;" data-tip="${tip.replace(/"/g,'&quot;')}"/>`;
+    const ly = 16+i*20;
+    legend += `<rect x="190" y="${ly}" width="8" height="8" rx="2" fill="${color}"/>
+               <text x="202" y="${ly+8}" fill="rgba(255,255,255,.7)" font-size="10" font-family="DM Sans,sans-serif">${cat.length>14?cat.slice(0,13)+'…':cat}</text>`;
+    angle += sweep;
+  });
+  // Center label
+  const centerLabel = `<text x="${cx}" y="${cy-4}" text-anchor="middle" fill="rgba(255,255,255,.5)" font-size="9" font-family="DM Mono,monospace">TOTAL</text>
+    <text x="${cx}" y="${cy+12}" text-anchor="middle" fill="var(--gold)" font-size="14" font-weight="600" font-family="DM Mono,monospace">${fmtK(total)}</text>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;">${paths}${centerLabel}${legend}</svg>`;
+  bindChartTips(el);
+
+  const insEl = document.getElementById('p-cat-insights');
+  if (insEl && sorted[0]) insEl.innerHTML = [
+    {lbl:'Total',val:fmtK(total)},
+    {lbl:'Top',val:sorted[0][0].split(' ')[0]},
+    {lbl:'Amount',val:fmtK(sorted[0][1])},
+  ].map(i=>`<div class="p-insight"><div class="p-insight-lbl">${i.lbl}</div><div class="p-insight-val">${i.val}</div></div>`).join('');
+}
+
+function renderPulseTrend() {
+  const el = document.getElementById('p-trend-chart');
+  if (!el) return;
+  const mos=[];
+  for(let i=5;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
+  const inc = mos.map(m=>spendable(txns).filter(t=>t.date.startsWith(m)&&t.amount>0).reduce((s,t)=>s+t.amount,0));
+  const exp = mos.map(m=>Math.abs(spendable(txns).filter(t=>t.date.startsWith(m)&&t.amount<0).reduce((s,t)=>s+t.amount,0)));
+  svgBar('p-trend-chart', mos.map(m=>m.slice(5)), [
+    {label:'Income', data:inc, backgroundColor:'rgba(45,212,191,.7)'},
+    {label:'Expenses', data:exp.map(v=>-v), backgroundColor:'rgba(248,113,113,.7)'},
+  ]);
+}
+
+function renderPulsePurchaser() {
+  const el = document.getElementById('p-purchaser-card');
+  if (!el) return;
+  const since = getPulseSince(pPurchaserRange);
+  const people = [...new Set(Object.values(family.accountOwners||{}))].filter(Boolean);
+  if (!people.length) { el.style.display='none'; return; }
+  el.style.display='block';
+  const data = people.map(p => {
+    const accts = Object.entries(family.accountOwners||{}).filter(([,v])=>v===p).map(([k])=>k);
+    const total = Math.abs(spendable(txns).filter(t=>new Date(t.date)>=since&&t.amount<0&&accts.includes(t.account)).reduce((s,t)=>s+t.amount,0));
+    return {p, total};
+  }).sort((a,b)=>b.total-a.total);
+  svgHBar('p-purchaser-chart', data.map(d=>d.p), data.map(d=>d.total), COLORS);
+}
+
+function renderPulseDow() {
+  const el = document.getElementById('p-dow-chart');
+  if (!el) return;
+  const since = getPulseSince(pCatRange);
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const totals = [0,0,0,0,0,0,0];
+  spendable(txns).filter(t=>new Date(t.date)>=since&&t.amount<0).forEach(t=>{
+    totals[new Date(t.date+'T12:00:00').getDay()] += Math.abs(t.amount);
+  });
+  svgHBar('p-dow-chart', DAYS, totals, COLORS);
+}
+
+function renderPulseSavRate() {
+  const el = document.getElementById('p-savrate-chart');
+  if (!el) return;
+  const mos=[];
+  for(let i=11;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
+  const rates = mos.map(m => {
+    const sp = spendable(txns).filter(t=>t.date.startsWith(m));
+    const inc = sp.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+    const exp = Math.abs(sp.filter(t=>t.amount<0).reduce((s,t)=>s+t.amount,0));
+    return inc>0 ? parseFloat(((inc-exp)/inc*100).toFixed(1)) : 0;
+  });
+  const target = family.savingsTarget || 20;
+  svgLine('p-savrate-chart', mos.map(m=>m.slice(5)), [
+    {label:'Savings %', data:rates, color:'#F5A800', fill:true},
+    {label:`Target ${target}%`, data:mos.map(()=>target), color:'rgba(255,255,255,.2)', dash:true},
+  ]);
+}
+
 function renderPulsePL(drillSection) {
   const el = document.getElementById('pl-out');
   const moSel = document.getElementById('plMonth');
@@ -1826,155 +2804,6 @@ function renderPulseNW() {
     </div>`;
 }
 
-function renderPulseAnalytics() {
-  if (!txns.length) return;
-  destroyPulseAna();
-  renderPulseCategories();
-  renderPulseTrend();
-  renderPulsePurchaser();
-  renderPulseDow();
-  renderPulseSavRate();
-}
-
-function renderPulseCategories() {
-  const ctx = document.getElementById('p-cat-chart')?.getContext('2d');
-  if (!ctx) return;
-  if (pCatChart) { try { pCatChart.destroy(); } catch(e) {} }
-  const since = getPulseSince(pCatRange);
-  const cats = {};
-  spendable(txns).filter(t=>new Date(t.date)>=since&&t.amount<0).forEach(t=>{
-    const bk = classifyTxn(t);
-    const lbl = (BUCKET_META[bk]||{label:bk}).label;
-    cats[lbl]=(cats[lbl]||0)+Math.abs(t.amount);
-  });
-  const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  const total = sorted.reduce((s,[,v])=>s+v, 0);
-  const labels = sorted.map(([c])=>c), values = sorted.map(([,v])=>v);
-  try {
-    pCatChart = new Chart(ctx, {
-      type:'doughnut',
-      data:{labels, datasets:[{data:values, backgroundColor:['#F5A800','#60A5FA','#A78BFA','#2DD4BF','#F87171','#34D399','#FBBF24','#FB923C'].map(c=>c+'CC'), borderWidth:1, borderColor:'rgba(0,0,0,.2)', hoverOffset:6}]},
-      options:{responsive:true, maintainAspectRatio:false, animation:{duration:300}, cutout:'52%',
-        plugins:{legend:{position:'bottom', labels:{font:{size:9},boxWidth:8, color:'rgba(255,255,255,.5)',padding:6}}}}
-    });
-  } catch(e) {}
-  const top = sorted[0];
-  const el = document.getElementById('p-cat-insights');
-  if (el && top) el.innerHTML = [
-    {lbl:'Total',val:fmtK(total)},
-    {lbl:'Top Cat',val:top[0].split(' ')[0]},
-    {lbl:'Top Spend',val:fmtK(top[1])},
-  ].map(i=>`<div class="p-insight"><div class="p-insight-lbl">${i.lbl}</div><div class="p-insight-val">${i.val}</div></div>`).join('');
-}
-
-function renderPulseTrend() {
-  const ctx = document.getElementById('p-trend-chart')?.getContext('2d');
-  if (!ctx) return;
-  const mos = [];
-  for (let i=11;i>=0;i--) { const d=new Date(); d.setMonth(d.getMonth()-i); mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`); }
-  const inc = mos.map(m=>txns.filter(t=>t.date.startsWith(m)&&t.amount>0).reduce((s,t)=>s+t.amount,0));
-  const exp = mos.map(m=>txns.filter(t=>t.date.startsWith(m)&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0));
-  try {
-    pTrendChart = new Chart(ctx, {
-      type:'bar',
-      data:{labels:mos.map(m=>m.slice(5)), datasets:[
-        {label:'Income',data:inc,backgroundColor:'rgba(45,212,191,.7)',borderRadius:3,stack:'a'},
-        {label:'Spending',data:exp,backgroundColor:'rgba(248,113,113,.6)',borderRadius:3,stack:'b'},
-      ]},
-      options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
-        plugins:{legend:{labels:{font:{size:9},boxWidth:8,color:'rgba(255,255,255,.4)',padding:6}}},
-        scales:{y:{ticks:{callback:v=>fmtK(v),color:'rgba(255,255,255,.3)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
-                x:{ticks:{color:'rgba(255,255,255,.3)',font:{size:9}},grid:{display:false}}}
-      }
-    });
-  } catch(e) {}
-}
-
-function renderPulsePurchaser() {
-  const ctx = document.getElementById('p-purchaser-chart')?.getContext('2d');
-  if (!ctx) return;
-  if (pPurchaserChart) { try { pPurchaserChart.destroy(); } catch(e) {} }
-  const since = getPulseSince(pPurchaserRange);
-  const people = [...new Set([...Object.values(family.accountOwners||{}), ...amzItems.map(i=>i.purchaser).filter(Boolean)])];
-  const card = document.getElementById('p-purchaser-card');
-  if (!people.length) { if(card) card.style.display='none'; return; }
-  if(card) card.style.display='block';
-
-  const data = people.map(p => {
-    const accts = Object.entries(family.accountOwners||{}).filter(([,v])=>v===p).map(([k])=>k);
-    const qkn = Math.abs(txns.filter(t=>new Date(t.date)>=since&&t.amount<0&&accts.includes(t.account)).reduce((s,t)=>s+t.amount,0));
-    const det = amzItems.filter(i=>i.purchaser===p&&new Date(i.date)>=since).reduce((s,i)=>s+i.total,0);
-    return {p, qkn, det};
-  }).sort((a,b)=>(b.qkn+b.det)-(a.qkn+a.det));
-
-  try {
-    pPurchaserChart = new Chart(ctx, {
-      type:'bar',
-      data:{labels:data.map(d=>d.p), datasets:[
-        {label:'Accounts',data:data.map(d=>d.qkn),backgroundColor:'rgba(245,168,0,.75)',borderRadius:4,stack:'a'},
-        {label:'Detail',data:data.map(d=>d.det),backgroundColor:'rgba(167,139,250,.75)',borderRadius:4,stack:'a'},
-      ]},
-      options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
-        plugins:{legend:{labels:{font:{size:9},boxWidth:8,color:'rgba(255,255,255,.4)'}}},
-        scales:{y:{ticks:{callback:v=>fmtK(v),color:'rgba(255,255,255,.3)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
-                x:{ticks:{color:'rgba(255,255,255,.3)',font:{size:9}},grid:{display:false}}}
-      }
-    });
-  } catch(e) {}
-}
-
-function renderPulseDow() {
-  const ctx = document.getElementById('p-dow-chart')?.getContext('2d');
-  if (!ctx) return;
-  const since = new Date(); since.setFullYear(since.getFullYear()-1);
-  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const totals={}, counts={};
-  days.forEach(d=>{totals[d]=0; counts[d]=0;});
-  txns.filter(t=>new Date(t.date)>=since&&t.amount<0).forEach(t=>{
-    const dn=days[([0,6,1,2,3,4,5])[new Date(t.date).getDay()]];
-    totals[dn]+=Math.abs(t.amount); counts[dn]++;
-  });
-  const avgs=days.map(d=>counts[d]>0?parseFloat((totals[d]/counts[d]).toFixed(2)):0);
-  try {
-    pDowChart = new Chart(ctx, {
-      type:'bar',
-      data:{labels:days, datasets:[{data:avgs, backgroundColor:['#F5A800','#60A5FA','#A78BFA','#2DD4BF','#F87171','#34D399','#FBBF24'].map(c=>c+'CC'), borderRadius:4, borderSkipped:false}]},
-      options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
-        plugins:{legend:{display:false}},
-        scales:{y:{ticks:{callback:v=>fmtK(v),color:'rgba(255,255,255,.3)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
-                x:{ticks:{color:'rgba(255,255,255,.3)',font:{size:9}},grid:{display:false}}}
-      }
-    });
-  } catch(e) {}
-}
-
-function renderPulseSavRate() {
-  const ctx = document.getElementById('p-savrate-chart')?.getContext('2d');
-  if (!ctx) return;
-  const mos=[];
-  for(let i=11;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);mos.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
-  const rates = mos.map(m => {
-    const inc=txns.filter(t=>t.date.startsWith(m)&&t.amount>0).reduce((s,t)=>s+t.amount,0);
-    const exp=Math.abs(txns.filter(t=>t.date.startsWith(m)&&t.amount<0).reduce((s,t)=>s+t.amount,0));
-    return inc>0 ? parseFloat(((inc-exp)/inc*100).toFixed(1)) : 0;
-  });
-  const target = family.savingsTarget || 20;
-  try {
-    pSavRateChart = new Chart(ctx, {
-      type:'line',
-      data:{labels:mos.map(m=>m.slice(5)), datasets:[
-        {label:'Savings Rate',data:rates, borderColor:'#F5A800', backgroundColor:'rgba(245,168,0,.08)', tension:.35, pointRadius:3, pointBackgroundColor:'#F5A800', fill:true},
-        {label:`Target ${target}%`, data:mos.map(()=>target), borderColor:'rgba(255,255,255,.2)', borderDash:[4,4], pointRadius:0, tension:0},
-      ]},
-      options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
-        plugins:{legend:{labels:{font:{size:9},boxWidth:8,color:'rgba(255,255,255,.4)'}}},
-        scales:{y:{ticks:{callback:v=>v+'%',color:'rgba(255,255,255,.3)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
-                x:{ticks:{color:'rgba(255,255,255,.3)',font:{size:9}},grid:{display:false}}}
-      }
-    });
-  } catch(e) {}
-}
-
 function sendWelcome() {
   if (!txns.length) {
     addBubble(`Hey — $id here.\n\nNo financial data yet. To get started, open Forge on your laptop or desktop, go to The Pour (the + button), and import your Quicken file. Once that's done, come back here and I'll have everything I need.\n\nThe first time you use the chat feature, you'll also need to complete a one-time setup. Just send me any message and I'll walk you through it — takes about 10 minutes.`, 'assistant');
@@ -2085,6 +2914,10 @@ window.addEventListener('DOMContentLoaded', function() {
     const dot = document.getElementById('alertDot');
     if (dot) dot.className = 'tab-dot' + (alerts.some(function(a){ return a.sev==='danger'; }) ? ' show' : '');
   } catch(e) { showError('buildAlerts', e); }
+
+  // Desktop tooltip mousemove + mobile tap tooltip
+  document.addEventListener('mousemove', positionChartTip);
+  initPulseTips();
 });
 </script>
 
@@ -2095,7 +2928,31 @@ window.addEventListener('DOMContentLoaded', function() {
   </div>
 
 <script>
-// ── PULL TO REFRESH → sync pull ──────────────────────────────────────────────
+// ── Tap-to-reveal tooltips (mobile) ────────────────────────────────────────
+function initPulseTips() {
+  document.addEventListener('click', function(e) {
+    const tip = document.getElementById('pulseTip');
+    if (!tip) return;
+    const target = e.target.closest('[data-tip]');
+    if (target) {
+      const text = (target.getAttribute('data-tip')||'').replace(/&quot;/g,'"').replace(/&apos;/g,"'");
+      tip.textContent = text;
+      tip.style.display = 'block';
+      const rect = target.getBoundingClientRect();
+      let top = rect.bottom + 8;
+      let left = rect.left;
+      if (top + 80 > window.innerHeight) top = rect.top - 88;
+      if (left + 270 > window.innerWidth) left = window.innerWidth - 278;
+      tip.style.top  = Math.max(8, top)  + 'px';
+      tip.style.left = Math.max(8, left) + 'px';
+      e.stopPropagation();
+    } else {
+      tip.style.display = 'none';
+    }
+  });
+}
+
+
 (function() {
   let startY = 0, pulling = false, indicator = null;
   const THRESHOLD = 72;  // px of pull needed to trigger
