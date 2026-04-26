@@ -1372,8 +1372,14 @@ function isCreditAcct(acctName) {
 function isTransfer(t) {
   if (t.isTransfer) return true;
   const cat = (t.category || '').trim();
+  const pay = (t.payee   || '').trim().toLowerCase();
+  // Quicken bracket notation [AccountName] always = transfer
   if (/^\[.*\]$/.test(cat)) return true;
   if (/^transfer$/i.test(cat)) return true;
+  // CC payment categories without brackets — Quicken sometimes omits them
+  if (/^(credit card payment|apple card|apple card payment|cc payment|card payment)$/i.test(cat)) return true;
+  // Payee-based: payment TO a known credit card from a cash/checking account
+  if (/^(apple card|visa payment|mastercard payment|amex payment|discover payment|citi payment|chase payment|capital one payment)$/i.test(pay) && t.amount < 0) return true;
   return false;
 }
 
@@ -1908,7 +1914,8 @@ function renderFinancials() {
   // Category buckets for IS
   const catTotals = {};
   periodTxns.filter(expense).forEach(t => {
-    const c = (t.category||'Uncategorized').replace(/^--split--$/i,'Mortgage/Loan');
+    const bk = classifyTxn(t);
+    const c = (BUCKET_META[bk] || {label: bk}).label;
     catTotals[c] = (catTotals[c]||0) + Math.abs(t.amount);
   });
   const topCats = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).slice(0,10);
@@ -2078,7 +2085,9 @@ function renderDashboard() {
   try {
     const cats = {};
     filtered.filter(t => t.amount < 0).forEach(t => {
-      cats[t.category||'Other'] = (cats[t.category||'Other']||0) + Math.abs(t.amount);
+      const bk = classifyTxn(t);
+      const label = (BUCKET_META[bk] || {label: bk}).label;
+      cats[label] = (cats[label] || 0) + Math.abs(t.amount);
     });
     const top = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,9);
     donutDash = makeDonut('dashDonut', top.map(([l])=>l), top.map(([,v])=>v), donutDash);
@@ -2193,9 +2202,13 @@ function renderCategories() {
   try {
 
   const filtered = spendable(txns).filter(t => inRange(t, catRange) && t.amount < 0);
-  const cats = {};
-  filtered.forEach(t => { cats[t.category||'Other'] = (cats[t.category||'Other']||0)+Math.abs(t.amount); });
-  const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  const buckets = {};
+  filtered.forEach(t => {
+    const bk = classifyTxn(t);
+    const label = (BUCKET_META[bk] || {label: bk}).label;
+    buckets[label] = (buckets[label] || 0) + Math.abs(t.amount);
+  });
+  const sorted = Object.entries(buckets).sort((a,b)=>b[1]-a[1]);
   const total  = sorted.reduce((s,[,v])=>s+v,0);
   const months = Math.max(1, Math.round((new Date()-rangeStart(catRange))/(1000*60*60*24*30)));
 
@@ -2203,7 +2216,8 @@ function renderCategories() {
   try { donutCat = makeDonut('catDonut', sorted.slice(0,9).map(([l])=>l), sorted.slice(0,9).map(([,v])=>v), donutCat); } catch(e) { console.warn('[Forge] catDonut error:', e.message); }
 
   document.getElementById('catTable').innerHTML = sorted.map(([cat,val]) =>
-    `<tr><td>${cat}</td>
+    `<tr onclick="drillToCategory(Object.keys(BUCKET_META).find(k=>(BUCKET_META[k]||{}).label==='${cat.replace(/'/g,"\\'")}') || 'other', '${cat.replace(/'/g,"\\'")}');showPage('transactions')" style="cursor:pointer;" title="View transactions">
+     <td>${cat}</td>
      <td class="td-num td-neg">${fmt(val/months)}</td>
      <td class="td-num td-neg">${fmt(val)}</td>
      <td class="td-num" style="color:var(--ink4)">${(val/total*100).toFixed(1)}%</td></tr>`
@@ -2212,7 +2226,7 @@ function renderCategories() {
   } catch(e) {
     console.error('[Forge] renderCategories error:', e);
     const _el = document.getElementById('catBarWrap');
-    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderCategories: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderCategories: ' + e.message + '</div>';
   }
 }
 

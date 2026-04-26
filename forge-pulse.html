@@ -565,8 +565,11 @@ function spendable(arr) {
 function isTransfer(t) {
   if (t.isTransfer) return true;
   const cat = (t.category || '').trim();
+  const pay = (t.payee   || '').trim().toLowerCase();
   if (/^\[.*\]$/.test(cat)) return true;
   if (/^transfer$/i.test(cat)) return true;
+  if (/^(credit card payment|apple card|apple card payment|cc payment|card payment)$/i.test(cat)) return true;
+  if (/^(apple card|visa payment|mastercard payment|amex payment|discover payment|citi payment|chase payment|capital one payment)$/i.test(pay) && t.amount < 0) return true;
   return false;
 }
 
@@ -794,7 +797,7 @@ const fmt  = n => '$' + Math.abs(n||0).toLocaleString('en-US', { minimumFraction
 const fmtK = n => { const a = Math.abs(n||0); return a>=1e6?'$'+(a/1e6).toFixed(1)+'M':a>=1e3?'$'+(a/1e3).toFixed(1)+'K':'$'+a.toFixed(0); };
 const nowMo  = () => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; };
 const prevMo = () => { const n=new Date(), m=n.getMonth()===0?12:n.getMonth(), y=n.getMonth()===0?n.getFullYear()-1:n.getFullYear(); return `${y}-${String(m).padStart(2,'0')}`; };
-const cats3m = () => { const n=new Date(), s=new Date(n.getFullYear(),n.getMonth()-2,1), c={}; txns.filter(t=>new Date(t.date)>=s&&t.amount<0).forEach(t=>c[t.category]=(c[t.category]||0)+Math.abs(t.amount)); return Object.entries(c).sort((a,b)=>b[1]-a[1]); };
+const cats3m = () => { const n=new Date(), s=new Date(n.getFullYear(),n.getMonth()-2,1), c={}; spendable(txns).filter(t=>new Date(t.date)>=s&&t.amount<0).forEach(t=>{ const bk=classifyTxn(t); const lbl=(BUCKET_META[bk]||{label:bk}).label; c[lbl]=(c[lbl]||0)+Math.abs(t.amount); }); return Object.entries(c).sort((a,b)=>b[1]-a[1]); };
 const impulse = i => { let s=0; if(IMP_CATS.has(i.category))s+=30; if(i.total<15)s+=25; else if(i.total<30)s+=15; if(i.qty>=3&&i.total<50)s+=15; return Math.min(s,100); };
 const catEmoji = c => ({'Books':'📚','Electronics Accessories':'🔌','Home & Kitchen':'🏠','Health & Beauty':'💊','Pet Supplies':'🐾','Clothing':'👕','Toys & Games':'🎮','Office Products':'📎','Grocery & Gourmet Food':'🛒','Sports & Outdoors':'⚽'}[c]||'📦');
 const impBadge = sc => sc>=60?`<span class="imp-hi">🔴 Impulse</span>`:sc>=30?`<span class="imp-md">🟡 Watch</span>`:'';
@@ -838,9 +841,10 @@ function renderSnapshot() {
   if (!txns.length) { el.innerHTML = emptyHTML('snapshot'); return; }
 
   const n=new Date(), cm=nowMo(), lm=prevMo();
-  const cmE = txns.filter(t=>t.date.startsWith(cm)&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
-  const cmI = txns.filter(t=>t.date.startsWith(cm)&&t.amount>0).reduce((s,t)=>s+t.amount,0);
-  const lmE = txns.filter(t=>t.date.startsWith(lm)&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+  const sp = spendable(txns);
+  const cmE = sp.filter(t=>t.date.startsWith(cm)&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+  const cmI = sp.filter(t=>t.date.startsWith(cm)&&t.amount>0).reduce((s,t)=>s+t.amount,0);
+  const lmE = sp.filter(t=>t.date.startsWith(lm)&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
   const net=cmI-cmE, sr=cmI>0?(net/cmI*100):0, pct=lmE>0?((cmE-lmE)/lmE*100):0;
   const mo = MONTHS[n.getMonth()]+' '+n.getFullYear();
 
@@ -1507,15 +1511,16 @@ function renderPulsePL(drillSection) {
   const monthSp = sp.filter(t => t.date.startsWith(selMonth));
 
   // Bucket income and expenses
+  // Build sections dynamically from BUCKET_META keys — same classification as desktop
+  const INCOME_KEYS = ['paycheck', 'other_inc'];
+  const EXPENSE_KEYS = ['auto_save','mortgage','car','education','insurance','childcare',
+    'electric','gas_util','water','internet','cell',
+    'groceries','gas_car','transit','healthcare',
+    'restaurants','entertainment','household','personal','clothing','travel','subscriptions','gifts','other'];
+
   const SECTIONS = [
-    { key:'income',    label:'Income',           color:'var(--positive)', isIncome:true },
-    { key:'fixed',     label:'Fixed Expenses',   color:'var(--negative)', isIncome:false },
-    { key:'utilities', label:'Utilities',         color:'var(--negative)', isIncome:false },
-    { key:'food',      label:'Food & Dining',    color:'var(--negative)', isIncome:false },
-    { key:'health',    label:'Health & Wellness',color:'var(--negative)', isIncome:false },
-    { key:'shopping',  label:'Shopping',         color:'var(--negative)', isIncome:false },
-    { key:'transport', label:'Transportation',   color:'var(--negative)', isIncome:false },
-    { key:'other',     label:'Other',            color:'var(--negative)', isIncome:false },
+    ...INCOME_KEYS.map(k => ({ key:k, label:(BUCKET_META[k]||{label:k}).label, color:'var(--positive)', isIncome:true })),
+    ...EXPENSE_KEYS.map(k => ({ key:k, label:(BUCKET_META[k]||{label:k}).label, color:'var(--negative)', isIncome:false })),
   ];
 
   const buckets = {};
@@ -1729,7 +1734,11 @@ function renderPulseCategories() {
   if (pCatChart) { try { pCatChart.destroy(); } catch(e) {} }
   const since = getPulseSince(pCatRange);
   const cats = {};
-  txns.filter(t=>new Date(t.date)>=since&&t.amount<0).forEach(t=>cats[t.category]=(cats[t.category]||0)+Math.abs(t.amount));
+  spendable(txns).filter(t=>new Date(t.date)>=since&&t.amount<0).forEach(t=>{
+    const bk = classifyTxn(t);
+    const lbl = (BUCKET_META[bk]||{label:bk}).label;
+    cats[lbl]=(cats[lbl]||0)+Math.abs(t.amount);
+  });
   const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,8);
   const total = sorted.reduce((s,[,v])=>s+v, 0);
   const labels = sorted.map(([c])=>c), values = sorted.map(([,v])=>v);
@@ -1741,7 +1750,6 @@ function renderPulseCategories() {
         plugins:{legend:{position:'bottom', labels:{font:{size:9},boxWidth:8, color:'rgba(255,255,255,.5)',padding:6}}}}
     });
   } catch(e) {}
-  // Insights
   const top = sorted[0];
   const el = document.getElementById('p-cat-insights');
   if (el && top) el.innerHTML = [
