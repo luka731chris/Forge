@@ -340,7 +340,13 @@ body {
 <div class="shell">
 
   <!-- ══ SNAPSHOT ══ -->
-  <div class="page active" id="pg-snapshot"><div id="snap-out"></div></div>
+  <div class="page active" id="pg-snapshot">
+    <div style="display:flex;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--void);">
+      <button onclick="syncPull()" style="flex:1;background:var(--lift);color:var(--ink);border:1px solid var(--line2);padding:8px 0;border-radius:6px;font-family:var(--font-ui);font-size:12px;cursor:pointer;">↓ Pull from Cloud</button>
+      <button onclick="syncPush()" style="flex:1;background:var(--float);color:var(--ink3);border:1px solid var(--line);padding:8px 0;border-radius:6px;font-family:var(--font-ui);font-size:12px;cursor:pointer;">↑ Push to Cloud</button>
+    </div>
+    <div id="snap-out"></div>
+  </div>
 
   <!-- ══ ALERTS / FURNACE ══ -->
   <div class="page" id="pg-alerts">
@@ -962,11 +968,6 @@ function renderSnapshot() {
 
     ${lsBannerHtml}
 
-    <div style="display:flex;gap:8px;padding:10px 22px;border-bottom:1px solid var(--line);">
-      <button onclick="syncPull()" style="flex:1;background:var(--lift);color:var(--ink);border:1px solid var(--line2);padding:8px 0;border-radius:6px;font-family:var(--font-ui);font-size:12px;cursor:pointer;letter-spacing:0.02em;">↓ Pull from Cloud</button>
-      <button onclick="syncPush()" style="flex:1;background:var(--float);color:var(--ink3);border:1px solid var(--line);padding:8px 0;border-radius:6px;font-family:var(--font-ui);font-size:12px;cursor:pointer;letter-spacing:0.02em;">↑ Push to Cloud</button>
-    </div>
-
     <div class="sec-lbl">Key Numbers</div>
     <div class="hscroll">
       <div class="kpi-card gborder">
@@ -1291,7 +1292,7 @@ NEVER: Say "I cannot" or "I apologize." Never be vague when data is available. $
 // Replace this URL with your Cloudflare Worker URL after setup.
 // See forge_worker.js for setup instructions (takes ~10 min, free).
 // Until configured, $id will show a setup prompt instead of an error.
-const SID_PROXY_URL = 'https://forge-sid.luka731chris.workers.dev';
+const SID_PROXY_URL = 'WORKER_URL_HERE';
 // ── CLOUD SYNC ───────────────────────────────────────────────────────────────
 function getSyncToken() {
   let t = localStorage.getItem('forge_sync_token');
