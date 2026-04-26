@@ -606,6 +606,43 @@ function isCreditAcct(acctName) {
 // Quicken marks these with [AccountName] bracket syntax in the category.
 // CC payments from checking to CC account = transfer (the CC charges are the real expenses).
 
+KW_MAP = [
+  // paycheck income
+  ['paycheck',     ['direct deposit','payroll','employer','salary','wages','adp','gusto','paychex']],
+  ['other_inc',    ['interest','dividend','refund','reimbursement','rental','freelance','venmo','paypal','zelle']],
+  // savings
+  ['auto_save',    ['savings account','investment account','fidelity','vanguard','schwab','401k','ira','roth','hsa','529','college fund']],
+  // fixed
+  ['mortgage',     ['mortgage','rent ','hoa','association fee']],
+  ['car',          ['car payment','auto loan','gm financial','ally auto','ford credit','toyota financial','honda financial','auto insurance','geico','progressive','state farm auto']],
+  ['education',    ['tuition','student loan','sallie mae','navient','pitt ','cmu ','carnegie']],
+  ['insurance',    ['highmark','aetna','cigna','anthem','bcbs','upmc insurance','health plan','life insurance','disability ins']],
+  ['childcare',    ['daycare','childcare','babysit','nanny','preschool','after school','camp ']],
+  // utilities
+  ['electric',     ['duquesne','ppl electric','dominion light','con edison','pepco']],
+  ['gas_util',     ['peoples gas','equitable gas','national fuel','columbia gas','piedmont natural']],
+  ['water',        ['pwsa','water authority','municipal water','aqua pa']],
+  ['internet',     ['comcast','xfinity','spectrum','cox cable','verizon fios','at&t internet','directv','dish network']],
+  ['cell',         ['verizon wireless','at&t wireless','t-mobile','sprint','metro pcs','cricket wireless','boost mobile']],
+  // food
+  ['groceries',    ['giant eagle','whole foods','trader joe','aldi','costco','kroger','safeway','wegmans','market district','fresh market','sprouts','food lion']],
+  ['restaurants',  ['restaurant','doordash','grubhub','ubereats','seamless','chipotle','mcdonald','starbucks','panera','subway','chick-fil','taco bell','pizza','sushi','primanti','condado','noodlehead']],
+  // transport
+  ['gas_car',      ['shell ','bp ','gulf ','exxon','mobil ','sunoco','speedway','wawa','sheetz','marathon gas']],
+  ['transit',      ['uber ','lyft ','ezpass','parking ','port authority','amtrak','greyhound','airport ']],
+  // health
+  ['healthcare',   ['cvs ','walgreens','rite aid','pharmacy','upmc ','hospital','clinic','dental','orthodont','vision','optometrist','doctor ']],
+  // discretionary
+  ['entertainment',['movie','cinema','amc ','regal ','concert','ticketmaster','stubhub','pnc park','ppg arena','bowling','golf ','museum','zoo ','aquarium']],
+  ['household',    ['amazon','home depot','lowes ','target ','walmart','ikea','wayfair','bed bath','ace hardware','menards','container store']],
+  ['personal',     ['salon','barber','hair ','nail ','spa ','massage','sephora','ulta','planet fitness',"gold's gym",'anytime fitness','ymca']],
+  ['clothing',     ['nordstrom','macy','gap ','old navy','h&m','zara','tj maxx','ross ','marshalls','nike ','adidas ','lululemon','under armour']],
+  ['travel',       ['airbnb','vrbo','marriott','hilton','hyatt','expedia','booking.com','southwest air','united air','delta air','american air','frontier','spirit air','cruise','resort ']],
+  ['subscriptions',['netflix','hulu','disney+','disney plus','spotify','apple music','amazon prime','youtube premium','hbo','paramount+','peacock','apple icloud']],
+  ['gifts',        ['gift ','hallmark','1-800-flowers','donation','charity','church ','tithe','gofundme','npo ']],
+];
+
+
 function classifyTxn(t) {
   const cat  = (t.category || '').toLowerCase().trim();
   const pay  = (t.payee    || '').toLowerCase().trim();
@@ -1291,7 +1328,7 @@ NEVER: Say "I cannot" or "I apologize." Never be vague when data is available. $
 // Replace this URL with your Cloudflare Worker URL after setup.
 // See forge_worker.js for setup instructions (takes ~10 min, free).
 // Until configured, $id will show a setup prompt instead of an error.
-const SID_PROXY_URL = 'https://forge-sid.luka731chris.workers.dev';
+const SID_PROXY_URL = 'WORKER_URL_HERE';
 // ── CLOUD SYNC ───────────────────────────────────────────────────────────────
 function getSyncToken() {
   let t = localStorage.getItem('forge_sync_token');
