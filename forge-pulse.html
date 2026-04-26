@@ -343,7 +343,6 @@ body {
   <div class="page active" id="pg-snapshot">
     <div style="display:flex;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--void);">
       <button onclick="syncPull()" style="flex:1;background:var(--lift);color:var(--ink);border:1px solid var(--line2);padding:8px 0;border-radius:6px;font-family:var(--font-ui);font-size:12px;cursor:pointer;">↓ Pull from Cloud</button>
-      <button onclick="syncPush()" style="flex:1;background:var(--float);color:var(--ink3);border:1px solid var(--line);padding:8px 0;border-radius:6px;font-family:var(--font-ui);font-size:12px;cursor:pointer;">↑ Push to Cloud</button>
     </div>
     <div id="snap-out"></div>
   </div>
@@ -1958,5 +1957,96 @@ window.addEventListener('DOMContentLoaded', function() {
     <svg viewBox="0 0 22 22" fill="none"><path d="M3 3 L3 14 L14 14" stroke="#F5A800" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M19 19 L19 8 L8 8" stroke="#F5A800" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="3" cy="3" r="1.5" fill="#F5A800"/><circle cx="14" cy="14" r="1.5" fill="#F5A800"/><circle cx="19" cy="19" r="1.5" fill="#F5A800"/><circle cx="8" cy="8" r="1.5" fill="#F5A800"/></svg>
     LukaLab · AI incubator · 2026
   </div>
+
+<script>
+// ── PULL TO REFRESH → sync pull ──────────────────────────────────────────────
+(function() {
+  let startY = 0, pulling = false, indicator = null;
+  const THRESHOLD = 72;  // px of pull needed to trigger
+  const MAX_PULL  = 110;
+
+  function createIndicator() {
+    const el = document.createElement('div');
+    el.id = 'ptr-indicator';
+    el.innerHTML = '<div id="ptr-inner"><div id="ptr-spinner"></div><span id="ptr-label">Pull to sync</span></div>';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;height:0;overflow:hidden;z-index:9999;display:flex;align-items:flex-end;justify-content:center;transition:height .15s ease;pointer-events:none;';
+    el.querySelector('#ptr-inner').style.cssText = 'display:flex;align-items:center;gap:8px;padding-bottom:10px;opacity:0;transition:opacity .15s;';
+    el.querySelector('#ptr-spinner').style.cssText = 'width:18px;height:18px;border:2px solid rgba(245,168,0,.3);border-top-color:#F5A800;border-radius:50%;';
+    el.querySelector('#ptr-label').style.cssText = 'font-size:11px;font-family:var(--font-ui,sans-serif);color:rgba(245,168,0,.8);letter-spacing:.06em;text-transform:uppercase;';
+    document.body.appendChild(el);
+    return el;
+  }
+
+  function setIndicator(pull) {
+    if (!indicator) indicator = createIndicator();
+    const h = Math.min(pull, MAX_PULL);
+    const pct = Math.min(pull / THRESHOLD, 1);
+    indicator.style.height = h + 'px';
+    indicator.querySelector('#ptr-inner').style.opacity = pct;
+    const lbl = indicator.querySelector('#ptr-label');
+    lbl.textContent = pull >= THRESHOLD ? 'Release to sync' : 'Pull to sync';
+    // Spin when past threshold
+    const sp = indicator.querySelector('#ptr-spinner');
+    if (pull >= THRESHOLD) {
+      sp.style.borderTopColor = '#F5A800';
+      sp.style.animation = 'ptr-spin .6s linear infinite';
+    } else {
+      sp.style.animation = '';
+      sp.style.transform = `rotate(${pct * 180}deg)`;
+    }
+  }
+
+  function hideIndicator() {
+    if (!indicator) return;
+    indicator.style.transition = 'height .25s ease';
+    indicator.style.height = '0px';
+    indicator.querySelector('#ptr-inner').style.opacity = '0';
+    setTimeout(() => { if (indicator) indicator.style.transition = 'height .15s ease'; }, 260);
+  }
+
+  function isScrolledToTop(el) {
+    return !el || el.scrollTop <= 0;
+  }
+
+  function getScrollParent(el) {
+    while (el && el !== document.body) {
+      const style = getComputedStyle(el);
+      if (/(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight) return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  document.addEventListener('touchstart', function(e) {
+    startY = e.touches[0].clientY;
+    pulling = false;
+    const sp = getScrollParent(e.target);
+    pulling = isScrolledToTop(sp);
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function(e) {
+    if (!pulling) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy > 0) setIndicator(dy);
+  }, { passive: true });
+
+  document.addEventListener('touchend', async function(e) {
+    if (!pulling) return;
+    const dy = e.changedTouches[0].clientY - startY;
+    pulling = false;
+    if (dy >= THRESHOLD) {
+      const lbl = indicator && indicator.querySelector('#ptr-label');
+      if (lbl) lbl.textContent = 'Syncing…';
+      await syncPull();
+    }
+    hideIndicator();
+  }, { passive: true });
+
+  // Keyframe for spinner
+  const style = document.createElement('style');
+  style.textContent = '@keyframes ptr-spin { to { transform: rotate(360deg); } }';
+  document.head.appendChild(style);
+})();
+</script>
 </body>
 </html>
