@@ -833,6 +833,14 @@ h1, h2, h3, .kpi-val, .display-num {
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       Data Validation
     </div>
+    <div class="nav-item" onclick="showPage('crosswalk')" id="nav-crosswalk">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h7"/><line x1="17" y1="15" x2="17" y2="21"/><line x1="14" y1="18" x2="20" y2="18"/></svg>
+      Account Hierarchy
+    </div>
+    <div class="nav-item" onclick="showPage('reconcile')" id="nav-reconcile">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 7H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-3"/><path d="M9 15h3l8.5-8.5a1.5 1.5 0 0 0-3-3L9 12v3"/><line x1="16" y1="5" x2="19" y2="8"/></svg>
+      Reconcile
+    </div>
     <div class="nav-item" onclick="showPage('budget')" id="nav-budget">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7h8M8 12h8M8 17h5"/></svg>
       Budget vs Actual
@@ -1003,6 +1011,10 @@ h1, h2, h3, .kpi-val, .display-num {
   <div class="chart-card" style="margin-bottom:16px;">
     <div class="chart-title">Net Savings Trend</div>
     <div class="chart-area" id="cfLineWrap" style="height:140px;"></div>
+  </div>
+  <div class="chart-card" style="margin-bottom:16px;">
+    <div class="chart-title">Annual Waterfall</div>
+    <div class="chart-area" id="cfWaterfallWrap" style="height:160px;"></div>
   </div>
   <div class="kpi-grid" id="cfKPIs"></div>
 </div>
@@ -1179,6 +1191,49 @@ h1, h2, h3, .kpi-val, .display-num {
   <div id="incomeStatement"></div>
 </div>
 
+<!-- ══ RECONCILE ══ -->
+<div id="page-reconcile" class="page">
+  <div class="page-hdr">
+    <div>
+      <div class="page-title">Register Reconciliation</div>
+      <div class="page-sub" id="reconSub">P&amp;L → Quicken register crosscheck · verify every dollar is in the right month</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <select id="reconMonth" onchange="renderReconcile()" style="font-size:12px;padding:5px 10px;"></select>
+      <select id="reconAcct" onchange="renderReconcile()" style="font-size:12px;padding:5px 10px;">
+        <option value="all">All Accounts</option>
+      </select>
+    </div>
+  </div>
+  <div id="reconContent"></div>
+</div>
+
+</main>
+<div id="page-crosswalk" class="page">
+  <div class="page-hdr">
+    <div>
+      <div class="page-title">Account Hierarchy</div>
+      <div class="page-sub" id="cwSub">Forge Bucket → Quicken Category → Subcategory → Transaction · live crosswalk from imported data</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input id="cwSearch" type="text" placeholder="Search bucket, category, payee…" oninput="renderCrosswalk()" style="font-size:12px;padding:6px 10px;width:220px;">
+      <select id="cwSource" onchange="renderCrosswalk()" style="font-size:12px;padding:6px 10px;">
+        <option value="all">All Sources</option>
+        <option value="quicken">Quicken</option>
+        <option value="inferred">Inferred</option>
+        <option value="split">Split</option>
+        <option value="amazon">Amazon</option>
+        <option value="apple_card">Apple Card</option>
+        <option value="home_depot">Home Depot</option>
+      </select>
+      <select id="cwBucket" onchange="renderCrosswalk()" style="font-size:12px;padding:6px 10px;">
+        <option value="all">All Buckets</option>
+      </select>
+    </div>
+  </div>
+  <div id="cwContent"></div>
+</div>
+
 </main>
 </div>
 
@@ -1255,7 +1310,7 @@ const BUILD    = 'lean_4.0';        // bump to clear stale storage
 const BLD_KEY  = 'forge_build';
 
 // ── WORKER + SYNC ─────────────────────────────────────────────────────────────
-const WORKER_URL = 'https://forge-sid.luka731chris.workers.dev';  // ← paste your Cloudflare Worker URL here
+const WORKER_URL = '';  // ← paste your Cloudflare Worker URL here
 
 function getSyncToken() {
   let t = localStorage.getItem('forge_sync_token');
@@ -1264,6 +1319,362 @@ function getSyncToken() {
     if (t) localStorage.setItem('forge_sync_token', t.trim());
   }
   return t || '';
+}
+
+
+// ════════════════════════════════════════════════════════════════════════
+// ACCOUNT HIERARCHY / CROSSWALK PAGE
+// ════════════════════════════════════════════════════════════════════════
+function renderCrosswalk() {
+  const el  = document.getElementById('cwContent');
+  if (!el) return;
+
+  const search    = (document.getElementById('cwSearch')?.value || '').toLowerCase();
+  const srcFilter = document.getElementById('cwSource')?.value || 'all';
+  const bkFilter  = document.getElementById('cwBucket')?.value || 'all';
+
+  const sp = spendable(txns);
+  if (!sp.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">Import data to view the account hierarchy.</div>';
+    return;
+  }
+
+  // Populate bucket dropdown
+  const bkSel = document.getElementById('cwBucket');
+  if (bkSel && bkSel.options.length <= 1) {
+    const bks = [...new Set(sp.map(t => classifyTxn(t)))].sort();
+    bks.forEach(bk => {
+      const opt = document.createElement('option');
+      opt.value = bk;
+      opt.textContent = (BUCKET_META[bk]||{label:bk}).label;
+      bkSel.appendChild(opt);
+    });
+  }
+
+  // Build enriched crosswalk rows
+  let rows = crosswalkRows(sp);
+
+  // Apply filters
+  if (bkFilter !== 'all')  rows = rows.filter(r => r.forgeBucket === bkFilter);
+  if (srcFilter !== 'all') rows = rows.filter(r => r.sources.includes(srcFilter));
+  if (search) rows = rows.filter(r =>
+    r.bucketLabel.toLowerCase().includes(search) ||
+    r.qParent.toLowerCase().includes(search) ||
+    r.qSub.toLowerCase().includes(search)
+  );
+
+  // Group by waterfall section
+  const bySection = {};
+  rows.forEach(r => {
+    const sec = r.waterfallLabel;
+    if (!bySection[sec]) bySection[sec] = [];
+    bySection[sec].push(r);
+  });
+
+  const totalTxns = rows.reduce((s,r) => s+r.count, 0);
+  const totalAmt  = rows.reduce((s,r) => s+r.total, 0);
+  document.getElementById('cwSub').textContent =
+    `${rows.length.toLocaleString()} category paths · ${totalTxns.toLocaleString()} transactions · ${fmt(totalAmt)} total`;
+
+  // Summary coverage cards
+  const srcCounts = {};
+  sp.forEach(t => {
+    const src = getQSource(t);
+    srcCounts[src] = (srcCounts[src]||0)+1;
+  });
+  const totalAll = sp.length;
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px;">';
+  Object.entries(SOURCE_BADGES).forEach(([src, meta]) => {
+    const n = srcCounts[src] || 0;
+    if (!n) return;
+    const pct = (n/totalAll*100).toFixed(0);
+    html += `<div style="background:${meta.color};border:1px solid ${meta.border};border-radius:var(--r-lg);padding:12px 14px;">`;
+    html += `<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:${meta['text']||meta.text};margin-bottom:4px;">${meta.label}</div>`;
+    html += `<div style="font-size:20px;font-weight:700;color:${meta['text']||meta.text};">${n.toLocaleString()}</div>`;
+    html += `<div style="font-size:11px;color:var(--ink4);">${pct}% of transactions</div>`;
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Per-section hierarchy table
+  const SECTION_ORDER = WATERFALL.map(s => s.label);
+  const sortedSections = Object.keys(bySection).sort((a,b) => {
+    const ai = SECTION_ORDER.indexOf(a);
+    const bi = SECTION_ORDER.indexOf(b);
+    return (ai<0?99:ai) - (bi<0?99:bi);
+  });
+
+  sortedSections.forEach(sec => {
+    const secRows = bySection[sec];
+    const secTotal = secRows.reduce((s,r)=>s+r.total,0);
+    const secColor = secRows[0]?.waterfallColor || 'var(--ink4)';
+
+    html += `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;">`;
+
+    // Section header
+    html += `<div style="background:var(--lift);padding:10px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;">`;
+    html += `<div style="font-size:13px;font-weight:700;color:${secColor};flex:1;">${sec}</div>`;
+    html += `<div style="font-size:12px;font-family:var(--font-m);color:var(--ink4);">${secRows.length} paths · ${fmt(secTotal)}</div>`;
+    html += `</div>`;
+
+    // Column headers
+    html += `<div style="display:grid;grid-template-columns:120px 160px 180px 1fr 64px 64px 80px;padding:7px 16px;background:rgba(0,0,0,.2);border-bottom:1px solid var(--line);gap:8px;">`;
+    ['Forge Bucket','Quicken Category','Subcategory','Source(s)','Txns','Avg','Total'].forEach(h => {
+      html += `<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">${h}</div>`;
+    });
+    html += `</div>`;
+
+    // Group by bucket
+    const byBucket = {};
+    secRows.forEach(r => {
+      if (!byBucket[r.forgeBucket]) byBucket[r.forgeBucket] = [];
+      byBucket[r.forgeBucket].push(r);
+    });
+
+    Object.entries(byBucket).forEach(([bk, bkRows]) => {
+      const bMeta = BUCKET_META[bk] || { label:bk, icon:'·' };
+      const bkTotal = bkRows.reduce((s,r)=>s+r.total,0);
+      const bkTxns  = bkRows.reduce((s,r)=>s+r.count,0);
+      let isFirst = true;
+
+      bkRows.forEach(r => {
+        const avg = r.count > 0 ? r.total/r.count : 0;
+        html += `<div style="display:grid;grid-template-columns:120px 160px 180px 1fr 64px 64px 80px;padding:7px 16px;border-bottom:1px solid rgba(255,255,255,.03);gap:8px;align-items:center;" class="cw-row">`;
+
+        // Bucket (only show on first row for this bucket)
+        html += `<div style="font-size:11px;">`;
+        if (isFirst) {
+          html += `<div style="font-weight:600;color:var(--ink2);">${bMeta.icon} ${bMeta.label}</div>`;
+          html += `<div style="font-size:9px;color:var(--ink4);">${bkTxns} txns · ${fmt(bkTotal)}</div>`;
+          isFirst = false;
+        }
+        html += `</div>`;
+
+        html += `<div style="font-size:11px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.qParent}</div>`;
+        html += `<div style="font-size:11px;color:var(--ink4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.qSub}</div>`;
+        html += `<div style="display:flex;gap:3px;flex-wrap:wrap;">${r.sources.map(s=>srcBadge(s)).join('')}</div>`;
+        html += `<div style="font-size:11px;font-family:var(--font-m);color:var(--ink4);text-align:right;">${r.count}</div>`;
+        html += `<div style="font-size:11px;font-family:var(--font-m);color:var(--ink4);text-align:right;">${fmt(avg)}</div>`;
+        html += `<div style="font-size:12px;font-weight:600;font-family:var(--font-m);color:${secColor};text-align:right;">${fmt(r.total)}</div>`;
+        html += `</div>`;
+      });
+    });
+
+    html += `</div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// REGISTER RECONCILIATION — ties P&L back to Quicken register per account/month
+// ════════════════════════════════════════════════════════════════════════════
+function renderReconcile() {
+  const el = document.getElementById('reconContent');
+  if (!el) return;
+  if (!txns.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">Import data to reconcile.</div>';
+    return;
+  }
+
+  const moSel   = document.getElementById('reconMonth');
+  const acctSel = document.getElementById('reconAcct');
+  const sp      = operatingSpendable(txns);
+
+  // Populate month dropdown
+  const allMonths = [...new Set(txns.map(t=>t.date.slice(0,7)))].sort().reverse();
+  if (moSel && moSel.options.length === 0) {
+    allMonths.forEach(m => {
+      const [yr,mo] = m.split('-');
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = new Date(yr,parseInt(mo)-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      moSel.appendChild(opt);
+    });
+  }
+  const selMonth = moSel ? (moSel.value || allMonths[0]) : allMonths[0];
+  const prevMonth = allMonths[allMonths.indexOf(selMonth)+1] || null;
+
+  // Populate account dropdown
+  if (acctSel && acctSel.options.length <= 1) {
+    const accts = [...new Set(txns.map(t=>t.account).filter(Boolean))].sort();
+    accts.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a; opt.textContent = a;
+      acctSel.appendChild(opt);
+    });
+  }
+  const acctFilter = acctSel ? acctSel.value : 'all';
+
+  // Month transactions
+  const monthTxns = txns.filter(t => t.date.startsWith(selMonth));
+  const prevTxns  = prevMonth ? txns.filter(t => t.date.startsWith(prevMonth)) : [];
+  const accounts  = acctFilter === 'all'
+    ? [...new Set(monthTxns.map(t=>t.account).filter(Boolean))].sort()
+    : [acctFilter];
+
+  // P&L totals for this month (for tie-out)
+  const plSp     = sp.filter(t => t.date.startsWith(selMonth));
+  const plIncome = plSp.filter(t => t.amount > 0 && !isCCCredit(t)).reduce((s,t)=>s+t.amount,0);
+  const plExp    = plSp.filter(t => t.amount < 0).reduce((s,t)=>s+t.amount,0);
+  const plCCCred = plSp.filter(t => isCCCredit(t)).reduce((s,t)=>s+t.amount,0);
+  const plXfer   = txns.filter(t => t.date.startsWith(selMonth) && isTransfer(t)).reduce((s,t)=>s+t.amount,0);
+  const plNet    = plIncome + plExp + plCCCred;
+
+  // Discrepancy detection
+  const allMonthAmt = monthTxns.reduce((s,t)=>s+t.amount,0);
+  const reconDiff   = allMonthAmt - plXfer;   // after removing transfers, should tie to plNet
+  const isDiff      = Math.abs(reconDiff - plNet) > 0.01;
+
+  const [yr,mo] = selMonth.split('-');
+  const monthName = new Date(yr,parseInt(mo)-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+
+  let html = '';
+
+  // ── P&L Summary tie-out ────────────────────────────────────────────────────
+  html += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:16px;">';
+  html += '<div style="font-family:var(--font-d);font-size:17px;font-weight:600;color:var(--ink);margin-bottom:14px;">P&L Tie-Out · '+monthName+'</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;">';
+
+  const tileStyle = 'padding:14px 16px;border-right:1px solid var(--line);';
+  const last = 'padding:14px 16px;';
+
+  html += '<div style="'+tileStyle+'">';
+  html += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Operating Income</div>';
+  html += '<div style="font-size:20px;font-weight:700;color:var(--positive);">'+fmt(plIncome)+'</div>';
+  html += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">payroll + income</div></div>';
+
+  html += '<div style="'+tileStyle+'">';
+  html += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Operating Expenses</div>';
+  html += '<div style="font-size:20px;font-weight:700;color:var(--negative);">'+fmt(Math.abs(plExp))+'</div>';
+  html += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">excl. savings transfers</div></div>';
+
+  html += '<div style="'+tileStyle+'">';
+  html += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">CC Credits / Returns</div>';
+  html += '<div style="font-size:20px;font-weight:700;color:var(--river);">'+fmt(plCCCred)+'</div>';
+  html += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">expense offsets</div></div>';
+
+  const netCol = plNet>=0?'var(--positive)':'var(--negative)';
+  html += '<div style="'+last+'">';
+  html += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Net Operating</div>';
+  html += '<div style="font-size:20px;font-weight:700;color:'+netCol+';">'+(plNet>=0?'+':'')+fmt(plNet)+'</div>';
+  html += '<div style="font-size:10px;color:'+(isDiff?'var(--negative)':'var(--positive)')+';margin-top:2px;">'+(isDiff?'⚠ check discrepancy':'✓ reconciled')+'</div></div>';
+  html += '</div>';
+
+  // Transfers excluded note
+  html += '<div style="margin-top:10px;font-size:11px;color:var(--ink4);line-height:1.6;">';
+  html += '⤷ <strong>'+fmt(Math.abs(plXfer))+'</strong> in transfers excluded from P&L ';
+  html += '(savings, 401k, CC payments, account moves) · ';
+  html += 'Total register activity: <strong>'+fmt(allMonthAmt)+'</strong>';
+  if (isDiff) html += ' · <span style="color:var(--negative);">⚠ Discrepancy: '+fmt(Math.abs(reconDiff-plNet))+'</span>';
+  html += '</div></div>';
+
+  // ── Per-Account Register ───────────────────────────────────────────────────
+  html += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px;">';
+  html += '<div style="font-family:var(--font-d);font-size:17px;font-weight:600;color:var(--ink);padding:16px 20px;border-bottom:1px solid var(--line);">Account Register</div>';
+
+  accounts.forEach(acct => {
+    const acctTxns    = monthTxns.filter(t => t.account === acct).sort((a,b)=>a.date.localeCompare(b.date));
+    const prevAmt     = prevTxns.filter(t => t.account === acct).reduce((s,t)=>s+t.amount,0);
+    const closingBal  = acctTxns.reduce((s,t)=>s+t.amount, prevAmt);
+    const isCC        = isCreditAcct(acct);
+    const acctType    = detectAcctType(acct);
+    const totalDebits = acctTxns.filter(t=>t.amount<0).reduce((s,t)=>s+t.amount,0);
+    const totalCreds  = acctTxns.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+    const operating   = acctTxns.filter(t=>!isTransfer(t));
+    const transfers   = acctTxns.filter(t=>isTransfer(t));
+    const ccCredits   = acctTxns.filter(t=>isCCCredit(t));
+
+    html += '<div style="border-bottom:1px solid var(--line);padding:14px 20px;">';
+
+    // Account header
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">';
+    html += '<div style="flex:1;">';
+    html += '<div style="font-size:13px;font-weight:600;color:var(--ink2);">'+acct+'</div>';
+    html += '<div style="font-size:10px;color:var(--ink4);">'+acctType.replace(/_/g,' ')+' · '+acctTxns.length+' transactions</div>';
+    html += '</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(4,84px);gap:8px;text-align:right;">';
+    [['Opening', prevAmt, 'var(--ink4)'], ['Credits', totalCreds, 'var(--positive)'], ['Debits', totalDebits, 'var(--negative)'], ['Closing', closingBal, closingBal>=0?'var(--positive)':'var(--negative)']].forEach(([l,v,c]) => {
+      html += '<div><div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">'+l+'</div>';
+      html += '<div style="font-size:13px;font-weight:600;color:'+c+';">'+(l!=='Opening'&&l!=='Closing'?'':v>=0?'+':'')+fmt(v)+'</div></div>';
+    });
+    html += '</div></div>';
+
+    // Category summary for this account
+    const catSummary = {};
+    operating.forEach(t => {
+      const bk = classifyTxn(t);
+      const lbl = (BUCKET_META[bk]||{label:bk}).label;
+      catSummary[lbl] = (catSummary[lbl]||0) + t.amount;
+    });
+    const catRows = Object.entries(catSummary).sort((a,b)=>a[1]-b[1]);
+
+    if (catRows.length) {
+      html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">';
+      catRows.forEach(([cat,amt]) => {
+        const col = amt>0?'var(--positive)':'var(--negative)';
+        html += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:5px;padding:4px 8px;font-size:10px;">';
+        html += '<span style="color:var(--ink4);">'+cat+'</span> ';
+        html += '<span style="font-family:var(--font-m);color:'+col+';font-weight:600;">'+(amt>0?'+':'')+fmt(amt)+'</span></div>';
+      });
+      html += '</div>';
+    }
+
+    // Flags
+    const flags = [];
+    if (ccCredits.length) flags.push('💳 '+ccCredits.length+' CC credit'+(ccCredits.length>1?'s':'')+' ('+fmt(ccCredits.reduce((s,t)=>s+t.amount,0))+') — excluded from income, offsets expenses');
+    if (transfers.length) flags.push('⇄ '+transfers.length+' transfer'+(transfers.length>1?'s':'')+' ('+fmt(transfers.reduce((s,t)=>s+t.amount,0))+') — excluded from P&L');
+
+    if (flags.length) {
+      html += '<div style="margin-top:6px;">';
+      flags.forEach(f => {
+        html += '<div style="font-size:10px;color:var(--river);background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.2);border-radius:4px;padding:3px 8px;margin-bottom:3px;">'+f+'</div>';
+      });
+      html += '</div>';
+    }
+
+    // Transaction ledger (expandable)
+    const detailId = 'recon_' + acct.replace(/[^a-zA-Z0-9]/g,'_');
+    html += '<div style="margin-top:8px;">';
+    html += '<button onclick="const el=document.getElementById(\''+detailId+'\');el.style.display=el.style.display===\'none\'?\'block\':\'none\';" ';
+    html += 'style="font-size:10px;color:var(--ink4);background:transparent;border:1px solid var(--line);padding:3px 10px;border-radius:4px;cursor:pointer;">▼ Show register</button>';
+    html += '</div>';
+
+    html += '<div id="'+detailId+'" style="display:none;margin-top:8px;border:1px solid var(--line);border-radius:6px;overflow:hidden;">';
+    // Register header
+    html += '<div style="display:grid;grid-template-columns:90px 1fr 140px 90px 90px;padding:6px 12px;background:var(--lift);gap:8px;">';
+    ['Date','Payee / Description','Category','P&L Role','Amount'].forEach(h => {
+      html += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">'+h+'</div>';
+    });
+    html += '</div>';
+
+    acctTxns.forEach((t,i) => {
+      const isTxr    = isTransfer(t);
+      const isCCCr   = isCCCredit(t);
+      const bk       = classifyTxn(t);
+      const bMeta    = BUCKET_META[bk]||{label:bk,icon:'·'};
+      const role     = isTxr ? 'Transfer (excluded)' : isCCCr ? 'CC Credit (offset)' : t.amount>0 ? 'Income' : 'Expense';
+      const roleCol  = isTxr?'var(--ink4)':isCCCr?'var(--river)':t.amount>0?'var(--positive)':'var(--ink3)';
+      const bg       = i%2===0?'':'background:rgba(255,255,255,.015);';
+
+      html += '<div style="display:grid;grid-template-columns:90px 1fr 140px 90px 90px;padding:6px 12px;gap:8px;border-top:1px solid rgba(255,255,255,.04);'+bg+'">';
+      html += '<div style="font-size:10px;color:var(--ink4);">'+t.date+'</div>';
+      html += '<div style="font-size:11px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+((t.payee||'—'))+'</div>';
+      html += '<div style="font-size:10px;color:var(--ink4);">'+bMeta.icon+' '+bMeta.label+'</div>';
+      html += '<div style="font-size:10px;color:'+roleCol+';">'+role+'</div>';
+      html += '<div style="font-size:11px;font-family:var(--font-m);text-align:right;color:'+(t.amount>0?'var(--positive)':'var(--negative)')+';">'+(t.amount>0?'+':'')+fmt(t.amount)+'</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  document.getElementById('reconSub').textContent =
+    'Reconciliation · '+monthName+' · '+monthTxns.length+' transactions across '+accounts.length+' accounts';
+  el.innerHTML = html;
 }
 
 async function syncPush() {
@@ -1379,25 +1790,44 @@ function isTransfer(t) {
   if (t.isTransfer) return true;
   const cat = (t.category || '').trim();
   const pay = (t.payee   || '').trim().toLowerCase();
-  // Quicken bracket notation [AccountName] always = transfer
   if (/^\[.*\]$/.test(cat)) return true;
   if (/^transfer$/i.test(cat)) return true;
-  // CC payment categories without brackets — Quicken sometimes omits them
   if (/^(credit card payment|apple card|apple card payment|cc payment|card payment)$/i.test(cat)) return true;
-  // Payee-based: payment TO a known credit card from a cash/checking account
   if (/^(apple card|visa payment|mastercard payment|amex payment|discover payment|citi payment|chase payment|capital one payment)$/i.test(pay) && t.amount < 0) return true;
   return false;
 }
 
-// "Spendable" = transactions that represent real money flowing to/from the outside world.
-// Excludes internal transfers. This is the accrual view:
-// CC charges on the CC account = real expenses (dated to purchase)
-// CC payment from checking = transfer (excluded)
-// So each dollar is counted exactly once, at the time of purchase.
-function spendable(arr) {
+// CC credits / returns: positive amounts on CC accounts that offset expenses,
+// not household income. Genuine income (paycheck, cashback tagged as income) is preserved.
+function isCCCredit(t) {
+  if (t.amount <= 0) return false;
+  if (typeof isCreditAcct !== 'function' || !isCreditAcct(t.account)) return false;
+  const bk = classifyTxn(t);
+  if (bk === 'paycheck' || bk === 'other_inc') return false;
+  return true;
+}
+
+// isSavingsTransfer — 401k, IRA, HSA, 529, non-liquid savings going out of checking.
+// Excluded from operating P&L. Still shown in WATERFALL Pre-Committed Savings row.
+function isSavingsTransfer(t) {
+  if (!isTransfer(t)) return false;
+  const destAcct = (t.category||'').replace(/^\[|\]$/g,'').trim();
+  const type = typeof detectAcctType === 'function' ? detectAcctType(destAcct) : '';
+  if (type === 'investment') return true;
+  if (/fidelity|vanguard|schwab|empower|401k|ira|roth|hsa|529|college fund/i.test(t.payee||'')) return true;
+  return false;
+}
+
+// operatingSpendable — operating cash flow only:
+// Excludes transfers. CC credits remain but are classified as expense offsets by classifyTxn.
+function operatingSpendable(arr) {
   return (arr || []).filter(t => !isTransfer(t));
 }
 
+// spendable() — alias for backward compatibility
+function spendable(arr) {
+  return operatingSpendable(arr);
+}
 // Income = non-transfer positive transactions (payroll, freelance, dividends, etc.)
 function incomeOnly(arr) {
   return spendable(arr).filter(t => t.amount > 0);
@@ -1850,6 +2280,8 @@ function showPage(name) {
     if (name === 'balancesheet'  ) renderBalanceSheet();
     if (name === 'financials'    ) renderFinancials();
     if (name === 'upload')                      renderUploadStatus();
+    if (name === 'crosswalk')                   renderCrosswalk();
+    if (name === 'reconcile')                   renderReconcile();
   });
 }
 
@@ -2279,6 +2711,7 @@ function renderTxns() {
     if (sf==='date')    { va=a.date||''; vb=b.date||''; }
     else if (sf==='payee')   { va=(a.payee||'').toLowerCase(); vb=(b.payee||'').toLowerCase(); }
     else if (sf==='cat')     { va=(a.category||'').toLowerCase(); vb=(b.category||'').toLowerCase(); }
+    else if (sf==='bucket')  { va=(BUCKET_META[classifyTxn(a)]||{label:''}).label.toLowerCase(); vb=(BUCKET_META[classifyTxn(b)]||{label:''}).label.toLowerCase(); }
     else if (sf==='acct')    { va=(a.account||'').toLowerCase(); vb=(b.account||'').toLowerCase(); }
     else if (sf==='amount')  { va=a.amount; vb=b.amount; }
     else { va=a.date||''; vb=b.date||''; }
@@ -2314,18 +2747,27 @@ function renderTxns() {
   const slice = src.slice(page*PAGE_SZ, (page+1)*PAGE_SZ);
 
   document.getElementById('txnHead').innerHTML =
-    thSort('date','Date') + thSort('payee','Payee') + thSort('cat','Category') + thSort('acct','Account') +
+    thSort('date','Date') + thSort('payee','Payee') + thSort('cat','Quicken Category') + thSort('bucket','Forge Bucket') + thSort('acct','Account') +
     `<th style="text-align:right;cursor:pointer;user-select:none;${sf==='amount'?'color:var(--gold);':''}" onclick="txnSort.field='amount';txnSort.dir=(txnSort.field==='amount'&&txnSort.dir==='desc')?'asc':'desc';txnSort.field='amount';renderTxns()">Amount ${sf==='amount'?(sd==='asc'?'↑':'↓'):'<span style=\'opacity:.25;\'>↕</span>'}</th>` +
-    '<th>Type</th>';
+    '<th>Source</th><th>Type</th>';
 
   document.getElementById('txnTable').innerHTML = slice.map(t => {
-    const xfer = isTransfer(t);
+    const et     = enrichTxn(t);
+    const xfer   = isTransfer(t);
     const amtCls = t.amount > 0 ? 'td-pos' : 'td-neg';
     const amtSign = t.amount > 0 ? '+' : '';
+    const bMeta  = BUCKET_META[et.forgeBucket] || { label: et.forgeBucket, icon: '·' };
     return `<tr>
       <td class="td-num" style="text-align:left;color:var(--ink4)">${t.date}</td>
       <td>${t.payee||'—'}${t.itemDetail&&t.itemDetail!==t.payee?'<div style="font-size:10px;color:var(--river);font-style:italic;">'+t.itemDetail.slice(0,70)+'</div>':''}</td>
-      <td style="color:var(--ink4)">${t.category||'—'}</td>
+      <td style="color:var(--ink4)">
+        <div style="font-size:11px;">${et.qParent||t.category||'—'}</div>
+        ${et.qSub&&et.qSub!=='—'?'<div style="font-size:10px;color:var(--ink4);">'+et.qSub+'</div>':''}
+      </td>
+      <td style="font-size:11px;">
+        <div style="font-weight:500;color:var(--ink2);">${bMeta.icon} ${bMeta.label}</div>
+        <div style="margin-top:2px;">${srcBadge(et.qSource)}</div>
+      </td>
       <td style="color:var(--ink4);font-size:11px">${t.account||'—'}</td>
       <td class="td-num ${amtCls}">${amtSign}${fmt(t.amount)}</td>
       <td>${xfer?'<span class="xfer-badge">Transfer</span>':''}</td>
@@ -4063,6 +4505,375 @@ function classifyTxn(t) {
 
 // ── Section definitions ──────────────────────────────────────────
 // Waterfall order: income → auto_save → fixed → variable → discretionary → surplus
+
+// ════════════════════════════════════════════════════════════════════════════
+// FORGE ACCOUNT HIERARCHY — Canonical 4-Level Taxonomy
+// Level 1: Forge Bucket  (forgeBucket)
+// Level 2: Quicken Parent Category  (qParent)
+// Level 3: Quicken Subcategory  (qSub)
+// Level 4: Individual Transaction  (payee + date + amount)
+//
+// Sources: 'quicken' | 'inferred' | 'split' | 'amazon' | 'apple_card' | 'home_depot'
+// ════════════════════════════════════════════════════════════════════════════
+
+const FORGE_HIERARCHY = {
+  // ── INCOME ────────────────────────────────────────────────────────────────
+  paycheck: {
+    label: 'Payroll & Wages', icon: '💵',
+    quickenParents: ['Net Salary', 'Salary', 'Wages', 'Paycheck', 'Bonus'],
+    quickenSubs: {
+      'Net Salary':  ['Regular Pay', 'Direct Deposit'],
+      'Salary':      ['Regular Pay', 'Direct Deposit'],
+      'Bonus':       ['Annual Bonus', 'Performance Bonus', 'Sign-on Bonus'],
+    },
+  },
+  other_inc: {
+    label: 'Other Income', icon: '💰',
+    quickenParents: ['Other Inc', 'Interest Inc', 'Dividend Income', 'Interest Income', 'Rental Income', 'Freelance', 'Consulting'],
+    quickenSubs: {
+      'Interest Inc':     ['Savings Interest', 'Checking Interest', 'CD Interest'],
+      'Dividend Income':  ['Stock Dividends', 'Fund Distributions'],
+      'Freelance':        ['Contract Work', 'Side Income'],
+    },
+  },
+
+  // ── SAVINGS ───────────────────────────────────────────────────────────────
+  auto_save: {
+    label: 'Auto-Savings & Retirement', icon: '🏦',
+    quickenParents: ['Savings Transfer', '401k', 'IRA', 'HSA', '529', 'Investment'],
+    quickenSubs: {
+      '401k':       ['Pre-Tax 401k', 'Roth 401k', 'Employer Match'],
+      'IRA':        ['Traditional IRA', 'Roth IRA'],
+      'HSA':        ['HSA Contribution'],
+      '529':        ['College Fund - Sam', 'College Fund - Whitney', 'College Fund - Will'],
+    },
+  },
+
+  // ── FIXED LIVING ──────────────────────────────────────────────────────────
+  mortgage: {
+    label: 'Mortgage & Housing', icon: '🏠',
+    quickenParents: ['Home:Mortgage', 'Mortgage', 'Home:Rent', 'Rent', 'HOA'],
+    quickenSubs: {
+      'Home:Mortgage':  ['Principal', 'Interest', 'Escrow', 'PMI'],
+      'HOA':            ['Monthly HOA', 'Special Assessment'],
+    },
+  },
+  car: {
+    label: 'Car Payments & Auto', icon: '🚗',
+    quickenParents: ['Auto & Transport:Auto Payment', 'Auto & Transport:Auto Insurance', 'Auto & Transport:Registration', 'Auto & Transport:Service & Parts'],
+    quickenSubs: {
+      'Auto & Transport:Auto Payment':    ['Principal', 'Interest'],
+      'Auto & Transport:Auto Insurance':  ['Full Coverage', 'Liability'],
+      'Auto & Transport:Service & Parts': ['Oil Change', 'Tires', 'Repairs', 'Inspection'],
+    },
+  },
+  education: {
+    label: 'Education & Tuition', icon: '🎓',
+    quickenParents: ['Education:Tuition', 'Education', 'Education:Books & Supplies'],
+    quickenSubs: {
+      'Education:Tuition':           ['University', 'Private School', 'Online Course'],
+      'Education:Books & Supplies':  ['Textbooks', 'Supplies'],
+    },
+  },
+  insurance: {
+    label: 'Health & Life Insurance', icon: '🛡️',
+    quickenParents: ['Financial:Life Insurance', 'Insurance', 'Financial'],
+    quickenSubs: {
+      'Financial:Life Insurance': ['Term Life', 'Whole Life'],
+      'Insurance':                ['Health Premium', 'Dental Premium', 'Vision Premium', 'Umbrella Policy'],
+    },
+  },
+  childcare: {
+    label: 'Childcare & Kids Activities', icon: '👶',
+    quickenParents: ['Kids:Kids Activities', 'Kids', 'Kids:Toys'],
+    quickenSubs: {
+      'Kids:Kids Activities': ['Sports', 'Music Lessons', 'Tutoring', 'Camps', 'After School'],
+      'Kids':                 ['Clothing', 'School Supplies'],
+      'Kids:Toys':            ['Toys & Games'],
+    },
+  },
+
+  // ── UTILITIES ─────────────────────────────────────────────────────────────
+  electric: {
+    label: 'Electric', icon: '⚡',
+    quickenParents: ['Bills & Utilities:Utilities', 'Bills & Utilities'],
+    quickenSubs: { 'Bills & Utilities:Utilities': ['Electric', 'Gas & Electric Combined'] },
+  },
+  gas_util: {
+    label: 'Gas / Heat', icon: '🔥',
+    quickenParents: ['Bills & Utilities:Gas & Heat'],
+    quickenSubs: { 'Bills & Utilities:Gas & Heat': ['Natural Gas', 'Heating Oil', 'Propane'] },
+  },
+  water: {
+    label: 'Water & Sewer', icon: '💧',
+    quickenParents: ['Bills & Utilities:Water'],
+    quickenSubs: { 'Bills & Utilities:Water': ['Water', 'Sewer', 'Trash'] },
+  },
+  internet: {
+    label: 'Internet / Cable', icon: '📡',
+    quickenParents: ['Bills & Utilities:Internet', 'Bills & Utilities:Television'],
+    quickenSubs: { 'Bills & Utilities:Internet': ['Home Internet', 'Cable TV', 'Streaming Bundle'] },
+  },
+  cell: {
+    label: 'Cell Phones', icon: '📱',
+    quickenParents: ['Bills & Utilities:Mobile Phone'],
+    quickenSubs: { 'Bills & Utilities:Mobile Phone': ['Chris Phone', 'Kira Phone', 'Family Plan'] },
+  },
+
+  // ── NECESSITIES ───────────────────────────────────────────────────────────
+  groceries: {
+    label: 'Groceries', icon: '🛒',
+    quickenParents: ['Food & Dining:Groceries', 'Food & Dining'],
+    quickenSubs: {
+      'Food & Dining:Groceries': ['Supermarket', 'Warehouse Club (Costco)', 'Specialty Grocer', 'Farmers Market'],
+    },
+  },
+  gas_car: {
+    label: 'Vehicle Fuel', icon: '⛽',
+    quickenParents: ['Auto & Transport:Gas & Fuel'],
+    quickenSubs: { 'Auto & Transport:Gas & Fuel': ['Gasoline', 'EV Charging'] },
+  },
+  transit: {
+    label: 'Parking, Tolls & Transit', icon: '🚌',
+    quickenParents: ['Auto & Transport:Parking', 'Auto & Transport:Tolls', 'Auto & Transport:Rental Car & Taxi'],
+    quickenSubs: {
+      'Auto & Transport:Parking':           ['Garage', 'Meter', 'Airport Parking'],
+      'Auto & Transport:Tolls':             ['EZPass', 'Toll Booth'],
+      'Auto & Transport:Rental Car & Taxi': ['Uber', 'Lyft', 'Rental Car'],
+    },
+  },
+  healthcare: {
+    label: 'Healthcare & Pharmacy', icon: '⚕️',
+    quickenParents: ['Health & Fitness:Pharmacy', 'Health & Fitness:Doctor', 'Health & Fitness:Dentist', 'Health & Fitness:Eyecare'],
+    quickenSubs: {
+      'Health & Fitness:Pharmacy':  ['Prescription', 'OTC Medication', 'Medical Supplies'],
+      'Health & Fitness:Doctor':    ['Primary Care', 'Specialist', 'Urgent Care', 'Lab Work'],
+      'Health & Fitness:Dentist':   ['Routine', 'Orthodontics', 'Cosmetic'],
+      'Health & Fitness:Eyecare':   ['Eye Exam', 'Glasses', 'Contacts'],
+    },
+  },
+
+  // ── DISCRETIONARY ─────────────────────────────────────────────────────────
+  restaurants: {
+    label: 'Restaurants & Dining', icon: '🍕',
+    quickenParents: ['Food & Dining:Restaurants', 'Food & Dining:Fast Food', 'Food & Dining:Coffee Shops', 'Food & Dining:Alcohol & Bars'],
+    quickenSubs: {
+      'Food & Dining:Restaurants':   ['Sit-Down', 'Delivery (DoorDash/UberEats)', 'Takeout'],
+      'Food & Dining:Fast Food':     ['Fast Casual', 'Drive-Through'],
+      'Food & Dining:Coffee Shops':  ['Coffee', 'Café'],
+      'Food & Dining:Alcohol & Bars':['Bar', 'Beer & Wine'],
+    },
+  },
+  entertainment: {
+    label: 'Entertainment & Recreation', icon: '🎭',
+    quickenParents: ['Entertainment', 'Entertainment:Amusement', 'Entertainment:Movies & DVDs', 'Health & Fitness:Sports'],
+    quickenSubs: {
+      'Entertainment:Amusement':     ['Theme Park', 'Bowling', 'Golf', 'Mini-Golf'],
+      'Entertainment:Movies & DVDs': ['Movie Theater', 'Physical Media'],
+      'Health & Fitness:Sports':     ['Youth Sports', 'Adult Rec League', 'Sporting Events'],
+      'Entertainment':               ['Concerts', 'Events', 'Museums', 'Zoo / Aquarium'],
+    },
+  },
+  household: {
+    label: 'Household & Shopping', icon: '🔧',
+    quickenParents: ['Shopping', 'Home:Home Supplies', 'Home:Home Improvement', 'Home:Home Services', 'Home:Furnishings'],
+    quickenSubs: {
+      'Home:Home Improvement':  ['Hardware', 'Lumber', 'Appliances'],
+      'Home:Home Services':     ['Cleaning', 'Landscaping', 'Pest Control', 'Repairs'],
+      'Home:Furnishings':       ['Furniture', 'Decor', 'Linens'],
+      'Home:Home Supplies':     ['Cleaning Supplies', 'Paper Goods', 'Organization'],
+      'Shopping':               ['Amazon', 'Home Depot', 'Target', 'Walmart', 'General Retail'],
+    },
+  },
+  personal: {
+    label: 'Personal Care & Wellness', icon: '💅',
+    quickenParents: ['Personal Care', 'Health & Fitness:Gym', 'Health & Fitness:Spa'],
+    quickenSubs: {
+      'Personal Care':        ['Haircut / Salon', 'Nails', 'Skincare', 'Toiletries'],
+      'Health & Fitness:Gym': ['Gym Membership', 'Fitness Classes', 'Sports Gear'],
+    },
+  },
+  clothing: {
+    label: 'Clothing & Accessories', icon: '👕',
+    quickenParents: ['Shopping:Clothing', 'Shopping:Clothing:Jewelry Insurance'],
+    quickenSubs: {
+      'Shopping:Clothing': ['Adults', 'Kids', 'Shoes', 'Accessories'],
+    },
+  },
+  travel: {
+    label: 'Travel & Vacation', icon: '✈️',
+    quickenParents: ['Travel', 'Travel:Hotel', 'Travel:Air Travel', 'Travel:Vacation'],
+    quickenSubs: {
+      'Travel:Air Travel':  ['Flights', 'Baggage', 'Airport'],
+      'Travel:Hotel':       ['Hotel', 'Airbnb / VRBO', 'Resort'],
+      'Travel:Vacation':    ['Activities', 'Excursions', 'Tourism'],
+      'Travel':             ['Misc Travel', 'Travel Insurance'],
+    },
+  },
+  subscriptions: {
+    label: 'Subscriptions & Streaming', icon: '📺',
+    quickenParents: ['Entertainment:Music', 'Media Subscriptions', 'Bills & Utilities:Internet'],
+    quickenSubs: {
+      'Media Subscriptions':  ['Netflix', 'Spotify', 'Disney+', 'Apple TV+', 'Amazon Prime', 'YouTube Premium', 'Hulu', 'HBO Max'],
+      'Entertainment:Music':  ['Music Streaming'],
+      'Bills & Utilities:Internet': ['Internet Subscription'],
+    },
+  },
+  gifts: {
+    label: 'Gifts & Giving', icon: '🎁',
+    quickenParents: ['Gifts & Donations:Gift', 'Gifts & Donations:Charity', 'Gifts & Donations'],
+    quickenSubs: {
+      'Gifts & Donations:Gift':    ['Birthday', 'Holiday', 'Wedding', 'Baby Shower'],
+      'Gifts & Donations:Charity': ['Nonprofit', 'Church / Tithe', 'GoFundMe'],
+    },
+  },
+  other: {
+    label: 'Uncategorized', icon: '❓',
+    quickenParents: ['Uncategorized', 'Other'],
+    quickenSubs: {},
+  },
+};
+
+// ── CROSSWALK ENGINE ─────────────────────────────────────────────────────────
+// Enriches every transaction with .forgeBucket, .qParent, .qSub, .qSource
+// Call once at render time — does NOT mutate stored data.
+
+function inferQParent(cat, bucket) {
+  if (!cat || cat === '--split--') return '— Split Payment —';
+  // Try to find which Quicken parent this raw category belongs to
+  const bMeta = FORGE_HIERARCHY[bucket];
+  if (bMeta) {
+    for (const qp of bMeta.quickenParents) {
+      if (cat.toLowerCase().includes(qp.toLowerCase()) || qp.toLowerCase().includes(cat.toLowerCase())) {
+        return qp;
+      }
+    }
+  }
+  // Return the raw category as-is (could be an unmapped Quicken category)
+  return cat || 'Uncategorized';
+}
+
+function inferQSub(cat, qParent, payee) {
+  if (!cat || cat === '--split--') return inferSplitSub(payee);
+  // Check if the raw category already contains a colon (parent:sub format)
+  const parts = cat.split(':');
+  if (parts.length >= 2) return parts.slice(1).join(':').trim().replace(/\b\w/g, c=>c.toUpperCase());
+  // Check hierarchy for known subs
+  const bMeta = Object.values(FORGE_HIERARCHY).find(b =>
+    b.quickenParents.some(p => p.toLowerCase() === qParent.toLowerCase())
+  );
+  if (bMeta && bMeta.quickenSubs[qParent]) {
+    const subs = bMeta.quickenSubs[qParent];
+    // Try payee-based match
+    const payLower = (payee||'').toLowerCase();
+    for (const sub of subs) {
+      if (payLower.includes(sub.toLowerCase()) || sub.toLowerCase().includes(payLower)) {
+        return sub;
+      }
+    }
+  }
+  return '—';
+}
+
+function inferSplitSub(payee) {
+  const p = (payee||'').toLowerCase();
+  if (/mortgage|pennymac|rocket|mr\.? cooper|loancare|freedom|newrez|flagstar/i.test(p)) return 'Mortgage Payment (P+I+Escrow)';
+  if (/car|auto loan|palisade|hyundai|honda financial|gm financial|ford motor|toyota financial/i.test(p)) return 'Auto Loan (P+I)';
+  if (/insurance|liberty mutual|state farm|allstate|geico|nationwide|progressive|usaa/i.test(p)) return 'Insurance Premium';
+  if (/401k|retirement|fidelity|vanguard|schwab|empower/i.test(p)) return 'Retirement Contribution';
+  if (/529|college/i.test(p)) return '529 Contribution';
+  if (/comcast|xfinity|verizon|spectrum|at&t/i.test(p)) return 'Service Bundle';
+  return 'Split Payment';
+}
+
+function getQSource(t) {
+  if ((t.category||'').toLowerCase() === '--split--') return 'split';
+  if (t._source === 'amazon' || (t.account||'').toLowerCase().includes('amazon')) return 'amazon';
+  if (t._source === 'apple_card' || (t.account||'').toLowerCase().includes('apple')) return 'apple_card';
+  if (t._source === 'home_depot' || (t.payee||'').toLowerCase().includes('home depot')) return 'home_depot';
+  if (t.category && t.category !== '' && t.category !== 'Uncategorized') return 'quicken';
+  return 'inferred';
+}
+
+function enrichTxn(t) {
+  if (t._enriched) return t; // already processed
+  const bucket  = classifyTxn(t);
+  const source  = getQSource(t);
+  const qParent = inferQParent(t.category, bucket);
+  const qSub    = inferQSub(t.category, qParent, t.payee);
+  return Object.assign({}, t, {
+    forgeBucket: bucket,
+    qParent,
+    qSub,
+    qSource: source,
+    _enriched: true,
+  });
+}
+
+// ── LIVE CROSSWALK TABLE ─────────────────────────────────────────────────────
+// Builds a live crosswalk from actual transaction data.
+// Returns: { bucket: { qParent: { qSub: { count, total, sources } } } }
+
+function buildCrosswalk(txnList) {
+  const cw = {};
+  (txnList || []).forEach(t => {
+    const et = enrichTxn(t);
+    const bk = et.forgeBucket;
+    const qp = et.qParent || 'Uncategorized';
+    const qs = et.qSub    || '—';
+    const src = et.qSource || 'inferred';
+
+    if (!cw[bk]) cw[bk] = {};
+    if (!cw[bk][qp]) cw[bk][qp] = {};
+    if (!cw[bk][qp][qs]) cw[bk][qp][qs] = { count:0, total:0, sources: new Set() };
+    cw[bk][qp][qs].count++;
+    cw[bk][qp][qs].total += Math.abs(t.amount);
+    cw[bk][qp][qs].sources.add(src);
+  });
+  return cw;
+}
+
+// Returns crosswalk as a flat array for table display, sorted by total descending
+function crosswalkRows(txnList) {
+  const cw  = buildCrosswalk(txnList);
+  const rows = [];
+  Object.entries(cw).forEach(([bk, qParents]) => {
+    const bMeta = BUCKET_META[bk] || { label: bk, icon: '·' };
+    const bTier = WATERFALL.find(s => s.buckets.includes(bk));
+    Object.entries(qParents).forEach(([qp, qSubs]) => {
+      Object.entries(qSubs).forEach(([qs, stats]) => {
+        rows.push({
+          forgeBucket:    bk,
+          bucketLabel:    bMeta.label,
+          bucketIcon:     bMeta.icon,
+          waterfallLabel: bTier ? bTier.label : 'Other',
+          waterfallColor: bTier ? bTier.color : 'var(--ink4)',
+          qParent:        qp,
+          qSub:           qs,
+          count:          stats.count,
+          total:          stats.total,
+          sources:        [...stats.sources],
+        });
+      });
+    });
+  });
+  return rows.sort((a,b) => b.total - a.total);
+}
+
+// Source badge HTML
+const SOURCE_BADGES = {
+  quicken:    { label:'Quicken', color:'rgba(45,212,191,.15)',  border:'rgba(45,212,191,.4)',  text:'var(--positive)' },
+  split:      { label:'Split',   color:'rgba(96,165,250,.12)',  border:'rgba(96,165,250,.35)', text:'var(--river)'    },
+  amazon:     { label:'Amazon',  color:'rgba(245,168,0,.12)',   border:'rgba(245,168,0,.35)',  text:'var(--gold)'     },
+  apple_card: { label:'Apple',   color:'rgba(168,85,247,.12)',  border:'rgba(168,85,247,.35)', text:'#c084fc'         },
+  home_depot: { label:'Home Depot', color:'rgba(239,68,68,.12)', border:'rgba(239,68,68,.35)',text:'#f87171'         },
+  inferred:   { label:'Inferred', color:'rgba(156,163,175,.1)', border:'rgba(156,163,175,.3)','text':'var(--ink4)'   },
+};
+function srcBadge(src) {
+  const b = SOURCE_BADGES[src] || SOURCE_BADGES.inferred;
+  return `<span style="font-size:8px;padding:1px 5px;border-radius:3px;background:${b.color};border:1px solid ${b.border};color:${b['text'] || b.text};font-family:var(--font-m);letter-spacing:.05em;">${b.label}</span>`;
+}
+
 const WATERFALL = [
   {
     id: 'income', label: 'Total Household Income', type: 'income',
@@ -4153,6 +4964,103 @@ function toggleBucket(key) {
 }
 
 // ── Main render ──────────────────────────────────────────────────
+
+// ── ACCRUAL ENGINE ────────────────────────────────────────────────────────────
+// Computes projected remainder for in-flight months.
+// Uses 90-day rolling history per bucket, with outlier normalisation:
+// monthly totals > mean + 2σ are flagged as one-time events and excluded
+// from the baseline before computing the daily run rate.
+function buildAccrualEngine(selMonth, sp) {
+  const today     = new Date();
+  const todayStr  = today.toISOString().slice(0, 10);
+  const [sy, sm]  = selMonth.split('-').map(Number);
+
+  // Is selMonth the current in-flight month?
+  const isInFlight = (sy === today.getFullYear() && sm === today.getMonth() + 1);
+  if (!isInFlight) return null;
+
+  const daysInMonth  = new Date(sy, sm, 0).getDate();
+  const daysElapsed  = Math.min(today.getDate(), daysInMonth);
+  const daysRemaining = daysInMonth - daysElapsed;
+
+  // Build 90-day prior window (excludes current month)
+  const priorEnd   = new Date(sy, sm - 1, 0);           // last day of prior month
+  const priorStart = new Date(priorEnd);
+  priorStart.setDate(priorStart.getDate() - 90);
+  const priorStartStr = priorStart.toISOString().slice(0, 10);
+  const priorEndStr   = priorEnd.toISOString().slice(0, 10);
+
+  const priorTxns = sp.filter(t => t.date >= priorStartStr && t.date <= priorEndStr);
+
+  // Per-bucket per-month totals for outlier detection
+  function bucketMonthlyTotals(bkTxns) {
+    const byMonth = {};
+    bkTxns.forEach(t => {
+      const mo = t.date.slice(0, 7);
+      byMonth[mo] = (byMonth[mo] || 0) + Math.abs(t.amount);
+    });
+    return Object.values(byMonth);
+  }
+
+  function removeOutliers(totals) {
+    if (totals.length < 2) return totals;
+    const mean = totals.reduce((s, v) => s + v, 0) / totals.length;
+    const variance = totals.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / totals.length;
+    const sigma = Math.sqrt(variance);
+    const threshold = mean + 2 * sigma;
+    const clean = totals.filter(v => v <= threshold);
+    return clean.length > 0 ? clean : totals; // never return empty
+  }
+
+  // Pre-classify prior txns by bucket
+  const priorByBucket = {};
+  priorTxns.forEach(t => {
+    const bk = classifyTxn(t);
+    if (!priorByBucket[bk]) priorByBucket[bk] = [];
+    priorByBucket[bk].push(t);
+  });
+
+  // Compute normalised daily run rate per bucket
+  function getDailyRate(bk) {
+    const bkTxns = priorByBucket[bk] || [];
+    if (!bkTxns.length) return 0;
+    const monthlyTotals = bucketMonthlyTotals(bkTxns);
+    const cleanTotals   = removeOutliers(monthlyTotals);
+    const avgMonthly    = cleanTotals.reduce((s, v) => s + v, 0) / cleanTotals.length;
+    return avgMonthly / 30.44; // average days per month
+  }
+
+  // Detect one-time transactions: only appeared once in the prior 90 days,
+  // OR the payee's total for that month exceeded mean + 2σ across payee history.
+  function isOneTime(t, bk) {
+    const payee     = (t.payee || '').toLowerCase().trim();
+    const amt       = Math.abs(t.amount);
+    const bkTxns    = priorByBucket[bk] || [];
+    const payeeTxns = bkTxns.filter(p => (p.payee||'').toLowerCase().trim() === payee);
+    if (payeeTxns.length === 0) return false; // current-month only, not classifiable
+
+    // Check if this payee is recurring (appears in multiple months)
+    const payeeMonths = new Set(payeeTxns.map(p => p.date.slice(0, 7)));
+    if (payeeMonths.size <= 1) return true; // only one prior month → one-time
+
+    // Check if this amount is an outlier vs the payee's own history
+    const payeeAmts = payeeTxns.map(p => Math.abs(p.amount));
+    const mean      = payeeAmts.reduce((s, v) => s + v, 0) / payeeAmts.length;
+    const sigma     = Math.sqrt(payeeAmts.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / payeeAmts.length);
+    return sigma > 0 && amt > mean + 2 * sigma;
+  }
+
+  return {
+    isInFlight,
+    daysElapsed,
+    daysRemaining,
+    daysInMonth,
+    getDailyRate,
+    isOneTime,
+    accrueAmount: bk => parseFloat((getDailyRate(bk) * daysRemaining).toFixed(2)),
+  };
+}
+
 function renderIncomeStatement() {
   const el = document.getElementById('incomeStatement');
   if (!el) return;
@@ -4186,16 +5094,28 @@ function renderIncomeStatement() {
     t.date.startsWith(selMonth) && isTransfer(t) && t.amount < 0
   );
 
-  // Build bucket → txns map
+  // Build bucket → txns map — operating transactions only
+  // CC credits (returns) are kept but treated as negative expenses (offsets) in their bucket.
+  // Savings transfers (401k, IRA, HSA, 529) go only into auto_save, not operating expenses.
   const bucketTxns = {};
   function addToBucket(key, t) {
     if (!bucketTxns[key]) bucketTxns[key] = [];
     bucketTxns[key].push(t);
   }
-  monthSp.filter(t => t.amount > 0).forEach(t => addToBucket(classifyTxn(t), t));
+
+  // Income: only real household income — exclude CC credits
+  monthSp.filter(t => t.amount > 0 && !isCCCredit(t)).forEach(t => addToBucket(classifyTxn(t), t));
+
+  // Expenses: all negative operating transactions
   monthSp.filter(t => t.amount < 0).forEach(t => addToBucket(classifyTxn(t), t));
 
-  // Savings transfers
+  // CC credits as expense offsets — add as positive to their expense bucket (reduces bucket total)
+  monthSp.filter(t => isCCCredit(t)).forEach(t => {
+    const bk = classifyTxn(t);
+    addToBucket(bk, Object.assign({}, t, { _isCCCredit: true }));
+  });
+
+  // Savings transfers — only into auto_save bucket (excluded from operating expense math)
   monthXfers.forEach(t => {
     const destAcct = (t.category||'').replace(/^\[|\]$/g,'').trim();
     const type = detectAcctType(destAcct);
@@ -4204,6 +5124,13 @@ function renderIncomeStatement() {
     }
   });
 
+  // ── Accrual engine for in-flight months ───────────────────────────────────
+  const accrual = buildAccrualEngine(selMonth, sp);
+  const isInFlight = accrual !== null;
+  const daysRemaining = accrual ? accrual.daysRemaining : 0;
+  const daysElapsed   = accrual ? accrual.daysElapsed   : 0;
+  const daysInMonth   = accrual ? accrual.daysInMonth   : 0;
+
   // Section totals
   let running = 0;
   const sectionData = WATERFALL.map(sec => {
@@ -4211,11 +5138,28 @@ function renderIncomeStatement() {
     let secTotal = 0;
     sec.buckets.forEach(bk => {
       const bTxns = bucketTxns[bk] || [];
+      // Mark one-time txns for display (accrual not projected for these)
+      if (isInFlight) {
+        bTxns.forEach(t => { t._oneTime = accrual.isOneTime(t, bk); });
+      }
       const bTotal = bTxns.reduce((s,t) => s + Math.abs(t.amount), 0);
-      if (bTotal > 0.01) { bucketData[bk] = {txns:bTxns, total:bTotal}; secTotal += bTotal; }
+      if (bTotal > 0.01) { bucketData[bk] = {txns:bTxns, actual:bTotal, total:bTotal}; secTotal += bTotal; }
     });
     if (sec.type === 'income') running = secTotal;
     else running -= secTotal;
+    // Compute accrued amounts for each bucket (in-flight months only)
+    if (isInFlight) {
+      sec.buckets.forEach(bk => {
+        const accrued = accrual.accrueAmount(bk);
+        if (bucketData[bk]) {
+          bucketData[bk].accrued = accrued;
+          bucketData[bk].total   = bucketData[bk].actual + accrued;
+        } else if (accrued > 0.5) {
+          bucketData[bk] = { txns: [], actual: 0, accrued, total: accrued };
+        }
+      });
+      secTotal = sec.buckets.reduce((s,bk) => s + (bucketData[bk]?.total||0), 0);
+    }
     return {...sec, bucketData, total:secTotal, runningBalance:running};
   });
 
@@ -4281,12 +5225,34 @@ function renderIncomeStatement() {
   }
 
   // ── P&L waterfall table ─────────────────────────────────────────
-  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
+  // ── In-flight projection banner ────────────────────────────────────────────
+  if (isInFlight) {
+    const totalAccrued  = sectionData.reduce((s,sec) => s + sec.buckets.reduce((ss,bk)=>ss+(sec.bucketData[bk]?.accrued||0),0),0);
+    const projNetSurplus = netSurplus + totalAccrued * -1; // accrued is additional expense
+    const projColor      = projNetSurplus >= 0 ? 'var(--positive)' : 'var(--negative)';
+    out += '<div style="background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.25);border-radius:var(--r-lg);padding:14px 16px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">';
+    out += '<div><div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--river);opacity:.8;margin-bottom:3px;">Month to Date</div>';
+    out += '<div style="font-size:16px;font-weight:700;color:var(--ink);font-family:var(--font-m);">'+daysElapsed+' / '+daysInMonth+' days</div>';
+    out += '<div style="font-size:10px;color:var(--ink4);">'+daysRemaining+' remaining</div></div>';
+    out += '<div><div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--river);opacity:.8;margin-bottom:3px;">Accrued (projected)</div>';
+    out += '<div style="font-size:16px;font-weight:700;color:var(--river);font-family:var(--font-m);">'+fmt(totalAccrued)+'</div>';
+    out += '<div style="font-size:10px;color:var(--ink4);">excl. one-time items</div></div>';
+    out += '<div><div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:'+projColor+';opacity:.8;margin-bottom:3px;">Projected Net</div>';
+    out += '<div style="font-size:16px;font-weight:700;color:'+projColor+';font-family:var(--font-m);">'+(projNetSurplus>=0?'+':'')+fmt(projNetSurplus)+'</div>';
+    out += '<div style="font-size:10px;color:var(--ink4);">full month estimate</div></div>';
+    out += '</div>';
+  }
 
-  // Header
-  out += '<div style="display:grid;grid-template-columns:1fr 120px 110px;padding:9px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
+  // ── Table header — 3 cols when in-flight, 2 cols otherwise ──────────────────
+  const gridCols = isInFlight ? '1fr 90px 90px 100px' : '1fr 120px 110px';
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
+  out += '<div style="display:grid;grid-template-columns:'+gridCols+';padding:9px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
   out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Category</div>';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Amount</div>';
+  if (isInFlight) {
+    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Actual<br><span style="color:var(--ink4);font-size:8px;opacity:.7;">'+daysElapsed+' days</span></div>';
+    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--river);text-align:right;">Accrued<br><span style="color:var(--ink4);font-size:8px;opacity:.7;">'+daysRemaining+' left</span></div>';
+  }
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">'+(isInFlight?'Total':'Amount')+'</div>';
   out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Running</div></div>';
 
   sectionData.forEach(sec => {
@@ -4298,13 +5264,24 @@ function renderIncomeStatement() {
     const secOnclick = hasBuckets ? ' data-sid="'+sec.id+'" class="is-sec-row"' : '';
 
     // Section row
-    out += '<div'+secOnclick+' style="'+opacity+'display:grid;grid-template-columns:1fr 120px 110px;padding:11px 16px;border-bottom:1px solid var(--line);background:var(--lift);'+(hasBuckets?'cursor:pointer;':'')+'">';
+    out += '<div'+secOnclick+' style="'+opacity+'display:grid;grid-template-columns:'+gridCols+';padding:11px 16px;border-bottom:1px solid var(--line);background:var(--lift);'+(hasBuckets?'cursor:pointer;':'')+'">';
     out += '<div style="display:flex;align-items:center;gap:6px;">';
     out += hasBuckets ? chevron(open, sec.id, 'toggleSection') : '<span style="width:20px;display:inline-block;"></span>';
     out += '<div><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;font-weight:600;color:var(--ink2);">'+sec.label+'</span>'
          + (sec.total>0.01?'<span onclick="event.stopPropagation();drillToCategory(\''+sec.id+'\',\''+sec.label+'\')" style="font-size:10px;color:var(--river);cursor:pointer;padding:1px 6px;border:1px solid rgba(96,165,250,.3);border-radius:3px;flex-shrink:0;" title="View transactions">→ txns</span>':'')
          + '</div>';
     out += '<div style="font-size:10px;color:var(--ink4);">'+sec.sub+'</div></div></div>';
+
+    if (isInFlight) {
+      const secActual  = sec.buckets.reduce((s,bk)=>s+(sec.bucketData[bk]?.actual||0),0);
+      const secAccrued = sec.buckets.reduce((s,bk)=>s+(sec.bucketData[bk]?.accrued||0),0);
+      out += '<div style="text-align:right;padding-left:8px;">';
+      out += secActual>0.01?'<div style="font-size:13px;font-weight:600;color:'+sec.color+';font-family:var(--font-m);">'+sec.sign+fmt(secActual)+'</div>':'<div style="font-size:12px;color:var(--ink4);">—</div>';
+      out += '</div>';
+      out += '<div style="text-align:right;padding-left:8px;">';
+      out += secAccrued>0.5?'<div style="font-size:13px;font-weight:600;color:var(--river);font-family:var(--font-m);opacity:.8;">'+sec.sign+fmt(secAccrued)+'</div><div style="font-size:9px;color:var(--ink4);">projected</div>':'<div style="font-size:12px;color:var(--ink4);">—</div>';
+      out += '</div>';
+    }
 
     out += '<div style="text-align:right;padding-left:8px;">';
     if (sec.total > 0.01) {
@@ -4317,7 +5294,7 @@ function renderIncomeStatement() {
     out += '<div style="font-size:13px;font-weight:600;color:'+balColor+';font-family:var(--font-m);">'+(sec.runningBalance>=0?'+':'')+fmt(sec.runningBalance)+'</div>';
     out += '</div></div>';
 
-    // Bucket rows (level 1 drilldown)
+        // Bucket rows (level 1 drilldown)
     if (open && hasBuckets) {
       sec.buckets.forEach(bk => {
         const bd = sec.bucketData[bk];
@@ -4325,7 +5302,7 @@ function renderIncomeStatement() {
         const bMeta = BUCKET_META[bk] || {label:bk, icon:'·'};
         const bOpen = !!isBucketOpen[bk];
 
-        out += '<div data-bkid="'+bk+'" class="is-bk-row" style="display:grid;grid-template-columns:1fr 120px 110px;padding:8px 16px 8px 36px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.012);cursor:pointer;">';
+        out += '<div data-bkid="'+bk+'" class="is-bk-row" style="display:grid;grid-template-columns:'+gridCols+';padding:8px 16px 8px 36px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.012);cursor:pointer;">';
         out += '<div style="display:flex;align-items:center;gap:6px;">';
         out += chevron(bOpen, bk, 'toggleBucket');
         out += '<span style="font-size:14px;">'+bMeta.icon+'</span>';
@@ -4333,6 +5310,17 @@ function renderIncomeStatement() {
              + '<span onclick="event.stopPropagation();drillToCategory(\''+bk+'\',\''+bMeta.label+'\')" style="font-size:9px;color:var(--river);cursor:pointer;padding:1px 5px;border:1px solid rgba(96,165,250,.3);border-radius:3px;flex-shrink:0;">→</span>'
              + '</div>';
         out += '<div style="font-size:10px;color:var(--ink4);">'+bd.txns.length+' transaction'+(bd.txns.length!==1?'s':'')+'</div></div></div>';
+
+        if (isInFlight) {
+          const bActual  = bd.actual  || 0;
+          const bAccrued = bd.accrued || 0;
+          out += '<div style="text-align:right;padding-left:8px;">';
+          out += bActual>0.01?'<div style="font-size:13px;font-weight:600;color:'+sec.color+';font-family:var(--font-m);">'+fmt(bActual)+'</div>':'<div style="font-size:12px;color:var(--ink4);">&#8212;</div>';
+          out += '</div>';
+          out += '<div style="text-align:right;padding-left:8px;">';
+          out += bAccrued>0.5?'<div style="font-size:12px;color:var(--river);font-family:var(--font-m);opacity:.8;">'+fmt(bAccrued)+'</div>':'<div style="font-size:12px;color:var(--ink4);">&#8212;</div>';
+          out += '</div>';
+        }
 
         out += '<div style="text-align:right;padding-left:8px;">';
         out += '<div style="font-size:13px;font-weight:600;color:'+sec.color+';font-family:var(--font-m);">'+sec.sign+fmt(bd.total)+'</div>';
