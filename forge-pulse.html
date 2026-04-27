@@ -579,6 +579,49 @@ function detectAcctType(name) {
   return 'checking';
 }
 
+// Fuzzy account name resolver for Balance Sheet
+function normAcct(name) {
+  return (name || '').toLowerCase().replace(/[^a-z0-9]/g, '').replace(/([0-9]+)$/, '');
+}
+
+function buildBSAccountMap(balances) {
+  if (typeof BS_ACCOUNTS === 'undefined') return {};
+  const map = {};
+  const bsKeys = Object.keys(BS_ACCOUNTS);
+  const actualAccts = Object.keys(balances);
+
+  bsKeys.forEach(bk => {
+    if (balances[bk] !== undefined) { map[bk] = bk; }
+  });
+  bsKeys.forEach(bk => {
+    if (map[bk]) return;
+    const normBk = normAcct(bk);
+    for (const a of actualAccts) {
+      if (normAcct(a) === normBk) { map[bk] = a; return; }
+    }
+    for (const a of actualAccts) {
+      const na = normAcct(a);
+      if (na.includes(normBk) || normBk.includes(na)) { map[bk] = a; return; }
+    }
+  });
+  const mappedActuals = new Set(Object.values(map));
+  actualAccts.forEach(a => {
+    if (mappedActuals.has(a)) return;
+    const type = detectAcctType(a);
+    if (!BS_ACCOUNTS) return;
+    if (type === 'credit') {
+      if (!BS_ACCOUNTS[a]) BS_ACCOUNTS[a] = { class:'liability', sub:'current', label:a, icon:'💳', liabType:'Credit Cards', _dynamic:true };
+    } else if (type === 'investment') {
+      if (!BS_ACCOUNTS[a]) BS_ACCOUNTS[a] = { class:'asset', sub:'investment', label:a, icon:'📈', assetType:'Investment Accounts', _dynamic:true };
+    } else if (type === 'savings') {
+      if (!BS_ACCOUNTS[a]) BS_ACCOUNTS[a] = { class:'asset', sub:'current', label:a, icon:'💰', assetType:'Cash & Equivalents', _dynamic:true };
+    }
+    map[a] = a;
+  });
+  return map;
+}
+
+
 function loadFamily() {
   try {
     const raw = localStorage.getItem(SETTINGS_DB);
@@ -1026,7 +1069,14 @@ function isTransfer(t) {
   const pay = (t.payee   || '').trim().toLowerCase();
   if (/^\[.*\]$/.test(cat)) return true;
   if (/^transfer$/i.test(cat)) return true;
-  if (/^(credit card payment|apple card|apple card payment|cc payment|card payment)$/i.test(cat)) return true;
+  if (/^(credit card payment|cc payment|card payment)$/i.test(cat)) return true;
+  // Apple Card: transfer only if detail data is loaded for that month
+  if (/^(apple card|apple card payment)$/i.test(cat)) {
+    const txnMonth = (t.date || '').slice(0, 7);
+    const hasAppleDetail = (typeof txns !== 'undefined' ? txns : [])
+      .some(d => d._source === 'apple_card' && (d.date||'').slice(0,7) === txnMonth);
+    return hasAppleDetail;
+  }
   if (/^(apple card|visa payment|mastercard payment|amex payment|discover payment|citi payment|chase payment|capital one payment)$/i.test(pay) && t.amount < 0) return true;
   return false;
 }
@@ -2420,9 +2470,14 @@ function renderPulseNW() {
   const priorBals = compareDate ? balanceAsOf(compareDate) : null;
   const hasCompare = !!priorBals;
 
-  // Classify accounts
-  const assets = [], liabs = [];
-  const allAccts = [...new Set([...Object.keys(curBals), ...(priorBals ? Object.keys(priorBals) : [])])];
+  // Use fuzzy map to discover all accounts including unmapped ones
+  const acctMap = buildBSAccountMap(curBals);
+
+  // Build unified account list from fuzzy map
+  const allAccts = [...new Set([
+    ...Object.values(acctMap),
+    ...Object.keys(priorBals || {}),
+  ])].filter(Boolean);
 
   allAccts.forEach(name => {
     const cur   = curBals[name] || 0;
@@ -2502,7 +2557,30 @@ function renderPulseNW() {
     }
     s += `<div style="font-size:13px;font-weight:700;color:${isLiab?'var(--negative)':'var(--positive)'};">${fmtK(total)}${delta(total, priorTotal)}</div>`;
     s += `</div></div>`;
-    items.forEach(item => { s += acctRow(item, isLiab); });
+
+    if (isLiab && title !== 'Mortgages & Long-Term Debt') {
+      // CC subtotal within current liabilities
+      const ccItems    = items.filter(i => detectAcctType(i.name) === 'credit');
+      const otherItems = items.filter(i => detectAcctType(i.name) !== 'credit');
+      if (ccItems.length > 0) {
+        const ccTotal      = ccItems.reduce((s,i)=>s+i.cur,0);
+        const ccPriorTotal = hasCompare ? ccItems.reduce((s,i)=>s+(i.prior||0),0) : null;
+        s += `<div style="font-size:9px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);opacity:.7;padding:4px 0 4px 2px;margin-bottom:2px;">Credit Cards</div>`;
+        ccItems.forEach(item => { s += acctRow(item, true); });
+        s += `<div style="display:flex;justify-content:space-between;padding:5px 0;border-top:1px solid var(--line);margin-bottom:8px;">`;
+        s += `<div style="font-size:10px;font-weight:600;color:var(--negative);">CC Total</div>`;
+        s += `<div style="font-size:12px;font-weight:700;color:var(--negative);font-family:var(--mono);">${fmtK(ccTotal)}${delta(ccTotal, ccPriorTotal)}</div></div>`;
+        if (otherItems.length > 0) {
+          s += `<div style="font-size:9px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);opacity:.7;padding:4px 0 4px 2px;margin-bottom:2px;">Other</div>`;
+          otherItems.forEach(item => { s += acctRow(item, true); });
+        }
+      } else {
+        items.forEach(item => { s += acctRow(item, isLiab); });
+      }
+    } else {
+      items.forEach(item => { s += acctRow(item, isLiab); });
+    }
+
     s += `</div>`;
     return s;
   }
@@ -2693,96 +2771,192 @@ function renderPulseSavRate() {
 // Uses 90-day rolling history per bucket, with outlier normalisation:
 // monthly totals > mean + 2σ are flagged as one-time events and excluded
 // from the baseline before computing the daily run rate.
-function buildAccrualEngine(selMonth, sp) {
-  const today     = new Date();
-  const todayStr  = today.toISOString().slice(0, 10);
-  const [sy, sm]  = selMonth.split('-').map(Number);
 
-  // Is selMonth the current in-flight month?
+function buildAccrualEngine(selMonth, sp) {
+  const today      = new Date();
+  const [sy, sm]   = selMonth.split('-').map(Number);
   const isInFlight = (sy === today.getFullYear() && sm === today.getMonth() + 1);
   if (!isInFlight) return null;
 
-  const daysInMonth  = new Date(sy, sm, 0).getDate();
-  const daysElapsed  = Math.min(today.getDate(), daysInMonth);
+  const daysInMonth   = new Date(sy, sm, 0).getDate();
+  const daysElapsed   = Math.min(today.getDate(), daysInMonth);
   const daysRemaining = daysInMonth - daysElapsed;
 
-  // Build 90-day prior window (excludes current month)
-  const priorEnd   = new Date(sy, sm - 1, 0);           // last day of prior month
-  const priorStart = new Date(priorEnd);
-  priorStart.setDate(priorStart.getDate() - 90);
-  const priorStartStr = priorStart.toISOString().slice(0, 10);
-  const priorEndStr   = priorEnd.toISOString().slice(0, 10);
+  const FIXED_BUCKETS        = new Set(['mortgage','car','insurance','education','childcare']);
+  const UTILITY_BUCKETS      = new Set(['electric','gas_util','water','internet','cell']);
+  const SUBSCRIPTION_BUCKETS = new Set(['subscriptions']);
+  const DISCRETIONARY_BUCKETS= new Set(['restaurants','groceries','gas_car','transit',
+                                         'healthcare','entertainment','household',
+                                         'personal','clothing','travel','gifts','other']);
+  const ZERO_ACCRUAL_BUCKETS = new Set(['paycheck','other_inc','auto_save']);
 
-  const priorTxns = sp.filter(t => t.date >= priorStartStr && t.date <= priorEndStr);
-
-  // Per-bucket per-month totals for outlier detection
-  function bucketMonthlyTotals(bkTxns) {
-    const byMonth = {};
-    bkTxns.forEach(t => {
-      const mo = t.date.slice(0, 7);
-      byMonth[mo] = (byMonth[mo] || 0) + Math.abs(t.amount);
-    });
-    return Object.values(byMonth);
+  const priorMonths = [];
+  for (let i = 1; i <= 3; i++) {
+    const d = new Date(sy, sm - 1 - i, 1);
+    priorMonths.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
   }
+  const priorTxns    = sp.filter(t => priorMonths.some(m => t.date.startsWith(m)));
+  const curMonthStr  = String(sy).padStart(4,'0')+'-'+String(sm).padStart(2,'0');
+  const curMonthTxns = sp.filter(t => t.date.startsWith(curMonthStr));
 
   function removeOutliers(totals) {
     if (totals.length < 2) return totals;
-    const mean = totals.reduce((s, v) => s + v, 0) / totals.length;
-    const variance = totals.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / totals.length;
-    const sigma = Math.sqrt(variance);
-    const threshold = mean + 2 * sigma;
-    const clean = totals.filter(v => v <= threshold);
-    return clean.length > 0 ? clean : totals; // never return empty
+    const mean  = totals.reduce((s,v)=>s+v,0) / totals.length;
+    const sigma = Math.sqrt(totals.reduce((s,v)=>s+Math.pow(v-mean,2),0) / totals.length);
+    const clean = totals.filter(v => v <= mean + 2*sigma);
+    return clean.length > 0 ? clean : totals;
   }
 
-  // Pre-classify prior txns by bucket
-  const priorByBucket = {};
+  const priorByBucket = {}, curByBucket = {};
   priorTxns.forEach(t => {
     const bk = classifyTxn(t);
     if (!priorByBucket[bk]) priorByBucket[bk] = [];
     priorByBucket[bk].push(t);
   });
+  curMonthTxns.forEach(t => {
+    const bk = classifyTxn(t);
+    if (!curByBucket[bk]) curByBucket[bk] = [];
+    curByBucket[bk].push(t);
+  });
 
-  // Compute normalised daily run rate per bucket
-  function getDailyRate(bk) {
-    const bkTxns = priorByBucket[bk] || [];
-    if (!bkTxns.length) return 0;
-    const monthlyTotals = bucketMonthlyTotals(bkTxns);
-    const cleanTotals   = removeOutliers(monthlyTotals);
-    const avgMonthly    = cleanTotals.reduce((s, v) => s + v, 0) / cleanTotals.length;
-    return avgMonthly / 30.44; // average days per month
+  // ── Per-payee discrete known-amount accrual for fixed bills ───────────────
+  // Groups prior transactions by payee, computes median per-payee expected
+  // amount, then projects ONLY payees that haven't yet been charged this month.
+  function getFixedAccrual(bk) {
+    const prior = priorByBucket[bk] || [];
+    const cur   = curByBucket[bk]   || [];
+    if (!prior.length) return 0;
+
+    const payeeData = {};
+    prior.forEach(t => {
+      const p = (t.payee||'').toLowerCase().trim();
+      if (!payeeData[p]) payeeData[p] = {};
+      const mo = t.date.slice(0,7);
+      payeeData[p][mo] = (payeeData[p][mo]||0) + Math.abs(t.amount);
+    });
+
+    const chargedPayees = new Set(cur.map(t => (t.payee||'').toLowerCase().trim()));
+
+    let accrued = 0;
+    Object.entries(payeeData).forEach(([payee, moAmts]) => {
+      const monthlyAmounts = Object.values(moAmts);
+      if (monthlyAmounts.length < 2) return; // appeared in only 1 prior month = one-time, skip
+      if (chargedPayees.has(payee)) return;  // already charged this month
+      const sorted = monthlyAmounts.slice().sort((a,b)=>a-b);
+      const median = sorted[Math.floor(sorted.length/2)];
+      accrued += median;
+    });
+
+    return parseFloat(accrued.toFixed(2));
   }
 
-  // Detect one-time transactions: only appeared once in the prior 90 days,
-  // OR the payee's total for that month exceeded mean + 2σ across payee history.
+  // ── Discretionary: daily run rate x remaining days ────────────────────────
+  function getDiscretionaryAccrual(bk) {
+    const prior = priorByBucket[bk] || [];
+    if (!prior.length) return 0;
+    const byMonth = {};
+    prior.forEach(t => {
+      const mo = t.date.slice(0,7);
+      byMonth[mo] = (byMonth[mo]||0) + Math.abs(t.amount);
+    });
+    const totals   = removeOutliers(Object.values(byMonth));
+    const avgDaily = (totals.reduce((s,v)=>s+v,0) / totals.length) / 30.44;
+    return parseFloat((avgDaily * daysRemaining).toFixed(2));
+  }
+
+  function getDailyRate(bk) {
+    const prior = priorByBucket[bk] || [];
+    if (!prior.length) return 0;
+    const byMonth = {};
+    prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
+    const totals = removeOutliers(Object.values(byMonth));
+    return (totals.reduce((s,v)=>s+v,0)/totals.length)/30.44;
+  }
+
+  function currentMonthActual(bk) {
+    return (curByBucket[bk]||[]).reduce((s,t)=>s+Math.abs(t.amount),0);
+  }
+
+  function priorMonthlyAvg(bk) {
+    const prior = priorByBucket[bk] || [];
+    if (!prior.length) return 0;
+    const byMonth = {};
+    prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
+    const totals = removeOutliers(Object.values(byMonth));
+    return totals.reduce((s,v)=>s+v,0)/totals.length;
+  }
+
+  function accrueAmount(bk) {
+    if (ZERO_ACCRUAL_BUCKETS.has(bk)) return 0;
+    if (FIXED_BUCKETS.has(bk) || UTILITY_BUCKETS.has(bk) || SUBSCRIPTION_BUCKETS.has(bk)) {
+      return getFixedAccrual(bk);
+    }
+    if (DISCRETIONARY_BUCKETS.has(bk)) {
+      return getDiscretionaryAccrual(bk);
+    }
+    // Fallback
+    const prior = priorByBucket[bk] || [];
+    if (!prior.length) return 0;
+    const byMonth = {};
+    prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
+    const totals = removeOutliers(Object.values(byMonth));
+    return parseFloat(((totals.reduce((s,v)=>s+v,0)/totals.length)/30.44*daysRemaining).toFixed(2));
+  }
+
   function isOneTime(t, bk) {
-    const payee     = (t.payee || '').toLowerCase().trim();
-    const amt       = Math.abs(t.amount);
-    const bkTxns    = priorByBucket[bk] || [];
+    const payee = (t.payee||'').toLowerCase().trim();
+    const amt   = Math.abs(t.amount);
+    const bkTxns = priorByBucket[bk] || [];
     const payeeTxns = bkTxns.filter(p => (p.payee||'').toLowerCase().trim() === payee);
-    if (payeeTxns.length === 0) return false; // current-month only, not classifiable
+    if (!payeeTxns.length) return false;
+    const months = new Set(payeeTxns.map(p => p.date.slice(0,7)));
+    if (months.size <= 1) return true;
+    const amts  = payeeTxns.map(p => Math.abs(p.amount));
+    const mean  = amts.reduce((s,v)=>s+v,0)/amts.length;
+    const sigma = Math.sqrt(amts.reduce((s,v)=>s+Math.pow(v-mean,2),0)/amts.length);
+    return sigma > 0 && amt > mean + 2*sigma;
+  }
 
-    // Check if this payee is recurring (appears in multiple months)
-    const payeeMonths = new Set(payeeTxns.map(p => p.date.slice(0, 7)));
-    if (payeeMonths.size <= 1) return true; // only one prior month → one-time
+  function getProjectionBreakdown(sectionData) {
+    let fixedActual = 0, fixedProjected = 0, variableActual = 0, variableProjected = 0;
+    const fixedDueItems = [], varPaceItems = [];
 
-    // Check if this amount is an outlier vs the payee's own history
-    const payeeAmts = payeeTxns.map(p => Math.abs(p.amount));
-    const mean      = payeeAmts.reduce((s, v) => s + v, 0) / payeeAmts.length;
-    const sigma     = Math.sqrt(payeeAmts.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / payeeAmts.length);
-    return sigma > 0 && amt > mean + 2 * sigma;
+    sectionData.filter(s => s.type === 'expense').forEach(sec => {
+      sec.buckets.forEach(bk => {
+        const bd = sec.bucketData[bk];
+        if (!bd) return;
+        const bMeta = (typeof BUCKET_META !== 'undefined' && BUCKET_META[bk]) || { label: bk };
+        if (FIXED_BUCKETS.has(bk) || UTILITY_BUCKETS.has(bk) || SUBSCRIPTION_BUCKETS.has(bk)) {
+          fixedActual    += bd.actual  || 0;
+          fixedProjected += bd.accrued || 0;
+          if ((bd.accrued||0) > 10) fixedDueItems.push({ label: bMeta.label, amount: bd.accrued });
+        } else if (DISCRETIONARY_BUCKETS.has(bk)) {
+          variableActual    += bd.actual  || 0;
+          variableProjected += bd.accrued || 0;
+          if ((bd.accrued||0) > 10) {
+            varPaceItems.push({ label: bMeta.label, dailyRate: getDailyRate(bk), projected: bd.accrued||0 });
+          }
+        }
+      });
+    });
+
+    fixedDueItems.sort((a,b)=>b.amount-a.amount);
+    varPaceItems.sort((a,b)=>b.projected-a.projected);
+
+    return {
+      fixedActual, fixedProjected, variableActual, variableProjected,
+      fixedDueItems: fixedDueItems.slice(0,5),
+      varPaceItems:  varPaceItems.slice(0,5),
+    };
   }
 
   return {
-    isInFlight,
-    daysElapsed,
-    daysRemaining,
-    daysInMonth,
-    getDailyRate,
-    isOneTime,
-    accrueAmount: bk => parseFloat((getDailyRate(bk) * daysRemaining).toFixed(2)),
+    isInFlight, daysElapsed, daysRemaining, daysInMonth,
+    getDailyRate, isOneTime, accrueAmount, getProjectionBreakdown,
+    FIXED_BUCKETS, UTILITY_BUCKETS, SUBSCRIPTION_BUCKETS, DISCRETIONARY_BUCKETS,
   };
 }
+
 
 let _piDrillOpen = {};
 let _piBktOpen   = {};
@@ -2906,49 +3080,192 @@ function renderPulsePL(drillSection) {
 
   let out = '';
 
-  // Hero 3-tile
-  out += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">';
-  out += '<div style="background:var(--float);border:1px solid rgba(45,212,191,.2);border-radius:var(--r-lg);padding:14px 12px;">';
-  out += '<div style="font-size:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Income</div>';
-  out += '<div style="font-size:20px;font-weight:700;color:var(--positive);font-family:var(--mono);">' + fmtK(totalInc) + '</div>';
-  out += '<div style="font-size:9px;color:var(--ink4);">gross take-home</div></div>';
-  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 12px;">';
-  out += '<div style="font-size:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Available</div>';
-  out += '<div style="font-size:20px;font-weight:700;color:var(--river);font-family:var(--mono);">' + fmtK(checkingIn) + '</div>';
-  out += '<div style="font-size:9px;color:var(--ink4);">after ' + fmtK(autoSave) + ' saved</div></div>';
-  out += '<div style="background:var(--float);border:1px solid ' + (net>=0?'rgba(45,212,191,.2)':'rgba(248,113,113,.2)') + ';border-radius:var(--r-lg);padding:14px 12px;">';
-  out += '<div style="font-size:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">' + (net>=0?'Surplus':'Deficit') + '</div>';
-  out += '<div style="font-size:20px;font-weight:700;color:' + surpCol + ';font-family:var(--mono);">' + (net>=0?'+':'') + fmtK(net) + '</div>';
-  out += '<div style="font-size:9px;color:' + (savPct>=20?'var(--positive)':savPct>=10?'var(--gold)':'var(--negative)') + ';">' + savPct.toFixed(1) + '% savings' + (savPct>=20?' \uD83C\uDFAF':savPct>=10?' \uD83D\uDCC8':' \u26A0') + '</div></div>';
+  // ── isInFlight detection + projBreakdown ───────────────────────────────────
+  const isInFlightMonth = !!accrual;
+  let projBreakdown = null;
+  if (isInFlightMonth && accrual && accrual.getProjectionBreakdown) {
+    projBreakdown = accrual.getProjectionBreakdown(sections);
+  }
+
+  const totalActualExp  = isInFlightMonth
+    ? sections.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.buckets.reduce((ss,bk)=>ss+(sec.bucketData[bk]?.actual||0),0),0)
+    : totalExp;
+  const totalAccruedExp = isInFlightMonth
+    ? sections.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.buckets.reduce((ss,bk)=>ss+(sec.bucketData[bk]?.accrued||0),0),0)
+    : 0;
+  const totalProjectedExp = totalActualExp + totalAccruedExp;
+  const projNet           = checkingIn - totalProjectedExp;
+  const projNetColor      = projNet >= 0 ? 'var(--positive)' : 'var(--negative)';
+
+  // Fixed / variable breakdown
+  let fixedCommitted = 0, varSpend = 0;
+  const FIXED_SET = new Set(['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','cell','subscriptions']);
+  const VAR_SET   = new Set(['restaurants','groceries','gas_car','transit','healthcare','entertainment','household','personal','clothing','travel','gifts','other']);
+  if (isInFlightMonth && projBreakdown) {
+    fixedCommitted = projBreakdown.fixedActual + projBreakdown.fixedProjected;
+    varSpend       = projBreakdown.variableActual + projBreakdown.variableProjected;
+  } else {
+    sections.filter(s=>s.type==='expense').forEach(sec => sec.buckets.forEach(bk => {
+      const amt = sec.bucketData[bk]?.total || 0;
+      if (FIXED_SET.has(bk)) fixedCommitted += amt;
+      else if (VAR_SET.has(bk)) varSpend += amt;
+    }));
+  }
+
+  const displaySavPct = totalInc > 0 ? ((autoSave + Math.max(0, isInFlightMonth ? projNet : net)) / totalInc * 100) : 0;
+
+  // ── 4-tile hero grid ───────────────────────────────────────────────────────
+  out += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">';
+
+  // Tile 1: Income
+  out += '<div style="background:var(--float);border:1px solid rgba(45,212,191,.2);border-radius:var(--r-lg);padding:14px 12px;position:relative;overflow:hidden;">';
+  out += '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--positive);border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+  out += '<div style="font-size:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + (isInFlightMonth ? 'Income · MTD' : 'Gross Income') + '</div>';
+  out += '<div style="font-size:22px;font-weight:700;color:var(--positive);font-family:var(--mono);">' + fmtK(totalInc) + '</div>';
+  if (autoSave > 0) {
+    out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">−' + fmtK(autoSave) + ' saved → <strong style="color:var(--river);">' + fmtK(checkingIn) + '</strong> to deploy</div>';
+  } else {
+    out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">total household income</div>';
+  }
   out += '</div>';
 
-  // Quick reconciliation card
-  const plCCCred = monthSp.filter(t => isCCCredit(t)).reduce((s,t)=>s+t.amount,0);
-  const plXferAmt = monthXfers.reduce((s,t)=>s+t.amount,0);
-  const totalRegister = txns.filter(t=>t.date.startsWith(selMonth)).reduce((s,t)=>s+t.amount,0);
-  const operatingNet = totalInc + (totalExp); // totalExp is already negative
-  if (plCCCred !== 0 || plXferAmt !== 0) {
-    out += '<div style="background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.2);border-radius:var(--r-md);padding:10px 14px;margin-bottom:10px;font-size:10px;color:var(--ink4);line-height:1.7;">';
-    out += '<div style="font-size:11px;font-weight:600;color:var(--river);margin-bottom:4px;">&#10003; Reconciliation Check</div>';
-    if (plCCCred !== 0) out += '&#8594; <strong>' + fmtK(plCCCred) + '</strong> in CC credits excluded from income (expense offsets)<br>';
-    if (plXferAmt !== 0) out += '&#8594; <strong>' + fmtK(Math.abs(plXferAmt)) + '</strong> in transfers excluded from P&L<br>';
-    out += '&#8594; Register total: <strong>' + fmtK(totalRegister) + '</strong> &#8901; Operating: <strong>' + fmtK(operatingNet) + '</strong>';
+  // Tile 2: Projected Net to Savings
+  const displayNet = isInFlightMonth ? projNet : net;
+  const netCol = displayNet >= 0 ? 'var(--positive)' : 'var(--negative)';
+  out += '<div style="background:var(--float);border:1px solid ' + (displayNet>=0?'rgba(45,212,191,.2)':'rgba(248,113,113,.2)') + ';border-radius:var(--r-lg);padding:14px 12px;position:relative;overflow:hidden;">';
+  out += '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:' + netCol + ';border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+  out += '<div style="font-size:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + (isInFlightMonth ? 'Proj. Net to Savings' : 'Net Surplus / Deficit') + '</div>';
+  out += '<div style="font-size:22px;font-weight:700;color:' + netCol + ';font-family:var(--mono);">' + (displayNet>=0?'+':'') + fmtK(displayNet) + '</div>';
+  out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">save rate: <strong style="color:' + (displaySavPct>=20?'var(--positive)':displaySavPct>=10?'var(--gold)':'var(--negative)') + ';">' + displaySavPct.toFixed(1) + '%</strong></div>';
+  out += '</div>';
+
+  // Tile 3: Fixed Expenses
+  const fixedColor = (isInFlightMonth && projBreakdown && projBreakdown.fixedProjected > 0)
+    ? 'rgba(248,113,113,.15)' : 'rgba(248,113,113,.1)';
+  out += '<div style="background:var(--float);border:1px solid ' + fixedColor + ';border-radius:var(--r-lg);padding:14px 12px;position:relative;overflow:hidden;">';
+  out += '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--negative);opacity:.6;border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+  out += '<div style="font-size:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Fixed' + (isInFlightMonth ? ' · Full Month' : ' Expenses') + '</div>';
+  out += '<div style="font-size:22px;font-weight:700;color:var(--negative);font-family:var(--mono);">' + fmtK(fixedCommitted) + '</div>';
+  if (isInFlightMonth && projBreakdown) {
+    const paid = projBreakdown.fixedActual > 0 ? fmtK(projBreakdown.fixedActual) + ' paid' : '';
+    const due  = projBreakdown.fixedProjected > 0 ? fmtK(projBreakdown.fixedProjected) + ' due' : (paid ? 'all charged ✓' : '');
+    out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">' + [paid,due].filter(Boolean).join(' · ') + '</div>';
+  } else {
+    out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">mortgage · loans · bills · subs</div>';
+  }
+  out += '</div>';
+
+  // Tile 4: Variable Expenses
+  const remainingBudget = checkingIn - fixedCommitted;
+  const varOver = varSpend > remainingBudget;
+  const varColor = varOver ? 'rgba(248,113,113,.12)' : 'rgba(245,168,0,.12)';
+  out += '<div style="background:var(--float);border:1px solid ' + varColor + ';border-radius:var(--r-lg);padding:14px 12px;position:relative;overflow:hidden;">';
+  out += '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--gold);opacity:.7;border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+  out += '<div style="font-size:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Variable' + (isInFlightMonth ? ' · Proj.' : ' Expenses') + '</div>';
+  out += '<div style="font-size:22px;font-weight:700;color:var(--gold);font-family:var(--mono);">' + fmtK(varSpend) + '</div>';
+  if (isInFlightMonth && projBreakdown && daysElapsed > 0) {
+    const rate = projBreakdown.variableActual > 0 ? fmtK(projBreakdown.variableActual / daysElapsed) + '/day' : '';
+    out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">' + rate + (rate && projBreakdown.variableProjected > 0 ? ' · ' : '') + (projBreakdown.variableProjected > 0 ? '+' + fmtK(projBreakdown.variableProjected) + ' next ' + daysRemain + 'd' : '') + '</div>';
+  } else {
+    out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">dining · groceries · entertainment</div>';
+  }
+  out += '</div>';
+
+  out += '</div>'; // end 4-tile grid
+
+  // ── On-pace narrative banner (in-flight only) ──────────────────────────────
+  if (isInFlightMonth && projBreakdown) {
+    const pctMonth = Math.round(daysElapsed / daysInMonth * 100);
+    const budgetLeft = checkingIn - fixedCommitted - varSpend;
+    const blColor    = budgetLeft >= 0 ? 'var(--positive)' : 'var(--negative)';
+
+    let verdict, vColor;
+    if (projNet >= 0 && displaySavPct >= 20) {
+      verdict = '🎯 On pace for ' + displaySavPct.toFixed(1) + '% savings — above 20% target.';
+      vColor  = 'var(--positive)';
+    } else if (projNet >= 0 && displaySavPct >= 10) {
+      verdict = '📈 On pace for a positive month — savings below 20% target.';
+      vColor  = 'var(--gold)';
+    } else if (projNet >= 0) {
+      verdict = '⚖ On pace to break even — tighten variable spending to build savings.';
+      vColor  = 'var(--gold)';
+    } else {
+      verdict = '⚠ On pace for a ' + fmtK(Math.abs(projNet)) + ' deficit — reduce variable spending.';
+      vColor  = 'var(--negative)';
+    }
+
+    out += '<div style="background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.2);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:10px;">';
+    out += '<div style="font-size:11px;font-weight:600;color:' + vColor + ';margin-bottom:8px;">' + verdict + '</div>';
+
+    // 3-col breakdown for mobile
+    out += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">';
+    [
+      ['Fixed Paid',  fmtK(projBreakdown.fixedActual),    'var(--ink3)',    'already charged'],
+      ['Fixed Due',   fmtK(projBreakdown.fixedProjected), 'var(--negative)', 'coming this month'],
+      ['Var. Spent',  fmtK(projBreakdown.variableActual), 'var(--gold)',    daysElapsed + 'd of ' + daysInMonth + 'd'],
+    ].forEach(function(row) {
+      out += '<div><div style="font-size:8px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + row[0] + '</div>';
+      out += '<div style="font-size:14px;font-weight:700;color:' + row[2] + ';font-family:var(--mono);">' + row[1] + '</div>';
+      out += '<div style="font-size:8px;color:var(--ink4);">' + row[3] + '</div></div>';
+    });
+    out += '</div>';
+
+    out += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+    [
+      ['Var. Next ' + daysRemain + 'd', fmtK(projBreakdown.variableProjected), 'var(--river)', 'daily rate × days left'],
+      ['Budget Left',                   fmtK(Math.abs(budgetLeft)),              blColor,       budgetLeft >= 0 ? 'after all projections' : 'OVER BUDGET'],
+    ].forEach(function(row) {
+      out += '<div><div style="font-size:8px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + row[0] + '</div>';
+      out += '<div style="font-size:14px;font-weight:700;color:' + row[2] + ';font-family:var(--mono);">' + row[1] + '</div>';
+      out += '<div style="font-size:8px;color:var(--ink4);">' + row[3] + '</div></div>';
+    });
+    out += '</div>';
+
+    // Accrual method note (collapsed)
+    if (projBreakdown.fixedDueItems.length || projBreakdown.varPaceItems.length) {
+      out += '<div style="margin-top:8px;border-top:1px solid rgba(255,255,255,.06);padding-top:8px;font-size:9px;color:var(--ink4);line-height:1.8;">';
+      if (projBreakdown.fixedDueItems.length) {
+        out += '<strong style="color:var(--ink3);">Due: </strong>';
+        out += projBreakdown.fixedDueItems.map(function(i){return i.label.split(' ')[0]+' '+fmtK(i.amount);}).join(' · ');
+        out += ' (3-mo median/payee)<br>';
+      }
+      if (projBreakdown.varPaceItems.length) {
+        out += '<strong style="color:var(--ink3);">Variable pace: </strong>';
+        out += projBreakdown.varPaceItems.map(function(i){return i.label.split(' ')[0]+' '+fmtK(i.dailyRate)+'/d';}).join(' · ');
+      }
+      out += '</div>';
+    }
     out += '</div>';
   }
 
-  // Savings insight
+  // ── Quick reconciliation card ──────────────────────────────────────────────
+  if (typeof monthXfers !== 'undefined') {
+    const plCCCred = monthSp.filter(t => typeof isCCCredit === 'function' && isCCCredit(t)).reduce((s,t)=>s+t.amount,0);
+    const plXferAmt = monthXfers.reduce((s,t)=>s+t.amount,0);
+    if (plCCCred !== 0 || plXferAmt !== 0) {
+      out += '<div style="background:rgba(96,165,250,.04);border:1px solid rgba(96,165,250,.15);border-radius:var(--r-md);padding:10px 14px;margin-bottom:10px;font-size:10px;color:var(--ink4);line-height:1.7;">';
+      out += '<div style="font-size:10px;font-weight:600;color:var(--river);margin-bottom:3px;">&#10003; Reconciliation Check</div>';
+      if (plCCCred !== 0) out += '&#8594; <strong>' + fmtK(plCCCred) + '</strong> CC credits excluded from income<br>';
+      if (plXferAmt !== 0) out += '&#8594; <strong>' + fmtK(Math.abs(plXferAmt)) + '</strong> in transfers excluded from P&L';
+      out += '</div>';
+    }
+  }
+
+  // ── Savings insight ────────────────────────────────────────────────────────
   if (autoSave > 0) {
-    const shortfall = totalExp > checkingIn;
-    out += '<div style="background:' + (shortfall?'rgba(248,113,113,.06)':'rgba(52,211,153,.05)') + ';border:1px solid ' + (shortfall?'rgba(248,113,113,.2)':'rgba(52,211,153,.2)') + ';border-radius:var(--r-md);padding:10px 14px;margin-bottom:10px;font-size:11px;color:var(--ink3);line-height:1.6;">';
-    out += (shortfall?'\u26A0 ':'&#128161; ') + '<strong>' + (shortfall?'Drawing from savings:':'Savings on track:') + '</strong> ';
-    out += fmtK(autoSave) + ' auto-saved. Budget remaining: <strong>' + fmtK(checkingIn) + '</strong>. ';
-    out += 'Total spend: <strong>' + fmtK(totalExp) + '</strong>';
-    if (shortfall) out += ' \u2014 <strong style="color:var(--negative);">' + fmtK(totalExp-checkingIn) + '</strong> over.';
-    else out += ' \u2014 <strong style="color:var(--positive);">' + fmtK(checkingIn-totalExp) + '</strong> left.';
+    const shortfall = isInFlightMonth ? (totalProjectedExp > checkingIn) : (totalExp > checkingIn);
+    const expAmt    = isInFlightMonth ? totalProjectedExp : totalExp;
+    out += '<div style="background:' + (shortfall?'rgba(248,113,113,.05)':'rgba(52,211,153,.04)') + ';border:1px solid ' + (shortfall?'rgba(248,113,113,.18)':'rgba(52,211,153,.18)') + ';border-radius:var(--r-md);padding:10px 14px;margin-bottom:10px;font-size:11px;color:var(--ink3);line-height:1.6;">';
+    out += (shortfall?'\u26A0':'&#128161;') + ' <strong style="color:' + (shortfall?'var(--negative)':'#34D399') + ';">' + (shortfall?'Projected over budget:':'Savings intact:') + '</strong> ';
+    out += fmtK(autoSave) + ' auto-saved. Budget: <strong>' + fmtK(checkingIn) + '</strong>. ';
+    out += (isInFlightMonth ? 'Projected spend: ' : 'Total: ') + '<strong style="color:' + (shortfall?'var(--negative)':'var(--ink)') + ';">' + fmtK(expAmt) + '</strong>';
+    if (shortfall) out += ' \u2014 <strong style="color:var(--negative);">' + fmtK(expAmt - checkingIn) + '</strong> over.';
+    else out += ' \u2014 <strong style="color:var(--positive);">' + fmtK(checkingIn - expAmt) + '</strong> buffer.';
     out += '</div>';
   }
 
-  // Toolbar: sort + waterfall placeholder
+
+    // Toolbar: sort + waterfall placeholder
   out += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
   out += '<button onclick="window._plSortDir=window._plSortDir===\'desc\'?\'asc\':\'desc\';renderPulsePL()" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink3);padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;">' + (window._plSortDir==='desc'?'\u2193 Largest':'\u2191 Smallest') + '</button>';
   out += '<div id="pl-waterfall" style="flex:1;height:60px;overflow:hidden;"></div>';
@@ -3363,3 +3680,175 @@ function initPulseTips() {
 </script>
 </body>
 </html>
+  // ── Main summary tiles (always shown) ──────────────────────────────────────
+  out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;">';
+
+  const isInFlightMonth = !!accrual;
+
+  // ── Tile 1: Income ─────────────────────────────────────────────────────────
+  const incomeLabel = isInFlightMonth ? 'Gross Income · MTD' : 'Gross Income';
+  const incomeSub   = isInFlightMonth ? 'actual payroll received' : 'total household income';
+  out += '<div style="background:var(--float);border:1px solid rgba(45,212,191,.25);border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;">';
+  out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--positive);border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">' + incomeLabel + '</div>';
+  out += '<div style="font-size:32px;font-weight:700;color:var(--positive);line-height:1;font-family:var(--font-d);">' + fmt(totalIncome) + '</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">' + incomeSub + '</div>';
+  if (autoSave > 0) {
+    out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">−' + fmt(autoSave) + ' auto-saved → <strong style="color:var(--river);">' + fmt(checkingIn) + '</strong> to deploy</div>';
+  }
+  out += '</div>';
+
+  // ── Tile 2: Fixed / Committed Expenses ─────────────────────────────────────
+  let fixedCommitted, fixedSubText, fixedColor;
+  if (isInFlightMonth && projBreakdown) {
+    fixedCommitted = projBreakdown.fixedActual + projBreakdown.fixedProjected;
+    const paidPart = projBreakdown.fixedActual > 0 ? fmt(projBreakdown.fixedActual) + ' paid' : '';
+    const duePart  = projBreakdown.fixedProjected > 0
+      ? fmt(projBreakdown.fixedProjected) + ' still due'
+      : (paidPart ? 'all bills charged ✓' : '');
+    fixedSubText = [paidPart, duePart].filter(Boolean).join(' · ') || 'mortgage · loans · utilities';
+    fixedColor   = projBreakdown.fixedProjected > 0 ? 'rgba(248,113,113,.18)' : 'rgba(45,212,191,.15)';
+
+    // Bills still due — show top 3 inline
+    if (projBreakdown.fixedDueItems && projBreakdown.fixedDueItems.length) {
+      fixedSubText += '<div style="margin-top:5px;font-size:9px;color:var(--negative);">';
+      fixedSubText += projBreakdown.fixedDueItems.slice(0,3)
+        .map(i => i.label.split(' ')[0] + ' ' + fmt(i.amount)).join(' · ');
+      fixedSubText += '</div>';
+    }
+  } else {
+    fixedCommitted = sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+
+      sec.buckets.filter(bk=>['mortgage','car','insurance','education','childcare',
+        'electric','gas_util','water','internet','cell','subscriptions'].includes(bk))
+      .reduce((ss,bk)=>ss+(sec.bucketData[bk]?.total||0),0),0);
+    fixedSubText = 'mortgage · loans · utilities · subs';
+    fixedColor = 'rgba(248,113,113,.2)';
+  }
+  out += '<div style="background:var(--float);border:1px solid ' + fixedColor + ';border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;">';
+  out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--negative);opacity:.6;border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Fixed Expenses' + (isInFlightMonth ? ' · Full Month' : '') + '</div>';
+  out += '<div style="font-size:32px;font-weight:700;color:var(--negative);line-height:1;font-family:var(--font-d);">' + fmt(fixedCommitted) + '</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">' + fixedSubText + '</div>';
+  out += '</div>';
+
+  // ── Tile 3: Variable / Discretionary Expenses ──────────────────────────────
+  let varSpend, varSubText, varColor;
+  if (isInFlightMonth && projBreakdown) {
+    varSpend = projBreakdown.variableActual + projBreakdown.variableProjected;
+    const pace = daysElapsed > 0 && projBreakdown.variableActual > 0
+      ? fmt(projBreakdown.variableActual / daysElapsed) + '/day pace'
+      : '';
+    const remaining = projBreakdown.variableProjected > 0
+      ? '+ ' + fmt(projBreakdown.variableProjected) + ' next ' + daysRemaining + 'd'
+      : '';
+    const remainingBudget = checkingIn - fixedCommitted;
+    const varOver = varSpend > remainingBudget;
+    varSubText = [pace, remaining].filter(Boolean).join(' · ') || 'groceries · dining · entertainment';
+    varColor   = varOver ? 'rgba(248,113,113,.15)' : 'rgba(245,168,0,.15)';
+
+    // Top variable items
+    if (projBreakdown.varPaceItems && projBreakdown.varPaceItems.length) {
+      varSubText += '<div style="margin-top:5px;font-size:9px;color:var(--gold);">';
+      varSubText += projBreakdown.varPaceItems.slice(0,3)
+        .map(i => i.label.split(' ')[0] + ' ' + fmt(i.projected)).join(' · ');
+      varSubText += '</div>';
+    }
+  } else {
+    varSpend = sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+
+      sec.buckets.filter(bk=>['restaurants','groceries','gas_car','transit','healthcare',
+        'entertainment','household','personal','clothing','travel','gifts','other'].includes(bk))
+      .reduce((ss,bk)=>ss+(sec.bucketData[bk]?.total||0),0),0);
+    varSubText = 'dining · groceries · entertainment · household';
+    varColor = 'rgba(245,168,0,.15)';
+  }
+  out += '<div style="background:var(--float);border:1px solid ' + varColor + ';border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;">';
+  out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold);opacity:.7;border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Variable Expenses' + (isInFlightMonth ? ' · Proj.' : '') + '</div>';
+  out += '<div style="font-size:32px;font-weight:700;color:var(--gold);line-height:1;font-family:var(--font-d);">' + fmt(varSpend) + '</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">' + varSubText + '</div>';
+  out += '</div>';
+
+  // ── Tile 4: Net to Savings ─────────────────────────────────────────────────
+  const displayNet    = isInFlightMonth ? projNet : netSurplus;
+  const displayNetLbl = isInFlightMonth ? 'Proj. Net to Savings' : 'Net Surplus / Deficit';
+  const displaySavPct = isInFlightMonth
+    ? (totalIncome > 0 ? ((autoSave + Math.max(0, projNet)) / totalIncome * 100) : 0)
+    : savingsPct;
+  const netCol = displayNet >= 0 ? 'var(--positive)' : 'var(--negative)';
+  out += '<div style="background:var(--float);border:1px solid ' + (displayNet>=0?'rgba(45,212,191,.2)':'rgba(248,113,113,.2)') + ';border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;">';
+  out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:' + netCol + ';border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">' + displayNetLbl + '</div>';
+  out += '<div style="font-size:32px;font-weight:700;color:' + netCol + ';line-height:1;font-family:var(--font-d);">' + (displayNet>=0?'+':'') + fmt(displayNet) + '</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">save rate: <strong style="color:' + (displaySavPct>=20?'var(--positive)':displaySavPct>=10?'var(--gold)':'var(--negative)') + ';">' + displaySavPct.toFixed(1) + '%</strong> · target 20%</div>';
+  if (isInFlightMonth) {
+    out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">' + daysElapsed + 'd actual + ' + daysRemaining + 'd projected</div>';
+  }
+  out += '</div>';
+  out += '</div>'; // end 4-tile grid
+
+  // ── On-pace narrative banner (in-flight only) ──────────────────────────────
+  if (isInFlightMonth && projBreakdown) {
+    const totalFixed  = projBreakdown.fixedActual + projBreakdown.fixedProjected;
+    const totalVar    = projBreakdown.variableActual + projBreakdown.variableProjected;
+    const totalProj   = totalFixed + totalVar;
+    const budgetLeft  = checkingIn - totalProj;
+    const blColor     = budgetLeft >= 0 ? 'var(--positive)' : 'var(--negative)';
+    const pctOfMonth  = Math.round(daysElapsed / daysInMonth * 100);
+
+    // Plain-English verdict
+    let verdict, verdictColor;
+    if (projNet >= 0 && displaySavPct >= 20) {
+      verdict = '🎯 On pace to hit 20%+ savings this month.';
+      verdictColor = 'var(--positive)';
+    } else if (projNet >= 0 && displaySavPct >= 10) {
+      verdict = '📈 On pace for a positive month — savings below target.';
+      verdictColor = 'var(--gold)';
+    } else if (projNet >= 0) {
+      verdict = '⚖ On pace to break even — tighten variable spending to save.';
+      verdictColor = 'var(--gold)';
+    } else {
+      verdict = '⚠ On pace to run a deficit of ' + fmt(Math.abs(projNet)) + ' — reduce variable spending.';
+      verdictColor = 'var(--negative)';
+    }
+
+    out += '<div style="background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.2);border-radius:var(--r-lg);padding:14px 18px;margin-bottom:10px;">';
+
+    // Verdict row
+    out += '<div style="font-size:12px;font-weight:600;color:' + verdictColor + ';margin-bottom:10px;">' + verdict + '</div>';
+
+    // 5-col breakdown strip
+    out += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:10px;">';
+    [
+      ['Fixed Paid',       fmt(projBreakdown.fixedActual),    'var(--ink3)',     'already charged'],
+      ['Fixed Still Due',  fmt(projBreakdown.fixedProjected), 'var(--negative)', 'known bills coming'],
+      ['Var. Spent',       fmt(projBreakdown.variableActual), 'var(--gold)',     daysElapsed + 'd of ' + daysInMonth + 'd (' + pctOfMonth + '%)'],
+      ['Var. Projected',   fmt(projBreakdown.variableProjected), 'var(--river)', 'next ' + daysRemaining + 'd at pace'],
+      ['Budget Remaining', fmt(Math.abs(budgetLeft)),         blColor,          budgetLeft >= 0 ? 'after all projections' : 'OVER BUDGET'],
+    ].forEach(([l,v,c,s]) => {
+      out += '<div>';
+      out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + l + '</div>';
+      out += '<div style="font-size:16px;font-weight:700;color:' + c + ';font-family:var(--font-d);">' + v + '</div>';
+      out += '<div style="font-size:9px;color:var(--ink4);">' + s + '</div>';
+      out += '</div>';
+    });
+    out += '</div>';
+
+    // Accrual method note
+    if (projBreakdown.fixedDueItems.length || projBreakdown.varPaceItems.length) {
+      out += '<div style="font-size:10px;color:var(--ink4);border-top:1px solid rgba(255,255,255,.05);padding-top:8px;line-height:1.8;">';
+      if (projBreakdown.fixedDueItems.length) {
+        out += '<strong style="color:var(--ink3);">Fixed bills expected: </strong>';
+        out += projBreakdown.fixedDueItems.map(i => i.label.split(' ')[0] + ' ' + fmt(i.amount)).join(', ');
+        out += ' — using prior 3-month median per payee.<br>';
+      }
+      if (projBreakdown.varPaceItems.length) {
+        out += '<strong style="color:var(--ink3);">Variable projected: </strong>';
+        out += projBreakdown.varPaceItems.map(i => i.label.split(' ')[0] + ' ' + fmt(i.dailyRate) + '/day').join(', ');
+        out += ' — using 3-month daily run rate × ' + daysRemaining + ' days remaining.';
+      }
+      out += '</div>';
+    }
+    out += '</div>';
+  }
+
+

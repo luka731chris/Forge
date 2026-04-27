@@ -13,6 +13,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 /* ── Design tokens ─────────────────────────────────────── */
+html, body { height: 100%; }
 :root {
   --void:   #080808;
   --base:   #0E0E0E;
@@ -858,6 +859,13 @@ h1, h2, h3, .kpi-val, .display-num {
       Family Financials
     </div>
   </div>
+  <div class="nav-section" style="margin-top:auto;border-top:1px solid var(--line);padding-top:8px;">
+    <div class="nav-label">Forge</div>
+    <div class="nav-item" onclick="showPage('settings')" id="nav-settings">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </div>
+  </div>
 </nav>
 
 <main>
@@ -1199,6 +1207,7 @@ h1, h2, h3, .kpi-val, .display-num {
       <div class="page-sub" id="reconSub">P&amp;L → Quicken register crosscheck · verify every dollar is in the right month</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
+      <button onclick="document.getElementById('reconHelpModal').style.display='flex'" style="background:transparent;border:1px solid var(--line2);color:var(--ink4);padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;">? How to Fix Discrepancies</button>
       <select id="reconMonth" onchange="renderReconcile()" style="font-size:12px;padding:5px 10px;"></select>
       <select id="reconAcct" onchange="renderReconcile()" style="font-size:12px;padding:5px 10px;">
         <option value="all">All Accounts</option>
@@ -1206,6 +1215,54 @@ h1, h2, h3, .kpi-val, .display-num {
     </div>
   </div>
   <div id="reconContent"></div>
+</div>
+
+<!-- Reconcile Help Modal -->
+<div id="reconHelpModal" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.7);align-items:center;justify-content:center;">
+  <div style="background:var(--float);border:1px solid var(--line);border-radius:14px;padding:28px 32px;max-width:580px;width:90%;max-height:80vh;overflow-y:auto;position:relative;">
+    <button onclick="document.getElementById('reconHelpModal').style.display='none'" style="position:absolute;top:16px;right:16px;background:transparent;border:none;color:var(--ink4);font-size:20px;cursor:pointer;line-height:1;">✕</button>
+    <div style="font-family:var(--font-d);font-size:22px;font-weight:700;color:var(--ink);margin-bottom:6px;">How to Fix Discrepancies</div>
+    <div style="font-size:11px;color:var(--ink4);margin-bottom:20px;">Follow these steps when the Reconcile page shows ⚠ discrepancy</div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;">
+
+      <div style="background:var(--lift);border-left:3px solid var(--gold);border-radius:6px;padding:14px 16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:4px;">① Wrong Month — Transaction in Quicken on wrong date</div>
+        <div style="font-size:11px;color:var(--ink3);line-height:1.7;">In Quicken, find the transaction and correct its date. Re-export CSV and reimport. Common cause: credit card statement date vs purchase date mismatch.</div>
+      </div>
+
+      <div style="background:var(--lift);border-left:3px solid var(--positive);border-radius:6px;padding:14px 16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--positive);margin-bottom:4px;">② Missing Category — Transaction shows as Inferred or Uncategorized</div>
+        <div style="font-size:11px;color:var(--ink3);line-height:1.7;">In Quicken, assign the correct category to the transaction. Re-export and reimport. Check the Account Hierarchy page for gray "Inferred" badges — those are the transactions needing categories.</div>
+      </div>
+
+      <div style="background:var(--lift);border-left:3px solid var(--river);border-radius:6px;padding:14px 16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--river);margin-bottom:4px;">③ CC Payment Counted Twice — Payment and charges both appearing</div>
+        <div style="font-size:11px;color:var(--ink3);line-height:1.7;">If a credit card payment is showing as an expense AND the individual charges are also showing, the payment isn't being detected as a transfer. In Quicken, categorize the payment as "Credit Card Payment" or use bracket notation [Card Account Name]. Re-export and reimport.</div>
+      </div>
+
+      <div style="background:var(--lift);border-left:3px solid var(--negative);border-radius:6px;padding:14px 16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--negative);margin-bottom:4px;">④ Apple Card Detail Missing — Payment showing as expense</div>
+        <div style="font-size:11px;color:var(--ink3);line-height:1.7;">Forge only treats Apple Card payments as transfers when Apple Card detail CSV is imported for that month. Go to Wallet app → Apple Card → Download Statements → Export CSV. Name the file <code style="background:var(--float);padding:1px 4px;border-radius:3px;">apple_card_YYYY_MM.csv</code> and reimport alongside your Quicken export.</div>
+      </div>
+
+      <div style="background:var(--lift);border-left:3px solid var(--gold);border-radius:6px;padding:14px 16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:4px;">⑤ CC Credit / Return Counted as Income</div>
+        <div style="font-size:11px;color:var(--ink3);line-height:1.7;">Forge automatically excludes CC credits from income and routes them as expense offsets. If a return is still showing as income, check its Quicken category — it may be tagged as "Other Income". Re-categorize it in Quicken to match the original expense category and reimport.</div>
+      </div>
+
+      <div style="background:var(--lift);border-left:3px solid var(--ink4);border-radius:6px;padding:14px 16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--ink3);margin-bottom:4px;">⑥ Split Transaction Mis-Mapped</div>
+        <div style="font-size:11px;color:var(--ink3);line-height:1.7;">If a Quicken --Split-- transaction is landing in the wrong bucket, Forge is inferring the payee incorrectly. Check the Account Hierarchy page, find the Split badge rows, and verify the payee name. You can also assign explicit Quicken categories to each split leg in Quicken to override the inference.</div>
+      </div>
+
+      <div style="background:rgba(245,168,0,.08);border:1px solid rgba(245,168,0,.25);border-radius:8px;padding:14px 16px;margin-top:4px;">
+        <div style="font-size:11px;font-weight:600;color:var(--gold);margin-bottom:6px;">After Any Fix in Quicken</div>
+        <div style="font-size:11px;color:var(--ink3);line-height:1.8;">1. Re-export the full CSV from Quicken (All Dates)<br>2. Drop the new export onto the Import page<br>3. Click Push to Cloud<br>4. Re-open Reconcile and verify ✓ reconciled appears</div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 </main>
@@ -1231,7 +1288,21 @@ h1, h2, h3, .kpi-val, .display-num {
       </select>
     </div>
   </div>
-  <div id="cwContent"></div>
+  <div id="cwContent" style="overflow-x:auto;"></div>
+</div>
+
+<!-- ══ SETTINGS & CUSTOMIZATIONS ══ -->
+<div id="page-settings" class="page">
+  <div class="page-hdr">
+    <div>
+      <div class="page-title">Settings &amp; Customizations</div>
+      <div class="page-sub">Family profile · Goals · Credit cards · Accrual rules · Payee aliases · Forge preferences</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="saveAllSettings()" style="background:var(--gold);color:var(--void);border:none;padding:7px 18px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">&#10003; Save All Settings</button>
+    </div>
+  </div>
+  <div id="settingsContent"></div>
 </div>
 
 </main>
@@ -1677,6 +1748,373 @@ function renderReconcile() {
   el.innerHTML = html;
 }
 
+
+// ════════════════════════════════════════════════════════════════════════════
+// SETTINGS & CUSTOMIZATIONS
+// ════════════════════════════════════════════════════════════════════════════
+function renderSettings() {
+  const el = document.getElementById('settingsContent');
+  if (!el) return;
+
+  // ── helpers ────────────────────────────────────────────────────────────────
+  const section = (id, icon, title, sub, body) =>
+    `<div id="sset-${id}" style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;">
+       <div style="padding:14px 20px;background:var(--lift);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="toggleSSet('${id}')">
+         <span style="font-size:20px;">${icon}</span>
+         <div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--ink);">${title}</div><div style="font-size:11px;color:var(--ink4);">${sub}</div></div>
+         <span id="sset-chev-${id}" style="color:var(--ink4);font-size:12px;transition:transform .2s;">▼</span>
+       </div>
+       <div id="sset-body-${id}" style="padding:20px;">${body}</div>
+     </div>`;
+
+  const row = (label, hint, input) =>
+    `<div style="display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+       <div><div style="font-size:12px;font-weight:500;color:var(--ink2);">${label}</div>${hint?`<div style="font-size:10px;color:var(--ink4);margin-top:2px;">${hint}</div>`:''}</div>
+       <div>${input}</div>
+     </div>`;
+
+  const inp = (id, val, type='text', extra='') =>
+    `<input id="${id}" type="${type}" value="${String(val||'').replace(/"/g,'&quot;')}" ${extra}
+      style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:7px 10px;font-size:12px;font-family:var(--font-ui);color:var(--ink);box-sizing:border-box;">`;
+
+  const sel = (id, val, opts) =>
+    `<select id="${id}" style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:7px 10px;font-size:12px;color:var(--ink);">
+       ${opts.map(([v,l])=>`<option value="${v}"${v===val?' selected':''}>${l}</option>`).join('')}
+     </select>`;
+
+  const chk = (id, checked, label) =>
+    `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+       <input id="${id}" type="checkbox" ${checked?'checked':''} style="width:16px;height:16px;accent-color:var(--gold);">
+       <span style="font-size:12px;color:var(--ink2);">${label}</span>
+     </label>`;
+
+  const pill = (label, color='var(--gold)') =>
+    `<span style="font-size:9px;padding:1px 6px;border-radius:10px;background:${color}22;border:1px solid ${color}55;color:${color};font-family:var(--font-m);letter-spacing:.05em;font-weight:600;">${label}</span>`;
+
+  const badge = (text) => `<span style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(245,168,0,.12);border:1px solid rgba(245,168,0,.25);color:var(--gold);">${text}</span>`;
+
+  // ── §1 Family Profile ──────────────────────────────────────────────────────
+  let familyBody = row('Family Name', 'Shown in reports and Confluence', inp('set-family-name', familyProfile.name));
+  familyBody    += row('Home City', 'For weather and regional context in $id', inp('set-city', familyProfile.city));
+  familyBody    += row('Savings Rate Target', '%  — used for goal rings, P&L color coding, and $id benchmarks', inp('set-savings-target', familyProfile.savingsTarget, 'number', 'min="0" max="100" step="1"'));
+  familyBody    += '<div style="margin-top:16px;margin-bottom:8px;font-size:11px;font-weight:600;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;">Family Members</div>';
+  familyBody    += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;font-size:10px;color:var(--ink4);padding-bottom:6px;"><span>Emoji</span><span>Name</span><span>Role</span><span>Birth Year</span></div>';
+  familyProfile.members.forEach((m, i) => {
+    familyBody += `<div style="display:grid;grid-template-columns:56px 1fr 90px 90px;gap:8px;margin-bottom:6px;">
+      <input id="set-member-emoji-${i}" type="text" value="${m.emoji}" maxlength="4" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px;font-size:18px;text-align:center;width:100%;box-sizing:border-box;">
+      <input id="set-member-name-${i}"  type="text" value="${m.name}" placeholder="Name" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);width:100%;box-sizing:border-box;">
+      <select id="set-member-role-${i}" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px;font-size:11px;color:var(--ink);">
+        <option value="parent" ${m.role==='parent'?'selected':''}>Parent</option>
+        <option value="child"  ${m.role==='child' ?'selected':''}>Child</option>
+      </select>
+      <input id="set-member-born-${i}" type="number" value="${m.born||''}" placeholder="YYYY" min="1950" max="2025" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);width:100%;box-sizing:border-box;">
+    </div>`;
+  });
+  familyBody += `<div style="margin-top:6px;font-size:10px;color:var(--ink4);">Ages auto-computed from birth year. Used in life-stage intelligence banner and Confluence insights.</div>`;
+
+  // ── §2 Savings Goals ───────────────────────────────────────────────────────
+  let goalsBody = '';
+  if (!savingsGoals.length) {
+    goalsBody = '<div style="font-size:12px;color:var(--ink4);margin-bottom:12px;">No goals yet. Add your first goal below.</div>';
+  } else {
+    savingsGoals.forEach((g, i) => {
+      const pct = g.targetAmount > 0 ? Math.min(100, g.currentAmount / g.targetAmount * 100) : 0;
+      const col = pct >= 80 ? '#10B981' : pct >= 40 ? '#FFB612' : '#60A5FA';
+      goalsBody += `<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span style="font-size:20px;">${g.icon||'🎯'}</span>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;color:var(--ink);">${g.name}</div>
+            <div style="font-size:10px;color:var(--ink4);">${g.member ? 'For: ' + g.member : 'Family'} ${g.targetDate ? '· Target: '+g.targetDate : ''}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:16px;font-weight:700;color:${col};">${pct.toFixed(0)}%</div>
+            <div style="font-size:10px;color:var(--ink4);">${fmt(g.currentAmount)} / ${fmt(g.targetAmount)}</div>
+          </div>
+          <button onclick="removeGoal(${i})" style="background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--negative);padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;">✕</button>
+        </div>
+        <div style="height:6px;background:var(--float);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${pct.toFixed(1)}%;background:${col};border-radius:3px;"></div>
+        </div>
+        ${g.notes ? `<div style="font-size:10px;color:var(--ink4);margin-top:6px;">${g.notes}</div>` : ''}
+      </div>`;
+    });
+  }
+  const memberOpts = familyProfile.members.map(m => `<option value="${m.name}">${m.emoji} ${m.name}</option>`).join('');
+  goalsBody += `<div style="background:rgba(245,168,0,.05);border:1px solid rgba(245,168,0,.2);border-radius:var(--r-md);padding:16px;margin-top:8px;">
+    <div style="font-size:12px;font-weight:600;color:var(--gold);margin-bottom:12px;">+ Add New Goal</div>
+    <div style="display:grid;grid-template-columns:48px 1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+      <input id="ng-icon" type="text" value="🎯" maxlength="4" placeholder="🎯" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px;font-size:18px;text-align:center;box-sizing:border-box;">
+      <input id="ng-name" type="text" placeholder="Goal name" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
+      <input id="ng-target" type="number" placeholder="Target $" min="0" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
+      <input id="ng-current" type="number" placeholder="Current $" min="0" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+      <select id="ng-member" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);">
+        <option value="">Family Goal</option>${memberOpts}
+      </select>
+      <input id="ng-date" type="text" placeholder="Target date (YYYY-MM)" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
+      <input id="ng-notes" type="text" placeholder="Notes (optional)" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
+    </div>
+    <button onclick="addGoal()" style="background:var(--gold);color:var(--void);border:none;padding:7px 18px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Add Goal</button>
+  </div>`;
+
+  // ── §3 Credit Card Billing Cycles ──────────────────────────────────────────
+  const ccAccts = accounts.filter(a => isCreditAcct(a));
+  let ccBody = '';
+  if (!ccAccts.length) {
+    ccBody = '<div style="font-size:12px;color:var(--ink4);">No credit card accounts detected. Import your Quicken data first.</div>';
+  } else {
+    ccBody += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;">';
+    ccAccts.forEach(a => {
+      const cfg = ccSettings[a] || { closeDay:1, dueDay:25 };
+      ccBody += `<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;">
+        <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:10px;">💳 ${a}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Statement Closes</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input type="number" min="1" max="31" value="${cfg.closeDay||1}" data-acct="${a}" data-field="closeDay"
+                style="width:55px;background:var(--float);border:1px solid var(--line2);border-radius:4px;padding:5px 8px;font-family:var(--font-m);font-size:13px;color:var(--ink);text-align:center;"
+                onchange="updateCCSetting(this)">
+              <span style="font-size:11px;color:var(--ink4);">of month</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Payment Due</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input type="number" min="1" max="31" value="${cfg.dueDay||25}" data-acct="${a}" data-field="dueDay"
+                style="width:55px;background:var(--float);border:1px solid var(--line2);border-radius:4px;padding:5px 8px;font-family:var(--font-m);font-size:13px;color:var(--ink);text-align:center;"
+                onchange="updateCCSetting(this)">
+              <span style="font-size:11px;color:var(--ink4);">of month</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    });
+    ccBody += '</div>';
+  }
+
+  // ── §4 Accrual Engine Controls ─────────────────────────────────────────────
+  const accrualBuckets = [
+    { key:'mortgage',      label:'Mortgage',      engine:'fixed',        icon:'🏠' },
+    { key:'car',           label:'Car Payments',  engine:'fixed',        icon:'🚗' },
+    { key:'insurance',     label:'Insurance',     engine:'fixed',        icon:'🛡️' },
+    { key:'education',     label:'Education',     engine:'fixed',        icon:'🎓' },
+    { key:'childcare',     label:'Childcare',     engine:'fixed',        icon:'👶' },
+    { key:'electric',      label:'Electric',      engine:'fixed',        icon:'⚡' },
+    { key:'gas_util',      label:'Gas/Heat',      engine:'fixed',        icon:'🔥' },
+    { key:'water',         label:'Water/Sewer',   engine:'fixed',        icon:'💧' },
+    { key:'internet',      label:'Internet/Cable',engine:'fixed',        icon:'📡' },
+    { key:'cell',          label:'Cell Phones',   engine:'fixed',        icon:'📱' },
+    { key:'subscriptions', label:'Subscriptions', engine:'fixed',        icon:'📺' },
+    { key:'groceries',     label:'Groceries',     engine:'discretionary',icon:'🛒' },
+    { key:'restaurants',   label:'Restaurants',   engine:'discretionary',icon:'🍕' },
+    { key:'gas_car',       label:'Vehicle Fuel',  engine:'discretionary',icon:'⛽' },
+    { key:'transit',       label:'Transit',       engine:'discretionary',icon:'🚌' },
+    { key:'healthcare',    label:'Healthcare',    engine:'discretionary',icon:'⚕️' },
+    { key:'entertainment', label:'Entertainment', engine:'discretionary',icon:'🎭' },
+    { key:'household',     label:'Household',     engine:'discretionary',icon:'🔧' },
+    { key:'personal',      label:'Personal Care', engine:'discretionary',icon:'💅' },
+    { key:'clothing',      label:'Clothing',      engine:'discretionary',icon:'👕' },
+    { key:'travel',        label:'Travel',        engine:'discretionary',icon:'✈️' },
+    { key:'gifts',         label:'Gifts',         engine:'discretionary',icon:'🎁' },
+  ];
+  let accrualBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;line-height:1.7;">
+    <strong style="color:var(--ink3);">Fixed</strong> — uses prior 3-month median per recurring payee. Only projects bills that haven't yet been charged this month.<br>
+    <strong style="color:var(--ink3);">Discretionary</strong> — uses daily run rate × days remaining. Good for variable spending like groceries, dining, gas.<br>
+    <strong style="color:var(--ink3);">No Projection</strong> — no accrual for this bucket. Actual charges only.
+  </div>`;
+  accrualBody += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px;">`;
+  accrualBuckets.forEach(b => {
+    const override = accrualOverrides[b.key];
+    const current  = override || b.engine;
+    accrualBody += `<div style="display:flex;align-items:center;gap:8px;background:var(--lift);border:1px solid var(--line);border-radius:6px;padding:8px 12px;">
+      <span style="font-size:16px;">${b.icon}</span>
+      <div style="flex:1;"><div style="font-size:11px;font-weight:500;color:var(--ink2);">${b.label}</div>
+      <div style="font-size:9px;color:var(--ink4);">Default: ${b.engine}</div></div>
+      <select data-bucket="${b.key}" onchange="accrualOverrides[this.dataset.bucket]=this.value==='default'?undefined:this.value;if(this.value==='default')delete accrualOverrides[this.dataset.bucket];saveSettings()"
+        style="background:var(--float);border:1px solid var(--line2);border-radius:4px;padding:4px 6px;font-size:11px;color:var(--ink);">
+        <option value="default" ${!override?'selected':''}>Default</option>
+        <option value="fixed"         ${current==='fixed'&&override?'selected':''}>Fixed</option>
+        <option value="discretionary" ${current==='discretionary'&&override?'selected':''}>Variable</option>
+        <option value="zero"          ${current==='zero'?'selected':''}>No Projection</option>
+      </select>
+    </div>`;
+  });
+  accrualBody += '</div>';
+
+  // ── §5 Payee Aliases ───────────────────────────────────────────────────────
+  let aliasBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;">Clean up messy Quicken payee names. The alias is shown everywhere in Forge instead of the raw name.</div>`;
+  const aliasEntries = Object.entries(payeeAliases);
+  if (aliasEntries.length) {
+    aliasBody += '<div style="margin-bottom:10px;">';
+    aliasEntries.forEach(([raw, friendly]) => {
+      aliasBody += `<div style="display:grid;grid-template-columns:1fr 1fr 36px;gap:6px;margin-bottom:4px;align-items:center;">
+        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:5px 8px;font-size:11px;color:var(--ink4);">${raw}</div>
+        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:5px 8px;font-size:11px;color:var(--ink2);">→ ${friendly}</div>
+        <button onclick="deleteAlias('${raw.replace(/'/g,"\\'")}');renderSettings()" style="background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--negative);border-radius:4px;padding:4px;cursor:pointer;font-size:12px;">✕</button>
+      </div>`;
+    });
+    aliasBody += '</div>';
+  }
+  aliasBody += `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;background:rgba(245,168,0,.04);border:1px solid rgba(245,168,0,.15);border-radius:6px;padding:12px;">
+    <input id="alias-raw" type="text" placeholder="Raw Quicken name (exact)" style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
+    <input id="alias-friendly" type="text" placeholder="Friendly display name" style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
+    <button onclick="addAlias()" style="background:var(--gold);color:var(--void);border:none;padding:6px 14px;border-radius:4px;font-size:12px;font-weight:700;cursor:pointer;">Add</button>
+  </div>`;
+
+  // ── §6 Split Transaction Rules ─────────────────────────────────────────────
+  let splitBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;">Override the default bucket for split transactions. Pattern is case-insensitive and matches payee name.</div>`;
+  const ruleEntries = Object.entries(splitRules);
+  if (ruleEntries.length) {
+    splitBody += '<div style="margin-bottom:10px;">';
+    ruleEntries.forEach(([pat, bk]) => {
+      const bMeta = BUCKET_META[bk] || { label: bk, icon: '·' };
+      splitBody += `<div style="display:grid;grid-template-columns:1fr 1fr 36px;gap:6px;margin-bottom:4px;align-items:center;">
+        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:5px 8px;font-size:11px;color:var(--ink4);">Payee contains: <em>${pat}</em></div>
+        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:5px 8px;font-size:11px;color:var(--ink2);">${bMeta.icon} ${bMeta.label}</div>
+        <button onclick="deleteSplitRule('${pat.replace(/'/g,"\\'")}');renderSettings()" style="background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--negative);border-radius:4px;padding:4px;cursor:pointer;font-size:12px;">✕</button>
+      </div>`;
+    });
+    splitBody += '</div>';
+  }
+  const bucketOpts = Object.entries(BUCKET_META).map(([k,v])=>`<option value="${k}">${v.icon} ${v.label}</option>`).join('');
+  splitBody += `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;background:rgba(245,168,0,.04);border:1px solid rgba(245,168,0,.15);border-radius:6px;padding:12px;">
+    <input id="rule-pat" type="text" placeholder="Payee contains (e.g. pennymac)" style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
+    <select id="rule-bucket" style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:6px 10px;font-size:12px;color:var(--ink);">${bucketOpts}</select>
+    <button onclick="addSplitRule()" style="background:var(--gold);color:var(--void);border:none;padding:6px 14px;border-radius:4px;font-size:12px;font-weight:700;cursor:pointer;">Add</button>
+  </div>`;
+
+  // ── §7 Forge Appearance ────────────────────────────────────────────────────
+  let appearBody = '';
+  appearBody += row('Display Density', 'Adjusts padding and font sizes throughout', sel('set-density', forgeAppearance.density, [['compact','Compact — more data on screen'],['normal','Normal (default)'],['comfortable','Comfortable — easier to scan']]));
+  appearBody += row('Show Goal Rings', 'Display circular progress rings on The Gauge (Pulse)', chk('set-goal-rings', forgeAppearance.showGoalRings, 'Show goal progress rings'));
+  appearBody += row('Default Page', 'Page shown on launch', sel('set-default-page', forgeAppearance.defaultPage, [['dashboard','Dashboard'],['income','Income Statement'],['cashflow','Cash Flow'],['categories','Categories']]));
+  appearBody += row('Show Cents', 'Display cents in all dollar amounts', chk('set-show-cents', forgeAppearance.showCents, 'Show cents (e.g. $1,234.56 instead of $1,235)'));
+
+  // ── §8 Data & Privacy ──────────────────────────────────────────────────────
+  const ledgerRaw = localStorage.getItem('forge_prod_v1') || localStorage.getItem('ledger_v3');
+  const ledgerData = ledgerRaw ? JSON.parse(ledgerRaw) : null;
+  const txnCount   = ledgerData?.txns?.length || 0;
+  const savedAt    = ledgerData?.savedAt ? new Date(ledgerData.savedAt).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}) : 'unknown';
+  const storageKeys = ['forge_prod_v1','ledger_v3','forge_lean_v1','forge_settings_v2','forge_sync_token','forge_worker_url'];
+  let storageSize = 0;
+  storageKeys.forEach(k => { const v = localStorage.getItem(k); if (v) storageSize += v.length; });
+
+  let dataBody = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;">
+      <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Transactions</div>
+      <div style="font-size:22px;font-weight:700;color:var(--ink);">${txnCount.toLocaleString()}</div>
+      <div style="font-size:10px;color:var(--ink4);">Last import: ${savedAt}</div>
+    </div>
+    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;">
+      <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Storage Used</div>
+      <div style="font-size:22px;font-weight:700;color:var(--ink);">${(storageSize/1024).toFixed(0)} KB</div>
+      <div style="font-size:10px;color:var(--ink4);">browser localStorage</div>
+    </div>
+    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;">
+      <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Sync Token</div>
+      <div style="font-size:14px;font-weight:600;color:${localStorage.getItem('forge_sync_token')?'var(--positive)':'var(--ink4)'};">${localStorage.getItem('forge_sync_token')?'✓ Configured':'Not set'}</div>
+      <div style="font-size:10px;color:var(--ink4);">cloud sync status</div>
+    </div>
+  </div>`;
+  dataBody += `<div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button onclick="exportForge()" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink2);padding:7px 16px;border-radius:6px;font-size:12px;cursor:pointer;">↓ Export Data as JSON</button>
+    <button onclick="if(confirm('Clear sync token? You will be prompted to re-enter it on next sync.'))localStorage.removeItem('forge_sync_token');renderSettings()" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink4);padding:7px 16px;border-radius:6px;font-size:12px;cursor:pointer;">Reset Sync Token</button>
+    <button onclick="if(confirm('Clear ALL Forge data from this browser? This cannot be undone.')){['forge_prod_v1','ledger_v3','forge_lean_v1','forge_settings_v2'].forEach(k=>localStorage.removeItem(k));location.reload();}" style="background:transparent;border:1px solid rgba(248,113,113,.35);color:var(--negative);padding:7px 16px;border-radius:6px;font-size:12px;cursor:pointer;">✕ Clear All Data</button>
+  </div>`;
+
+  // ── Assemble ──────────────────────────────────────────────────────────────
+  el.innerHTML = [
+    section('family',    '👨‍👩‍👧‍👦', 'Family Profile',          'Names · ages · savings target · Pittsburgh',   familyBody),
+    section('goals',     '🎯',      'Savings Goals',            'Track progress toward named financial goals',    goalsBody),
+    section('cc',        '💳',      'Credit Card Billing',      'Statement close dates · payment due dates',      ccBody),
+    section('accrual',   '🔮',      'Accrual Engine Rules',     'Control how each bucket projects for in-flight months', accrualBody),
+    section('aliases',   '✏️',      'Payee Aliases',            'Clean up messy Quicken merchant names',          aliasBody),
+    section('splits',    '🔀',      'Split Transaction Rules',  'Override bucket assignment for split payees',     splitBody),
+    section('appear',    '🎨',      'Forge Appearance',         'Density · defaults · display preferences',       appearBody),
+    section('data',      '💾',      'Data &amp; Privacy',       'Storage usage · export · sync · clear',          dataBody),
+  ].join('');
+}
+
+// ── Settings helper functions ─────────────────────────────────────────────────
+function toggleSSet(id) {
+  const body = document.getElementById('sset-body-' + id);
+  const chev = document.getElementById('sset-chev-' + id);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (chev) chev.style.transform = open ? 'rotate(-90deg)' : 'rotate(0deg)';
+}
+
+function addGoal() {
+  const name    = document.getElementById('ng-name')?.value.trim();
+  const target  = parseFloat(document.getElementById('ng-target')?.value || 0);
+  const current = parseFloat(document.getElementById('ng-current')?.value || 0);
+  const member  = document.getElementById('ng-member')?.value || '';
+  const date    = document.getElementById('ng-date')?.value || '';
+  const notes   = document.getElementById('ng-notes')?.value || '';
+  const icon    = document.getElementById('ng-icon')?.value || '🎯';
+  if (!name || !target) { toast('Enter a goal name and target amount'); return; }
+  savingsGoals.push({ id: Date.now(), name, targetAmount: target, currentAmount: current, targetDate: date, member, icon, notes });
+  saveSettings();
+  renderSettings();
+}
+
+function removeGoal(idx) {
+  if (!confirm('Remove this goal?')) return;
+  savingsGoals.splice(idx, 1);
+  saveSettings();
+  renderSettings();
+}
+
+function addAlias() {
+  const raw      = document.getElementById('alias-raw')?.value.trim();
+  const friendly = document.getElementById('alias-friendly')?.value.trim();
+  if (!raw || !friendly) { toast('Enter both the raw payee and the friendly name'); return; }
+  payeeAliases[raw] = friendly;
+  saveSettings();
+  renderSettings();
+}
+
+function deleteAlias(raw) {
+  delete payeeAliases[raw];
+  saveSettings();
+}
+
+function addSplitRule() {
+  const pat = document.getElementById('rule-pat')?.value.trim().toLowerCase();
+  const bk  = document.getElementById('rule-bucket')?.value;
+  if (!pat || !bk) { toast('Enter a payee pattern and select a bucket'); return; }
+  splitRules[pat] = bk;
+  saveSettings();
+  renderSettings();
+}
+
+function deleteSplitRule(pat) {
+  delete splitRules[pat];
+  saveSettings();
+}
+
+function exportForge() {
+  const data = {
+    exported: new Date().toISOString(),
+    version:  'lean_4.0',
+    ledger:   JSON.parse(localStorage.getItem('forge_prod_v1') || localStorage.getItem('ledger_v3') || '{}'),
+    settings: JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = 'forge-export-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('\u2713 Exported forge-export-' + new Date().toISOString().slice(0,10) + '.json');
+}
+
+
 async function syncPush() {
   if (!WORKER_URL) { alert('Sync not configured. Set WORKER_URL in index.html.'); return; }
   const token = getSyncToken();
@@ -1752,7 +2190,35 @@ let donutCat  = null;
 let surplusTargets  = { emergency:0, investments:0, college:0, other:0 };
 let ccSettings      = {};  // { acctName: { closeDay:int, dueDay:int } }
 let budgetTargets   = {};  // { bucketKey: monthlyDollarTarget }
-let nonRecurringIds = new Set(); // set of dedup keys for NR-flagged transactions
+let nonRecurringIds = new Set();
+
+// ── Extended settings model ─────────────────────────────────────────────────
+let familyProfile = {
+  name: 'The Luka Family',
+  members: [
+    { name:'Chris',   role:'parent', born:'', emoji:'🧢' },
+    { name:'Kira',    role:'parent', born:'', emoji:'💛' },
+    { name:'Sam',     role:'child',  born:'', emoji:'⚾' },
+    { name:'Whitney', role:'child',  born:'', emoji:'🎨' },
+    { name:'Will',    role:'child',  born:'', emoji:'🎮' },
+  ],
+  city: 'Pittsburgh, PA',
+  savingsTarget: 20,
+  monthlyIncome: 0,
+};
+let savingsGoals    = [];  // [{ id, name, targetAmount, currentAmount, targetDate, member, icon, notes }]
+let payeeAliases    = {};  // { 'RAW PAYEE NAME': 'Friendly Name' }
+let splitRules      = {};  // { payeePattern: bucketKey } — custom bucket overrides
+let accrualOverrides= {};  // { bucketKey: 'fixed'|'discretionary'|'zero' }
+let forgeAppearance = {
+  density: 'normal',
+  accentColor: 'gold',
+  customAccent: '',
+  showCents: false,
+  defaultPage: 'dashboard',
+  showGoalRings: true,
+};
+
 const SETTINGS_KEY  = 'forge_settings_v2';
 
 // ── Colours ───────────────────────────────────────
@@ -1792,7 +2258,15 @@ function isTransfer(t) {
   const pay = (t.payee   || '').trim().toLowerCase();
   if (/^\[.*\]$/.test(cat)) return true;
   if (/^transfer$/i.test(cat)) return true;
-  if (/^(credit card payment|apple card|apple card payment|cc payment|card payment)$/i.test(cat)) return true;
+  if (/^(credit card payment|cc payment|card payment)$/i.test(cat)) return true;
+  // Apple Card payment: treat as transfer ONLY if we have Apple Card detail loaded
+  // for the same month. If no detail, it stays as a credit card expense.
+  if (/^(apple card|apple card payment)$/i.test(cat)) {
+    const txnMonth = (t.date || '').slice(0, 7);
+    const hasAppleDetail = (typeof txns !== 'undefined' ? txns : [])
+      .some(d => d._source === 'apple_card' && (d.date||'').slice(0,7) === txnMonth);
+    return hasAppleDetail; // transfer only when detail exists
+  }
   if (/^(apple card|visa payment|mastercard payment|amex payment|discover payment|citi payment|chase payment|capital one payment)$/i.test(pay) && t.amount < 0) return true;
   return false;
 }
@@ -2282,6 +2756,7 @@ function showPage(name) {
     if (name === 'upload')                      renderUploadStatus();
     if (name === 'crosswalk')                   renderCrosswalk();
     if (name === 'reconcile')                   renderReconcile();
+    if (name === 'settings')                    renderSettings();
   });
 }
 
@@ -4051,17 +4526,47 @@ function loadSettings() {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return;
     const d = JSON.parse(raw);
-    ccSettings      = d.ccSettings      || {};
-    budgetTargets   = d.budgetTargets   || {};
+    ccSettings   = d.ccSettings   || {};
+    budgetTargets= d.budgetTargets || {};
     nonRecurringIds = new Set(d.nonRecurringIds || []);
+    if (d.familyProfile)  Object.assign(familyProfile, d.familyProfile);
+    if (d.savingsGoals)   savingsGoals    = d.savingsGoals;
+    if (d.payeeAliases)   payeeAliases    = d.payeeAliases;
+    if (d.splitRules)     splitRules      = d.splitRules;
+    if (d.accrualOverrides) accrualOverrides = d.accrualOverrides;
+    if (d.forgeAppearance)  Object.assign(forgeAppearance, d.forgeAppearance);
   } catch(e) {}
 }
+
 function saveSettings() {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify({
-      ccSettings, budgetTargets, nonRecurringIds: [...nonRecurringIds]
+      ccSettings, budgetTargets, nonRecurringIds: [...nonRecurringIds],
+      familyProfile, savingsGoals, payeeAliases, splitRules,
+      accrualOverrides, forgeAppearance,
     }));
   } catch(e) {}
+}
+
+function saveAllSettings() {
+  // Collect from live form fields
+  familyProfile.name = document.getElementById('set-family-name')?.value || familyProfile.name;
+  familyProfile.city = document.getElementById('set-city')?.value || familyProfile.city;
+  familyProfile.savingsTarget = parseFloat(document.getElementById('set-savings-target')?.value || 20);
+  familyProfile.members.forEach((m, i) => {
+    const nEl = document.getElementById('set-member-name-' + i);
+    const bEl = document.getElementById('set-member-born-' + i);
+    const eEl = document.getElementById('set-member-emoji-' + i);
+    if (nEl) m.name  = nEl.value.trim() || m.name;
+    if (bEl) m.born  = bEl.value;
+    if (eEl) m.emoji = eEl.value.trim() || m.emoji;
+  });
+  forgeAppearance.density     = document.getElementById('set-density')?.value || 'normal';
+  forgeAppearance.showCents   = !!document.getElementById('set-show-cents')?.checked;
+  forgeAppearance.defaultPage = document.getElementById('set-default-page')?.value || 'dashboard';
+  forgeAppearance.showGoalRings = !!document.getElementById('set-goal-rings')?.checked;
+  saveSettings();
+  toast('\u2713 All settings saved');
 }
 function saveNetWorthOverrides() {
   try {
@@ -4970,96 +5475,192 @@ function toggleBucket(key) {
 // Uses 90-day rolling history per bucket, with outlier normalisation:
 // monthly totals > mean + 2σ are flagged as one-time events and excluded
 // from the baseline before computing the daily run rate.
-function buildAccrualEngine(selMonth, sp) {
-  const today     = new Date();
-  const todayStr  = today.toISOString().slice(0, 10);
-  const [sy, sm]  = selMonth.split('-').map(Number);
 
-  // Is selMonth the current in-flight month?
+function buildAccrualEngine(selMonth, sp) {
+  const today      = new Date();
+  const [sy, sm]   = selMonth.split('-').map(Number);
   const isInFlight = (sy === today.getFullYear() && sm === today.getMonth() + 1);
   if (!isInFlight) return null;
 
-  const daysInMonth  = new Date(sy, sm, 0).getDate();
-  const daysElapsed  = Math.min(today.getDate(), daysInMonth);
+  const daysInMonth   = new Date(sy, sm, 0).getDate();
+  const daysElapsed   = Math.min(today.getDate(), daysInMonth);
   const daysRemaining = daysInMonth - daysElapsed;
 
-  // Build 90-day prior window (excludes current month)
-  const priorEnd   = new Date(sy, sm - 1, 0);           // last day of prior month
-  const priorStart = new Date(priorEnd);
-  priorStart.setDate(priorStart.getDate() - 90);
-  const priorStartStr = priorStart.toISOString().slice(0, 10);
-  const priorEndStr   = priorEnd.toISOString().slice(0, 10);
+  const FIXED_BUCKETS        = new Set(['mortgage','car','insurance','education','childcare']);
+  const UTILITY_BUCKETS      = new Set(['electric','gas_util','water','internet','cell']);
+  const SUBSCRIPTION_BUCKETS = new Set(['subscriptions']);
+  const DISCRETIONARY_BUCKETS= new Set(['restaurants','groceries','gas_car','transit',
+                                         'healthcare','entertainment','household',
+                                         'personal','clothing','travel','gifts','other']);
+  const ZERO_ACCRUAL_BUCKETS = new Set(['paycheck','other_inc','auto_save']);
 
-  const priorTxns = sp.filter(t => t.date >= priorStartStr && t.date <= priorEndStr);
-
-  // Per-bucket per-month totals for outlier detection
-  function bucketMonthlyTotals(bkTxns) {
-    const byMonth = {};
-    bkTxns.forEach(t => {
-      const mo = t.date.slice(0, 7);
-      byMonth[mo] = (byMonth[mo] || 0) + Math.abs(t.amount);
-    });
-    return Object.values(byMonth);
+  const priorMonths = [];
+  for (let i = 1; i <= 3; i++) {
+    const d = new Date(sy, sm - 1 - i, 1);
+    priorMonths.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
   }
+  const priorTxns    = sp.filter(t => priorMonths.some(m => t.date.startsWith(m)));
+  const curMonthStr  = String(sy).padStart(4,'0')+'-'+String(sm).padStart(2,'0');
+  const curMonthTxns = sp.filter(t => t.date.startsWith(curMonthStr));
 
   function removeOutliers(totals) {
     if (totals.length < 2) return totals;
-    const mean = totals.reduce((s, v) => s + v, 0) / totals.length;
-    const variance = totals.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / totals.length;
-    const sigma = Math.sqrt(variance);
-    const threshold = mean + 2 * sigma;
-    const clean = totals.filter(v => v <= threshold);
-    return clean.length > 0 ? clean : totals; // never return empty
+    const mean  = totals.reduce((s,v)=>s+v,0) / totals.length;
+    const sigma = Math.sqrt(totals.reduce((s,v)=>s+Math.pow(v-mean,2),0) / totals.length);
+    const clean = totals.filter(v => v <= mean + 2*sigma);
+    return clean.length > 0 ? clean : totals;
   }
 
-  // Pre-classify prior txns by bucket
-  const priorByBucket = {};
+  const priorByBucket = {}, curByBucket = {};
   priorTxns.forEach(t => {
     const bk = classifyTxn(t);
     if (!priorByBucket[bk]) priorByBucket[bk] = [];
     priorByBucket[bk].push(t);
   });
+  curMonthTxns.forEach(t => {
+    const bk = classifyTxn(t);
+    if (!curByBucket[bk]) curByBucket[bk] = [];
+    curByBucket[bk].push(t);
+  });
 
-  // Compute normalised daily run rate per bucket
-  function getDailyRate(bk) {
-    const bkTxns = priorByBucket[bk] || [];
-    if (!bkTxns.length) return 0;
-    const monthlyTotals = bucketMonthlyTotals(bkTxns);
-    const cleanTotals   = removeOutliers(monthlyTotals);
-    const avgMonthly    = cleanTotals.reduce((s, v) => s + v, 0) / cleanTotals.length;
-    return avgMonthly / 30.44; // average days per month
+  // ── Per-payee discrete known-amount accrual for fixed bills ───────────────
+  // Groups prior transactions by payee, computes median per-payee expected
+  // amount, then projects ONLY payees that haven't yet been charged this month.
+  function getFixedAccrual(bk) {
+    const prior = priorByBucket[bk] || [];
+    const cur   = curByBucket[bk]   || [];
+    if (!prior.length) return 0;
+
+    const payeeData = {};
+    prior.forEach(t => {
+      const p = (t.payee||'').toLowerCase().trim();
+      if (!payeeData[p]) payeeData[p] = {};
+      const mo = t.date.slice(0,7);
+      payeeData[p][mo] = (payeeData[p][mo]||0) + Math.abs(t.amount);
+    });
+
+    const chargedPayees = new Set(cur.map(t => (t.payee||'').toLowerCase().trim()));
+
+    let accrued = 0;
+    Object.entries(payeeData).forEach(([payee, moAmts]) => {
+      const monthlyAmounts = Object.values(moAmts);
+      if (monthlyAmounts.length < 2) return; // appeared in only 1 prior month = one-time, skip
+      if (chargedPayees.has(payee)) return;  // already charged this month
+      const sorted = monthlyAmounts.slice().sort((a,b)=>a-b);
+      const median = sorted[Math.floor(sorted.length/2)];
+      accrued += median;
+    });
+
+    return parseFloat(accrued.toFixed(2));
   }
 
-  // Detect one-time transactions: only appeared once in the prior 90 days,
-  // OR the payee's total for that month exceeded mean + 2σ across payee history.
+  // ── Discretionary: daily run rate x remaining days ────────────────────────
+  function getDiscretionaryAccrual(bk) {
+    const prior = priorByBucket[bk] || [];
+    if (!prior.length) return 0;
+    const byMonth = {};
+    prior.forEach(t => {
+      const mo = t.date.slice(0,7);
+      byMonth[mo] = (byMonth[mo]||0) + Math.abs(t.amount);
+    });
+    const totals   = removeOutliers(Object.values(byMonth));
+    const avgDaily = (totals.reduce((s,v)=>s+v,0) / totals.length) / 30.44;
+    return parseFloat((avgDaily * daysRemaining).toFixed(2));
+  }
+
+  function getDailyRate(bk) {
+    const prior = priorByBucket[bk] || [];
+    if (!prior.length) return 0;
+    const byMonth = {};
+    prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
+    const totals = removeOutliers(Object.values(byMonth));
+    return (totals.reduce((s,v)=>s+v,0)/totals.length)/30.44;
+  }
+
+  function currentMonthActual(bk) {
+    return (curByBucket[bk]||[]).reduce((s,t)=>s+Math.abs(t.amount),0);
+  }
+
+  function priorMonthlyAvg(bk) {
+    const prior = priorByBucket[bk] || [];
+    if (!prior.length) return 0;
+    const byMonth = {};
+    prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
+    const totals = removeOutliers(Object.values(byMonth));
+    return totals.reduce((s,v)=>s+v,0)/totals.length;
+  }
+
+  function accrueAmount(bk) {
+    if (ZERO_ACCRUAL_BUCKETS.has(bk)) return 0;
+    if (FIXED_BUCKETS.has(bk) || UTILITY_BUCKETS.has(bk) || SUBSCRIPTION_BUCKETS.has(bk)) {
+      return getFixedAccrual(bk);
+    }
+    if (DISCRETIONARY_BUCKETS.has(bk)) {
+      return getDiscretionaryAccrual(bk);
+    }
+    // Fallback
+    const prior = priorByBucket[bk] || [];
+    if (!prior.length) return 0;
+    const byMonth = {};
+    prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
+    const totals = removeOutliers(Object.values(byMonth));
+    return parseFloat(((totals.reduce((s,v)=>s+v,0)/totals.length)/30.44*daysRemaining).toFixed(2));
+  }
+
   function isOneTime(t, bk) {
-    const payee     = (t.payee || '').toLowerCase().trim();
-    const amt       = Math.abs(t.amount);
-    const bkTxns    = priorByBucket[bk] || [];
+    const payee = (t.payee||'').toLowerCase().trim();
+    const amt   = Math.abs(t.amount);
+    const bkTxns = priorByBucket[bk] || [];
     const payeeTxns = bkTxns.filter(p => (p.payee||'').toLowerCase().trim() === payee);
-    if (payeeTxns.length === 0) return false; // current-month only, not classifiable
+    if (!payeeTxns.length) return false;
+    const months = new Set(payeeTxns.map(p => p.date.slice(0,7)));
+    if (months.size <= 1) return true;
+    const amts  = payeeTxns.map(p => Math.abs(p.amount));
+    const mean  = amts.reduce((s,v)=>s+v,0)/amts.length;
+    const sigma = Math.sqrt(amts.reduce((s,v)=>s+Math.pow(v-mean,2),0)/amts.length);
+    return sigma > 0 && amt > mean + 2*sigma;
+  }
 
-    // Check if this payee is recurring (appears in multiple months)
-    const payeeMonths = new Set(payeeTxns.map(p => p.date.slice(0, 7)));
-    if (payeeMonths.size <= 1) return true; // only one prior month → one-time
+  function getProjectionBreakdown(sectionData) {
+    let fixedActual = 0, fixedProjected = 0, variableActual = 0, variableProjected = 0;
+    const fixedDueItems = [], varPaceItems = [];
 
-    // Check if this amount is an outlier vs the payee's own history
-    const payeeAmts = payeeTxns.map(p => Math.abs(p.amount));
-    const mean      = payeeAmts.reduce((s, v) => s + v, 0) / payeeAmts.length;
-    const sigma     = Math.sqrt(payeeAmts.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / payeeAmts.length);
-    return sigma > 0 && amt > mean + 2 * sigma;
+    sectionData.filter(s => s.type === 'expense').forEach(sec => {
+      sec.buckets.forEach(bk => {
+        const bd = sec.bucketData[bk];
+        if (!bd) return;
+        const bMeta = (typeof BUCKET_META !== 'undefined' && BUCKET_META[bk]) || { label: bk };
+        if (FIXED_BUCKETS.has(bk) || UTILITY_BUCKETS.has(bk) || SUBSCRIPTION_BUCKETS.has(bk)) {
+          fixedActual    += bd.actual  || 0;
+          fixedProjected += bd.accrued || 0;
+          if ((bd.accrued||0) > 10) fixedDueItems.push({ label: bMeta.label, amount: bd.accrued });
+        } else if (DISCRETIONARY_BUCKETS.has(bk)) {
+          variableActual    += bd.actual  || 0;
+          variableProjected += bd.accrued || 0;
+          if ((bd.accrued||0) > 10) {
+            varPaceItems.push({ label: bMeta.label, dailyRate: getDailyRate(bk), projected: bd.accrued||0 });
+          }
+        }
+      });
+    });
+
+    fixedDueItems.sort((a,b)=>b.amount-a.amount);
+    varPaceItems.sort((a,b)=>b.projected-a.projected);
+
+    return {
+      fixedActual, fixedProjected, variableActual, variableProjected,
+      fixedDueItems: fixedDueItems.slice(0,5),
+      varPaceItems:  varPaceItems.slice(0,5),
+    };
   }
 
   return {
-    isInFlight,
-    daysElapsed,
-    daysRemaining,
-    daysInMonth,
-    getDailyRate,
-    isOneTime,
-    accrueAmount: bk => parseFloat((getDailyRate(bk) * daysRemaining).toFixed(2)),
+    isInFlight, daysElapsed, daysRemaining, daysInMonth,
+    getDailyRate, isOneTime, accrueAmount, getProjectionBreakdown,
+    FIXED_BUCKETS, UTILITY_BUCKETS, SUBSCRIPTION_BUCKETS, DISCRETIONARY_BUCKETS,
   };
 }
+
 
 function renderIncomeStatement() {
   const el = document.getElementById('incomeStatement');
@@ -5196,35 +5797,217 @@ function renderIncomeStatement() {
 
   // Hero row
   out += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">';
-  out += '<div style="background:var(--float);border:1px solid rgba(45,212,191,.25);border-radius:var(--r-lg);padding:18px 20px;">';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Gross Income · '+monthName+'</div>';
-  out += '<div style="font-size:36px;font-weight:700;color:var(--positive);line-height:1;font-family:var(--font-d);">'+fmt(totalIncome)+'</div>';
-  out += '<div style="font-size:10px;color:var(--ink4);margin-top:3px;">combined take-home from all sources</div></div>';
+    // ── Summary header — redesigned for clarity ────────────────────────────────
+  // For in-flight months: show Actual + accrual breakdown with projection tiles
+  // For closed months: show clean actuals-only summary
 
-  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;">';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Available to Spend</div>';
-  out += '<div style="font-size:36px;font-weight:700;color:var(--river);line-height:1;font-family:var(--font-d);">'+fmt(checkingIn)+'</div>';
-  out += '<div style="font-size:10px;color:var(--ink4);margin-top:3px;">after '+fmt(autoSave)+' auto-saved</div></div>';
+  const isInFlightMonth = !!accrual;
+  let projBreakdown = null;
+  if (isInFlightMonth) {
+    projBreakdown = accrual.getProjectionBreakdown(sectionData);
+  }
 
-  out += '<div style="background:var(--float);border:1px solid '+(netSurplus>=0?'rgba(45,212,191,.2)':'rgba(248,113,113,.2)')+';border-radius:var(--r-lg);padding:18px 20px;">';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">'+(netSurplus>=0?'Surplus':'Deficit')+'</div>';
-  out += '<div style="font-size:36px;font-weight:700;color:'+surpColor+';line-height:1;font-family:var(--font-d);">'+(netSurplus>=0?'+':'')+fmt(netSurplus)+'</div>';
-  out += '<div style="font-size:10px;color:var(--ink4);margin-top:3px;">savings rate: <strong style="color:'+(savingsPct>=20?'var(--positive)':savingsPct>=10?'var(--gold)':'var(--negative)')+'">'+savingsPct.toFixed(1)+'%</strong>'+(savingsPct>=20?' 🎯':savingsPct>=10?' 📈':' ⚠')+' target 20%</div></div>';
+  const totalActualExp    = isInFlightMonth ? sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.buckets.reduce((ss,bk)=>ss+(sec.bucketData[bk]?.actual||0),0),0) : totalExp;
+  const totalAccruedExp   = isInFlightMonth ? sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.buckets.reduce((ss,bk)=>ss+(sec.bucketData[bk]?.accrued||0),0),0) : 0;
+  const totalProjectedExp = totalActualExp + totalAccruedExp;
+  const projNet           = totalIncome - autoSave - totalProjectedExp;
+  const projNetColor      = projNet >= 0 ? 'var(--positive)' : 'var(--negative)';
+
+  // Month label
+  out += '<div style="font-size:11px;font-family:var(--font-m);letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">';
+  if (isInFlightMonth) {
+    out += '📅 ' + monthName + ' · Day ' + daysElapsed + ' of ' + daysInMonth + ' · ' + daysRemaining + ' days remaining';
+  } else {
+    out += '📋 ' + monthName + ' · Closed Period';
+  }
   out += '</div>';
 
-  // Insight if running short
+
+  // ── Main summary tiles (always shown) ──────────────────────────────────────
+  out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;">';
+
+  const isInFlightMonth = !!accrual;
+
+  // ── Tile 1: Income ─────────────────────────────────────────────────────────
+  const incomeLabel = isInFlightMonth ? 'Gross Income · MTD' : 'Gross Income';
+  const incomeSub   = isInFlightMonth ? 'actual payroll received' : 'total household income';
+  out += '<div style="background:var(--float);border:1px solid rgba(45,212,191,.25);border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;">';
+  out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--positive);border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">' + incomeLabel + '</div>';
+  out += '<div style="font-size:32px;font-weight:700;color:var(--positive);line-height:1;font-family:var(--font-d);">' + fmt(totalIncome) + '</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">' + incomeSub + '</div>';
   if (autoSave > 0) {
-    const shortfall = totalExp > checkingIn;
-    out += '<div style="background:'+(shortfall?'rgba(248,113,113,.05)':'rgba(52,211,153,.04)')+';border:1px solid '+(shortfall?'rgba(248,113,113,.18)':'rgba(52,211,153,.18)')+';border-radius:var(--r-md);padding:11px 16px;margin-bottom:8px;font-size:12px;color:var(--ink3);line-height:1.7;">';
-    out += (shortfall?'⚠':'💡')+' <strong style="color:'+(shortfall?'var(--negative)':'#34D399')+';">'+(shortfall?'You are drawing from savings:':'Your savings plan is working:')+'</strong> ';
-    out += fmt(autoSave)+' auto-saved before spending. Real spending budget: <strong style="color:var(--ink);">'+fmt(checkingIn)+'</strong>. ';
-    out += 'Total expenses this month: <strong style="color:'+(shortfall?'var(--negative)':'var(--ink)')+';">'+fmt(totalExp)+'</strong>';
-    if (shortfall) out += ' — <strong style="color:var(--negative);">'+fmt(totalExp-checkingIn)+'</strong> over budget, pulling from savings.';
-    else out += ' — <strong style="color:var(--positive);">'+fmt(checkingIn-totalExp)+'</strong> left after expenses.';
+    out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">−' + fmt(autoSave) + ' auto-saved → <strong style="color:var(--river);">' + fmt(checkingIn) + '</strong> to deploy</div>';
+  }
+  out += '</div>';
+
+  // ── Tile 2: Fixed / Committed Expenses ─────────────────────────────────────
+  let fixedCommitted, fixedSubText, fixedColor;
+  if (isInFlightMonth && projBreakdown) {
+    fixedCommitted = projBreakdown.fixedActual + projBreakdown.fixedProjected;
+    const paidPart = projBreakdown.fixedActual > 0 ? fmt(projBreakdown.fixedActual) + ' paid' : '';
+    const duePart  = projBreakdown.fixedProjected > 0
+      ? fmt(projBreakdown.fixedProjected) + ' still due'
+      : (paidPart ? 'all bills charged ✓' : '');
+    fixedSubText = [paidPart, duePart].filter(Boolean).join(' · ') || 'mortgage · loans · utilities';
+    fixedColor   = projBreakdown.fixedProjected > 0 ? 'rgba(248,113,113,.18)' : 'rgba(45,212,191,.15)';
+
+    // Bills still due — show top 3 inline
+    if (projBreakdown.fixedDueItems && projBreakdown.fixedDueItems.length) {
+      fixedSubText += '<div style="margin-top:5px;font-size:9px;color:var(--negative);">';
+      fixedSubText += projBreakdown.fixedDueItems.slice(0,3)
+        .map(i => i.label.split(' ')[0] + ' ' + fmt(i.amount)).join(' · ');
+      fixedSubText += '</div>';
+    }
+  } else {
+    fixedCommitted = sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+
+      sec.buckets.filter(bk=>['mortgage','car','insurance','education','childcare',
+        'electric','gas_util','water','internet','cell','subscriptions'].includes(bk))
+      .reduce((ss,bk)=>ss+(sec.bucketData[bk]?.total||0),0),0);
+    fixedSubText = 'mortgage · loans · utilities · subs';
+    fixedColor = 'rgba(248,113,113,.2)';
+  }
+  out += '<div style="background:var(--float);border:1px solid ' + fixedColor + ';border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;">';
+  out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--negative);opacity:.6;border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Fixed Expenses' + (isInFlightMonth ? ' · Full Month' : '') + '</div>';
+  out += '<div style="font-size:32px;font-weight:700;color:var(--negative);line-height:1;font-family:var(--font-d);">' + fmt(fixedCommitted) + '</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">' + fixedSubText + '</div>';
+  out += '</div>';
+
+  // ── Tile 3: Variable / Discretionary Expenses ──────────────────────────────
+  let varSpend, varSubText, varColor;
+  if (isInFlightMonth && projBreakdown) {
+    varSpend = projBreakdown.variableActual + projBreakdown.variableProjected;
+    const pace = daysElapsed > 0 && projBreakdown.variableActual > 0
+      ? fmt(projBreakdown.variableActual / daysElapsed) + '/day pace'
+      : '';
+    const remaining = projBreakdown.variableProjected > 0
+      ? '+ ' + fmt(projBreakdown.variableProjected) + ' next ' + daysRemaining + 'd'
+      : '';
+    const remainingBudget = checkingIn - fixedCommitted;
+    const varOver = varSpend > remainingBudget;
+    varSubText = [pace, remaining].filter(Boolean).join(' · ') || 'groceries · dining · entertainment';
+    varColor   = varOver ? 'rgba(248,113,113,.15)' : 'rgba(245,168,0,.15)';
+
+    // Top variable items
+    if (projBreakdown.varPaceItems && projBreakdown.varPaceItems.length) {
+      varSubText += '<div style="margin-top:5px;font-size:9px;color:var(--gold);">';
+      varSubText += projBreakdown.varPaceItems.slice(0,3)
+        .map(i => i.label.split(' ')[0] + ' ' + fmt(i.projected)).join(' · ');
+      varSubText += '</div>';
+    }
+  } else {
+    varSpend = sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+
+      sec.buckets.filter(bk=>['restaurants','groceries','gas_car','transit','healthcare',
+        'entertainment','household','personal','clothing','travel','gifts','other'].includes(bk))
+      .reduce((ss,bk)=>ss+(sec.bucketData[bk]?.total||0),0),0);
+    varSubText = 'dining · groceries · entertainment · household';
+    varColor = 'rgba(245,168,0,.15)';
+  }
+  out += '<div style="background:var(--float);border:1px solid ' + varColor + ';border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;">';
+  out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold);opacity:.7;border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Variable Expenses' + (isInFlightMonth ? ' · Proj.' : '') + '</div>';
+  out += '<div style="font-size:32px;font-weight:700;color:var(--gold);line-height:1;font-family:var(--font-d);">' + fmt(varSpend) + '</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">' + varSubText + '</div>';
+  out += '</div>';
+
+  // ── Tile 4: Net to Savings ─────────────────────────────────────────────────
+  const displayNet    = isInFlightMonth ? projNet : netSurplus;
+  const displayNetLbl = isInFlightMonth ? 'Proj. Net to Savings' : 'Net Surplus / Deficit';
+  const displaySavPct = isInFlightMonth
+    ? (totalIncome > 0 ? ((autoSave + Math.max(0, projNet)) / totalIncome * 100) : 0)
+    : savingsPct;
+  const netCol = displayNet >= 0 ? 'var(--positive)' : 'var(--negative)';
+  out += '<div style="background:var(--float);border:1px solid ' + (displayNet>=0?'rgba(45,212,191,.2)':'rgba(248,113,113,.2)') + ';border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;">';
+  out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:' + netCol + ';border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">' + displayNetLbl + '</div>';
+  out += '<div style="font-size:32px;font-weight:700;color:' + netCol + ';line-height:1;font-family:var(--font-d);">' + (displayNet>=0?'+':'') + fmt(displayNet) + '</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">save rate: <strong style="color:' + (displaySavPct>=20?'var(--positive)':displaySavPct>=10?'var(--gold)':'var(--negative)') + ';">' + displaySavPct.toFixed(1) + '%</strong> · target 20%</div>';
+  if (isInFlightMonth) {
+    out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">' + daysElapsed + 'd actual + ' + daysRemaining + 'd projected</div>';
+  }
+  out += '</div>';
+  out += '</div>'; // end 4-tile grid
+
+  // ── On-pace narrative banner (in-flight only) ──────────────────────────────
+  if (isInFlightMonth && projBreakdown) {
+    const totalFixed  = projBreakdown.fixedActual + projBreakdown.fixedProjected;
+    const totalVar    = projBreakdown.variableActual + projBreakdown.variableProjected;
+    const totalProj   = totalFixed + totalVar;
+    const budgetLeft  = checkingIn - totalProj;
+    const blColor     = budgetLeft >= 0 ? 'var(--positive)' : 'var(--negative)';
+    const pctOfMonth  = Math.round(daysElapsed / daysInMonth * 100);
+
+    // Plain-English verdict
+    let verdict, verdictColor;
+    if (projNet >= 0 && displaySavPct >= 20) {
+      verdict = '🎯 On pace to hit 20%+ savings this month.';
+      verdictColor = 'var(--positive)';
+    } else if (projNet >= 0 && displaySavPct >= 10) {
+      verdict = '📈 On pace for a positive month — savings below target.';
+      verdictColor = 'var(--gold)';
+    } else if (projNet >= 0) {
+      verdict = '⚖ On pace to break even — tighten variable spending to save.';
+      verdictColor = 'var(--gold)';
+    } else {
+      verdict = '⚠ On pace to run a deficit of ' + fmt(Math.abs(projNet)) + ' — reduce variable spending.';
+      verdictColor = 'var(--negative)';
+    }
+
+    out += '<div style="background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.2);border-radius:var(--r-lg);padding:14px 18px;margin-bottom:10px;">';
+
+    // Verdict row
+    out += '<div style="font-size:12px;font-weight:600;color:' + verdictColor + ';margin-bottom:10px;">' + verdict + '</div>';
+
+    // 5-col breakdown strip
+    out += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:10px;">';
+    [
+      ['Fixed Paid',       fmt(projBreakdown.fixedActual),    'var(--ink3)',     'already charged'],
+      ['Fixed Still Due',  fmt(projBreakdown.fixedProjected), 'var(--negative)', 'known bills coming'],
+      ['Var. Spent',       fmt(projBreakdown.variableActual), 'var(--gold)',     daysElapsed + 'd of ' + daysInMonth + 'd (' + pctOfMonth + '%)'],
+      ['Var. Projected',   fmt(projBreakdown.variableProjected), 'var(--river)', 'next ' + daysRemaining + 'd at pace'],
+      ['Budget Remaining', fmt(Math.abs(budgetLeft)),         blColor,          budgetLeft >= 0 ? 'after all projections' : 'OVER BUDGET'],
+    ].forEach(([l,v,c,s]) => {
+      out += '<div>';
+      out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + l + '</div>';
+      out += '<div style="font-size:16px;font-weight:700;color:' + c + ';font-family:var(--font-d);">' + v + '</div>';
+      out += '<div style="font-size:9px;color:var(--ink4);">' + s + '</div>';
+      out += '</div>';
+    });
+    out += '</div>';
+
+    // Accrual method note
+    if (projBreakdown.fixedDueItems.length || projBreakdown.varPaceItems.length) {
+      out += '<div style="font-size:10px;color:var(--ink4);border-top:1px solid rgba(255,255,255,.05);padding-top:8px;line-height:1.8;">';
+      if (projBreakdown.fixedDueItems.length) {
+        out += '<strong style="color:var(--ink3);">Fixed bills expected: </strong>';
+        out += projBreakdown.fixedDueItems.map(i => i.label.split(' ')[0] + ' ' + fmt(i.amount)).join(', ');
+        out += ' — using prior 3-month median per payee.<br>';
+      }
+      if (projBreakdown.varPaceItems.length) {
+        out += '<strong style="color:var(--ink3);">Variable projected: </strong>';
+        out += projBreakdown.varPaceItems.map(i => i.label.split(' ')[0] + ' ' + fmt(i.dailyRate) + '/day').join(', ');
+        out += ' — using 3-month daily run rate × ' + daysRemaining + ' days remaining.';
+      }
+      out += '</div>';
+    }
     out += '</div>';
   }
 
-  // ── P&L waterfall table ─────────────────────────────────────────
+  // ── Savings insight bar ─────────────────────────────────────────────────────
+  if (autoSave > 0) {
+    const shortfall = isInFlightMonth ? (totalProjectedExp > checkingIn) : (totalExp > checkingIn);
+    const expAmt    = isInFlightMonth ? totalProjectedExp : totalExp;
+    out += '<div style="background:' + (shortfall?'rgba(248,113,113,.05)':'rgba(52,211,153,.04)') + ';border:1px solid ' + (shortfall?'rgba(248,113,113,.18)':'rgba(52,211,153,.18)') + ';border-radius:var(--r-md);padding:11px 16px;margin-bottom:8px;font-size:12px;color:var(--ink3);line-height:1.7;">';
+    out += (shortfall?'⚠':'💡') + ' <strong style="color:' + (shortfall?'var(--negative)':'#34D399') + ';">' + (shortfall?'Projected over budget:':'Savings plan intact:') + '</strong> ';
+    out += fmt(autoSave) + ' auto-saved before spending. Available budget: <strong style="color:var(--ink);">' + fmt(checkingIn) + '</strong>. ';
+    out += (isInFlightMonth ? 'Projected total spend: ' : 'Total expenses: ') + '<strong style="color:' + (shortfall?'var(--negative)':'var(--ink)') + ';">' + fmt(expAmt) + '</strong>';
+    if (shortfall) out += ' — <strong style="color:var(--negative);">' + fmt(expAmt - checkingIn) + '</strong> over budget.';
+    else out += ' — <strong style="color:var(--positive);">' + fmt(checkingIn - expAmt) + '</strong> buffer.';
+    out += '</div>';
+  }
+
+    // ── P&L waterfall table ─────────────────────────────────────────
   // ── In-flight projection banner ────────────────────────────────────────────
   if (isInFlight) {
     const totalAccrued  = sectionData.reduce((s,sec) => s + sec.buckets.reduce((ss,bk)=>ss+(sec.bucketData[bk]?.accrued||0),0),0);
@@ -5658,6 +6441,65 @@ function computeBSFromTxns() {
   return { balances, lastDate };
 }
 
+// Fuzzy account name resolver — maps Quicken account names to BS_ACCOUNTS keys
+// Normalizes: lowercase, remove dashes/spaces/dots, numeric suffixes
+function normAcct(name) {
+  return (name || '').toLowerCase()
+    .replace(/[^a-z0-9]/g, '')   // strip all non-alphanumeric
+    .replace(/([0-9]+)$/, '');   // strip trailing digits (card last-4)
+}
+
+function buildBSAccountMap(balances) {
+  // Returns { bsKey: actualQuickenName } for all matched accounts
+  const map = {};
+  const bsKeys = Object.keys(BS_ACCOUNTS);
+  const actualAccts = Object.keys(balances);
+
+  // 1. Exact match
+  bsKeys.forEach(bk => {
+    if (balances[bk] !== undefined) { map[bk] = bk; }
+  });
+
+  // 2. Fuzzy match for unmatched BS keys
+  bsKeys.forEach(bk => {
+    if (map[bk]) return;
+    const normBk = normAcct(bk);
+    for (const a of actualAccts) {
+      if (normAcct(a) === normBk) { map[bk] = a; return; }
+    }
+    // Partial: BS key contains actual or vice versa
+    for (const a of actualAccts) {
+      const na = normAcct(a);
+      if (na.includes(normBk) || normBk.includes(na)) { map[bk] = a; return; }
+    }
+  });
+
+  // 3. Discover unmapped accounts from transactions → classify dynamically
+  const mappedActuals = new Set(Object.values(map));
+  actualAccts.forEach(a => {
+    if (mappedActuals.has(a)) return;
+    const type = detectAcctType(a);
+    const isCredit = type === 'credit';
+    const isInvest = type === 'investment';
+    const isSavings = type === 'savings';
+    // Add to BS_ACCOUNTS dynamically
+    if (!BS_ACCOUNTS[a]) {
+      if (isCredit) {
+        BS_ACCOUNTS[a] = { class:'liability', sub:'current', label:a, icon:'💳', liabType:'Credit Cards', _dynamic:true };
+      } else if (isInvest) {
+        BS_ACCOUNTS[a] = { class:'asset', sub:'investment', label:a, icon:'📈', assetType:'Investment Accounts', _dynamic:true };
+      } else if (isSavings) {
+        BS_ACCOUNTS[a] = { class:'asset', sub:'current', label:a, icon:'💰', assetType:'Cash & Equivalents', _dynamic:true };
+      } else {
+        BS_ACCOUNTS[a] = { class:'asset', sub:'current', label:a, icon:'🏦', assetType:'Cash & Equivalents', _dynamic:true };
+      }
+    }
+    map[a] = a;
+  });
+
+  return map;
+}
+
 
 // Rebuild the Balance Sheet comparison dropdown dynamically from stored snapshots + named periods
 function buildBSCompareDropdown() {
@@ -5774,14 +6616,24 @@ function renderBalanceSheet() {
   const showCompare = !!compareDate;
 
   const { balances, lastDate } = computeBSFromTxns();
+  const acctMap = buildBSAccountMap(balances); // fuzzy + dynamic mapping
   const hasCompare = showCompare;
+
+  // Resolve balance for a BS key using fuzzy map
+  function getRawBalance(bsKey) {
+    const actualKey = acctMap[bsKey];
+    if (actualKey && balances[actualKey] !== undefined) return balances[actualKey];
+    if (balances[bsKey] !== undefined) return balances[bsKey];
+    return 0;
+  }
 
   // ── Account value resolution ────────────────────────────────────
   function getCurrentValue(acct, meta) {
     const nwOv = netWorthOverrides[acct];
     if (nwOv) return { value: meta.class === 'liability' ? Math.abs(nwOv.value) : nwOv.value, source: nwOv.source === 'quicken-invperf' ? 'inv-perf' : 'net-worth' };
-    const raw = balances[acct] || 0;
+    const raw = getRawBalance(acct);
     return { value: meta.class === 'liability' ? Math.abs(raw) : raw, source: 'transactions' };
+  }
   }
 
   function getPriorValue(acct, meta) {
@@ -5900,12 +6752,13 @@ function renderBalanceSheet() {
     return r + '</div>';
   }
 
-  function groupRow(label, total, priorTotal) {
+  function groupRow(label, total, priorTotal, labelColor) {
     const change = hasCompare && priorTotal ? total - priorTotal : null;
     const changeColor = change === null ? 'var(--ink4)' : change >= 0 ? 'var(--positive)' : 'var(--negative)';
+    const lc = labelColor || 'var(--ink3)';
     let r = '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:8px 16px;background:rgba(255,255,255,.025);border-bottom:1px solid var(--line);">';
-    r += '<div style="font-size:10px;font-weight:600;color:var(--ink3);letter-spacing:.05em;">'+label+'</div>';
-    r += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:600;color:var(--ink);">'+fmt(total)+'</div>';
+    r += '<div style="font-size:10px;font-weight:600;color:'+lc+';letter-spacing:.05em;">'+label+'</div>';
+    r += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:600;color:'+lc+';">'+fmt(total)+'</div>';
     if (hasCompare) {
       r += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">'+fmt(priorTotal)+'</div>';
       r += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;color:'+changeColor+';">'+(change!==null?(change>=0?'+':'')+fmt(change):'—')+'</div>';
@@ -6065,12 +6918,34 @@ function renderBalanceSheet() {
   liabSubOrder.forEach(sub => {
     const entries = liabGroups[sub];
     if (!entries || !entries.length) return;
-    const subTotal = entries.reduce((s,e)=>s+e.amt,0);
-    const priorSub = entries.reduce((s,e)=>s+(e.prior||0),0);
     const subLabel = GROUP_LABELS[sub] || sub;
-    out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">'+subLabel+'</div>';
-    entries.sort((a,b)=>b.amt-a.amt).forEach(e => { out += acctRow(e); });
-    out += groupRow('Subtotal', subTotal, priorSub);
+
+    if (sub === 'current') {
+      // Split current liabilities into Credit Cards subtotal + Other current
+      const ccEntries    = entries.filter(e => (e.meta.liabType||'') === 'Credit Cards' || e.meta.icon === '💳');
+      const otherEntries = entries.filter(e => !ccEntries.includes(e));
+
+      if (ccEntries.length > 0) {
+        const ccTotal      = ccEntries.reduce((s,e)=>s+e.amt,0);
+        const ccPriorTotal = ccEntries.reduce((s,e)=>s+(e.prior||0),0);
+        out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">Credit Cards</div>';
+        ccEntries.sort((a,b)=>b.amt-a.amt).forEach(e => { out += acctRow(e); });
+        out += groupRow('Credit Card Total', ccTotal, ccPriorTotal, 'var(--negative)');
+      }
+      if (otherEntries.length > 0) {
+        const otherTotal      = otherEntries.reduce((s,e)=>s+e.amt,0);
+        const otherPriorTotal = otherEntries.reduce((s,e)=>s+(e.prior||0),0);
+        out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">Other Current Liabilities</div>';
+        otherEntries.sort((a,b)=>b.amt-a.amt).forEach(e => { out += acctRow(e); });
+        if (otherEntries.length > 1) out += groupRow('Subtotal', otherTotal, otherPriorTotal);
+      }
+    } else {
+      const subTotal = entries.reduce((s,e)=>s+e.amt,0);
+      const priorSub = entries.reduce((s,e)=>s+(e.prior||0),0);
+      out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">'+subLabel+'</div>';
+      entries.sort((a,b)=>b.amt-a.amt).forEach(e => { out += acctRow(e); });
+      out += groupRow('Subtotal', subTotal, priorSub);
+    }
   });
 
   out += '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:11px 16px;background:rgba(248,113,113,.04);border-top:2px solid rgba(248,113,113,.2);">';
