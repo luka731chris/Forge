@@ -13,7 +13,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 /* ── Design tokens ─────────────────────────────────────── */
-html, body { height: 100%; }
+html { height: 100%; }
 :root {
   --void:   #080808;
   --base:   #0E0E0E;
@@ -57,7 +57,7 @@ html, body { height: 100%; }
   --ink4: #565250;
 }
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
-html { height:100%; }
+
 body {
   font-family: var(--font-ui);
   background: var(--base);
@@ -486,8 +486,7 @@ input:focus { border-color:var(--gold); }
   justify-content: space-between;
 }
 .modal-title { font-family:var(--font-d); font-size:24px; font-weight:600; }
-.modal-body { padding: 20px 26px; }
-.modal-close {
+.modal-.modal-close {
   background:none; border:1px solid var(--line); color:var(--ink4);
   cursor:pointer; font-size:13px; padding:4px 10px; border-radius:6px;
 }
@@ -3525,6 +3524,12 @@ function renderUploadStatus() {
       <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Coverage</div>
       <div style="font-size:13px;color:var(--ink2);">${sp.length.toLocaleString()} transactions · ${accounts.length} accounts${xf ? ` · ${xf} transfers excluded` : ''}</div>
     </div>
+    <div>
+      <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Accounts</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;max-width:360px;">
+        ${accounts.slice(0,6).map(a => `<span style="font-size:9px;padding:1px 7px;border-radius:10px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);color:var(--river);font-family:var(--font-m);white-space:nowrap;">${a.length>22?a.slice(0,20)+'…':a}</span>`).join('')}${accounts.length > 6 ? `<span style="font-size:9px;color:var(--ink4);padding:1px 6px;">+${accounts.length-6} more</span>` : ''}
+      </div>
+    </div>
     ${staleBadge}
   </div>
   <div style="display:flex;gap:8px;flex-shrink:0;">
@@ -4148,7 +4153,9 @@ function renderFileList() {
 async function processFiles() {
   if (!pendingFiles.length) return;
   const btn = document.getElementById('importBtn');
-  btn.textContent = 'Processing…'; btn.disabled = true;
+  if (btn) { btn.textContent = 'Processing…'; btn.disabled = true; }
+
+  try {
 
   // ── Step 1: Parse every file in the batch ────────────────────────
   const newTxns = [];
@@ -4289,6 +4296,13 @@ async function processFiles() {
 
   console.log('[Forge] Import:', added, 'added,', duped, 'duped,', nearDupWarnings, 'near-dups. Total txns:', txns.length);
   setTimeout(() => showPage('dashboard'), 800);
+
+  } catch(outerErr) {
+    console.error('[Forge] processFiles outer error:', outerErr);
+    toast('✗ Import error: ' + outerErr.message);
+  } finally {
+    if (btn) { btn.textContent = 'Begin Forging →'; btn.disabled = false; }
+  }
 }
 
 // Detect if a CSV looks like a Quicken Net Worth export
@@ -6997,12 +7011,16 @@ function renderBalanceSheet() {
 
   // NW status banner
   if (nwLoaded > 0) {
-    const nwDates = [...new Set(Object.values(netWorthOverrides).map(v=>v.date))].join(', ');
-    out += '<div style="background:rgba(45,212,191,.06);border:1px solid rgba(45,212,191,.2);border-radius:var(--r-md);padding:10px 16px;margin-bottom:8px;font-size:12px;color:var(--ink3);">';
-    out += '✓ <strong style="color:var(--positive);">Net Worth snapshot loaded</strong> — '+nwLoaded+' account values as of '+nwDates+'. ';
-    const snapCount = Object.keys(nwHistory).length;
-    if (snapCount > 1) out += snapCount+' historical snapshots stored for comparison. ';
-    out += 'Upload additional Net Worth CSVs to build comparison history.';
+    const nwDateSet  = [...new Set(Object.values(netWorthOverrides).map(v=>v.date))];
+    const snapCount  = Object.keys(nwHistory).length;
+    const dateChips  = nwDateSet.slice(0,3).map(d =>
+      `<span style="font-size:9px;padding:1px 7px;border-radius:10px;background:rgba(45,212,191,.12);border:1px solid rgba(45,212,191,.25);color:var(--positive);font-family:var(--font-m);">${d}</span>`
+    ).join(' ') + (nwDateSet.length > 3 ? ` <span style="font-size:10px;color:var(--ink4);">+${nwDateSet.length-3} more</span>` : '');
+    out += '<div style="background:rgba(45,212,191,.06);border:1px solid rgba(45,212,191,.2);border-radius:var(--r-md);padding:10px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">';
+    out += '<div style="font-size:12px;color:var(--ink3);">✓ <strong style="color:var(--positive);">'+nwLoaded+' account values loaded</strong>';
+    if (snapCount > 1) out += ' · '+snapCount+' historical snapshots';
+    out += '</div>';
+    out += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' + dateChips + '</div>';
     out += '</div>';
   } else {
     out += '<div style="background:rgba(245,168,0,.05);border:1px solid rgba(245,168,0,.15);border-radius:var(--r-md);padding:10px 16px;margin-bottom:8px;font-size:12px;color:var(--ink4);">';
