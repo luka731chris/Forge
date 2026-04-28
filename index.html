@@ -975,6 +975,7 @@ h1, h2, h3, .kpi-val, .display-num {
     </div>
   </div>
   <div class="kpi-grid" id="dashKPIs"></div>
+  <div id="dashAlerts" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
   <div class="chart-grid-2">
     <div class="chart-card">
       <div class="chart-title">Monthly Cash Flow</div>
@@ -2026,15 +2027,173 @@ function renderSettings() {
   </div>`;
 
   // ── Assemble ──────────────────────────────────────────────────────────────
+  // ── §9 Spending Alerts ────────────────────────────────────────────────────
+  let alertsBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;line-height:1.7;">
+    Set a monthly dollar threshold per spending bucket. When the month's projected total exceeds the threshold, the Income Statement header flags it and the Dashboard shows a warning chip. Thresholds are soft limits — for awareness, not enforcement.
+  </div>`;
+  const alertBuckets = [
+    ['groceries','🛒','Groceries'],['restaurants','🍕','Restaurants'],
+    ['entertainment','🎭','Entertainment'],['household','🔧','Household / Amazon'],
+    ['personal','💅','Personal Care'],['clothing','👕','Clothing'],
+    ['travel','✈️','Travel'],['transit','🚌','Transit'],
+    ['healthcare','⚕️','Healthcare'],['gifts','🎁','Gifts & Giving'],
+    ['gas_car','⛽','Vehicle Fuel'],['other','❓','Other'],
+  ];
+  alertsBody += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">`;
+  alertBuckets.forEach(([bk, icon, label]) => {
+    const cfg = spendingAlerts[bk] || { monthly: 0, enabled: false };
+    alertsBody += `<div style="background:var(--lift);border:1px solid var(--line);border-radius:6px;padding:12px 14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:16px;">${icon}</span>
+        <div style="font-size:12px;font-weight:500;color:var(--ink2);flex:1;">${label}</div>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+          <input type="checkbox" data-bk="${bk}" class="alert-chk" ${cfg.enabled?'checked':''}
+            onchange="spendingAlerts['${bk}']=spendingAlerts['${bk}']||{};spendingAlerts['${bk}'].enabled=this.checked;saveSettings()"
+            style="width:14px;height:14px;accent-color:var(--gold);">
+          <span style="font-size:10px;color:var(--ink4);">Alert</span>
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:11px;color:var(--ink4);">$</span>
+        <input type="number" min="0" step="50" value="${cfg.monthly||''}" placeholder="Monthly limit"
+          onchange="spendingAlerts['${bk}']=spendingAlerts['${bk}']||{};spendingAlerts['${bk}'].monthly=parseFloat(this.value)||0;saveSettings()"
+          style="flex:1;background:var(--float);border:1px solid var(--line2);border-radius:4px;padding:5px 8px;font-size:12px;font-family:var(--font-m);color:var(--ink);">
+        <span style="font-size:10px;color:var(--ink4);">/month</span>
+      </div>
+    </div>`;
+  });
+  alertsBody += '</div>';
+
+  // ── §10 Confluence Agenda Editor ─────────────────────────────────────────
+  let confBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;line-height:1.7;">
+    Customize the 6-step monthly family review agenda. $id uses these prompts when generating the Confluence narrative. Drag to reorder (future), edit titles and prompts inline.
+  </div>`;
+  confBody += `<div id="conf-items" style="display:flex;flex-direction:column;gap:6px;">`;
+  confluenceAgenda.forEach((item, i) => {
+    confBody += `<div style="background:var(--lift);border:1px solid var(--line);border-radius:8px;padding:14px 16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:20px;cursor:default;">${item.emoji}</span>
+        <input type="text" value="${item.title}" data-idx="${i}" data-field="title"
+          onchange="confluenceAgenda[${i}].title=this.value;saveSettings()"
+          style="flex:1;background:var(--float);border:1px solid var(--line2);border-radius:4px;padding:5px 10px;font-size:13px;font-weight:600;color:var(--ink);">
+        <input type="text" value="${item.emoji}" data-idx="${i}" data-field="emoji" maxlength="4"
+          onchange="confluenceAgenda[${i}].emoji=this.value;saveSettings()"
+          style="width:44px;background:var(--float);border:1px solid var(--line2);border-radius:4px;padding:5px;font-size:18px;text-align:center;">
+      </div>
+      <textarea data-idx="${i}" onchange="confluenceAgenda[${i}].prompt=this.value;saveSettings()"
+        style="width:100%;background:var(--float);border:1px solid var(--line2);border-radius:4px;padding:8px 10px;font-size:11px;color:var(--ink3);font-family:var(--font-ui);resize:vertical;min-height:52px;box-sizing:border-box;">${item.prompt}</textarea>
+    </div>`;
+  });
+  confBody += `</div>
+  <div style="margin-top:10px;display:flex;gap:8px;">
+    <button onclick="confluenceAgenda.push({id:'item'+Date.now(),title:'New Step',prompt:'Discussion prompt...',emoji:'📌'});saveSettings();renderSettings()"
+      style="background:var(--lift);border:1px solid var(--line2);color:var(--ink3);padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;">+ Add Step</button>
+    <button onclick="if(confirm('Reset to default agenda?')){confluenceAgenda=[{id:'income',title:'Income & Savings',prompt:'How did our income compare to expectations? Did we hit our savings target?',emoji:'💵'},{id:'spending',title:'Spending Review',prompt:'Where did we overspend? Any categories that surprised us?',emoji:'📊'},{id:'goals',title:'Goals Progress',prompt:'How are our savings goals tracking? Any adjustments needed?',emoji:'🎯'},{id:'coming',title:'Coming This Month',prompt:'What big expenses are coming up? How do we plan for them?',emoji:'📅'},{id:'wins',title:'Wins & Positives',prompt:'What financial wins did we have this month?',emoji:'🏆'},{id:'action',title:'Action Items',prompt:'What three things will we change or do differently next month?',emoji:'✅'}];saveSettings();renderSettings();}"
+      style="background:transparent;border:1px solid var(--line2);color:var(--ink4);padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;">↺ Reset to Default</button>
+  </div>`;
+
+  // ── §11 Fiscal / Tax Year ─────────────────────────────────────────────────
+  let taxBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;line-height:1.7;">
+    When set, all year-based views (Income Statement year selector, Balance Sheet YE comparisons, Cash Flow annual waterfall) shift to the selected fiscal year. Month 1 is the start month of your fiscal year.
+  </div>`;
+  const tyOpts = [
+    [0,'January — Calendar Year (Jan–Dec)'],
+    [3,'April — UK Tax Year (Apr–Mar)'],
+    [-3,'October — US Fiscal Year (Oct–Sep)'],
+    [-1,'December — Feb–Jan Retail Year'],
+  ];
+  taxBody += `<div style="max-width:480px;">`;
+  taxBody += row('Fiscal Year Start', 'Sets the "Year 1 month" for all annual reporting',
+    `<select onchange="taxYearOffset=parseInt(this.value);saveSettings()" style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:7px 10px;font-size:12px;color:var(--ink);">
+      ${tyOpts.map(([v,l])=>`<option value="${v}" ${taxYearOffset===v?'selected':''}>${l}</option>`).join('')}
+    </select>`);
+  const curYear = new Date().getFullYear();
+  const fyStart = new Date(curYear, ((0 - taxYearOffset) % 12 + 12) % 12, 1);
+  taxBody += `<div style="margin-top:12px;background:var(--lift);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font-size:11px;color:var(--ink4);">
+    <strong style="color:var(--ink3);">Current fiscal year:</strong> ${fyStart.toLocaleDateString('en-US',{month:'long',year:'numeric'})} → ${new Date(fyStart.getFullYear()+(taxYearOffset===0?0:1), fyStart.getMonth()-1+12, 31).toLocaleDateString('en-US',{month:'long',year:'numeric'})}
+  </div></div>`;
+
+  // ── §12 Net Worth Snapshots ───────────────────────────────────────────────
+  const nwHistRaw = localStorage.getItem('forge_nw_history');
+  const nwHist    = nwHistRaw ? JSON.parse(nwHistRaw) : {};
+  const nwSnaps   = Object.keys(nwHist).sort().reverse();
+  let nwBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;line-height:1.7;">
+    Manual snapshots lock a point-in-time net worth for the Balance Sheet comparison dropdown. Use this to record investment account values, home appraisals, or any balance that doesn't come through Quicken transactions.
+  </div>`;
+
+  // Manual override entry
+  const bsAcctKeys = Object.keys(BS_ACCOUNTS).filter(k => BS_ACCOUNTS[k]?.class === 'asset' && BS_ACCOUNTS[k]?.sub === 'investment');
+  nwBody += `<div style="background:rgba(245,168,0,.04);border:1px solid rgba(245,168,0,.2);border-radius:8px;padding:16px;margin-bottom:14px;">
+    <div style="font-size:12px;font-weight:600;color:var(--gold);margin-bottom:12px;">Override Account Value</div>
+    <div style="display:grid;grid-template-columns:1fr 160px 160px auto;gap:8px;align-items:end;">
+      <div>
+        <div style="font-size:10px;color:var(--ink4);margin-bottom:4px;">Account</div>
+        <select id="nwov-acct" style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:6px 8px;font-size:12px;color:var(--ink);">
+          ${Object.keys(BS_ACCOUNTS).filter(k=>BS_ACCOUNTS[k]?.sub==='investment'||BS_ACCOUNTS[k]?.sub==='property').map(k=>`<option value="${k}">${BS_ACCOUNTS[k].icon} ${BS_ACCOUNTS[k].label||k}</option>`).join('')}
+          <option value="__custom__">Custom account name...</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--ink4);margin-bottom:4px;">Current Value ($)</div>
+        <input id="nwov-value" type="number" min="0" step="100" placeholder="245000"
+          style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:6px 8px;font-size:12px;font-family:var(--font-m);color:var(--ink);box-sizing:border-box;">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--ink4);margin-bottom:4px;">As Of Date</div>
+        <input id="nwov-date" type="text" placeholder="${new Date().toISOString().slice(0,10)}"
+          style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:6px 8px;font-size:12px;font-family:var(--font-m);color:var(--ink);box-sizing:border-box;">
+      </div>
+      <button onclick="addNWOverride()" style="background:var(--gold);color:var(--void);border:none;padding:7px 14px;border-radius:4px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Set Value</button>
+    </div>
+  </div>`;
+
+  // Current overrides table
+  const ovEntries = Object.entries(netWorthOverrides);
+  if (ovEntries.length) {
+    nwBody += `<div style="margin-bottom:14px;">
+      <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">Current Overrides</div>
+      ${ovEntries.map(([acct,ov]) => `<div style="display:grid;grid-template-columns:1fr 1fr 120px 36px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+        <div style="font-size:12px;color:var(--ink2);">${acct}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--positive);font-family:var(--font-m);">$${Math.round(ov.value).toLocaleString()}</div>
+        <div style="font-size:11px;color:var(--ink4);">${ov.date||'—'} · ${ov.source||'manual'}</div>
+        <button onclick="delete netWorthOverrides['${acct.replace(/'/g,"\\'")}'];saveSettings();renderSettings()"
+          style="background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--negative);border-radius:4px;padding:4px;cursor:pointer;font-size:12px;">✕</button>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // Snapshot history
+  if (nwSnaps.length) {
+    nwBody += `<div>
+      <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">Saved NW Snapshots (${nwSnaps.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${nwSnaps.slice(0,12).map(d => {
+          const snap = nwHist[d];
+          const nw   = snap.netWorth || 0;
+          return `<div style="background:var(--lift);border:1px solid var(--line);border-radius:6px;padding:8px 12px;font-size:11px;">
+            <div style="font-family:var(--font-m);color:var(--ink4);">${d}</div>
+            <div style="font-size:13px;font-weight:700;color:${nw>=0?'var(--positive)':'var(--negative)'};">$${Math.round(nw).toLocaleString()}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  } else {
+    nwBody += `<div style="font-size:11px;color:var(--ink4);">No snapshots yet. Snapshots are captured automatically each month when you push data to the cloud.</div>`;
+  }
+
   el.innerHTML = [
-    section('family',    '👨‍👩‍👧‍👦', 'Family Profile',          'Names · ages · savings target · Pittsburgh',   familyBody),
-    section('goals',     '🎯',      'Savings Goals',            'Track progress toward named financial goals',    goalsBody),
-    section('cc',        '💳',      'Credit Card Billing',      'Statement close dates · payment due dates',      ccBody),
-    section('accrual',   '🔮',      'Accrual Engine Rules',     'Control how each bucket projects for in-flight months', accrualBody),
-    section('aliases',   '✏️',      'Payee Aliases',            'Clean up messy Quicken merchant names',          aliasBody),
-    section('splits',    '🔀',      'Split Transaction Rules',  'Override bucket assignment for split payees',     splitBody),
-    section('appear',    '🎨',      'Forge Appearance',         'Density · defaults · display preferences',       appearBody),
-    section('data',      '💾',      'Data &amp; Privacy',       'Storage usage · export · sync · clear',          dataBody),
+    section('family',    '👨‍👩‍👧‍👦', 'Family Profile',          'Names · ages · savings target · Pittsburgh',         familyBody),
+    section('goals',     '🎯',      'Savings Goals',            'Track progress toward named financial goals',          goalsBody),
+    section('alerts',    '🔔',      'Spending Alerts',          'Monthly threshold warnings per spending bucket',       alertsBody),
+    section('cc',        '💳',      'Credit Card Billing',      'Statement close dates · payment due dates',            ccBody),
+    section('accrual',   '🔮',      'Accrual Engine Rules',     'Per-bucket projection strategy for in-flight months',  accrualBody),
+    section('confluence','🏛️',     'Confluence Agenda',        'Customize the monthly family review agenda',           confBody),
+    section('fiscal',    '📆',      'Fiscal / Tax Year',        'Shift all annual views to a custom fiscal year',       taxBody),
+    section('nwsnapshot','📸',      'Net Worth Snapshots',      'Manual value overrides · point-in-time snapshots',     nwBody),
+    section('aliases',   '✏️',      'Payee Aliases',            'Clean up messy Quicken merchant names',                aliasBody),
+    section('splits',    '🔀',      'Split Transaction Rules',  'Override bucket assignment for split payees',           splitBody),
+    section('appear',    '🎨',      'Forge Appearance',         'Density · defaults · display preferences',             appearBody),
+    section('data',      '💾',      'Data &amp; Privacy',       'Storage usage · export · sync · clear',                dataBody),
   ].join('');
 }
 
@@ -2097,9 +2256,39 @@ function deleteSplitRule(pat) {
   saveSettings();
 }
 
+function addNWOverride() {
+  let acct  = document.getElementById('nwov-acct')?.value;
+  const val = parseFloat(document.getElementById('nwov-value')?.value || 0);
+  const dt  = document.getElementById('nwov-date')?.value || new Date().toISOString().slice(0,10);
+  if (acct === '__custom__') {
+    acct = prompt('Enter the exact account name as it appears in Quicken:');
+    if (!acct) return;
+  }
+  if (!acct || !val) { toast('Enter an account and value'); return; }
+  netWorthOverrides[acct] = { value: val, date: dt, source: 'manual' };
+  saveSettings();
+  renderSettings();
+  toast('\u2713 Override saved — ' + acct + ' = $' + Math.round(val).toLocaleString());
+}
+
+// Spending alert check — called from renderDashboard and IS header
+function getAlertedBuckets(selMonth) {
+  const alerts = [];
+  const sp = operatingSpendable(txns).filter(t => selMonth ? t.date.startsWith(selMonth) : true);
+  Object.entries(spendingAlerts).forEach(([bk, cfg]) => {
+    if (!cfg.enabled || !cfg.monthly) return;
+    const actual = sp.filter(t => classifyTxn(t) === bk && t.amount < 0).reduce((s,t)=>s+Math.abs(t.amount),0);
+    if (actual >= cfg.monthly * 0.9) {
+      const pct = Math.round(actual / cfg.monthly * 100);
+      alerts.push({ bk, label: (BUCKET_META[bk]||{label:bk}).label, actual, limit: cfg.monthly, pct, over: actual > cfg.monthly });
+    }
+  });
+  return alerts.sort((a,b)=>b.pct-a.pct);
+}
+
+
 function exportForge() {
   const data = {
-    exported: new Date().toISOString(),
     version:  'lean_4.0',
     ledger:   JSON.parse(localStorage.getItem('forge_prod_v1') || localStorage.getItem('ledger_v3') || '{}'),
     settings: JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'),
@@ -2218,6 +2407,18 @@ let forgeAppearance = {
   defaultPage: 'dashboard',
   showGoalRings: true,
 };
+
+let spendingAlerts = {};  // { bucketKey: { monthly: number, enabled: bool } }
+let confluenceAgenda = [  // customizable monthly review agenda
+  { id:'income',    title:'Income & Savings',        prompt:'How did our income compare to expectations? Did we hit our savings target?', emoji:'💵' },
+  { id:'spending',  title:'Spending Review',          prompt:'Where did we overspend? Any categories that surprised us?', emoji:'📊' },
+  { id:'goals',     title:'Goals Progress',           prompt:'How are our savings goals tracking? Any adjustments needed?', emoji:'🎯' },
+  { id:'coming',    title:'Coming This Month',        prompt:'What big expenses are coming up? How do we plan for them?', emoji:'📅' },
+  { id:'wins',      title:'Wins & Positives',         prompt:'What financial wins did we have this month?', emoji:'🏆' },
+  { id:'action',    title:'Action Items',             prompt:'What three things will we change or do differently next month?', emoji:'✅' },
+];
+let taxYearOffset = 0;     // 0 = Jan–Dec calendar year, 1 = Apr–Mar tax year (UK), -3 = Oct–Sep fiscal
+let nwSnapshotDate = '';   // date of manual NW snapshot for BS comparison anchor
 
 const SETTINGS_KEY  = 'forge_settings_v2';
 
@@ -2986,6 +3187,24 @@ function renderDashboard() {
     <div class="kpi-val">${k.val}</div>
     <div class="kpi-sub">${k.sub}</div>
   </div>`).join('');
+
+  // Spending alert chips — show only if alerts are configured and triggered
+  const curMo = new Date().toISOString().slice(0,7);
+  const alerts = typeof getAlertedBuckets === 'function' ? getAlertedBuckets(curMo) : [];
+  const alertEl = document.getElementById('dashAlerts');
+  if (alertEl) {
+    if (alerts.length) {
+      alertEl.innerHTML = alerts.map(a =>
+        `<div style="display:inline-flex;align-items:center;gap:6px;background:${a.over?'rgba(248,113,113,.1)':'rgba(245,168,0,.1)'};border:1px solid ${a.over?'rgba(248,113,113,.35)':'rgba(245,168,0,.35)'};border-radius:20px;padding:5px 12px;font-size:11px;cursor:pointer;" onclick="showPage('income')" title="${a.label}: $${Math.round(a.actual).toLocaleString()} of $${Math.round(a.limit).toLocaleString()} limit">
+          ${a.over?'🔴':'🟡'} <strong>${a.label}</strong> ${a.pct}% of limit${a.over?' — OVER':''}
+        </div>`
+      ).join('');
+      alertEl.style.display = 'flex';
+    } else {
+      alertEl.innerHTML = '';
+      alertEl.style.display = 'none';
+    }
+  }
 
   // Monthly bar chart (SVG)
   const md = monthlyData(filtered);
@@ -4535,6 +4754,10 @@ function loadSettings() {
     if (d.splitRules)     splitRules      = d.splitRules;
     if (d.accrualOverrides) accrualOverrides = d.accrualOverrides;
     if (d.forgeAppearance)  Object.assign(forgeAppearance, d.forgeAppearance);
+    if (d.spendingAlerts)   spendingAlerts   = d.spendingAlerts;
+    if (d.confluenceAgenda) confluenceAgenda = d.confluenceAgenda;
+    if (typeof d.taxYearOffset === 'number') taxYearOffset = d.taxYearOffset;
+    if (d.nwSnapshotDate)   nwSnapshotDate   = d.nwSnapshotDate;
   } catch(e) {}
 }
 
@@ -4544,6 +4767,7 @@ function saveSettings() {
       ccSettings, budgetTargets, nonRecurringIds: [...nonRecurringIds],
       familyProfile, savingsGoals, payeeAliases, splitRules,
       accrualOverrides, forgeAppearance,
+      spendingAlerts, confluenceAgenda, taxYearOffset, nwSnapshotDate,
     }));
   } catch(e) {}
 }
@@ -5301,17 +5525,17 @@ function getQSource(t) {
 }
 
 function enrichTxn(t) {
-  if (t._enriched) return t; // already processed
-  const bucket  = classifyTxn(t);
-  const source  = getQSource(t);
-  const qParent = inferQParent(t.category, bucket);
-  const qSub    = inferQSub(t.category, qParent, t.payee);
-  return Object.assign({}, t, {
-    forgeBucket: bucket,
-    qParent,
-    qSub,
-    qSource: source,
-    _enriched: true,
+  if (t._enriched) return t;
+  // Apply payee alias if configured
+  const rawPayee = t.payee || '';
+  const aliasedPayee = (typeof payeeAliases !== 'undefined' && payeeAliases[rawPayee]) || rawPayee;
+  const tWithAlias = aliasedPayee !== rawPayee ? Object.assign({}, t, { payee: aliasedPayee, _rawPayee: rawPayee }) : t;
+  const bucket  = classifyTxn(tWithAlias);
+  const source  = getQSource(tWithAlias);
+  const qParent = inferQParent(tWithAlias.category, bucket);
+  const qSub    = inferQSub(tWithAlias.category, qParent, tWithAlias.payee);
+  return Object.assign({}, tWithAlias, {
+    forgeBucket: bucket, qParent, qSub, qSource: source, _enriched: true,
   });
 }
 
@@ -5801,14 +6025,8 @@ function renderIncomeStatement() {
   // For in-flight months: show Actual + accrual breakdown with projection tiles
   // For closed months: show clean actuals-only summary
 
-  const isInFlightMonth = !!accrual;
-  let projBreakdown = null;
-  if (isInFlightMonth) {
-    projBreakdown = accrual.getProjectionBreakdown(sectionData);
-  }
-
-  const totalActualExp    = isInFlightMonth ? sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.buckets.reduce((ss,bk)=>ss+(sec.bucketData[bk]?.actual||0),0),0) : totalExp;
-  const totalAccruedExp   = isInFlightMonth ? sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.buckets.reduce((ss,bk)=>ss+(sec.bucketData[bk]?.accrued||0),0),0) : 0;
+  const totalActualExp    = accrual ? sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.buckets.reduce((ss,bk)=>ss+(sec.bucketData[bk]?.actual||0),0),0) : totalExp;
+  const totalAccruedExp   = accrual ? sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.buckets.reduce((ss,bk)=>ss+(sec.bucketData[bk]?.accrued||0),0),0) : 0;
   const totalProjectedExp = totalActualExp + totalAccruedExp;
   const projNet           = totalIncome - autoSave - totalProjectedExp;
   const projNetColor      = projNet >= 0 ? 'var(--positive)' : 'var(--negative)';
@@ -6633,7 +6851,6 @@ function renderBalanceSheet() {
     if (nwOv) return { value: meta.class === 'liability' ? Math.abs(nwOv.value) : nwOv.value, source: nwOv.source === 'quicken-invperf' ? 'inv-perf' : 'net-worth' };
     const raw = getRawBalance(acct);
     return { value: meta.class === 'liability' ? Math.abs(raw) : raw, source: 'transactions' };
-  }
   }
 
   function getPriorValue(acct, meta) {
