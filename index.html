@@ -113,7 +113,7 @@ header {
 .hdr-stat strong { color: var(--ink2); }
 
 /* ── Layout ────────────────────────────────────────────── */
-.app { display:flex; flex:1; min-height:0; }
+.app { display:flex; flex:1; min-height:0; overflow:hidden; }
 
 /* ── Nav ───────────────────────────────────────────────── */
 nav {
@@ -161,19 +161,29 @@ nav::-webkit-scrollbar-thumb { background:var(--line); border-radius:2px; }
 main {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 28px 32px 60px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--line) transparent;
+  height: 0;
+  overflow: hidden;     /* main is NOT the scroll container — each page scrolls itself */
+  position: relative;
 }
 main::-webkit-scrollbar { width:6px; }
 main::-webkit-scrollbar-track { background:transparent; }
 main::-webkit-scrollbar-thumb { background:var(--line); border-radius:3px; }
 
 /* ── Pages ─────────────────────────────────────────────── */
-.page { display:none; }
-.page.active { display:block; }
+.page {
+  display: none;
+}
+.page.active {
+  display: block;
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 28px 32px 60px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.15) transparent;
+  box-sizing: border-box;
+}
 
 /* ── Page header ────────────────────────────────────────── */
 .page-title {
@@ -1757,15 +1767,18 @@ function renderSettings() {
   if (!el) return;
 
   // ── helpers ────────────────────────────────────────────────────────────────
-  const section = (id, icon, title, sub, body) =>
-    `<div id="sset-${id}" style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;">
+  let _ssetFirst = true;
+  const section = (id, icon, title, sub, body) => {
+    const open = _ssetFirst; _ssetFirst = false;
+    return `<div id="sset-${id}" style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;">
        <div style="padding:14px 20px;background:var(--lift);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="toggleSSet('${id}')">
          <span style="font-size:20px;">${icon}</span>
          <div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--ink);">${title}</div><div style="font-size:11px;color:var(--ink4);">${sub}</div></div>
-         <span id="sset-chev-${id}" style="color:var(--ink4);font-size:12px;transition:transform .2s;">▼</span>
+         <span id="sset-chev-${id}" style="color:var(--ink4);font-size:12px;transition:transform .2s;${open?'':'transform:rotate(-90deg)'}">▼</span>
        </div>
-       <div id="sset-body-${id}" style="padding:20px;">${body}</div>
+       <div id="sset-body-${id}" style="padding:20px;${open?'':'display:none;'}">${body}</div>
      </div>`;
+  };
 
   const row = (label, hint, input) =>
     `<div style="display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);">
@@ -2937,7 +2950,7 @@ function showPage(name) {
   if (pg) { pg.classList.add('active'); pg.style.display='block'; }
   const nv = document.getElementById('nav-'+name);
   if (nv) nv.classList.add('active');
-  document.querySelector('main').scrollTop = 0;
+  // scrollTop reset happens on page element itself after display
 
   // Render after a frame so the page is visible and has real dimensions
   requestAnimationFrame(() => {
@@ -5965,10 +5978,14 @@ function renderIncomeStatement() {
 
   // ── Accrual engine for in-flight months ───────────────────────────────────
   const accrual = buildAccrualEngine(selMonth, sp);
-  const isInFlight = accrual !== null;
+  const isInFlight      = accrual !== null;
+  const isInFlightMonth = accrual !== null;   // alias used throughout hero tiles
   const daysRemaining = accrual ? accrual.daysRemaining : 0;
   const daysElapsed   = accrual ? accrual.daysElapsed   : 0;
   const daysInMonth   = accrual ? accrual.daysInMonth   : 0;
+
+  // projBreakdown — populated after sectionData is built (see below)
+  let projBreakdown = null;
 
   // Section totals
   let running = 0;
@@ -6009,6 +6026,11 @@ function renderIncomeStatement() {
   const savingsPct   = totalIncome>0 ? ((autoSave+Math.max(0,netSurplus))/totalIncome*100) : 0;
   const checkingIn   = totalIncome - autoSave;
   const surpColor    = netSurplus>=0?'var(--positive)':'var(--negative)';
+
+  // Populate projBreakdown now that sectionData is available
+  if (isInFlightMonth && accrual && accrual.getProjectionBreakdown) {
+    projBreakdown = accrual.getProjectionBreakdown(sectionData);
+  }
 
   // ── Helpers ────────────────────────────────────────────────────
   function pct(v) { return totalIncome>0?(v/totalIncome*100).toFixed(0)+'%':'—'; }
@@ -6057,8 +6079,6 @@ function renderIncomeStatement() {
 
   // ── Main summary tiles (always shown) ──────────────────────────────────────
   out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;">';
-
-  const isInFlightMonth = !!accrual;
 
   // ── Tile 1: Income ─────────────────────────────────────────────────────────
   const incomeLabel = isInFlightMonth ? 'Gross Income · MTD' : 'Gross Income';
