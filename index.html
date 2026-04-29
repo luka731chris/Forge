@@ -161,18 +161,19 @@ nav::-webkit-scrollbar-thumb { background:var(--line); border-radius:2px; }
 main {
   flex: 1;
   min-height: 0;
-  height: 0;
-  overflow: hidden;     /* main is NOT the scroll container — each page scrolls itself */
-  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 28px 32px 60px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.15) transparent;
 }
 main::-webkit-scrollbar { width:6px; }
 main::-webkit-scrollbar-track { background:transparent; }
 main::-webkit-scrollbar-thumb { background:var(--line); border-radius:3px; }
 
 /* ── Pages ─────────────────────────────────────────────── */
-.page {
-  display: none;
-}
+.page { display:none; }
+.page.active { display:block; }
 .page.active {
   display: block;
   position: absolute;
