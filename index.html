@@ -159,8 +159,9 @@ nav::-webkit-scrollbar-thumb { background:var(--line); border-radius:2px; }
 
 /* ── Main ──────────────────────────────────────────────── */
 main {
-  flex: 1;
+  flex: 1 1 0%;     /* flex-basis:0% prevents content from dictating main's width */
   min-height: 0;
+  min-width: 0;     /* critical: allows main to shrink below content min-width */
   overflow-y: auto;
   overflow-x: hidden;
   padding: 28px 32px 60px;
@@ -173,7 +174,12 @@ main::-webkit-scrollbar-thumb { background:var(--line); border-radius:3px; }
 
 /* ── Pages ─────────────────────────────────────────────── */
 .page { display:none; }
-.page.active { display:block; }
+.page.active {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
 
 
 /* ── Page header ────────────────────────────────────────── */
@@ -189,6 +195,10 @@ main::-webkit-scrollbar-thumb { background:var(--line); border-radius:3px; }
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .page-sub {
   font-size: 13.5px;
@@ -203,7 +213,14 @@ main::-webkit-scrollbar-thumb { background:var(--line); border-radius:3px; }
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  gap: 16px;
   margin-bottom: 24px;
+  min-width: 0;        /* prevent flex overflow from wide titles */
+  width: 100%;
+}
+.page-hdr > div:first-child {
+  min-width: 0;        /* allow title div to shrink */
+  flex: 1 1 auto;
 }
 
 /* ── Cards ──────────────────────────────────────────────── */
