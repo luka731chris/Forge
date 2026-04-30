@@ -12,186 +12,220 @@
 <title>Forge · Pittsburgh Family Finance</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-/* ── Design tokens ─────────────────────────────────────── */
-html { height: 100%; }
-:root {
-  --void:   #080808;
-  --base:   #0E0E0E;
-  --lift:   #151515;
-  --float:  #1C1C1C;
-  --line:   #2a2a2a;
-  --line2:  #333;
-  --gold:   #F5A800;
-  --positive:#2DD4BF;
-  --negative:#F87171;
-  --river:  #60A5FA;
-  --ink:    #F2EFE9;
-  --ink2:   #C8C4BE;
-  --ink3:   #8a8680;
-  --ink4:   #55524e;
-  --font-d:  'Cormorant Garamond', Georgia, serif;
-  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-m:  'JetBrains Mono', 'DM Mono', monospace;
-  --r-sm:   6px;
-  --r-md:   10px;
-  --r-lg:   14px;
-  --shadow:      0 2px 12px rgba(0,0,0,.4);
-  --shadow-lg:   0 4px 32px rgba(0,0,0,.6);
-  --ink2:        #C8C4BE;
-  --ink3:        #8a8680;
-  --ink4:        #55524e;
-  /* Type scale — major third @ 15px base */
-  --text-xs:   11.5px;
-  --text-sm:   13px;
-  --text-base: 15px;
-  --text-md:   16px;
-  --text-lg:   19px;
-  --text-xl:   24px;
-  --text-2xl:  30px;
-  --text-3xl:  38px;
-  --text-4xl:  52px;
-  /* Ink refinements — warmer, more nuanced */
-  --ink:  #F0EDE8;
-  --ink2: #C9C4BC;
-  --ink3: #8C8780;
-  --ink4: #565250;
-}
-*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+/* ═══════════════════════════════════════════════════════════════
+   FORGE — Design System  lean_4.0  Pittsburgh Black & Gold
+   Typography: Cormorant Garamond (display) / DM Sans (ui) / Fira Code (mono)
+   Palette: Carbon black + burnished gold + steel teal + Pittsburgh bridges
+═══════════════════════════════════════════════════════════════ */
 
+/* ── Reset & Base ──────────────────────────────────────────── */
+html { height:100%; }
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+/* ── Design Tokens ─────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --void:   #060606;
+  --base:   #0C0C0D;
+  --lift:   #141416;
+  --float:  #1A1A1D;
+  --raised: #202024;
+
+  /* Borders */
+  --line:   #242428;
+  --line2:  #2E2E34;
+
+  /* Brand */
+  --gold:      #F5A800;
+  --gold-dim:  rgba(245,168,0,.12);
+  --gold-glow: rgba(245,168,0,.06);
+
+  /* Semantic */
+  --positive: #2DD4BF;
+  --negative: #F87171;
+  --river:    #60A5FA;
+  --warn:     #FBBF24;
+
+  /* Ink — warmer, paper-inspired */
+  --ink:  #EEEAE4;
+  --ink2: #C4BFB8;
+  --ink3: #8A857E;
+  --ink4: #524E4A;
+
+  /* Typography */
+  --font-d:  'Cormorant Garamond', Georgia, serif;
+  --font-ui: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-m:  'Fira Code', 'JetBrains Mono', monospace;
+
+  /* Radius */
+  --r-xs:  4px;
+  --r-sm:  6px;
+  --r-md:  10px;
+  --r:     10px;
+  --r-lg:  14px;
+  --r-xl:  20px;
+
+  /* Elevation */
+  --shadow:    0 1px 8px rgba(0,0,0,.5);
+  --shadow-lg: 0 4px 24px rgba(0,0,0,.7);
+}
+
+/* ── Body ──────────────────────────────────────────────────── */
 body {
   font-family: var(--font-ui);
-  background: var(--base);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.55;
   color: var(--ink);
+  background: var(--base);
   height: 100vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  font-size: 15px;
-  line-height: 1.65;
-  font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
-  overflow: hidden;
 }
 
-/* ── Header ────────────────────────────────────────────── */
+/* ── Header ────────────────────────────────────────────────── */
 header {
-  background: var(--void);
-  border-bottom: 1px solid var(--line);
-  padding: 0 24px;
-  height: 56px;
+  height: 52px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-shrink: 0;
+  padding: 0 20px;
+  background: var(--void);
+  border-bottom: 1px solid var(--line);
   z-index: 100;
 }
 .logo {
   font-family: var(--font-d);
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
+  letter-spacing: .06em;
   color: var(--ink);
-  letter-spacing: .04em;
 }
 .logo span { color: var(--gold); }
 .logo-sub {
   font-family: var(--font-m);
-  font-size: 9px;
-  color: var(--ink4);
-  letter-spacing: .18em;
+  font-size: 8px;
+  letter-spacing: .20em;
   text-transform: uppercase;
-  margin-top: -2px;
+  color: var(--ink4);
+  margin-top: -1px;
 }
-.header-right { display:flex; align-items:center; gap:10px; }
+.header-right { display:flex; align-items:center; gap:8px; }
 .hdr-stat {
   font-family: var(--font-m);
   font-size: 10px;
   color: var(--ink4);
-  letter-spacing: .04em;
+  letter-spacing: .03em;
 }
 .hdr-stat strong { color: var(--ink2); }
 
-/* ── Layout ────────────────────────────────────────────── */
-.app { display:flex; flex:1; min-height:0; overflow:hidden; }
+/* ── App Shell ─────────────────────────────────────────────── */
+.app {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
 
-/* ── Nav ───────────────────────────────────────────────── */
+/* ── Navigation ────────────────────────────────────────────── */
 nav {
-  width: 210px;
+  width: 196px;
+  flex-shrink: 0;
   background: var(--void);
   border-right: 1px solid var(--line);
-  flex-shrink: 0;
-  padding: 16px 0;
   overflow-y: auto;
+  padding: 12px 0 24px;
+  display: flex;
+  flex-direction: column;
 }
-.nav-section { margin-bottom: 24px; }
+nav::-webkit-scrollbar { width: 3px; }
+nav::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
+
+.nav-section { margin-bottom: 20px; }
+.nav-section:last-child { margin-top: auto; margin-bottom: 0; }
+
 .nav-label {
+  font-size: 9px;
+  font-weight: 700;
   font-family: var(--font-ui);
-  font-weight: 600;
-  font-size: 9.5px;
-  letter-spacing: .18em;
+  letter-spacing: .22em;
   text-transform: uppercase;
   color: var(--ink4);
-  padding: 0 18px;
-  margin-bottom: 4px;
+  padding: 0 16px;
+  margin-bottom: 2px;
 }
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 10px 20px;
-  font-size: 13.5px;
+  gap: 9px;
+  padding: 8px 16px;
+  font-size: 12.5px;
   font-weight: 400;
   color: var(--ink3);
-  letter-spacing: 0em;
   cursor: pointer;
-  transition: color .15s, background .15s;
   border-left: 2px solid transparent;
+  transition: color .12s, background .12s;
+  letter-spacing: .01em;
 }
-.nav-item:hover { color: var(--ink); background: rgba(255,255,255,.03); }
+.nav-item:hover { color: var(--ink); background: rgba(255,255,255,.025); }
 .nav-item.active {
   color: var(--gold);
   border-left-color: var(--gold);
-  background: rgba(245,168,0,.06);
+  background: var(--gold-glow);
+  font-weight: 500;
 }
-nav::-webkit-scrollbar { width:4px; }
-nav::-webkit-scrollbar-thumb { background:var(--line); border-radius:2px; }
+.nav-item svg { opacity: .6; flex-shrink: 0; }
+.nav-item.active svg { opacity: 1; }
 
-/* ── Main ──────────────────────────────────────────────── */
+/* ── Main Scroll Area ──────────────────────────────────────── */
 main {
-  flex: 1 1 0%;     /* flex-basis:0% prevents content from dictating main's width */
+  flex: 1 1 0%;
+  min-width: 0;
   min-height: 0;
-  min-width: 0;     /* critical: allows main to shrink below content min-width */
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 28px 32px 60px;
+  padding: 24px 28px 64px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,.15) transparent;
+  scrollbar-color: var(--line2) transparent;
 }
-main::-webkit-scrollbar { width:6px; }
-main::-webkit-scrollbar-track { background:transparent; }
-main::-webkit-scrollbar-thumb { background:var(--line); border-radius:3px; }
+main::-webkit-scrollbar { width: 5px; }
+main::-webkit-scrollbar-track { background: transparent; }
+main::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 3px; }
+main::-webkit-scrollbar-thumb:hover { background: var(--ink4); }
 
-/* ── Pages ─────────────────────────────────────────────── */
-.page { display:none; }
+/* ── Pages ─────────────────────────────────────────────────── */
+.page { display: none; }
 .page.active {
   display: block;
   width: 100%;
   min-width: 0;
-  box-sizing: border-box;
 }
 
-
-/* ── Page header ────────────────────────────────────────── */
+/* ── Page Header ───────────────────────────────────────────── */
+.page-hdr {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  width: 100%;
+  min-width: 0;
+}
+.page-hdr > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 .page-title {
   font-family: var(--font-d);
-  font-size: 40px;
+  font-size: 34px;
   font-weight: 400;
-  color: var(--ink);
-  margin-bottom: 6px;
-  letter-spacing: -0.01em;
   line-height: 1.05;
-  background: linear-gradient(160deg, #FAFAF8 0%, #C8C3BA 100%);
+  letter-spacing: -.01em;
+  background: linear-gradient(150deg, #F5F2EC 0%, #B8B3AA 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -199,288 +233,450 @@ main::-webkit-scrollbar-thumb { background:var(--line); border-radius:3px; }
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  margin-bottom: 4px;
 }
 .page-sub {
-  font-size: 13.5px;
+  font-size: 12px;
   color: var(--ink4);
   font-family: var(--font-ui);
-  margin-bottom: 24px;
-  letter-spacing: 0.01em;
-  line-height: 1.55;
-  font-weight: 400;
+  letter-spacing: .01em;
+  line-height: 1.5;
 }
-.page-hdr {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
-  min-width: 0;        /* prevent flex overflow from wide titles */
-  width: 100%;
-}
-.page-hdr > div:first-child {
-  min-width: 0;        /* allow title div to shrink */
-  flex: 1 1 auto;
-}
+.page-hdr .page-sub { margin-bottom: 0; }
 
-/* ── Cards ──────────────────────────────────────────────── */
+/* ── KPI Cards ─────────────────────────────────────────────── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(4,1fr);
+  gap: 10px;
+  margin-bottom: 18px;
 }
 .kpi {
   background: var(--float);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  padding: 18px 20px;
+  padding: 14px 16px;
 }
 .kpi-label {
+  font-size: 9px;
+  font-family: var(--font-m);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  margin-bottom: 6px;
+}
+.kpi-val {
+  font-size: 26px;
+  font-weight: 300;
+  font-family: var(--font-d);
+  color: var(--ink);
+  line-height: 1;
+  letter-spacing: -.02em;
+  margin-bottom: 4px;
+}
+.kpi-sub {
+  font-size: 11px;
+  color: var(--ink4);
+  font-family: var(--font-ui);
+}
+.kpi.positive .kpi-val { color: var(--positive); }
+.kpi.gold .kpi-val { color: var(--gold); }
+
+/* ── Section tiles (smaller, used in IS, Financials) ───────── */
+.kpi-cluster {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.kpi-sm {
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+}
+.kpi-sm-lbl {
   font-size: 9px;
   font-family: var(--font-m);
   letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--ink4);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
-.kpi-val {
-  font-size: 32px;
+.kpi-sm-val {
+  font-size: 20px;
   font-weight: 300;
+  font-family: var(--font-d);
   color: var(--ink);
   line-height: 1;
-  margin-bottom: 6px;
-  letter-spacing: -0.02em;
-  font-family: var(--font-d);
+  letter-spacing: -.01em;
+  margin-bottom: 2px;
 }
-.kpi-sub {
-  font-size: 12px;
+.kpi-sm-sub {
+  font-size: 10px;
   color: var(--ink4);
   font-family: var(--font-ui);
-  letter-spacing: 0em;
 }
-.kpi.positive .kpi-val { color: var(--positive); }
-.kpi.gold .kpi-val { color: var(--gold); }
-.is-row:hover { background: rgba(255,255,255,.04) !important; }
 
-/* ── Chart cards ────────────────────────────────────────── */
+/* ── Charts ────────────────────────────────────────────────── */
 .chart-grid-2 {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
-.chart-grid-1 { margin-bottom: 16px; }
+.chart-grid-1 { margin-bottom: 12px; }
 .chart-card {
   background: var(--float);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  padding: 20px 22px;
+  padding: 16px 18px;
   contain: paint;
 }
 .chart-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--ink2);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  font-family: var(--font-ui);
 }
 .chart-sub {
   font-size: 10px;
   color: var(--ink4);
   font-family: var(--font-m);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
-.chart-area { position:relative; }
+.chart-area { position: relative; }
 
-/* ── Tables ─────────────────────────────────────────────── */
+/* ── Tables ─────────────────────────────────────────────────── */
 .table-card {
   background: var(--float);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   overflow: hidden;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .table-hdr {
-  padding: 14px 18px;
+  padding: 11px 16px;
   border-bottom: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: var(--lift);
 }
-.table-hdr-title { font-size: 15px !important; font-weight: 600; letter-spacing: -0.01em; } .table-hdr-title-ORIG { font-size:13px; font-weight:600; color:var(--ink2); }
-table { width:100%; border-collapse:collapse; }
+.table-hdr-title { font-size: 13px; font-weight: 600; color: var(--ink2); }
+table { width: 100%; border-collapse: collapse; }
 th {
-  padding: 10px 14px;
+  padding: 8px 12px;
   font-family: var(--font-m);
   font-size: 9px;
-  letter-spacing: .1em;
+  letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--ink4);
   text-align: left;
   border-bottom: 1px solid var(--line);
   background: var(--lift);
+  white-space: nowrap;
   position: sticky;
   top: 0;
+  z-index: 1;
 }
 td {
-  padding: 10px 14px;
+  padding: 8px 12px;
   font-size: 12px;
   color: var(--ink2);
-  border-bottom: 1px solid rgba(255,255,255,.04);
+  border-bottom: 1px solid rgba(255,255,255,.03);
 }
-tr:hover td { background: rgba(255,255,255,.02); }
-.td-num { font-family:var(--font-m); text-align:right; }
-.td-pos { color:var(--positive); }
-.td-neg { color:var(--gold); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,.018); }
+.td-num { font-family: var(--font-m); text-align: right; font-size: 12px; }
+.td-pos { color: var(--positive); }
+.td-neg { color: var(--gold); }
 
-/* ── Inputs ───────────────────────────────────────────────── */
-input, select, textarea {
-  font-size: 14px;
+/* ── Financial Statements (shared between IS, Financials) ────── */
+.fin-section {
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.fin-hdr {
+  padding: 11px 16px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--lift);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fin-hdr-title {
   font-family: var(--font-ui);
-  font-weight: 400;
-  letter-spacing: 0em;
-}
-input[type="text"], input[type="search"] {
-  padding: 8px 12px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line2);
-  background: var(--lift);
+  font-size: 13px;
+  font-weight: 700;
   color: var(--ink);
-  font-size: 14px;
+  letter-spacing: .01em;
 }
-select {
-  padding: 7px 12px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line2);
+.fin-hdr-sub {
+  font-size: 10px;
+  color: var(--ink4);
+  font-family: var(--font-m);
+  margin-top: 1px;
+}
+.fin-row {
+  display: grid;
+  grid-template-columns: 1fr repeat(3, 100px);
+  padding: 7px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.03);
+  font-size: 12px;
+  color: var(--ink2);
+  align-items: center;
+  font-family: var(--font-ui);
+}
+.fin-row:last-child { border-bottom: none; }
+.fin-row.total-row {
+  border-top: 1px solid var(--line2);
+  border-bottom: 1px solid var(--line2);
   background: var(--lift);
+  font-weight: 700;
+  font-size: 12.5px;
   color: var(--ink);
+}
+.fin-row.subtotal {
+  background: rgba(255,255,255,.018);
+  font-weight: 600;
+  color: var(--ink);
+}
+.fin-row.indent { padding-left: 32px; color: var(--ink3); }
+.fin-col-hdr {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  text-align: right;
+  white-space: nowrap;
+}
+.fin-num {
+  font-family: var(--font-m);
+  font-size: 12px;
+  text-align: right;
+  color: var(--ink2);
+}
+.fin-num.pos { color: var(--positive); }
+.fin-num.neg { color: var(--gold); }
+.fin-num.red { color: var(--negative); }
+.fin-row:hover { background: rgba(255,255,255,.02); }
+.fin-row.indent:hover { background: rgba(255,255,255,.018); }
+.fin-row.total-row:hover { background: var(--lift); }
+
+/* ── Balance Sheet ──────────────────────────────────────────── */
+.bs-section {
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.bs-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  background: var(--lift);
+  border-bottom: 1px solid var(--line);
+}
+.bs-hdr-title { font-size: 12.5px; font-weight: 600; color: var(--ink2); font-family: var(--font-ui); }
+.bs-hdr-total { font-size: 13px; font-weight: 700; font-family: var(--font-m); }
+.bs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.03);
+  font-size: 12px;
+}
+.bs-row:last-child { border-bottom: none; }
+.bs-row:hover { background: rgba(255,255,255,.02); }
+.bs-row-name { color: var(--ink2); display: flex; align-items: center; gap: 7px; font-family: var(--font-ui); }
+.bs-row-meta { font-size: 10px; color: var(--ink4); font-family: var(--font-m); }
+.bs-row-amt  { font-family: var(--font-m); font-size: 12.5px; font-weight: 600; }
+.bs-flag {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-family: var(--font-m);
+  padding: 1px 6px; border-radius: 8px; font-weight: 600; letter-spacing: .04em;
+}
+.bs-flag-stale  { background:rgba(245,168,0,.1);  color:var(--gold);     border:1px solid rgba(245,168,0,.2); }
+.bs-flag-est    { background:rgba(96,165,250,.1);  color:var(--river);    border:1px solid rgba(96,165,250,.2); }
+.bs-flag-miss   { background:rgba(248,113,113,.1); color:var(--negative); border:1px solid rgba(248,113,113,.2); }
+.bs-flag-ok     { background:rgba(45,212,191,.08); color:var(--positive); border:1px solid rgba(45,212,191,.2); }
+.bs-net-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  background: var(--lift);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line2);
 }
 
-/* ── Buttons ────────────────────────────────────────────── */
+/* ── Inputs & Selects ───────────────────────────────────────── */
+input, select, textarea {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 400;
+}
+input[type=text],
+input[type=search],
+input[type=number],
+input[type=email] {
+  background: var(--lift);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color .12s;
+}
+input:focus { border-color: var(--gold); }
+select {
+  background: var(--lift);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-sm);
+  color: var(--ink2);
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 18px;
+  gap: 5px;
+  padding: 7px 14px;
   border-radius: var(--r-sm);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.01em;
   font-family: var(--font-ui);
-  font-weight: 500;
   cursor: pointer;
   border: none;
-  transition: opacity .15s;
+  transition: opacity .12s;
+  letter-spacing: .01em;
 }
-.btn:hover { opacity:.85; }
-.btn-gold { background:var(--gold); color:#000; }
+.btn:hover { opacity: .82; }
+.btn-gold { background: var(--gold); color: #000; font-weight: 700; }
 .btn-ghost {
   background: transparent;
   border: 1px solid var(--line2);
   color: var(--ink3);
 }
-.btn-ghost:hover { color:var(--ink); border-color:var(--ink3); }
-.btn-danger { background:transparent; border:1px solid var(--negative); color:var(--negative); }
+.btn-ghost:hover { color: var(--ink); border-color: var(--ink4); }
+.btn-danger { background: transparent; border: 1px solid var(--negative); color: var(--negative); }
 
-/* ── Upload zone ─────────────────────────────────────────── */
-.upload-zone {
-  border: 2px dashed var(--line2);
-  border-radius: var(--r-lg);
-  padding: 48px 32px;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color .2s, background .2s;
-  margin-bottom: 20px;
-}
-.upload-zone:hover, .upload-zone.drag { border-color:var(--gold); background:rgba(245,168,0,.04); }
-.upload-zone input { display:none; }
-.upload-icon { font-size:40px; margin-bottom:12px; }
-.upload-title { font-size:18px; font-weight:600; margin-bottom:6px; }
-.upload-sub { font-size:12px; color:var(--ink4); }
-
-/* ── Status strip ───────────────────────────────────────── */
-.status-strip {
-  padding: 14px 20px;
-  border-radius: var(--r-md);
-  margin-bottom: 24px;
+/* ── Filters bar ───────────────────────────────────────────── */
+.filters {
   display: flex;
+  gap: 8px;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  font-size: 13px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
 }
-.status-empty { background:var(--lift); border:1px solid var(--line); color:var(--ink4); padding:16px 20px; }
-.status-demo  { background:rgba(245,168,0,.06); border:1px solid rgba(245,168,0,.2); color:var(--gold); }
-.status-real  { background:rgba(45,212,191,.04); border:1px solid rgba(45,212,191,.15); }
 
-/* ── Range tabs ──────────────────────────────────────────── */
-.range-tabs { display:flex; gap:4px; }
+/* ── Range Tabs ─────────────────────────────────────────────── */
+.range-tabs { display: flex; gap: 3px; }
 .rtab {
-  padding: 5px 13px;
+  padding: 4px 11px;
   background: transparent;
   border: 1px solid var(--line2);
   border-radius: var(--r-sm);
   color: var(--ink4);
-  font-size: 12.5px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  font-size: 11px;
+  font-size: 10.5px;
   font-family: var(--font-m);
+  font-weight: 500;
   cursor: pointer;
+  letter-spacing: .04em;
+  transition: color .1s, background .1s;
 }
-.rtab:hover { color:var(--ink); }
-.rtab.active { background:var(--gold); border-color:var(--gold); color:#000; font-weight:600; }
+.rtab:hover { color: var(--ink2); }
+.rtab.active { background: var(--gold); border-color: var(--gold); color: #000; font-weight: 700; }
 
-/* ── Filters ─────────────────────────────────────────────── */
-.filters { display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
-.filter-label { font-size:11px; color:var(--ink4); font-family:var(--font-m); }
-select {
-  background: var(--lift);
-  border: 1px solid var(--line2);
-  border-radius: var(--r-sm);
-  color: var(--ink2);
-  padding: 6px 10px;
-  font-size: 12px;
-  font-family: var(--font-ui);
+/* ── Upload ─────────────────────────────────────────────────── */
+.upload-zone {
+  border: 2px dashed var(--line2);
+  border-radius: var(--r-lg);
+  padding: 44px 28px;
+  text-align: center;
   cursor: pointer;
+  transition: border-color .15s, background .15s;
+  margin-bottom: 16px;
 }
-input[type=text], input[type=search] {
-  background: var(--lift);
-  border: 1px solid var(--line2);
-  border-radius: var(--r-sm);
-  color: var(--ink2);
-  padding: 6px 10px;
-  font-size: 12px;
-  font-family: var(--font-ui);
-  outline: none;
+.upload-zone:hover, .upload-zone.drag {
+  border-color: var(--gold);
+  background: var(--gold-glow);
 }
-input:focus { border-color:var(--gold); }
+.upload-zone input { display: none; }
+.upload-icon { font-size: 36px; margin-bottom: 10px; }
+.upload-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; color: var(--ink); }
+.upload-sub { font-size: 12px; color: var(--ink4); }
+.pour-hero-title {
+  font-family: var(--font-d);
+  font-size: 42px;
+  font-weight: 300;
+  letter-spacing: -.02em;
+  color: var(--ink);
+  line-height: 1.05;
+}
 
-/* ── Toast ───────────────────────────────────────────────── */
+/* ── Status Strip ───────────────────────────────────────────── */
+.status-strip {
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+.status-empty { background: var(--lift); border: 1px solid var(--line); color: var(--ink4); }
+.status-demo  { background: rgba(245,168,0,.06); border: 1px solid rgba(245,168,0,.18); color: var(--gold); }
+.status-real  { background: rgba(45,212,191,.04); border: 1px solid rgba(45,212,191,.14); }
+
+/* ── Transfer badge ─────────────────────────────────────────── */
+.xfer-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-family: var(--font-m);
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(96,165,250,.12);
+  color: var(--river);
+  border: 1px solid rgba(96,165,250,.18);
+}
+
+/* ── Toast ──────────────────────────────────────────────────── */
 .toast {
   position: fixed;
-  bottom: 24px;
+  bottom: 20px;
   left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  background: var(--float);
+  transform: translateX(-50%) translateY(60px);
+  background: var(--raised);
   border: 1px solid var(--line2);
   border-radius: var(--r-md);
-  padding: 10px 20px;
-  font-size: 13px;
+  padding: 9px 18px;
+  font-size: 12.5px;
   color: var(--ink);
-  box-shadow: var(--shadow);
-  transition: transform .3s ease;
+  box-shadow: var(--shadow-lg);
+  transition: transform .25s ease;
   z-index: 1000;
   white-space: nowrap;
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
 
-/* ── Modal ───────────────────────────────────────────────── */
+/* ── Modal ──────────────────────────────────────────────────── */
 .modal-bg {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.82);
+  background: rgba(0,0,0,.8);
   z-index: 500;
   display: flex;
   align-items: flex-start;
@@ -493,292 +689,77 @@ input:focus { border-color:var(--gold); }
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   width: 100%;
-  max-width: 960px;
+  max-width: 880px;
   overflow: hidden;
 }
 .modal-hdr {
-  padding: 20px 26px;
+  padding: 18px 22px;
   border-bottom: 1px solid var(--line);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
 }
-.modal-title { font-family:var(--font-d); font-size:24px; font-weight:600; }
+.modal-title { font-family: var(--font-d); font-size: 22px; font-weight: 600; }
 .modal-.modal-close {
-  background:none; border:1px solid var(--line); color:var(--ink4);
-  cursor:pointer; font-size:13px; padding:4px 10px; border-radius:6px;
+  background: none; border: 1px solid var(--line); color: var(--ink4);
+  cursor: pointer; font-size: 12px; padding: 3px 9px; border-radius: var(--r-sm);
 }
 
-/* ── Demo panel ──────────────────────────────────────────── */
+/* ── Demo Panel ─────────────────────────────────────────────── */
 .demo-panel {
   display: none;
   position: fixed;
-  top: 57px;
-  right: 12px;
-  width: 280px;
+  top: 53px;
+  right: 10px;
+  width: 260px;
   background: var(--float);
   border: 1px solid var(--line);
   border-top: 2px solid var(--gold);
   border-radius: 0 0 var(--r-lg) var(--r-lg);
-  padding: 16px 18px;
+  padding: 14px 16px;
   z-index: 300;
-  box-shadow: 0 8px 32px rgba(0,0,0,.6);
+  box-shadow: var(--shadow-lg);
 }
 
-/* ── Transfer badge ──────────────────────────────────────── */
-.xfer-badge {
-  display: inline-block;
-  font-size: 9px;
-  font-family: var(--font-m);
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: rgba(96,165,250,.15);
-  color: var(--river);
-  border: 1px solid rgba(96,165,250,.2);
-}
+/* ── IS-specific row hover ──────────────────────────────────── */
+.is-row:hover { background: rgba(255,255,255,.03) !important; }
 
-/* ── Responsive ──────────────────────────────────────────── */
-@media (max-width: 900px) {
-  nav { display:none; }
-  .kpi-grid { grid-template-columns: repeat(2,1fr); }
-  .chart-grid-2 { grid-template-columns: 1fr; }
-}
-
-/* ── Chart tooltip ───────────────────────────────────────────── */
+/* ── Chart tooltip ──────────────────────────────────────────── */
 #chartTip {
   position: fixed;
-  background: var(--float);
+  background: var(--raised);
   border: 1px solid var(--line2);
+  border-left: 3px solid var(--gold);
   border-radius: var(--r-sm);
-  padding: 7px 12px;
-  font-size: 12px;
+  padding: 6px 12px;
+  font-size: 11.5px;
   font-family: var(--font-m);
   color: var(--ink);
   pointer-events: none;
   z-index: 999;
   white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(0,0,0,.6);
+  box-shadow: var(--shadow);
   display: none;
-  border-left: 3px solid var(--gold);
 }
 
-/* ── Balance sheet ───────────────────────────────────────────── */
-
-.bs-row:hover { background: rgba(255,255,255,.03); }
-.fin-row:hover { background: rgba(255,255,255,.02); }
-.fin-row.indent:hover { background: rgba(255,255,255,.02); }
-
-.bs-section {
-  background: var(--float);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  overflow: hidden;
-  margin-bottom: 10px;
-}
-.bs-hdr {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 18px;
-  background: var(--lift);
-  border-bottom: 1px solid var(--line);
-}
-.bs-hdr-title { font-size:13px; font-weight:600; color:var(--ink2); }
-.bs-hdr-total { font-size:14px; font-weight:700; font-family:var(--font-m); }
-.bs-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 9px 18px;
-  border-bottom: 1px solid rgba(255,255,255,.04);
-  font-size: 13px;
-}
-.bs-row:last-child { border-bottom: none; }
-.bs-row-name { color: var(--ink2); display:flex; align-items:center; gap:8px; }
-.bs-row-meta { font-size:10px; color:var(--ink4); font-family:var(--font-m); }
-.bs-row-amt  { font-family:var(--font-m); font-size:13px; font-weight:600; }
-.bs-flag { display:inline-flex; align-items:center; gap:4px; font-size:9px; font-family:var(--font-m);
-  padding:2px 7px; border-radius:10px; font-weight:600; letter-spacing:.04em; }
-.bs-flag-stale  { background:rgba(245,168,0,.12); color:var(--gold); border:1px solid rgba(245,168,0,.2); }
-.bs-flag-est    { background:rgba(96,165,250,.12); color:var(--river); border:1px solid rgba(96,165,250,.2); }
-.bs-flag-miss   { background:rgba(248,113,113,.12); color:var(--negative); border:1px solid rgba(248,113,113,.2); }
-.bs-flag-ok     { background:rgba(45,212,191,.1); color:var(--positive); border:1px solid rgba(45,212,191,.2); }
-.bs-net-row {
-  display: flex; align-items:center; justify-content:space-between;
-  padding: 16px 20px;
-  background: var(--lift);
-  border-radius: var(--r-lg);
-  border: 2px solid var(--line2);
-}
-/* ── Financial statements ────────────────────────────────────── */
-@media (max-width: 900px) {
-  .kpi-cluster { grid-template-columns: repeat(2,1fr); }
-  .fin-row { grid-template-columns: 1fr 110px 110px; }
-  .fin-row .fin-col-hdr:nth-child(3) { display:none; }
-}
-.fin-section {
-  background: var(--float);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-.fin-hdr {
-  padding: 14px 20px 12px;
-  border-bottom: 1px solid var(--line);
-  background: var(--lift);
-}
-.fin-hdr-title { font-family:var(--font-d); font-size:20px; font-weight:600; color:var(--ink); }
-.fin-hdr-sub   { font-size:10px; color:var(--ink4); font-family:var(--font-m); margin-top:2px; }
-.fin-row {
-  display: grid;
-  grid-template-columns: 1fr repeat(3, 110px);
-  padding: 8px 20px;
-  border-bottom: 1px solid rgba(255,255,255,.04);
-  font-size: 12px;
-  align-items: center;
-}
-.fin-row.total-row {
-  border-top: 1px solid var(--line2);
-  border-bottom: 2px solid var(--line2);
-  background: var(--lift);
-  font-weight: 700;
-  font-size: 13px;
-}
-.fin-row.subtotal { background: rgba(255,255,255,.02); font-weight: 600; }
-.fin-row.indent   { padding-left: 36px; color:var(--ink3); }
-.fin-col-hdr { font-family:var(--font-m); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink4); text-align:right; }
-.fin-num { font-family:var(--font-m); text-align:right; }
-.fin-num.pos { color:var(--positive); }
-.fin-num.neg { color:var(--gold); }
-.fin-num.red { color:var(--negative); }
-.kpi-cluster { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; }
-.kpi-sm { background:var(--float); border:1px solid var(--line); border-radius:var(--r-md); padding:14px 16px; }
-.kpi-sm-lbl { font-size:9px; font-family:var(--font-m); letter-spacing:.12em; text-transform:uppercase; color:var(--ink4); margin-bottom:4px; }
-.kpi-sm-val { font-size:20px; font-weight:700; }
-.kpi-sm-sub { font-size:10px; color:var(--ink4); margin-top:2px; }
-
-
-/* ═══════════════════════════════════════════════════════════════
-   TYPOGRAPHY SYSTEM — Forge lean_4.1  Professional Edition
-   Font pairing: Cormorant Garamond (display) / Inter (UI) / JetBrains Mono (code)
-   Scale: major-third @ 15px base
-   Principle: extreme optical contrast between display and body weights
-═══════════════════════════════════════════════════════════════ */
-
-/* Display numbers — use sparingly, ultra-light Cormorant */
-.display-num {
-  font-family: var(--font-d);
-  font-size: 52px;
-  font-weight: 300;
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-.display-num-sm {
-  font-family: var(--font-d);
-  font-size: 38px;
-  font-weight: 300;
-  letter-spacing: -0.025em;
-  line-height: 1;
-}
-
-/* Eyebrow / section labels — Inter 600, spaced */
-.eyebrow, .chart-section-lbl {
-  font-family: var(--font-ui);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: .20em;
-  text-transform: uppercase;
-  color: var(--ink4);
-  margin-bottom: 8px;
-}
-
-/* Body copy — comfortable reading */
-p, .body-copy {
-  font-size: 15px;
-  line-height: 1.7;
-  color: var(--ink2);
-  font-weight: 400;
-}
-
-/* Caption / metadata text */
-.caption, .meta {
-  font-size: 12px;
-  color: var(--ink4);
-  font-family: var(--font-ui);
-  font-weight: 400;
-  line-height: 1.5;
-}
-
-/* Mono values — numbers in tables, dates */
-.mono-val {
-  font-family: var(--font-m);
-  font-size: 13.5px;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  font-variant-numeric: tabular-nums;
-}
-
-/* KPI delta badges — Inter 500 */
-.kpi-delta {
-  font-size: 12.5px !important;
-  font-family: var(--font-ui) !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.01em;
-}
-
-/* Section header (not page title) */
-.section-heading {
-  font-family: var(--font-ui);
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ink);
-  letter-spacing: -0.01em;
-  line-height: 1.3;
-}
-
-/* Page header sub labels */
-.page-hdr .page-sub { margin-bottom: 0; }
-
-/* Upload/import page */
-.upload-label {
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--ink);
-  letter-spacing: -0.01em;
-}
-.upload-sub {
-  font-size: 14px;
-  color: var(--ink4);
-  font-weight: 400;
-}
-
-/* Scrollbar */
+/* ── Scrollbar global ───────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--ink4); }
 
-/* Font feature defaults */
-h1, h2, h3, .kpi-val, .display-num {
-  font-feature-settings: 'kern' 1, 'ss01' 1;
-}
-.mono-val, td.num, .td-num {
-  font-variant-numeric: tabular-nums;
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  nav { display: none; }
+  .kpi-grid, .kpi-cluster { grid-template-columns: repeat(2,1fr); }
+  .chart-grid-2 { grid-template-columns: 1fr; }
+  .fin-row { grid-template-columns: 1fr 90px 90px; }
+  .fin-row .fin-col-hdr:nth-child(4) { display: none; }
+  .fin-row > *:nth-child(4) { display: none; }
 }
 
-/* Smooth transitions on interactive text */
-.nav-item, .btn, .rtab { transition: color 0.15s ease, opacity 0.15s ease; }
-
-/* Import page hero text */
-.pour-hero-title {
-  font-family: var(--font-d);
-  font-size: 44px;
-  font-weight: 300;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-  line-height: 1.05;
-}
+/* ── Data table wrap ────────────────────────────────────────── */
+.data-table-wrap { }
 
 </style>
 </head>
@@ -6264,186 +6245,94 @@ function renderIncomeStatement() {
   out += '</div>';
 
 
-  // ── Main summary tiles (always shown) ──────────────────────────────────────
-  out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;">';
+  // ── Summary header — compact professional tiles ──────────────────────────────
+  const _netColor   = projNet >= 0 ? 'var(--positive)' : 'var(--negative)';
+  const _savColor   = displaySavPct >= 20 ? 'var(--positive)' : displaySavPct >= 10 ? 'var(--gold)' : 'var(--negative)';
 
-  // ── Tile 1: Income ─────────────────────────────────────────────────────────
-  const incomeLabel = isInFlightMonth ? 'Gross Income · MTD' : 'Gross Income';
-  const incomeSub   = isInFlightMonth ? 'actual payroll received' : 'total household income';
-  out += '<div style="background:var(--float);border:1px solid rgba(45,212,191,.25);border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;">';
-  out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--positive);border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">' + incomeLabel + '</div>';
-  out += '<div style="font-size:32px;font-weight:700;color:var(--positive);line-height:1;font-family:var(--font-d);">' + fmt(totalIncome) + '</div>';
-  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">' + incomeSub + '</div>';
-  if (autoSave > 0) {
-    out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">−' + fmt(autoSave) + ' auto-saved → <strong style="color:var(--river);">' + fmt(checkingIn) + '</strong> to deploy</div>';
+  // ── 4-tile summary row ─────────────────────────────────────────────────────
+  out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">';
+
+  // Tile helper
+  function tile(label, value, sub, accentColor, borderOpacity) {
+    const bop = borderOpacity || '.2';
+    return '<div style="background:var(--float);border:1px solid ' + accentColor.replace(')',','+bop+')').replace('var(','rgba(0,0,0,') + ';border:1px solid rgba(255,255,255,.06);border-radius:var(--r-lg);padding:14px 16px;border-top:2px solid ' + accentColor + ';">'
+      + '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.13em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">' + label + '</div>'
+      + '<div style="font-size:24px;font-family:var(--font-d);font-weight:300;color:' + accentColor + ';line-height:1;letter-spacing:-.01em;margin-bottom:4px;">' + value + '</div>'
+      + '<div style="font-size:10px;color:var(--ink4);line-height:1.5;">' + sub + '</div>'
+      + '</div>';
   }
+
+  // Tile 1: Income
+  const incomeSub = isInFlightMonth
+    ? 'payroll received' + (autoSave > 0 ? ' · <span style="color:var(--river);">' + fmt(checkingIn) + '</span> deployable' : '')
+    : 'total household income';
+  out += '<div style="background:var(--float);border-radius:var(--r-lg);padding:14px 16px;border-top:2px solid var(--positive);border:1px solid rgba(255,255,255,.06);">';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.13em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">' + (isInFlightMonth ? 'Income · MTD' : 'Gross Income') + '</div>';
+  out += '<div style="font-size:24px;font-family:var(--font-d);font-weight:300;color:var(--positive);line-height:1;letter-spacing:-.01em;margin-bottom:4px;">' + fmt(totalIncome) + '</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);">' + incomeSub + '</div>';
   out += '</div>';
 
-  // ── Tile 2: Fixed / Committed Expenses ─────────────────────────────────────
-  let fixedCommitted, fixedSubText, fixedColor;
-  if (isInFlightMonth && projBreakdown) {
-    fixedCommitted = projBreakdown.fixedActual + projBreakdown.fixedProjected;
-    const paidPart = projBreakdown.fixedActual > 0 ? fmt(projBreakdown.fixedActual) + ' paid' : '';
-    const duePart  = projBreakdown.fixedProjected > 0
-      ? fmt(projBreakdown.fixedProjected) + ' still due'
-      : (paidPart ? 'all bills charged ✓' : '');
-    fixedSubText = [paidPart, duePart].filter(Boolean).join(' · ') || 'mortgage · loans · utilities';
-    fixedColor   = projBreakdown.fixedProjected > 0 ? 'rgba(248,113,113,.18)' : 'rgba(45,212,191,.15)';
-
-    // Bills still due — show top 3 inline
-    if (projBreakdown.fixedDueItems && projBreakdown.fixedDueItems.length) {
-      fixedSubText += '<div style="margin-top:5px;font-size:9px;color:var(--negative);">';
-      fixedSubText += projBreakdown.fixedDueItems.slice(0,3)
-        .map(i => i.label.split(' ')[0] + ' ' + fmt(i.amount)).join(' · ');
-      fixedSubText += '</div>';
-    }
-  } else {
-    fixedCommitted = sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+
-      sec.buckets.filter(bk=>['mortgage','car','insurance','education','childcare',
-        'electric','gas_util','water','internet','cell','subscriptions'].includes(bk))
-      .reduce((ss,bk)=>ss+(sec.bucketData[bk]?.total||0),0),0);
-    fixedSubText = 'mortgage · loans · utilities · subs';
-    fixedColor = 'rgba(248,113,113,.2)';
-  }
-  out += '<div style="background:var(--float);border:1px solid ' + fixedColor + ';border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;">';
-  out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--negative);opacity:.6;border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Fixed Expenses' + (isInFlightMonth ? ' · Full Month' : '') + '</div>';
-  out += '<div style="font-size:32px;font-weight:700;color:var(--negative);line-height:1;font-family:var(--font-d);">' + fmt(fixedCommitted) + '</div>';
-  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">' + fixedSubText + '</div>';
+  // Tile 2: Fixed Expenses
+  const fixedTotal = isInFlightMonth && projBreakdown
+    ? projBreakdown.fixedActual + projBreakdown.fixedProjected
+    : sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.buckets
+        .filter(bk=>['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','cell','subscriptions'].includes(bk))
+        .reduce((ss,bk)=>ss+(sec.bucketData[bk]?.total||0),0),0);
+  const fixedSub = isInFlightMonth && projBreakdown
+    ? (projBreakdown.fixedActual>0 ? fmt(projBreakdown.fixedActual)+' paid' : '') + (projBreakdown.fixedProjected>0 ? (projBreakdown.fixedActual>0?' · ':'')+fmt(projBreakdown.fixedProjected)+' due' : projBreakdown.fixedActual>0?' · all charged ✓':'mortgage · bills · subs')
+    : 'mortgage · loans · utilities · subs';
+  out += '<div style="background:var(--float);border-radius:var(--r-lg);padding:14px 16px;border-top:2px solid var(--negative);border:1px solid rgba(255,255,255,.06);">';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.13em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">' + (isInFlightMonth ? 'Fixed · Full Month' : 'Fixed Expenses') + '</div>';
+  out += '<div style="font-size:24px;font-family:var(--font-d);font-weight:300;color:var(--negative);line-height:1;letter-spacing:-.01em;margin-bottom:4px;">' + fmt(fixedTotal) + '</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);">' + fixedSub + '</div>';
   out += '</div>';
 
-  // ── Tile 3: Variable / Discretionary Expenses ──────────────────────────────
-  let varSpend, varSubText, varColor;
-  if (isInFlightMonth && projBreakdown) {
-    varSpend = projBreakdown.variableActual + projBreakdown.variableProjected;
-    const pace = daysElapsed > 0 && projBreakdown.variableActual > 0
-      ? fmt(projBreakdown.variableActual / daysElapsed) + '/day pace'
-      : '';
-    const remaining = projBreakdown.variableProjected > 0
-      ? '+ ' + fmt(projBreakdown.variableProjected) + ' next ' + daysRemaining + 'd'
-      : '';
-    const remainingBudget = checkingIn - fixedCommitted;
-    const varOver = varSpend > remainingBudget;
-    varSubText = [pace, remaining].filter(Boolean).join(' · ') || 'groceries · dining · entertainment';
-    varColor   = varOver ? 'rgba(248,113,113,.15)' : 'rgba(245,168,0,.15)';
-
-    // Top variable items
-    if (projBreakdown.varPaceItems && projBreakdown.varPaceItems.length) {
-      varSubText += '<div style="margin-top:5px;font-size:9px;color:var(--gold);">';
-      varSubText += projBreakdown.varPaceItems.slice(0,3)
-        .map(i => i.label.split(' ')[0] + ' ' + fmt(i.projected)).join(' · ');
-      varSubText += '</div>';
-    }
-  } else {
-    varSpend = sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+
-      sec.buckets.filter(bk=>['restaurants','groceries','gas_car','transit','healthcare',
-        'entertainment','household','personal','clothing','travel','gifts','other'].includes(bk))
-      .reduce((ss,bk)=>ss+(sec.bucketData[bk]?.total||0),0),0);
-    varSubText = 'dining · groceries · entertainment · household';
-    varColor = 'rgba(245,168,0,.15)';
-  }
-  out += '<div style="background:var(--float);border:1px solid ' + varColor + ';border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;">';
-  out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold);opacity:.7;border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Variable Expenses' + (isInFlightMonth ? ' · Proj.' : '') + '</div>';
-  out += '<div style="font-size:32px;font-weight:700;color:var(--gold);line-height:1;font-family:var(--font-d);">' + fmt(varSpend) + '</div>';
-  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">' + varSubText + '</div>';
+  // Tile 3: Variable Expenses
+  const varTotal = isInFlightMonth && projBreakdown
+    ? projBreakdown.variableActual + projBreakdown.variableProjected
+    : sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.buckets
+        .filter(bk=>['restaurants','groceries','gas_car','transit','healthcare','entertainment','household','personal','clothing','travel','gifts','other'].includes(bk))
+        .reduce((ss,bk)=>ss+(sec.bucketData[bk]?.total||0),0),0);
+  const varSub = isInFlightMonth && projBreakdown && daysElapsed > 0
+    ? fmt(projBreakdown.variableActual/daysElapsed)+'/day · +'+fmt(projBreakdown.variableProjected)+' next '+daysRemaining+'d'
+    : 'dining · groceries · entertainment';
+  out += '<div style="background:var(--float);border-radius:var(--r-lg);padding:14px 16px;border-top:2px solid var(--gold);border:1px solid rgba(255,255,255,.06);">';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.13em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">' + (isInFlightMonth ? 'Variable · Proj.' : 'Variable Expenses') + '</div>';
+  out += '<div style="font-size:24px;font-family:var(--font-d);font-weight:300;color:var(--gold);line-height:1;letter-spacing:-.01em;margin-bottom:4px;">' + fmt(varTotal) + '</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);">' + varSub + '</div>';
   out += '</div>';
 
-  // ── Tile 4: Net to Savings ─────────────────────────────────────────────────
-  const displayNet    = isInFlightMonth ? projNet : netSurplus;
-  const displayNetLbl = isInFlightMonth ? 'Proj. Net to Savings' : 'Net Surplus / Deficit';
-  const displaySavPct = isInFlightMonth
-    ? (totalIncome > 0 ? ((autoSave + Math.max(0, projNet)) / totalIncome * 100) : 0)
-    : savingsPct;
-  const netCol = displayNet >= 0 ? 'var(--positive)' : 'var(--negative)';
-  out += '<div style="background:var(--float);border:1px solid ' + (displayNet>=0?'rgba(45,212,191,.2)':'rgba(248,113,113,.2)') + ';border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;">';
-  out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:' + netCol + ';border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">' + displayNetLbl + '</div>';
-  out += '<div style="font-size:32px;font-weight:700;color:' + netCol + ';line-height:1;font-family:var(--font-d);">' + (displayNet>=0?'+':'') + fmt(displayNet) + '</div>';
-  out += '<div style="font-size:10px;color:var(--ink4);margin-top:4px;">save rate: <strong style="color:' + (displaySavPct>=20?'var(--positive)':displaySavPct>=10?'var(--gold)':'var(--negative)') + ';">' + displaySavPct.toFixed(1) + '%</strong> · target 20%</div>';
-  if (isInFlightMonth) {
-    out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">' + daysElapsed + 'd actual + ' + daysRemaining + 'd projected</div>';
-  }
+  // Tile 4: Net to Savings
+  const displayNet = isInFlightMonth ? projNet : netSurplus;
+  out += '<div style="background:var(--float);border-radius:var(--r-lg);padding:14px 16px;border-top:2px solid ' + _netColor + ';border:1px solid rgba(255,255,255,.06);">';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.13em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">' + (isInFlightMonth ? 'Proj. Net' : 'Net Surplus') + '</div>';
+  out += '<div style="font-size:24px;font-family:var(--font-d);font-weight:300;color:' + _netColor + ';line-height:1;letter-spacing:-.01em;margin-bottom:4px;">' + (displayNet>=0?'+':'') + fmt(displayNet) + '</div>';
+  out += '<div style="font-size:10px;color:' + _savColor + ';">' + displaySavPct.toFixed(1) + '% save rate · target 20%' + (isInFlightMonth ? ' · '+daysElapsed+'d+'+daysRemaining+'d' : '') + '</div>';
   out += '</div>';
   out += '</div>'; // end 4-tile grid
 
-  // ── On-pace narrative banner (in-flight only) ──────────────────────────────
+  // ── On-pace verdict (in-flight only) — compact single line ─────────────────
   if (isInFlightMonth && projBreakdown) {
-    const totalFixed  = projBreakdown.fixedActual + projBreakdown.fixedProjected;
-    const totalVar    = projBreakdown.variableActual + projBreakdown.variableProjected;
-    const totalProj   = totalFixed + totalVar;
-    const budgetLeft  = checkingIn - totalProj;
-    const blColor     = budgetLeft >= 0 ? 'var(--positive)' : 'var(--negative)';
-    const pctOfMonth  = Math.round(daysElapsed / daysInMonth * 100);
+    const budgetLeft = checkingIn - (projBreakdown.fixedActual + projBreakdown.fixedProjected + projBreakdown.variableActual + projBreakdown.variableProjected);
+    let verdict, vIcon;
+    if (projNet >= 0 && displaySavPct >= 20) { verdict = 'On pace for 20%+ savings'; vIcon = '🎯'; }
+    else if (projNet >= 0 && displaySavPct >= 10) { verdict = 'Positive month — savings below 20% target'; vIcon = '📈'; }
+    else if (projNet >= 0) { verdict = 'Break-even pace — reduce variable spending to save'; vIcon = '⚖'; }
+    else { verdict = 'Deficit pace ' + fmt(Math.abs(projNet)) + ' — tighten variable spending'; vIcon = '⚠'; }
 
-    // Plain-English verdict
-    let verdict, verdictColor;
-    if (projNet >= 0 && displaySavPct >= 20) {
-      verdict = '🎯 On pace to hit 20%+ savings this month.';
-      verdictColor = 'var(--positive)';
-    } else if (projNet >= 0 && displaySavPct >= 10) {
-      verdict = '📈 On pace for a positive month — savings below target.';
-      verdictColor = 'var(--gold)';
-    } else if (projNet >= 0) {
-      verdict = '⚖ On pace to break even — tighten variable spending to save.';
-      verdictColor = 'var(--gold)';
-    } else {
-      verdict = '⚠ On pace to run a deficit of ' + fmt(Math.abs(projNet)) + ' — reduce variable spending.';
-      verdictColor = 'var(--negative)';
-    }
-
-    out += '<div style="background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.2);border-radius:var(--r-lg);padding:14px 18px;margin-bottom:10px;">';
-
-    // Verdict row
-    out += '<div style="font-size:12px;font-weight:600;color:' + verdictColor + ';margin-bottom:10px;">' + verdict + '</div>';
-
-    // 5-col breakdown strip
-    out += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:10px;">';
+    out += '<div style="display:flex;align-items:center;gap:16px;padding:10px 14px;background:rgba(96,165,250,.04);border:1px solid rgba(96,165,250,.15);border-radius:var(--r-md);margin-bottom:12px;flex-wrap:wrap;">';
+    out += '<span style="font-size:12px;font-weight:600;color:' + _netColor + ';">' + vIcon + ' ' + verdict + '</span>';
+    out += '<div style="display:flex;gap:16px;flex-wrap:wrap;">';
     [
-      ['Fixed Paid',       fmt(projBreakdown.fixedActual),    'var(--ink3)',     'already charged'],
-      ['Fixed Still Due',  fmt(projBreakdown.fixedProjected), 'var(--negative)', 'known bills coming'],
-      ['Var. Spent',       fmt(projBreakdown.variableActual), 'var(--gold)',     daysElapsed + 'd of ' + daysInMonth + 'd (' + pctOfMonth + '%)'],
-      ['Var. Projected',   fmt(projBreakdown.variableProjected), 'var(--river)', 'next ' + daysRemaining + 'd at pace'],
-      ['Budget Remaining', fmt(Math.abs(budgetLeft)),         blColor,          budgetLeft >= 0 ? 'after all projections' : 'OVER BUDGET'],
-    ].forEach(([l,v,c,s]) => {
-      out += '<div>';
-      out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + l + '</div>';
-      out += '<div style="font-size:16px;font-weight:700;color:' + c + ';font-family:var(--font-d);">' + v + '</div>';
-      out += '<div style="font-size:9px;color:var(--ink4);">' + s + '</div>';
-      out += '</div>';
+      ['Fixed paid', fmt(projBreakdown.fixedActual), 'var(--ink3)'],
+      ['Fixed due',  fmt(projBreakdown.fixedProjected), projBreakdown.fixedProjected>0?'var(--negative)':'var(--ink4)'],
+      ['Var spent',  fmt(projBreakdown.variableActual), 'var(--gold)'],
+      ['Var next '+daysRemaining+'d', fmt(projBreakdown.variableProjected), 'var(--river)'],
+      ['Budget left', (budgetLeft>=0?'+':'')+fmt(budgetLeft), budgetLeft>=0?'var(--positive)':'var(--negative)'],
+    ].forEach(function(row) {
+      out += '<div style="font-size:10px;"><span style="color:var(--ink4);">' + row[0] + ': </span><span style="font-family:var(--font-m);font-weight:600;color:' + row[2] + ';">' + row[1] + '</span></div>';
     });
-    out += '</div>';
-
-    // Accrual method note
-    if (projBreakdown.fixedDueItems.length || projBreakdown.varPaceItems.length) {
-      out += '<div style="font-size:10px;color:var(--ink4);border-top:1px solid rgba(255,255,255,.05);padding-top:8px;line-height:1.8;">';
-      if (projBreakdown.fixedDueItems.length) {
-        out += '<strong style="color:var(--ink3);">Fixed bills expected: </strong>';
-        out += projBreakdown.fixedDueItems.map(i => i.label.split(' ')[0] + ' ' + fmt(i.amount)).join(', ');
-        out += ' — using prior 3-month median per payee.<br>';
-      }
-      if (projBreakdown.varPaceItems.length) {
-        out += '<strong style="color:var(--ink3);">Variable projected: </strong>';
-        out += projBreakdown.varPaceItems.map(i => i.label.split(' ')[0] + ' ' + fmt(i.dailyRate) + '/day').join(', ');
-        out += ' — using 3-month daily run rate × ' + daysRemaining + ' days remaining.';
-      }
-      out += '</div>';
-    }
-    out += '</div>';
-  }
-
-  // ── Savings insight bar ─────────────────────────────────────────────────────
-  if (autoSave > 0) {
-    const shortfall = isInFlightMonth ? (totalProjectedExp > checkingIn) : (totalExp > checkingIn);
-    const expAmt    = isInFlightMonth ? totalProjectedExp : totalExp;
-    out += '<div style="background:' + (shortfall?'rgba(248,113,113,.05)':'rgba(52,211,153,.04)') + ';border:1px solid ' + (shortfall?'rgba(248,113,113,.18)':'rgba(52,211,153,.18)') + ';border-radius:var(--r-md);padding:11px 16px;margin-bottom:8px;font-size:12px;color:var(--ink3);line-height:1.7;">';
-    out += (shortfall?'⚠':'💡') + ' <strong style="color:' + (shortfall?'var(--negative)':'#34D399') + ';">' + (shortfall?'Projected over budget:':'Savings plan intact:') + '</strong> ';
-    out += fmt(autoSave) + ' auto-saved before spending. Available budget: <strong style="color:var(--ink);">' + fmt(checkingIn) + '</strong>. ';
-    out += (isInFlightMonth ? 'Projected total spend: ' : 'Total expenses: ') + '<strong style="color:' + (shortfall?'var(--negative)':'var(--ink)') + ';">' + fmt(expAmt) + '</strong>';
-    if (shortfall) out += ' — <strong style="color:var(--negative);">' + fmt(expAmt - checkingIn) + '</strong> over budget.';
-    else out += ' — <strong style="color:var(--positive);">' + fmt(checkingIn - expAmt) + '</strong> buffer.';
-    out += '</div>';
+    out += '</div></div>';
   }
 
     // ── P&L waterfall table ─────────────────────────────────────────
