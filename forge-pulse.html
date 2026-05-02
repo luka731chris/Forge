@@ -87,8 +87,8 @@
 html { height: 100%; overflow: hidden; }
 
 body {
-  font-family: var(--font-ui);
-  font-size: 14px;
+  font-family: var(--fu);
+  font-size: 13px;
   font-weight: 400;
   line-height: 1.55;
   color: var(--ink);
@@ -161,7 +161,7 @@ body {
   background: transparent;
   color: var(--ink4);
   cursor: pointer;
-  font-family: var(--font-ui);
+  font-family: var(--fu);
   font-size: 10px;
   font-weight: 500;
   letter-spacing: .03em;
@@ -199,7 +199,7 @@ body {
   background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
 }
 .pg-title {
-  font-family: var(--font-d);
+  font-family: var(--fd);
   font-size: 28px;
   font-weight: 400;
   color: var(--ink);
@@ -210,7 +210,7 @@ body {
   font-size: 11px;
   color: var(--ink4);
   margin-top: 3px;
-  font-family: var(--font-m);
+  font-family: var(--fm);
   letter-spacing: .05em;
 }
 
@@ -234,7 +234,7 @@ body {
   background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
 }
 .hero-eyebrow {
-  font-family: var(--font-m);
+  font-family: var(--fm);
   font-size: 9px;
   letter-spacing: .22em;
   text-transform: uppercase;
@@ -243,7 +243,7 @@ body {
   position: relative; z-index: 1;
 }
 .hero-net {
-  font-family: var(--font-d);
+  font-family: var(--fd);
   font-size: 60px;
   font-weight: 300;
   line-height: 1;
@@ -271,7 +271,7 @@ body {
   font-size: 11.5px;
   font-weight: 500;
   border: 1px solid;
-  font-family: var(--font-ui);
+  font-family: var(--fu);
   letter-spacing: .01em;
 }
 .chip-gold  { background: var(--gold-dim); color: var(--gold);     border-color: var(--gold-line); }
@@ -289,7 +289,7 @@ body {
 
 /* ── Section Label ─────────────────────────────────────────── */
 .sec-lbl {
-  font-family: var(--font-m);
+  font-family: var(--fm);
   font-size: 9px;
   letter-spacing: .20em;
   text-transform: uppercase;
@@ -322,7 +322,7 @@ body {
 }
 .kpi-card.gborder { border-color: var(--gold-line); }
 .kpi-lbl {
-  font-family: var(--font-m);
+  font-family: var(--fm);
   font-size: 9px;
   letter-spacing: .14em;
   text-transform: uppercase;
@@ -330,7 +330,7 @@ body {
   margin-bottom: 8px;
 }
 .kpi-val {
-  font-family: var(--font-d);
+  font-family: var(--fd);
   font-size: 26px;
   font-weight: 300;
   color: var(--ink);
@@ -338,8 +338,8 @@ body {
   margin-bottom: 4px;
   letter-spacing: -.01em;
 }
-.kpi-sub   { font-size: 11px; color: var(--ink4); font-family: var(--font-ui); }
-.kpi-delta { font-size: 11.5px; font-weight: 500; margin-top: 4px; font-family: var(--font-ui); }
+.kpi-sub   { font-size: 11px; color: var(--ink4); font-family: var(--fu); }
+.kpi-delta { font-size: 11.5px; font-weight: 500; margin-top: 4px; font-family: var(--fu); }
 .up  { color: var(--negative); }
 .dn  { color: var(--positive); }
 .pos { color: var(--positive); }
@@ -364,7 +364,7 @@ body {
 .ring-svg   { width: 60px; height: 60px; margin: 0 auto 8px; }
 .ring-bg    { fill: none; stroke: #1c1c1c; stroke-width: 7; }
 .ring-fill  { fill: none; stroke-width: 7; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s var(--ease); }
-.ring-pct   { font-family: var(--font-d); font-size: 13px; fill: var(--ink); font-weight: 600; }
+.ring-pct   { font-family: var(--fd); font-size: 13px; fill: var(--ink); font-weight: 600; }
 .ring-name  { font-size: 10px; font-weight: 500; color: var(--ink4); line-height: 1.4; }
 
 /* ── Category Rows ─────────────────────────────────────────── */
@@ -378,11 +378,11 @@ body {
 .cat-row:last-child { border-bottom: none; }
 .cat-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .cat-info { flex: 1; min-width: 0; }
-.cat-name { font-weight: 500; font-size: 13.5px; color: var(--ink); font-family: var(--font-ui); }
+.cat-name { font-weight: 500; font-size: 13.5px; color: var(--ink); font-family: var(--fu); }
 .cat-pct  { font-size: 11px; color: var(--ink4); margin-top: 1px; }
 .cat-bar-bg   { height: 3px; background: var(--line2); border-radius: 2px; overflow: hidden; flex: 1; max-width: 72px; }
 .cat-bar-fill { height: 100%; border-radius: 2px; transition: width .5s var(--ease); }
-.cat-amt  { font-family: var(--font-m); font-size: 12.5px; font-weight: 500; color: var(--ink); text-align: right; flex-shrink: 0; min-width: 68px; }
+.cat-amt  { font-family: var(--fm); font-size: 12.5px; font-weight: 500; color: var(--ink); text-align: right; flex-shrink: 0; min-width: 68px; }
 
 /* ── Life Stage Banner ─────────────────────────────────────── */
 .life-stage-banner {
@@ -412,8 +412,8 @@ body {
 .a-ls     { background: rgba(167,139,250,.05); border-color: rgba(167,139,250,.16); }
 .alert-emoji   { font-size: 20px; flex-shrink: 0; line-height: 1.2; }
 .alert-content { flex: 1; min-width: 0; }
-.alert-title   { font-weight: 600; font-size: 13px; color: var(--ink); margin-bottom: 4px; line-height: 1.35; font-family: var(--font-ui); }
-.alert-body    { font-size: 12.5px; color: var(--ink2); line-height: 1.6; font-family: var(--font-ui); }
+.alert-title   { font-weight: 600; font-size: 13px; color: var(--ink); margin-bottom: 4px; line-height: 1.35; font-family: var(--fu); }
+.alert-body    { font-size: 12.5px; color: var(--ink2); line-height: 1.6; font-family: var(--fu); }
 .alert-action  { margin-top: 7px; font-size: 11.5px; font-weight: 500; color: var(--river); }
 
 /* ── Net Worth (Amz tab) ───────────────────────────────────── */
@@ -422,29 +422,29 @@ body {
   padding: 20px 20px 18px;
   border-bottom: 1px solid var(--line);
 }
-.amz-eyebrow { font-family: var(--font-m); font-size: 9px; letter-spacing: .20em; text-transform: uppercase; color: var(--ink4); margin-bottom: 5px; }
-.amz-title { font-family: var(--font-d); font-size: 28px; font-weight: 400; color: var(--ink); letter-spacing: -.01em; }
-.amz-big { font-family: var(--font-d); font-size: 42px; font-weight: 300; color: var(--positive); margin: 6px 0 3px; letter-spacing: -.02em; }
+.amz-eyebrow { font-family: var(--fm); font-size: 9px; letter-spacing: .20em; text-transform: uppercase; color: var(--ink4); margin-bottom: 5px; }
+.amz-title { font-family: var(--fd); font-size: 28px; font-weight: 400; color: var(--ink); letter-spacing: -.01em; }
+.amz-big { font-family: var(--fd); font-size: 42px; font-weight: 300; color: var(--positive); margin: 6px 0 3px; letter-spacing: -.02em; }
 .amz-big-sub { font-size: 11px; color: var(--ink4); }
 .amz-stats { display: flex; gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--line); }
 .amz-stat { flex: 1; background: var(--float); border-radius: var(--r-md); padding: 11px 12px; border: 1px solid var(--line); }
-.amz-stat-lbl { font-family: var(--font-m); font-size: 9px; letter-spacing: .13em; text-transform: uppercase; color: var(--ink4); margin-bottom: 4px; }
-.amz-stat-val { font-family: var(--font-d); font-size: 20px; font-weight: 300; color: var(--ink); letter-spacing: -.01em; }
+.amz-stat-lbl { font-family: var(--fm); font-size: 9px; letter-spacing: .13em; text-transform: uppercase; color: var(--ink4); margin-bottom: 4px; }
+.amz-stat-val { font-family: var(--fd); font-size: 20px; font-weight: 300; color: var(--ink); letter-spacing: -.01em; }
 .amz-filters { display: flex; gap: 8px; padding: 11px 20px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); }
 .amz-filters::-webkit-scrollbar { display: none; }
-.f-pill { flex-shrink: 0; padding: 6px 14px; border-radius: var(--r-sm); font-size: 11.5px; font-weight: 500; border: 1px solid var(--line2); background: var(--float); color: var(--ink4); cursor: pointer; white-space: nowrap; transition: all .13s; font-family: var(--font-ui); }
+.f-pill { flex-shrink: 0; padding: 6px 14px; border-radius: var(--r-sm); font-size: 11.5px; font-weight: 500; border: 1px solid var(--line2); background: var(--float); color: var(--ink4); cursor: pointer; white-space: nowrap; transition: all .13s; font-family: var(--fu); }
 .f-pill.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
 .amz-item { padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,.03); display: flex; gap: 12px; }
 .amz-item:last-child { border-bottom: none; }
 .amz-icon { width: 38px; height: 38px; border-radius: var(--r-sm); background: rgba(45,212,191,.07); border: 1px solid rgba(45,212,191,.14); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
 .amz-info { flex: 1; min-width: 0; }
-.amz-item-title { font-weight: 500; font-size: 13px; color: var(--ink); line-height: 1.4; margin-bottom: 5px; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; font-family: var(--font-ui); }
+.amz-item-title { font-weight: 500; font-size: 13px; color: var(--ink); line-height: 1.4; margin-bottom: 5px; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; font-family: var(--fu); }
 .amz-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-.amz-date { font-size: 10.5px; color: var(--ink4); font-family: var(--font-m); }
-.amz-cat  { font-size: 9.5px; padding: 2px 7px; border-radius: 12px; background: rgba(96,165,250,.08); color: var(--river); font-family: var(--font-m); }
-.imp-hi   { background: rgba(248,113,113,.1); color: var(--negative); font-size: 9.5px; font-weight: 500; padding: 2px 7px; border-radius: 12px; font-family: var(--font-m); }
-.imp-md   { background: var(--gold-dim); color: var(--gold); font-size: 9.5px; font-weight: 500; padding: 2px 7px; border-radius: 12px; font-family: var(--font-m); }
-.amz-price { font-family: var(--font-m); font-size: 14px; font-weight: 500; color: var(--positive); margin-left: auto; flex-shrink: 0; }
+.amz-date { font-size: 10.5px; color: var(--ink4); font-family: var(--fm); }
+.amz-cat  { font-size: 9.5px; padding: 2px 7px; border-radius: 12px; background: rgba(96,165,250,.08); color: var(--river); font-family: var(--fm); }
+.imp-hi   { background: rgba(248,113,113,.1); color: var(--negative); font-size: 9.5px; font-weight: 500; padding: 2px 7px; border-radius: 12px; font-family: var(--fm); }
+.imp-md   { background: var(--gold-dim); color: var(--gold); font-size: 9.5px; font-weight: 500; padding: 2px 7px; border-radius: 12px; font-family: var(--fm); }
+.amz-price { font-family: var(--fm); font-size: 14px; font-weight: 500; color: var(--positive); margin-left: auto; flex-shrink: 0; }
 
 /* ── Analytics Cards ───────────────────────────────────────── */
 .p-ana-card {
@@ -456,7 +456,7 @@ body {
 }
 .p-ana-header {
   font-size: 9px;
-  font-family: var(--font-m);
+  font-family: var(--fm);
   letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--ink4);
@@ -472,15 +472,15 @@ body {
 .p-dim-chip {
   font-size: 10.5px; padding: 5px 10px; border-radius: 16px;
   border: 1px solid var(--line2); background: var(--lift);
-  color: var(--ink4); cursor: pointer; font-family: var(--font-m);
+  color: var(--ink4); cursor: pointer; font-family: var(--fm);
   transition: all .13s;
 }
 .p-dim-chip.active { background: var(--gold); color: #000; border-color: var(--gold); }
 .p-ana-canvas-wrap { position: relative; height: 180px; }
 .p-insight-row { display: flex; gap: 8px; margin-top: 10px; }
 .p-insight { flex: 1; background: var(--lift); border-radius: var(--r-sm); padding: 8px 10px; text-align: center; }
-.p-insight-lbl { font-size: 9px; color: var(--ink4); font-family: var(--font-m); letter-spacing: .08em; text-transform: uppercase; }
-.p-insight-val { font-size: 15px; font-weight: 300; font-family: var(--font-d); color: var(--ink); margin-top: 2px; }
+.p-insight-lbl { font-size: 9px; color: var(--ink4); font-family: var(--fm); letter-spacing: .08em; text-transform: uppercase; }
+.p-insight-val { font-size: 15px; font-weight: 300; font-family: var(--fd); color: var(--ink); margin-top: 2px; }
 
 /* ── Chat ──────────────────────────────────────────────────── */
 .chat-wrap { display: flex; flex-direction: column; height: 100%; }
@@ -496,20 +496,20 @@ body {
   content: ''; position: absolute; bottom: -1px; left: 20px; right: 20px; height: 1px;
   background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
 }
-.chat-title { font-family: var(--font-d); font-size: 28px; font-weight: 400; color: var(--ink); letter-spacing: -.01em; }
-.chat-sub   { font-size: 10.5px; color: var(--ink4); margin-top: 2px; font-family: var(--font-m); letter-spacing: .05em; }
+.chat-title { font-family: var(--fd); font-size: 28px; font-weight: 400; color: var(--ink); letter-spacing: -.01em; }
+.chat-sub   { font-size: 10.5px; color: var(--ink4); margin-top: 2px; font-family: var(--fm); letter-spacing: .05em; }
 .chat-status { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
 .status-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--positive); box-shadow: 0 0 6px var(--positive); }
-.status-txt  { font-size: 10.5px; color: var(--positive); font-weight: 500; font-family: var(--font-m); letter-spacing: .04em; }
+.status-txt  { font-size: 10.5px; color: var(--positive); font-weight: 500; font-family: var(--fm); letter-spacing: .04em; }
 .chat-msgs {
   flex: 1; overflow-y: auto; padding: 16px 16px 8px;
   display: flex; flex-direction: column; gap: 12px;
   -webkit-overflow-scrolling: touch; min-height: 0;
 }
-.bubble { max-width: 86%; border-radius: var(--r-lg); padding: 12px 16px; font-size: 13.5px; line-height: 1.6; font-family: var(--font-ui); }
+.bubble { max-width: 86%; border-radius: var(--r-lg); padding: 12px 16px; font-size: 13.5px; line-height: 1.6; font-family: var(--fu); }
 .bubble-u { align-self: flex-end; background: var(--gold); color: #000; font-weight: 600; border-bottom-right-radius: var(--r-sm); }
 .bubble-a { align-self: flex-start; background: var(--float); color: var(--ink); border-bottom-left-radius: var(--r-sm); border: 1px solid var(--line); }
-.sid-lbl { font-family: var(--font-m); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); margin-bottom: 7px; display: flex; align-items: center; gap: 6px; }
+.sid-lbl { font-family: var(--fm); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); margin-bottom: 7px; display: flex; align-items: center; gap: 6px; }
 .sid-icon { width: 11px; height: 11px; background: var(--gold); clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%); flex-shrink: 0; }
 .typing-wrap { align-self: flex-start; background: var(--float); padding: 13px 18px; border-radius: var(--r-lg); border-bottom-left-radius: var(--r-sm); display: flex; gap: 6px; align-items: center; border: 1px solid var(--line); }
 .tdot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink4); animation: tb 1.2s infinite ease-in-out; }
@@ -518,10 +518,10 @@ body {
 @keyframes tb { 0%,60%,100%{transform:translateY(0);} 30%{transform:translateY(-7px);} }
 .suggests { display: flex; gap: 8px; padding: 8px 16px 4px; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
 .suggests::-webkit-scrollbar { display: none; }
-.s-pill { flex-shrink: 0; padding: 8px 15px; background: var(--float); border: 1px solid var(--line); border-radius: var(--r-sm); font-size: 12px; font-weight: 400; color: var(--ink3); cursor: pointer; white-space: nowrap; transition: all .13s; font-family: var(--font-ui); min-height: 44px; display: flex; align-items: center; }
+.s-pill { flex-shrink: 0; padding: 8px 15px; background: var(--float); border: 1px solid var(--line); border-radius: var(--r-sm); font-size: 12px; font-weight: 400; color: var(--ink3); cursor: pointer; white-space: nowrap; transition: all .13s; font-family: var(--fu); min-height: 44px; display: flex; align-items: center; }
 .s-pill:active { background: var(--gold-dim); border-color: var(--gold-line); color: var(--gold); }
 .chat-input-wrap { padding: 10px 16px; background: rgba(6,6,6,.92); border-top: 1px solid var(--line); display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0; }
-.chat-input { flex: 1; border: 1px solid var(--line2); border-radius: var(--r-sm); padding: 11px 14px; font-family: var(--font-ui); font-size: 16px; background: var(--float); color: var(--ink); outline: none; resize: none; max-height: 120px; line-height: 1.45; -webkit-appearance: none; transition: border-color .13s; }
+.chat-input { flex: 1; border: 1px solid var(--line2); border-radius: var(--r-sm); padding: 11px 14px; font-family: var(--fu); font-size: 16px; background: var(--float); color: var(--ink); outline: none; resize: none; max-height: 120px; line-height: 1.45; -webkit-appearance: none; transition: border-color .13s; }
 .chat-input::placeholder { color: var(--ink4); }
 .chat-input:focus { border-color: var(--gold-line); }
 .chat-send { width: 44px; height: 44px; border-radius: var(--r-sm); background: var(--gold); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all .13s; }
@@ -531,8 +531,8 @@ body {
 /* ── Empty States ──────────────────────────────────────────── */
 .empty-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; min-height: 52vh; text-align: center; }
 .empty-icon  { font-size: 48px; margin-bottom: 14px; }
-.empty-title { font-family: var(--font-d); font-size: 24px; font-weight: 400; color: var(--ink); margin-bottom: 8px; letter-spacing: -.01em; }
-.empty-sub   { font-size: 13px; color: var(--ink4); line-height: 1.6; font-family: var(--font-ui); }
+.empty-title { font-family: var(--fd); font-size: 24px; font-weight: 400; color: var(--ink); margin-bottom: 8px; letter-spacing: -.01em; }
+.empty-sub   { font-size: 13px; color: var(--ink4); line-height: 1.6; font-family: var(--fu); }
 .data-note   { margin: 14px; padding: 14px 16px; background: var(--gold-dim); border: 1px solid var(--gold-line); border-radius: var(--r-lg); font-size: 12px; color: var(--ink4); line-height: 1.6; }
 .data-note strong { color: var(--gold); }
 
@@ -554,7 +554,7 @@ body {
   opacity: 0;
   transition: all .28s var(--ease);
   pointer-events: none;
-  font-family: var(--font-ui);
+  font-family: var(--fu);
   letter-spacing: .01em;
 }
 .toast.show { transform: translateY(0); opacity: 1; }
@@ -568,7 +568,7 @@ body {
   border-radius: var(--r-sm);
   padding: 6px 12px;
   font-size: 11.5px;
-  font-family: var(--font-m);
+  font-family: var(--fm);
   color: var(--ink);
   pointer-events: none;
   z-index: 9000;
@@ -585,7 +585,7 @@ body {
 /* ── Badges ────────────────────────────────────────────────── */
 .ll-badge {
   display: inline-flex; align-items: center; gap: 4px;
-  font-size: 8px; font-family: var(--font-m);
+  font-size: 8px; font-family: var(--fm);
   letter-spacing: .12em; text-transform: uppercase;
   color: rgba(245,168,0,.4);
   padding: 2px 7px;
@@ -595,7 +595,7 @@ body {
 .rivers-mini { display: inline-block; vertical-align: middle; margin-right: 4px; opacity: .55; }
 .lukalab-credit-pulse {
   display: flex; align-items: center; justify-content: center; gap: 5px;
-  font-family: var(--font-m); font-size: 8px; color: var(--ink4);
+  font-family: var(--fm); font-size: 8px; color: var(--ink4);
   opacity: .35; letter-spacing: .12em; text-transform: uppercase; padding: 10px 0 4px;
 }
 
@@ -613,15 +613,102 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
+<!-- FORGE LOCK SCREEN — shown before any data renders -->
+<div id="forge-lock" style="
+  position:fixed;inset:0;z-index:999999;
+  background:var(--void);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:var(--font-ui,sans-serif);
+  padding:24px;
+">
+  <!-- Logo -->
+  <div style="font-family:var(--font-d,'Georgia,serif');font-size:32px;font-weight:600;letter-spacing:.08em;color:var(--ink,#EEEAE4);margin-bottom:6px;">
+    F<span style="color:var(--gold,#F5A800)">O</span>RGE
+  </div>
+  <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink4,#524E4A);margin-bottom:40px;">Pittsburgh · Est. 2026 · #30 · #87</div>
+
+  <!-- Lock icon SVG -->
+  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--ink4,#524E4A)" stroke-width="1.4" style="margin-bottom:24px;">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </svg>
+
+  <!-- Mode: setup (first time) or unlock -->
+  <div id="lock-setup" style="display:none;width:100%;max-width:320px;text-align:center;">
+    <div style="font-size:15px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:6px;">Create your Forge PIN</div>
+    <div style="font-size:12px;color:var(--ink4,#524E4A);margin-bottom:24px;line-height:1.6;">
+      Your financial data will be encrypted locally.<br>Recovery: clear &amp; re-pull from Cloudflare.
+    </div>
+    <input id="lock-pass-new" type="password" placeholder="Create passphrase" autocomplete="new-password"
+      style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
+             padding:14px 16px;font-size:17px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
+             text-align:center;letter-spacing:.1em;outline:none;-webkit-appearance:none;">
+    <input id="lock-pass-confirm" type="password" placeholder="Confirm passphrase" autocomplete="new-password"
+      style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
+             padding:14px 16px;font-size:17px;color:var(--ink,#EEEAE4);margin-bottom:16px;box-sizing:border-box;
+             text-align:center;letter-spacing:.1em;outline:none;-webkit-appearance:none;">
+    <div id="lock-setup-err" style="color:#F87171;font-size:12px;margin-bottom:10px;min-height:16px;"></div>
+    <button onclick="forgeSetupPIN()"
+      style="width:100%;background:var(--gold,#F5A800);color:#000;border:none;border-radius:8px;
+             padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
+      Create PIN &amp; Encrypt Data
+    </button>
+    <div style="margin-top:12px;font-size:11px;color:var(--ink4,#524E4A);line-height:1.6;">
+      Use a passphrase you'll remember — minimum 4 characters.<br>
+      <strong style="color:var(--ink3,#8A857E);">Forgotten PIN = pull fresh from Cloudflare.</strong>
+    </div>
+  </div>
+
+  <div id="lock-unlock" style="display:none;width:100%;max-width:320px;text-align:center;">
+    <div style="font-size:15px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:20px;">Enter your passphrase</div>
+    <input id="lock-pass" type="password" placeholder="Passphrase" autocomplete="current-password"
+      style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
+             padding:14px 16px;font-size:17px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
+             text-align:center;letter-spacing:.1em;outline:none;-webkit-appearance:none;"
+      onkeydown="if(event.key==='Enter')forgeUnlock()">
+    <div id="lock-err" style="color:#F87171;font-size:12px;margin-bottom:10px;min-height:16px;"></div>
+    <button id="lock-btn" onclick="forgeUnlock()"
+      style="width:100%;background:var(--gold,#F5A800);color:#000;border:none;border-radius:8px;
+             padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">
+      Unlock Forge
+    </button>
+    <button id="lock-bio-btn" style="display:none;width:100%;background:transparent;
+      border:1px solid rgba(255,255,255,.12);color:var(--ink3,#8A857E);border-radius:8px;
+      padding:13px;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:10px;"
+      onclick="forgeUnlockBio()">
+      🔐 Use Face ID / Touch ID
+    </button>
+    <button onclick="forgeForgotPIN()"
+      style="background:transparent;border:none;color:var(--ink4,#524E4A);font-size:12px;
+             cursor:pointer;font-family:inherit;text-decoration:underline;padding:4px;">
+      Forgot passphrase?
+    </button>
+  </div>
+
+  <!-- Spinner shown during crypto ops -->
+  <div id="lock-spinner" style="display:none;margin-top:20px;">
+    <div style="width:28px;height:28px;border:2px solid rgba(245,168,0,.25);border-top-color:var(--gold,#F5A800);
+                border-radius:50%;animation:lock-spin .7s linear infinite;margin:0 auto;"></div>
+    <div id="lock-spinner-lbl" style="font-size:11px;color:var(--ink4,#524E4A);margin-top:8px;letter-spacing:.06em;">Encrypting…</div>
+  </div>
+
+  <style>
+    @keyframes lock-spin { to { transform:rotate(360deg); } }
+    #lock-pass:focus, #lock-pass-new:focus, #lock-pass-confirm:focus {
+      border-color:var(--gold,#F5A800);outline:none;
+    }
+  </style>
+</div>
+
 <div id="chartTip"></div>
-<div id="pulseTip" style="position:fixed;background:var(--float);border:1px solid rgba(245,168,0,.3);border-radius:10px;padding:10px 14px;font-size:13px;font-family:var(--font-ui);color:var(--ink);max-width:260px;z-index:9999;pointer-events:none;box-shadow:0 4px 24px rgba(0,0,0,.5);display:none;white-space:pre-line;line-height:1.5;"></div>
+<div id="pulseTip" style="position:fixed;background:var(--float);border:1px solid rgba(245,168,0,.3);border-radius:10px;padding:10px 14px;font-size:13px;font-family:var(--fu);color:var(--ink);max-width:260px;z-index:9999;pointer-events:none;box-shadow:0 4px 24px rgba(0,0,0,.5);display:none;white-space:pre-line;line-height:1.5;"></div>
 <div class="status-fill"></div>
 <div class="shell">
 
   <!-- ══ SNAPSHOT ══ -->
   <div class="page active" id="pg-snapshot">
     <div style="display:flex;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--void);">
-      <button onclick="syncPull()" style="flex:1;background:var(--lift);color:var(--ink);border:1px solid var(--line2);padding:8px 0;border-radius:6px;font-family:var(--font-ui);font-size:12px;cursor:pointer;">↓ Pull from Cloud</button>
+      <button onclick="syncPull()" style="flex:1;background:var(--lift);color:var(--ink);border:1px solid var(--line2);padding:8px 0;border-radius:6px;font-family:var(--fu);font-size:12px;cursor:pointer;">↓ Pull from Cloud</button>
     </div>
     <div id="snap-out"></div>
   </div>
@@ -655,8 +742,8 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
 
       <!-- Header -->
       <div style="margin-bottom:14px;">
-        <div style="font-size:10px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.7;margin-bottom:6px;">⚾ $kenes · Analytics</div>
-        <div style="font-family:var(--serif);font-size:22px;font-weight:600;color:var(--ink);">Your Numbers<span style="color:var(--gold);font-style:italic;">, Visualized</span></div>
+        <div style="font-size:10px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.7;margin-bottom:6px;">⚾ $kenes · Analytics</div>
+        <div style="font-family:var(--fd);font-size:22px;font-weight:600;color:var(--ink);">Your Numbers<span style="color:var(--gold);font-style:italic;">, Visualized</span></div>
       </div>
 
       <!-- Spending by Category -->
@@ -792,6 +879,239 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
 </div>
 
 <script>
+// ════════════════════════════════════════════════════════════════════════════
+// FORGE AUTH — AES-GCM encryption + WebAuthn (Pulse) + PIN
+// All financial data at rest is encrypted. Key lives only in memory.
+// Recovery: clear local → re-pull from Cloudflare → set new PIN.
+// ════════════════════════════════════════════════════════════════════════════
+
+const FORGE_AUTH = (function () {
+  const SALT_KEY     = 'forge_auth_salt';
+  const CHECK_KEY    = 'forge_auth_check';
+  const WEBAUTHN_KEY = 'forge_auth_webauthn';
+  const SENTINEL     = 'FORGE_VERIFIED_V1';
+  const ENC_PREFIX   = 'ENC1:';              // versioned prefix
+  const PBKDF2_ITER  = 310000;               // OWASP recommended minimum
+
+  let _key      = null;  // CryptoKey — lives only in memory, never written to disk
+  let _isSetup  = false;
+
+  // ── PBKDF2 key derivation ─────────────────────────────────────────────────
+  async function _deriveKey(passphrase, saltB64) {
+    const salt = _b64ToBytes(saltB64);
+    const mat  = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(passphrase),
+      'PBKDF2', false, ['deriveKey']
+    );
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt, iterations: PBKDF2_ITER, hash: 'SHA-256' },
+      mat,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    );
+  }
+
+  // ── AES-GCM encrypt/decrypt (IV prepended) ────────────────────────────────
+  async function _encrypt(key, plaintext) {
+    const iv  = crypto.getRandomValues(new Uint8Array(12));
+    const ct  = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key,
+                  new TextEncoder().encode(plaintext));
+    const buf = new Uint8Array(12 + ct.byteLength);
+    buf.set(iv, 0);
+    buf.set(new Uint8Array(ct), 12);
+    return ENC_PREFIX + _bytesToB64(buf);
+  }
+
+  async function _decrypt(key, encStr) {
+    if (!encStr.startsWith(ENC_PREFIX)) throw new Error('not encrypted');
+    const buf  = _b64ToBytes(encStr.slice(ENC_PREFIX.length));
+    const iv   = buf.slice(0, 12);
+    const ct   = buf.slice(12);
+    const pt   = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+    return new TextDecoder().decode(pt);
+  }
+
+  // ── Byte / Base64 helpers ─────────────────────────────────────────────────
+  function _bytesToB64(buf) {
+    return btoa(String.fromCharCode(...new Uint8Array(buf)));
+  }
+  function _b64ToBytes(b64) {
+    return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  }
+
+  // ── Public API ────────────────────────────────────────────────────────────
+
+  function isSetup() {
+    return !!(localStorage.getItem(SALT_KEY) && localStorage.getItem(CHECK_KEY));
+  }
+
+  function isUnlocked() { return _key !== null; }
+
+  function hasWebAuthn() { return !!localStorage.getItem(WEBAUTHN_KEY); }
+
+  // Create PIN for the first time (or after reset)
+  async function setup(passphrase) {
+    // Generate random salt
+    const salt    = crypto.getRandomValues(new Uint8Array(16));
+    const saltB64 = _bytesToB64(salt);
+    const key     = await _deriveKey(passphrase, saltB64);
+
+    // Encrypt sentinel for future verification
+    const check = await _encrypt(key, SENTINEL);
+
+    // Encrypt any existing unencrypted data
+    const dataKeys = ['forge_prod_v1', 'ledger_v3', 'forge_settings_v2', 'forge_settings_v1'];
+    const toWrite  = {};
+    for (const k of dataKeys) {
+      const v = localStorage.getItem(k);
+      if (v && !v.startsWith(ENC_PREFIX)) {
+        toWrite[k] = await _encrypt(key, v);
+      }
+    }
+
+    // Commit all at once
+    localStorage.setItem(SALT_KEY, saltB64);
+    localStorage.setItem(CHECK_KEY, check);
+    for (const [k, v] of Object.entries(toWrite)) {
+      localStorage.setItem(k, v);
+    }
+
+    _key     = key;
+    _isSetup = true;
+    return true;
+  }
+
+  // Unlock with PIN — returns true/false
+  async function unlock(passphrase) {
+    const saltB64 = localStorage.getItem(SALT_KEY);
+    const check   = localStorage.getItem(CHECK_KEY);
+    if (!saltB64 || !check) return false;
+    try {
+      const key      = await _deriveKey(passphrase, saltB64);
+      const sentinel = await _decrypt(key, check);
+      if (sentinel !== SENTINEL) return false;
+      _key = key;
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // Transparent get/set — reads/writes encrypted if locked
+  async function get(storageKey) {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return null;
+    if (raw.startsWith(ENC_PREFIX)) {
+      if (!_key) return null;  // locked — can't decrypt
+      try { return await _decrypt(_key, raw); } catch (e) { return null; }
+    }
+    return raw;  // unencrypted (demo data or legacy)
+  }
+
+  async function set(storageKey, value) {
+    if (!value) { localStorage.removeItem(storageKey); return; }
+    if (_key) {
+      localStorage.setItem(storageKey, await _encrypt(_key, value));
+    } else {
+      localStorage.setItem(storageKey, value);
+    }
+  }
+
+  // Clear auth (for recovery / reset)
+  function clearAuth() {
+    [SALT_KEY, CHECK_KEY, WEBAUTHN_KEY].forEach(k => localStorage.removeItem(k));
+    _key = null;
+  }
+
+  // ── WebAuthn (Face ID / Touch ID) ─────────────────────────────────────────
+  // Stores encrypted PIN, wrapped with a key derived from the credential ID.
+  // Security: reading localStorage gives you the encrypted PIN but not the
+  // credentialId raw bytes needed to derive the wrapping key — that requires
+  // a successful WebAuthn assertion (which requires biometric).
+
+  async function _wrapKey(credIdBytes) {
+    // Derive a wrapping key from the credential's raw ID
+    const mat = await crypto.subtle.importKey(
+      'raw', credIdBytes, 'PBKDF2', false, ['deriveKey']
+    );
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: new TextEncoder().encode('forge-biometric-wrap-v1'),
+        iterations: 1000, hash: 'SHA-256' },
+      mat,
+      { name: 'AES-GCM', length: 256 },
+      false, ['encrypt', 'decrypt']
+    );
+  }
+
+  async function registerBiometric(passphrase) {
+    if (!window.PublicKeyCredential) return false;
+    try {
+      const chal = crypto.getRandomValues(new Uint8Array(32));
+      const cred = await navigator.credentials.create({
+        publicKey: {
+          challenge:    chal,
+          rp:           { name: 'Forge Family Finance', id: location.hostname },
+          user:         { id: new TextEncoder().encode('forge-luka'), name: 'forge', displayName: 'Forge' },
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+          authenticatorSelection: {
+            authenticatorAttachment: 'platform',
+            userVerification:        'required',
+            residentKey:             'preferred',
+          },
+          timeout: 60000,
+        }
+      });
+
+      const credIdBytes  = new Uint8Array(cred.rawId);
+      const credIdB64    = _bytesToB64(credIdBytes);
+      const wrapKey      = await _wrapKey(credIdBytes);
+      const encPassphrase= await _encrypt(wrapKey, passphrase);
+
+      localStorage.setItem(WEBAUTHN_KEY, JSON.stringify({ credIdB64, encPassphrase }));
+      return true;
+    } catch (e) {
+      console.warn('[Forge Auth] Biometric registration:', e.message);
+      return false;
+    }
+  }
+
+  async function unlockWithBiometric() {
+    const stored = JSON.parse(localStorage.getItem(WEBAUTHN_KEY) || 'null');
+    if (!stored) return false;
+    try {
+      const credIdBytes = _b64ToBytes(stored.credIdB64);
+      const assertion   = await navigator.credentials.get({
+        publicKey: {
+          challenge:        crypto.getRandomValues(new Uint8Array(32)),
+          allowCredentials: [{ type: 'public-key', id: credIdBytes }],
+          userVerification: 'required',
+          timeout:          60000,
+        }
+      });
+      // Assertion success — credential is confirmed, derive wrapping key
+      const wrapKey    = await _wrapKey(new Uint8Array(assertion.rawId));
+      const passphrase = await _decrypt(wrapKey, stored.encPassphrase);
+      return unlock(passphrase);
+    } catch (e) {
+      console.warn('[Forge Auth] Biometric unlock:', e.message);
+      return false;
+    }
+  }
+
+  async function isBiometricAvailable() {
+    if (!window.PublicKeyCredential) return false;
+    try {
+      return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    } catch (e) { return false; }
+  }
+
+  return {
+    isSetup, isUnlocked, hasWebAuthn, isBiometricAvailable,
+    setup, unlock, unlockWithBiometric, registerBiometric,
+    get, set, clearAuth,
+  };
+})();
+
+
 // ════════════════════════════════════════════
 // FORGE PULSE — DATA BRIDGE
 // Reads from same localStorage as desktop app
@@ -1310,7 +1630,7 @@ const SOURCE_BADGES = {
 };
 function srcBadge(src) {
   const b = SOURCE_BADGES[src] || SOURCE_BADGES.inferred;
-  return `<span style="font-size:8px;padding:1px 5px;border-radius:3px;background:${b.color};border:1px solid ${b.border};color:${b['text'] || b.text};font-family:var(--font-m);letter-spacing:.05em;">${b.label}</span>`;
+  return `<span style="font-size:8px;padding:1px 5px;border-radius:3px;background:${b.color};border:1px solid ${b.border};color:${b['text'] || b.text};font-family:var(--fm);letter-spacing:.05em;">${b.label}</span>`;
 }
 
 // ── PORTED FROM DESKTOP (P&L + Net Worth tabs) ─────────────────────────────
@@ -1428,7 +1748,7 @@ function svgBar(elId, labels, datasets) {
   if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
   const W = Math.max(el.offsetWidth || 0, 300);
   const H = Math.max(el.offsetHeight || 0, 180);
-  if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;font-family:var(--font-m);">No data</div>'; return; }
+  if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;font-family:var(--fm);">No data</div>'; return; }
 
   const PAD = { t:12, r:16, b:52, l:58 };
   const cW = W - PAD.l - PAD.r;
@@ -2213,6 +2533,7 @@ function go(tab) {
   if (tab==='alerts')   safe(function(){ renderPulsePL(); }, 'pl');
   if (tab==='amazon')   safe(function(){ renderPulseNW(); }, 'nw');
   if (tab==='analytics') safe(function(){ renderPulseAnalytics(); }, 'analytics');
+  if (tab==='__lock_setup__') { _lockShow(); const s=document.getElementById('lock-setup');const u=document.getElementById('lock-unlock');if(s)s.style.display='block';if(u)u.style.display='none'; return; }
   if (tab==='settings') safe(function(){ renderPulseSettings(); }, 'settings');
   if (tab==='chat' && !chatReady) { chatReady=true; safe(function(){ sendWelcome(); }, 'welcome'); }
 }
@@ -2231,15 +2552,15 @@ function renderPulseSettings() {
   // ── Helpers ────────────────────────────────────────────────────────────────
   const sec = (title, icon, body) => `
     <div style="margin:0 14px 12px;">
-      <div style="font-family:var(--font-m);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);padding:14px 0 7px;">${icon} ${title}</div>
+      <div style="font-family:var(--fm);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);padding:14px 0 7px;">${icon} ${title}</div>
       <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">${body}</div>
     </div>`;
 
   const row = (label, sub, input) => `
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.04);">
       <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:500;color:var(--ink);font-family:var(--font-ui);">${label}</div>
-        ${sub ? `<div style="font-size:11px;color:var(--ink4);margin-top:1px;font-family:var(--font-ui);">${sub}</div>` : ''}
+        <div style="font-size:13px;font-weight:500;color:var(--ink);font-family:var(--fu);">${label}</div>
+        ${sub ? `<div style="font-size:11px;color:var(--ink4);margin-top:1px;font-family:var(--fu);">${sub}</div>` : ''}
       </div>
       <div style="flex-shrink:0;">${input}</div>
     </div>`;
@@ -2258,7 +2579,7 @@ function renderPulseSettings() {
 
   const inputEl = (id, val, type='text', placeholder='') => `
     <input id="${id}" type="${type}" value="${String(val||'').replace(/"/g,'&quot;')}" placeholder="${placeholder}"
-      style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:8px 12px;font-size:14px;font-family:var(--font-ui);color:var(--ink);width:160px;-webkit-appearance:none;"
+      style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:8px 12px;font-size:14px;font-family:var(--fu);color:var(--ink);width:160px;-webkit-appearance:none;"
       oninput="pulseSaveSettings()">`;
 
   // ── Read current state ─────────────────────────────────────────────────────
@@ -2326,27 +2647,27 @@ function renderPulseSettings() {
     <div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.04);">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div>
-          <div style="font-size:11px;color:var(--ink4);font-family:var(--font-m);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;">Last Pull</div>
+          <div style="font-size:11px;color:var(--ink4);font-family:var(--fm);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;">Last Pull</div>
           <div style="font-size:16px;font-weight:500;color:${syncSince!==null&&syncSince<=1?'var(--positive)':syncSince!==null&&syncSince<=7?'var(--gold)':'var(--ink)'};">${syncLabel}</div>
-          ${txnCount ? `<div style="font-size:11px;color:var(--ink4);margin-top:2px;font-family:var(--font-m);">${txnCount.toLocaleString()} txns loaded</div>` : ''}
+          ${txnCount ? `<div style="font-size:11px;color:var(--ink4);margin-top:2px;font-family:var(--fm);">${txnCount.toLocaleString()} txns loaded</div>` : ''}
         </div>
-        <button onclick="syncPull()" style="background:var(--gold);color:#000;border:none;border-radius:var(--r-sm);padding:10px 18px;font-size:13px;font-weight:700;font-family:var(--font-ui);cursor:pointer;">↓ Pull</button>
+        <button onclick="syncPull()" style="background:var(--gold);color:#000;border:none;border-radius:var(--r-sm);padding:10px 18px;font-size:13px;font-weight:700;font-family:var(--fu);cursor:pointer;">↓ Pull</button>
       </div>
     </div>`;
 
   // File thru-date table
-  syncBody += `<div style="padding:8px 16px 4px;font-size:9px;font-family:var(--font-m);letter-spacing:.15em;text-transform:uppercase;color:var(--ink4);">File Thru Dates</div>`;
+  syncBody += `<div style="padding:8px 16px 4px;font-size:9px;font-family:var(--fm);letter-spacing:.15em;text-transform:uppercase;color:var(--ink4);">File Thru Dates</div>`;
   FILE_TYPES.forEach((ft, i) => {
     const thru  = fileReg[ft.key]?.thruDate || derivedThru[ft.key] || null;
     const days  = daysSince(thru);
     const isLast= i === FILE_TYPES.length - 1;
     syncBody += `<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;${isLast?'':'border-bottom:1px solid rgba(255,255,255,.035)'}">
       ${dot(days)}
-      <div style="flex:1;font-size:12px;font-family:var(--font-ui);">
+      <div style="flex:1;font-size:12px;font-family:var(--fu);">
         <span style="color:var(--ink2);">${ft.icon} ${ft.label}</span>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:11.5px;font-family:var(--font-m);color:var(--ink3);">${thru ? thru.slice(0,10) : '—'}</div>
+        <div style="font-size:11.5px;font-family:var(--fm);color:var(--ink3);">${thru ? thru.slice(0,10) : '—'}</div>
         <div style="font-size:10px;margin-top:1px;">${freshLabel(days)}</div>
       </div>
     </div>`;
@@ -2355,21 +2676,21 @@ function renderPulseSettings() {
   // ── §2 Cloud Config ─────────────────────────────────────────────────────────
   let cloudBody = `
     <div style="padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.04);">
-      <div style="font-size:11px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Worker URL</div>
+      <div style="font-size:11px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Worker URL</div>
       <input id="ps-worker-url" type="url" value="${workerUrl}"
         placeholder="https://forge-sid.xxx.workers.dev"
-        style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:10px 12px;font-size:14px;font-family:var(--font-m);color:var(--ink);-webkit-appearance:none;box-sizing:border-box;"
+        style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:10px 12px;font-size:14px;font-family:var(--fm);color:var(--ink);-webkit-appearance:none;box-sizing:border-box;"
         oninput="localStorage.setItem('forge_worker_url',this.value)">
     </div>
     <div style="padding:13px 16px;">
-      <div style="font-size:11px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Sync Token</div>
+      <div style="font-size:11px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Sync Token</div>
       <div style="display:flex;gap:8px;">
         <input id="ps-sync-token" type="password" value="${syncToken}"
           placeholder="Enter sync token"
-          style="flex:1;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:10px 12px;font-size:14px;font-family:var(--font-m);color:var(--ink);-webkit-appearance:none;"
+          style="flex:1;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:10px 12px;font-size:14px;font-family:var(--fm);color:var(--ink);-webkit-appearance:none;"
           oninput="localStorage.setItem('forge_sync_token',this.value)">
         <button onclick="const el=document.getElementById('ps-sync-token');el.type=el.type==='password'?'text':'password'"
-          style="background:var(--lift);border:1px solid var(--line2);color:var(--ink4);border-radius:var(--r-sm);padding:0 14px;font-size:12px;cursor:pointer;font-family:var(--font-ui);white-space:nowrap;">Show</button>
+          style="background:var(--lift);border:1px solid var(--line2);color:var(--ink4);border-radius:var(--r-sm);padding:0 14px;font-size:12px;cursor:pointer;font-family:var(--fu);white-space:nowrap;">Show</button>
       </div>
     </div>`;
 
@@ -2379,16 +2700,16 @@ function renderPulseSettings() {
     {name:'Sam',emoji:'⚾'},{name:'Whitney',emoji:'🎨'},{name:'Will',emoji:'🎮'},
   ];
   let familyBody = '';
-  familyBody += row('Family Name', 'Shown in reports', `<input id="ps-family-name" type="text" value="${(family.name||'').replace(/"/g,'&quot;')}" placeholder="The Luka Family" style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:8px 12px;font-size:14px;font-family:var(--font-ui);color:var(--ink);width:160px;-webkit-appearance:none;" oninput="pulseSaveFamilyName(this.value)">`);
+  familyBody += row('Family Name', 'Shown in reports', `<input id="ps-family-name" type="text" value="${(family.name||'').replace(/"/g,'&quot;')}" placeholder="The Luka Family" style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:8px 12px;font-size:14px;font-family:var(--fu);color:var(--ink);width:160px;-webkit-appearance:none;" oninput="pulseSaveFamilyName(this.value)">`);
 
   familyBody += `<div style="padding:13px 16px;">
-    <div style="font-size:11px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px;">Members</div>
+    <div style="font-size:11px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px;">Members</div>
     <div style="display:flex;flex-direction:column;gap:8px;">`;
   members.forEach((m, i) => {
     familyBody += `<div style="display:flex;align-items:center;gap:10px;">
       <input type="text" value="${m.emoji||''}" maxlength="4" style="width:44px;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:6px;font-size:20px;text-align:center;-webkit-appearance:none;">
-      <input type="text" value="${(m.name||'').replace(/"/g,'&quot;')}" placeholder="Name" style="flex:1;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:8px 12px;font-size:14px;font-family:var(--font-ui);color:var(--ink);-webkit-appearance:none;">
-      <span style="font-size:11px;color:var(--ink4);font-family:var(--font-m);width:40px;text-align:center;">${m.role==='parent'?'Parent':'Child'}</span>
+      <input type="text" value="${(m.name||'').replace(/"/g,'&quot;')}" placeholder="Name" style="flex:1;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:8px 12px;font-size:14px;font-family:var(--fu);color:var(--ink);-webkit-appearance:none;">
+      <span style="font-size:11px;color:var(--ink4);font-family:var(--fm);width:40px;text-align:center;">${m.role==='parent'?'Parent':'Child'}</span>
     </div>`;
   });
   familyBody += `</div></div>`;
@@ -2398,7 +2719,7 @@ function renderPulseSettings() {
   const showGoalRings = appearance.showGoalRings !== false;
   let displayBody = '';
   displayBody += row('Savings Target', '% used for goal rings & color coding',
-    `<div style="display:flex;align-items:center;gap:6px;"><input id="ps-savings-target" type="number" min="0" max="100" value="${family.savingsTarget||20}" style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:8px 10px;font-size:14px;font-family:var(--font-m);color:var(--ink);width:70px;text-align:center;-webkit-appearance:none;" oninput="pulseSaveAppearance()"><span style="font-size:13px;color:var(--ink4);">%</span></div>`);
+    `<div style="display:flex;align-items:center;gap:6px;"><input id="ps-savings-target" type="number" min="0" max="100" value="${family.savingsTarget||20}" style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:8px 10px;font-size:14px;font-family:var(--fm);color:var(--ink);width:70px;text-align:center;-webkit-appearance:none;" oninput="pulseSaveAppearance()"><span style="font-size:13px;color:var(--ink4);">%</span></div>`);
   displayBody += row('Show Cents', '$1,234.56 vs $1,235',
     `<label style="position:relative;display:inline-block;width:44px;height:26px;cursor:pointer;"><input type="checkbox" id="ps-show-cents" ${showCents?'checked':''} onchange="pulseSaveAppearance()" style="opacity:0;width:0;height:0;position:absolute;"><span id="ps-show-cents-track" style="position:absolute;inset:0;border-radius:13px;background:${showCents?'var(--gold)':'var(--line2)'};transition:background .2s;cursor:pointer;" onclick="document.getElementById('ps-show-cents').click()"><span id="ps-show-cents-thumb" style="position:absolute;top:3px;left:${showCents?'21':'3'}px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s;pointer-events:none;"></span></span></label>`);
   displayBody += row('Goal Rings', 'Circular progress on The Gauge',
@@ -2408,19 +2729,52 @@ function renderPulseSettings() {
   const keys = ['forge_prod_v1','ledger_v3','forge_settings_v2','forge_file_registry','forge_sync_token','forge_worker_url'];
   let storageKB = 0;
   keys.forEach(k => { const v = localStorage.getItem(k); if (v) storageKB += v.length; });
-  let dataBody = row('Storage Used', 'browser localStorage', `<span style="font-family:var(--font-m);font-size:14px;color:var(--ink2);">${(storageKB/1024).toFixed(0)} KB</span>`);
-  dataBody += row('Transactions', 'loaded in this session', `<span style="font-family:var(--font-d);font-size:20px;font-weight:300;color:var(--ink);">${txnCount.toLocaleString()}</span>`);
+  let dataBody = row('Storage Used', 'browser localStorage', `<span style="font-family:var(--fm);font-size:14px;color:var(--ink2);">${(storageKB/1024).toFixed(0)} KB</span>`);
+  dataBody += row('Transactions', 'loaded in this session', `<span style="font-family:var(--fd);font-size:20px;font-weight:300;color:var(--ink);">${txnCount.toLocaleString()}</span>`);
   dataBody += `<div style="padding:13px 16px;display:flex;gap:8px;flex-wrap:wrap;">
-    <button onclick="if(confirm('Clear all Forge data on this device?')){keys.forEach(k=>localStorage.removeItem(k));location.reload();}" style="background:transparent;border:1px solid rgba(248,113,113,.35);color:var(--negative);padding:9px 16px;border-radius:var(--r-sm);font-size:13px;font-family:var(--font-ui);cursor:pointer;">Clear Local Data</button>
-    <button onclick="if(confirm('Reset sync token?'))localStorage.removeItem('forge_sync_token');renderPulseSettings();" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink4);padding:9px 16px;border-radius:var(--r-sm);font-size:13px;font-family:var(--font-ui);cursor:pointer;">Reset Token</button>
+    <button onclick="if(confirm('Clear all Forge data on this device?')){keys.forEach(k=>localStorage.removeItem(k));location.reload();}" style="background:transparent;border:1px solid rgba(248,113,113,.35);color:var(--negative);padding:9px 16px;border-radius:var(--r-sm);font-size:13px;font-family:var(--fu);cursor:pointer;">Clear Local Data</button>
+    <button onclick="if(confirm('Reset sync token?'))localStorage.removeItem('forge_sync_token');renderPulseSettings();" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink4);padding:9px 16px;border-radius:var(--r-sm);font-size:13px;font-family:var(--fu);cursor:pointer;">Reset Token</button>
   </div>`;
 
   // ── Assemble ──────────────────────────────────────────────────────────────
+  // ── §6 Security ────────────────────────────────────────────────────────────
+  const isLocked  = FORGE_AUTH.isSetup();
+  const hasBio    = FORGE_AUTH.hasWebAuthn();
+  let secBody = row('Protection Status',
+    isLocked ? 'AES-256 encryption active' : 'Data not yet encrypted',
+    `<span style="font-family:var(--fm);font-size:12px;font-weight:600;color:${isLocked?'var(--positive)':'var(--warn)'};">${isLocked?'🔒 Encrypted':'⚠️ Open'}</span>`);
+
+  if (!isLocked) {
+    secBody += `<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.04);">
+      <button onclick="go('__lock_setup__')"
+        style="width:100%;background:var(--gold);color:#000;border:none;border-radius:var(--r-sm);padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--fu);">
+        🔐 Set Up Encryption &amp; PIN
+      </button>
+      <div style="font-size:11px;color:var(--ink4);margin-top:8px;line-height:1.6;text-align:center;">
+        Encrypts your financial data with AES-256. Required before adding Face ID.
+      </div>
+    </div>`;
+  } else {
+    secBody += row('Face ID / Touch ID',
+      hasBio ? 'Biometric unlock registered' : 'Not configured',
+      hasBio
+        ? `<button onclick="if(confirm('Remove biometric unlock?')){localStorage.removeItem('forge_auth_webauthn');renderPulseSettings();}" style="font-size:11px;padding:6px 12px;border-radius:var(--r-sm);background:transparent;border:1px solid var(--line2);color:var(--ink4);cursor:pointer;font-family:var(--fu);">Remove</button>`
+        : `<button onclick="forgePulseRegisterBio()" style="font-size:11px;padding:6px 12px;border-radius:var(--r-sm);background:var(--lift);border:1px solid var(--line2);color:var(--gold);cursor:pointer;font-family:var(--fu);">Add</button>`
+    );
+    secBody += `<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.04);display:flex;gap:8px;">
+      <button onclick="forgeForgotPIN()"
+        style="flex:1;background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--negative);border-radius:var(--r-sm);padding:9px;font-size:12px;cursor:pointer;font-family:var(--fu);">
+        Forgot / Reset PIN
+      </button>
+    </div>`;
+  }
+
   el.innerHTML =
     sec('Sync & Data',   '☁️',  syncBody)  +
     sec('Cloud Config',  '🔗',  cloudBody) +
     sec('Family',        '👨‍👩‍👧‍👦', familyBody) +
     sec('Display',       '🎨',  displayBody) +
+    sec('Security',      '🔒',  secBody)   +
     sec('Storage',       '💾',  dataBody) +
     `<div style="height:24px;"></div>`;
 
@@ -2438,6 +2792,24 @@ function renderPulseSettings() {
 }
 
 // ── Pulse settings save helpers ────────────────────────────────────────────
+async function forgePulseRegisterBio() {
+  if (!FORGE_AUTH.isSetup()) { pulseToast('Set up PIN first'); return; }
+  pulseToast('Requesting biometric…', 1500);
+  const ok = await FORGE_AUTH.isBiometricAvailable();
+  if (!ok) { pulseToast('Face ID / Touch ID not available on this device'); return; }
+  const pass = prompt('Enter your passphrase to register biometric:');
+  if (!pass) return;
+  const verified = await FORGE_AUTH.unlock(pass);
+  if (!verified) { pulseToast('Incorrect passphrase'); return; }
+  const registered = await FORGE_AUTH.registerBiometric(pass);
+  if (registered) {
+    pulseToast('✓ Biometric registered');
+    renderPulseSettings();
+  } else {
+    pulseToast('Biometric registration cancelled');
+  }
+}
+
 function pulseSaveSettings() {
   // Generic debounced save — inputs call this on input event
   clearTimeout(pulseSaveSettings._t);
@@ -2634,7 +3006,7 @@ function renderSnapshot() {
     </div>
 
     <div class="sec-lbl">Top Spending — This Month</div>
-    <div style="background:var(--card);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+    <div style="background:var(--float);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
       ${cd.length ? cd.map(([cat,amt],i)=>`
         <div class="cat-row">
           <div class="cat-dot" style="background:${COLS[i]};"></div>
@@ -2805,14 +3177,14 @@ function renderAmazon() {
       <div class="amz-stat"><div class="amz-stat-lbl">Monthly avg</div><div class="amz-stat-val">${fmtK(total/mos)}</div></div>
       <div class="amz-stat"><div class="amz-stat-lbl">Flagged</div><div class="amz-stat-val" style="color:var(--gold);">${amzItems.filter(i=>impulse(i)>=amzThreshold).length}</div></div>
     </div>
-    ${(()=>{const pp=[...new Set(amzItems.map(i=>i.purchaser).filter(Boolean))];return pp.length?`<div style="display:flex;gap:8px;padding:10px 14px;background:var(--lift);border-top:1px solid var(--border);flex-wrap:wrap;">${pp.map(p=>{const pt=amzItems.filter(i=>i.purchaser===p).reduce((s,i)=>s+i.total,0);const mtdP=rec.filter(i=>i.purchaser===p).reduce((s,i)=>s+i.total,0);return`<div style="flex:1;min-width:120px;background:var(--card);border-radius:var(--r-sm);padding:8px 10px;"><div style="font-size:10px;color:var(--ink4);margin-bottom:2px;">👤 ${p}</div><div style="font-size:15px;font-weight:600;color:var(--ink);">${fmtK(pt)}</div><div style="font-size:10px;color:var(--ink4);">this month: ${fmt(mtdP)}</div></div>`;}).join('')}</div>`:'';})()}
+    ${(()=>{const pp=[...new Set(amzItems.map(i=>i.purchaser).filter(Boolean))];return pp.length?`<div style="display:flex;gap:8px;padding:10px 14px;background:var(--lift);border-top:1px solid var(--line);flex-wrap:wrap;">${pp.map(p=>{const pt=amzItems.filter(i=>i.purchaser===p).reduce((s,i)=>s+i.total,0);const mtdP=rec.filter(i=>i.purchaser===p).reduce((s,i)=>s+i.total,0);return`<div style="flex:1;min-width:120px;background:var(--float);border-radius:var(--r-sm);padding:8px 10px;"><div style="font-size:10px;color:var(--ink4);margin-bottom:2px;">👤 ${p}</div><div style="font-size:15px;font-weight:600;color:var(--ink);">${fmtK(pt)}</div><div style="font-size:10px;color:var(--ink4);">this month: ${fmt(mtdP)}</div></div>`;}).join('')}</div>`:'';})()}
     <div class="amz-filters">
       <div class="f-pill${amzF==='all'?' active':''}"    onclick="setAF('all',this)">All Items</div>
       <div class="f-pill${amzF==='recent'?' active':''}" onclick="setAF('recent',this)">Recent</div>
       <div class="f-pill${amzF==='impulse'?' active':''}"onclick="setAF('impulse',this)">🔴 Impulse</div>
       <div class="f-pill${amzF==='big'?' active':''}"    onclick="setAF('big',this)">💰 $50+</div>
     </div>
-    <div style="background:var(--card);border-top:1px solid var(--border);">
+    <div style="background:var(--float);border-top:1px solid var(--line);">
       ${items.map(i=>{const sc=impulse(i); return`<div class="amz-item">
         <div class="amz-icon">${catEmoji(i.category)}</div>
         <div class="amz-info">
@@ -3267,7 +3639,7 @@ function renderPulseNW() {
     if (hasCompare && item.prior !== null) {
       row += `<div style="font-size:10px;color:var(--ink4);min-width:52px;text-align:right;">${fmtK(item.prior)}</div>`;
     }
-    row += `<div style="font-size:13px;font-weight:600;color:${isLiab?'var(--negative)':'var(--positive)'};font-family:var(--mono);min-width:64px;text-align:right;">${fmtK(item.cur)}${delta(item.cur, item.prior)}</div>`;
+    row += `<div style="font-size:13px;font-weight:600;color:${isLiab?'var(--negative)':'var(--positive)'};font-family:var(--fm);min-width:64px;text-align:right;">${fmtK(item.cur)}${delta(item.cur, item.prior)}</div>`;
     row += `</div>`;
 
     if (isOpen && hasDetail) {
@@ -3276,7 +3648,7 @@ function renderPulseNW() {
         row += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid rgba(255,255,255,.03);">`;
         row += `<div><div style="font-size:10px;color:var(--ink3);">${t.payee||'—'}</div>`;
         row += `<div style="font-size:9px;color:var(--ink4);">${t.date}</div></div>`;
-        row += `<div style="font-size:11px;color:${t.amount>0?'var(--positive)':'var(--negative)'};font-family:var(--mono);">${t.amount>0?'+':''}${fmtK(t.amount)}</div>`;
+        row += `<div style="font-size:11px;color:${t.amount>0?'var(--positive)':'var(--negative)'};font-family:var(--fm);">${t.amount>0?'+':''}${fmtK(t.amount)}</div>`;
         row += `</div>`;
       });
       row += `</div>`;
@@ -3288,7 +3660,7 @@ function renderPulseNW() {
   function section(title, items, total, priorTotal, isLiab) {
     let s = `<div style="margin-bottom:20px;">`;
     s += `<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:4px;">`;
-    s += `<div style="font-size:10px;font-family:var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);">${title}</div>`;
+    s += `<div style="font-size:10px;font-family:var(--fm);letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);">${title}</div>`;
     s += `<div style="display:flex;align-items:center;gap:10px;">`;
     if (hasCompare && priorTotal !== null) {
       s += `<div style="font-size:11px;color:var(--ink4);">${fmtK(priorTotal)}</div>`;
@@ -3303,13 +3675,13 @@ function renderPulseNW() {
       if (ccItems.length > 0) {
         const ccTotal      = ccItems.reduce((s,i)=>s+i.cur,0);
         const ccPriorTotal = hasCompare ? ccItems.reduce((s,i)=>s+(i.prior||0),0) : null;
-        s += `<div style="font-size:9px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);opacity:.7;padding:4px 0 4px 2px;margin-bottom:2px;">Credit Cards</div>`;
+        s += `<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);opacity:.7;padding:4px 0 4px 2px;margin-bottom:2px;">Credit Cards</div>`;
         ccItems.forEach(item => { s += acctRow(item, true); });
         s += `<div style="display:flex;justify-content:space-between;padding:5px 0;border-top:1px solid var(--line);margin-bottom:8px;">`;
         s += `<div style="font-size:10px;font-weight:600;color:var(--negative);">CC Total</div>`;
-        s += `<div style="font-size:12px;font-weight:700;color:var(--negative);font-family:var(--mono);">${fmtK(ccTotal)}${delta(ccTotal, ccPriorTotal)}</div></div>`;
+        s += `<div style="font-size:12px;font-weight:700;color:var(--negative);font-family:var(--fm);">${fmtK(ccTotal)}${delta(ccTotal, ccPriorTotal)}</div></div>`;
         if (otherItems.length > 0) {
-          s += `<div style="font-size:9px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);opacity:.7;padding:4px 0 4px 2px;margin-bottom:2px;">Other</div>`;
+          s += `<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);opacity:.7;padding:4px 0 4px 2px;margin-bottom:2px;">Other</div>`;
           otherItems.forEach(item => { s += acctRow(item, true); });
         }
       } else {
@@ -3331,18 +3703,18 @@ function renderPulseNW() {
 
       <!-- Net Worth hero -->
       <div style="background:linear-gradient(135deg,#0F0E09,var(--void));border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;margin-bottom:20px;">
-        <div style="font-size:9px;font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Net Worth</div>
-        <div style="font-size:36px;font-weight:700;color:${nwColor};font-family:var(--mono);letter-spacing:-.02em;">${netWorth>=0?'+':''}${fmtK(netWorth)}</div>
+        <div style="font-size:9px;font-family:var(--fm);letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Net Worth</div>
+        <div style="font-size:36px;font-weight:700;color:${nwColor};font-family:var(--fm);letter-spacing:-.02em;">${netWorth>=0?'+':''}${fmtK(netWorth)}</div>
         ${nwChg !== null ? `<div style="font-size:12px;color:${nwChg>=0?'var(--positive)':'var(--negative)'};margin-top:4px;">${nwChg>=0?'↑':'↓'}${Math.abs(nwChg).toFixed(1)}% vs comparison period</div>` : ''}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;">
           <div>
-            <div style="font-size:9px;color:var(--ink4);font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;">Assets</div>
-            <div style="font-size:16px;font-weight:600;color:var(--positive);font-family:var(--mono);">${fmtK(totalAssets)}</div>
+            <div style="font-size:9px;color:var(--ink4);font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;">Assets</div>
+            <div style="font-size:16px;font-weight:600;color:var(--positive);font-family:var(--fm);">${fmtK(totalAssets)}</div>
             ${hasCompare&&priorAssets!==null?`<div style="font-size:10px;color:var(--ink4);">${fmtK(priorAssets)} prior</div>`:''}
           </div>
           <div>
-            <div style="font-size:9px;color:var(--ink4);font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;">Liabilities</div>
-            <div style="font-size:16px;font-weight:600;color:var(--negative);font-family:var(--mono);">${fmtK(totalLiabs)}</div>
+            <div style="font-size:9px;color:var(--ink4);font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;">Liabilities</div>
+            <div style="font-size:16px;font-weight:600;color:var(--negative);font-family:var(--fm);">${fmtK(totalLiabs)}</div>
             ${hasCompare&&priorLiabs!==null?`<div style="font-size:10px;color:var(--ink4);">${fmtK(priorLiabs)} prior</div>`:''}
           </div>
         </div>
@@ -3923,7 +4295,7 @@ function renderPulseDetailLens(sourceKey) {
             <div style="font-size:12px;font-weight:600;color:var(--ink2);">${bMeta.label}</div>
             <div style="font-size:10px;color:var(--ink4);">${items.length} items · ${pct}%</div>
           </div>
-          <div style="font-size:14px;font-weight:700;color:var(--negative);font-family:var(--mono);">${fmtK(total)}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--negative);font-family:var(--fm);">${fmtK(total)}</div>
         </div>`;
 
       const sorted = items.slice().sort((a,b) => b.date.localeCompare(a.date));
@@ -3935,7 +4307,7 @@ function renderPulseDetailLens(sourceKey) {
             <div style="font-size:11px;color:var(--ink2);line-height:1.4;">${name.length>70?name.slice(0,68)+'…':name}</div>
             <div style="font-size:9px;color:var(--ink4);">${t.date}</div>
           </div>
-          <div style="font-size:12px;font-weight:600;color:var(--negative);font-family:var(--mono);white-space:nowrap;">${fmtK(Math.abs(t.amount))}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--negative);font-family:var(--fm);white-space:nowrap;">${fmtK(Math.abs(t.amount))}</div>
         </div>`;
       });
       out += `</div>`;
@@ -4020,10 +4392,10 @@ function renderThermometer(containerId, selMonth) {
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
       <div>
         <div style="font-size:12px;font-weight:600;color:var(--ink2);">Income Pressure Gauge</div>
-        <div style="font-size:10px;color:var(--ink4);font-family:var(--font-m);">${selOrDefault} · ${isInFlight?'actuals + projected':'closed month'}</div>
+        <div style="font-size:10px;color:var(--ink4);font-family:var(--fm);">${selOrDefault} · ${isInFlight?'actuals + projected':'closed month'}</div>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:11px;font-weight:600;font-family:var(--font-m);color:${overflows?'var(--negative)':'var(--positive)'};">${overflows?'⚠ Over by '+fmtK(overflow):'✓ '+fmtK(deployable-totalSpend)+' free'}</div>
+        <div style="font-size:11px;font-weight:600;font-family:var(--fm);color:${overflows?'var(--negative)':'var(--positive)'};">${overflows?'⚠ Over by '+fmtK(overflow):'✓ '+fmtK(deployable-totalSpend)+' free'}</div>
         <div style="font-size:10px;color:var(--ink4);">${fmtK(deployable)} deployable income</div>
       </div>
     </div>
@@ -4193,7 +4565,7 @@ function renderThermometer(containerId, selMonth) {
 
           <!-- Bottom label -->
           <text x="${TX + TW/2}" y="${BBASE + 40}" text-anchor="middle"
-            font-size="9" font-family="var(--font-m)" fill="rgba(255,255,255,.4)">FIXED</text>
+            font-size="9" font-family="var(--fm)" fill="rgba(255,255,255,.4)">FIXED</text>
 
         </svg>
       </div>
@@ -4202,8 +4574,8 @@ function renderThermometer(containerId, selMonth) {
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;padding-top:8px;">
         <!-- Deployable income bar -->
         <div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;border:1px solid rgba(45,212,191,.2);">
-          <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Post-Savings Income</div>
-          <div style="font-size:22px;font-weight:300;font-family:var(--font-d);color:var(--positive);">${fmtK(deployable)}</div>
+          <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Post-Savings Income</div>
+          <div style="font-size:22px;font-weight:300;font-family:var(--fd);color:var(--positive);">${fmtK(deployable)}</div>
           <div style="font-size:10px;color:var(--ink4);">${fmtK(totalInc)} gross · ${fmtK(autoSaveAmt)} auto-save</div>
         </div>
 
@@ -4211,8 +4583,8 @@ function renderThermometer(containerId, selMonth) {
         <div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;border-left:3px solid ${fixedColor};">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <div>
-              <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Fixed Obligations</div>
-              <div style="font-size:18px;font-weight:300;font-family:var(--font-d);color:${fixedColor};">${fmtK(fixedTotal)}</div>
+              <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Fixed Obligations</div>
+              <div style="font-size:18px;font-weight:300;font-family:var(--fd);color:${fixedColor};">${fmtK(fixedTotal)}</div>
             </div>
             <div style="text-align:right;">
               <div style="font-size:16px;font-weight:600;color:${fixedColor};">${pctFix}%</div>
@@ -4226,8 +4598,8 @@ function renderThermometer(containerId, selMonth) {
         <div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;border-left:3px solid ${varColor};">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <div>
-              <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Variable Spending</div>
-              <div style="font-size:18px;font-weight:300;font-family:var(--font-d);color:${varColor};">${fmtK(varTotal)}</div>
+              <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Variable Spending</div>
+              <div style="font-size:18px;font-weight:300;font-family:var(--fd);color:${varColor};">${fmtK(varTotal)}</div>
             </div>
             <div style="text-align:right;">
               <div style="font-size:16px;font-weight:600;color:${varColor};">${pctVar}%</div>
@@ -4241,8 +4613,8 @@ function renderThermometer(containerId, selMonth) {
         <div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;border-left:3px solid ${overflows?'var(--negative)':'var(--positive)'};">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <div>
-              <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">${overflows?'Overspend':'Remaining'}</div>
-              <div style="font-size:18px;font-weight:300;font-family:var(--font-d);color:${overflows?'var(--negative)':'var(--positive)'};">${overflows?fmtK(overflow):fmtK(deployable-totalSpend)}</div>
+              <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">${overflows?'Overspend':'Remaining'}</div>
+              <div style="font-size:18px;font-weight:300;font-family:var(--fd);color:${overflows?'var(--negative)':'var(--positive)'};">${overflows?fmtK(overflow):fmtK(deployable-totalSpend)}</div>
             </div>
             <div style="text-align:right;">
               <div style="font-size:16px;font-weight:600;color:${overflows?'var(--negative)':'var(--positive)'};">${overflows?'-':'+'} ${Math.abs(Math.round((deployable-totalSpend)/deployable*100))}%</div>
@@ -4306,7 +4678,7 @@ function renderPulsePL(drillSection) {
       out += '<div style="margin-top:3px;display:flex;gap:4px;align-items:center;">' + srcBadge(et.qSource);
       out += '<span style="font-size:9px;color:var(--ink4);">' + bMeta.icon + ' ' + bMeta.label + '</span></div>';
       out += '</div>';
-      out += '<div style="font-size:13px;font-weight:600;color:' + (t.amount>0?'var(--positive)':'var(--negative)') + ';font-family:var(--mono);white-space:nowrap;">' + (t.amount>0?'+':'') + fmtK(t.amount) + '</div>';
+      out += '<div style="font-size:13px;font-weight:600;color:' + (t.amount>0?'var(--positive)':'var(--negative)') + ';font-family:var(--fm);white-space:nowrap;">' + (t.amount>0?'+':'') + fmtK(t.amount) + '</div>';
       out += '</div>';
     });
     if (!sorted.length) out += '<div style="padding:30px 18px;text-align:center;color:var(--ink4);font-size:12px;">No transactions</div>';
@@ -4395,7 +4767,7 @@ function renderPulsePL(drillSection) {
   ));
   if (_lensSources.length) {
     out += '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:var(--lift);border-bottom:1px solid var(--line);">';
-    out += '<span style="font-size:9px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Unmasked:</span>';
+    out += '<span style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Unmasked:</span>';
     _lensSources.forEach(s => {
       out += '<button onclick="window._pulseLensSource=\'' + s.key + '\';renderPulsePL()" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:14px;font-size:10px;cursor:pointer;background:var(--float);border:1px solid var(--line2);color:' + s.color + ';">' + s.icon + ' ' + s.label + '</button>';
     });
@@ -4442,8 +4814,8 @@ function renderPulsePL(drillSection) {
   // Tile 1: Income
   out += '<div style="background:var(--float);border:1px solid rgba(45,212,191,.2);border-radius:var(--r-lg);padding:14px 12px;position:relative;overflow:hidden;">';
   out += '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--positive);border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
-  out += '<div style="font-size:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + (isInFlightMonth ? 'Income · MTD' : 'Gross Income') + '</div>';
-  out += '<div style="font-size:22px;font-weight:700;color:var(--positive);font-family:var(--mono);">' + fmtK(totalInc) + '</div>';
+  out += '<div style="font-size:8px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + (isInFlightMonth ? 'Income · MTD' : 'Gross Income') + '</div>';
+  out += '<div style="font-size:22px;font-weight:700;color:var(--positive);font-family:var(--fm);">' + fmtK(totalInc) + '</div>';
   if (autoSave > 0) {
     out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">−' + fmtK(autoSave) + ' saved → <strong style="color:var(--river);">' + fmtK(checkingIn) + '</strong> to deploy</div>';
   } else {
@@ -4456,8 +4828,8 @@ function renderPulsePL(drillSection) {
   const netCol = displayNet >= 0 ? 'var(--positive)' : 'var(--negative)';
   out += '<div style="background:var(--float);border:1px solid ' + (displayNet>=0?'rgba(45,212,191,.2)':'rgba(248,113,113,.2)') + ';border-radius:var(--r-lg);padding:14px 12px;position:relative;overflow:hidden;">';
   out += '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:' + netCol + ';border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
-  out += '<div style="font-size:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + (isInFlightMonth ? 'Proj. Net to Savings' : 'Net Surplus / Deficit') + '</div>';
-  out += '<div style="font-size:22px;font-weight:700;color:' + netCol + ';font-family:var(--mono);">' + (displayNet>=0?'+':'') + fmtK(displayNet) + '</div>';
+  out += '<div style="font-size:8px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + (isInFlightMonth ? 'Proj. Net to Savings' : 'Net Surplus / Deficit') + '</div>';
+  out += '<div style="font-size:22px;font-weight:700;color:' + netCol + ';font-family:var(--fm);">' + (displayNet>=0?'+':'') + fmtK(displayNet) + '</div>';
   out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">save rate: <strong style="color:' + (displaySavPct>=20?'var(--positive)':displaySavPct>=10?'var(--gold)':'var(--negative)') + ';">' + displaySavPct.toFixed(1) + '%</strong></div>';
   out += '</div>';
 
@@ -4466,8 +4838,8 @@ function renderPulsePL(drillSection) {
     ? 'rgba(248,113,113,.15)' : 'rgba(248,113,113,.1)';
   out += '<div style="background:var(--float);border:1px solid ' + fixedColor + ';border-radius:var(--r-lg);padding:14px 12px;position:relative;overflow:hidden;">';
   out += '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--negative);opacity:.6;border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
-  out += '<div style="font-size:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Fixed' + (isInFlightMonth ? ' · Full Month' : ' Expenses') + '</div>';
-  out += '<div style="font-size:22px;font-weight:700;color:var(--negative);font-family:var(--mono);">' + fmtK(fixedCommitted) + '</div>';
+  out += '<div style="font-size:8px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Fixed' + (isInFlightMonth ? ' · Full Month' : ' Expenses') + '</div>';
+  out += '<div style="font-size:22px;font-weight:700;color:var(--negative);font-family:var(--fm);">' + fmtK(fixedCommitted) + '</div>';
   if (isInFlightMonth && projBreakdown) {
     const paid = projBreakdown.fixedActual > 0 ? fmtK(projBreakdown.fixedActual) + ' paid' : '';
     const due  = projBreakdown.fixedProjected > 0 ? fmtK(projBreakdown.fixedProjected) + ' due' : (paid ? 'all charged ✓' : '');
@@ -4483,8 +4855,8 @@ function renderPulsePL(drillSection) {
   const varColor = varOver ? 'rgba(248,113,113,.12)' : 'rgba(245,168,0,.12)';
   out += '<div style="background:var(--float);border:1px solid ' + varColor + ';border-radius:var(--r-lg);padding:14px 12px;position:relative;overflow:hidden;">';
   out += '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--gold);opacity:.7;border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
-  out += '<div style="font-size:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Variable' + (isInFlightMonth ? ' · Proj.' : ' Expenses') + '</div>';
-  out += '<div style="font-size:22px;font-weight:700;color:var(--gold);font-family:var(--mono);">' + fmtK(varSpend) + '</div>';
+  out += '<div style="font-size:8px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Variable' + (isInFlightMonth ? ' · Proj.' : ' Expenses') + '</div>';
+  out += '<div style="font-size:22px;font-weight:700;color:var(--gold);font-family:var(--fm);">' + fmtK(varSpend) + '</div>';
   if (isInFlightMonth && projBreakdown && daysElapsed > 0) {
     const rate = projBreakdown.variableActual > 0 ? fmtK(projBreakdown.variableActual / daysElapsed) + '/day' : '';
     out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">' + rate + (rate && projBreakdown.variableProjected > 0 ? ' · ' : '') + (projBreakdown.variableProjected > 0 ? '+' + fmtK(projBreakdown.variableProjected) + ' next ' + daysRemain + 'd' : '') + '</div>';
@@ -4526,8 +4898,8 @@ function renderPulsePL(drillSection) {
       ['Fixed Due',   fmtK(projBreakdown.fixedProjected), 'var(--negative)', 'coming this month'],
       ['Var. Spent',  fmtK(projBreakdown.variableActual), 'var(--gold)',    daysElapsed + 'd of ' + daysInMonth + 'd'],
     ].forEach(function(row) {
-      out += '<div><div style="font-size:8px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + row[0] + '</div>';
-      out += '<div style="font-size:14px;font-weight:700;color:' + row[2] + ';font-family:var(--mono);">' + row[1] + '</div>';
+      out += '<div><div style="font-size:8px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + row[0] + '</div>';
+      out += '<div style="font-size:14px;font-weight:700;color:' + row[2] + ';font-family:var(--fm);">' + row[1] + '</div>';
       out += '<div style="font-size:8px;color:var(--ink4);">' + row[3] + '</div></div>';
     });
     out += '</div>';
@@ -4537,8 +4909,8 @@ function renderPulsePL(drillSection) {
       ['Var. Next ' + daysRemain + 'd', fmtK(projBreakdown.variableProjected), 'var(--river)', 'daily rate × days left'],
       ['Budget Left',                   fmtK(Math.abs(budgetLeft)),              blColor,       budgetLeft >= 0 ? 'after all projections' : 'OVER BUDGET'],
     ].forEach(function(row) {
-      out += '<div><div style="font-size:8px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + row[0] + '</div>';
-      out += '<div style="font-size:14px;font-weight:700;color:' + row[2] + ';font-family:var(--mono);">' + row[1] + '</div>';
+      out += '<div><div style="font-size:8px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + row[0] + '</div>';
+      out += '<div style="font-size:14px;font-weight:700;color:' + row[2] + ';font-family:var(--fm);">' + row[1] + '</div>';
       out += '<div style="font-size:8px;color:var(--ink4);">' + row[3] + '</div></div>';
     });
     out += '</div>';
@@ -4599,14 +4971,14 @@ function renderPulsePL(drillSection) {
     const projNet        = (totalInc - autoSave - totalExp) - totalAccrued;
     const projCol        = projNet>=0?'var(--positive)':'var(--negative)';
     out += '<div style="background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.25);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">';
-    out += '<div><div style="font-size:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--river);opacity:.8;margin-bottom:2px;">MTD</div>';
-    out += '<div style="font-size:15px;font-weight:700;color:var(--ink);font-family:var(--mono);">'+daysElapsed+' / '+daysInMonth+'d</div>';
+    out += '<div><div style="font-size:8px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--river);opacity:.8;margin-bottom:2px;">MTD</div>';
+    out += '<div style="font-size:15px;font-weight:700;color:var(--ink);font-family:var(--fm);">'+daysElapsed+' / '+daysInMonth+'d</div>';
     out += '<div style="font-size:9px;color:var(--ink4);">'+daysRemain+' left</div></div>';
-    out += '<div><div style="font-size:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--river);opacity:.8;margin-bottom:2px;">Accrued</div>';
-    out += '<div style="font-size:15px;font-weight:700;color:var(--river);font-family:var(--mono);">'+fmtK(totalAccrued)+'</div>';
+    out += '<div><div style="font-size:8px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--river);opacity:.8;margin-bottom:2px;">Accrued</div>';
+    out += '<div style="font-size:15px;font-weight:700;color:var(--river);font-family:var(--fm);">'+fmtK(totalAccrued)+'</div>';
     out += '<div style="font-size:9px;color:var(--ink4);">excl. one-time</div></div>';
-    out += '<div><div style="font-size:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:'+projCol+';opacity:.8;margin-bottom:2px;">Proj. Net</div>';
-    out += '<div style="font-size:15px;font-weight:700;color:'+projCol+';font-family:var(--mono);">'+(projNet>=0?'+':'')+fmtK(projNet)+'</div>';
+    out += '<div><div style="font-size:8px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:'+projCol+';opacity:.8;margin-bottom:2px;">Proj. Net</div>';
+    out += '<div style="font-size:15px;font-weight:700;color:'+projCol+';font-family:var(--fm);">'+(projNet>=0?'+':'')+fmtK(projNet)+'</div>';
     out += '<div style="font-size:9px;color:var(--ink4);">full month est.</div></div>';
     out += '</div>';
   }
@@ -4615,13 +4987,13 @@ function renderPulsePL(drillSection) {
   const plGridCols = isInFlight ? '1fr 60px 60px 68px' : '1fr 72px 72px';
   out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;">';
   out += '<div style="display:grid;grid-template-columns:'+plGridCols+';padding:8px 14px;background:var(--lift);border-bottom:1px solid var(--line);">';
-  out += '<div style="font-size:9px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Category</div>';
+  out += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Category</div>';
   if (isInFlight) {
-    out += '<div style="font-size:8px;font-family:var(--mono);text-transform:uppercase;color:var(--ink4);text-align:right;">Act<br><span style="opacity:.6;">'+daysElapsed+'d</span></div>';
-    out += '<div style="font-size:8px;font-family:var(--mono);text-transform:uppercase;color:var(--river);text-align:right;">Acc<br><span style="opacity:.6;">+'+daysRemain+'d</span></div>';
+    out += '<div style="font-size:8px;font-family:var(--fm);text-transform:uppercase;color:var(--ink4);text-align:right;">Act<br><span style="opacity:.6;">'+daysElapsed+'d</span></div>';
+    out += '<div style="font-size:8px;font-family:var(--fm);text-transform:uppercase;color:var(--river);text-align:right;">Acc<br><span style="opacity:.6;">+'+daysRemain+'d</span></div>';
   }
-  out += '<div style="font-size:9px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">'+(isInFlight?'Tot':'Amount')+'</div>';
-  out += '<div style="font-size:9px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Run</div>';
+  out += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">'+(isInFlight?'Tot':'Amount')+'</div>';
+  out += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Run</div>';
   out += '</div>';
 
   sections.forEach(sec => {
@@ -4644,18 +5016,18 @@ function renderPulsePL(drillSection) {
       const sActual  = sec.buckets.reduce((s,bk)=>s+(sec.bucketData[bk]?.actual||0),0);
       const sAccrued = sec.buckets.reduce((s,bk)=>s+(sec.bucketData[bk]?.accrued||0),0);
       out += '<div style="padding:11px 4px 11px 0;text-align:right;">';
-      out += sActual>0.01?'<div style="font-size:12px;font-weight:600;color:'+sec.color+';font-family:var(--mono);">'+sec.sign+fmtK(sActual)+'</div>':'<div style="color:var(--ink4);font-size:11px;">—</div>';
+      out += sActual>0.01?'<div style="font-size:12px;font-weight:600;color:'+sec.color+';font-family:var(--fm);">'+sec.sign+fmtK(sActual)+'</div>':'<div style="color:var(--ink4);font-size:11px;">—</div>';
       out += '</div>';
       out += '<div style="padding:11px 4px 11px 0;text-align:right;">';
-      out += sAccrued>0.5?'<div style="font-size:12px;color:var(--river);font-family:var(--mono);opacity:.85;">'+sec.sign+fmtK(sAccrued)+'</div>':'<div style="color:var(--ink4);font-size:11px;">—</div>';
+      out += sAccrued>0.5?'<div style="font-size:12px;color:var(--river);font-family:var(--fm);opacity:.85;">'+sec.sign+fmtK(sAccrued)+'</div>':'<div style="color:var(--ink4);font-size:11px;">—</div>';
       out += '</div>';
     }
 
     out += '<div style="padding:11px 4px 11px 0;text-align:right;">';
-    out += '<div style="font-size:13px;font-weight:700;color:'+sec.color+';font-family:var(--mono);">'+sec.sign+fmtK(sec.total)+'</div>';
+    out += '<div style="font-size:13px;font-weight:700;color:'+sec.color+';font-family:var(--fm);">'+sec.sign+fmtK(sec.total)+'</div>';
     out += pbar(sec.total, sec.color) + '</div>';
     out += '<div style="padding:11px 14px 11px 4px;text-align:right;">';
-    out += '<div style="font-size:12px;font-weight:600;color:'+balCol+';font-family:var(--mono);">'+(sec.runBal>=0?'+':'')+fmtK(sec.runBal)+'</div></div>';
+    out += '<div style="font-size:12px;font-weight:600;color:'+balCol+';font-family:var(--fm);">'+(sec.runBal>=0?'+':'')+fmtK(sec.runBal)+'</div></div>';
     out += '</div>';
 
     if (!isOpen || !hasBkts) return;
@@ -4674,15 +5046,15 @@ function renderPulsePL(drillSection) {
 
       if (isInFlight) {
         out += '<div style="padding:8px 4px;text-align:right;">';
-        out += bd.actual>0.01?'<div style="font-size:11px;color:'+sec.color+';font-family:var(--mono);">'+fmtK(bd.actual)+'</div>':'<div style="color:var(--ink4);font-size:10px;">—</div>';
+        out += bd.actual>0.01?'<div style="font-size:11px;color:'+sec.color+';font-family:var(--fm);">'+fmtK(bd.actual)+'</div>':'<div style="color:var(--ink4);font-size:10px;">—</div>';
         out += '</div>';
         out += '<div style="padding:8px 4px;text-align:right;">';
-        out += bd.accrued>0.5?'<div style="font-size:11px;color:var(--river);font-family:var(--mono);opacity:.85;">'+fmtK(bd.accrued)+'</div>':'<div style="color:var(--ink4);font-size:10px;">—</div>';
+        out += bd.accrued>0.5?'<div style="font-size:11px;color:var(--river);font-family:var(--fm);opacity:.85;">'+fmtK(bd.accrued)+'</div>':'<div style="color:var(--ink4);font-size:10px;">—</div>';
         out += '</div>';
       }
 
       out += '<div style="padding:8px 4px 8px 0;text-align:right;">';
-      out += '<div style="font-size:12px;font-weight:600;color:'+sec.color+';font-family:var(--mono);">'+fmtK(bd.total)+'</div>';
+      out += '<div style="font-size:12px;font-weight:600;color:'+sec.color+';font-family:var(--fm);">'+fmtK(bd.total)+'</div>';
       out += pbar(bd.total, sec.color) + '</div>';
       out += '<div style="padding:8px 14px 8px 4px;text-align:right;">';
       out += '<button onclick="renderPulsePL({key:\''+bk+'\',label:\''+bMeta.label.replace(/'/g,"\\'")+'\',month:\''+selMonth+'\'});event.stopPropagation()" style="font-size:9px;color:var(--river);background:transparent;border:1px solid rgba(96,165,250,.3);padding:2px 5px;border-radius:4px;cursor:pointer;">\u2192</button>';
@@ -4711,7 +5083,7 @@ function renderPulsePL(drillSection) {
         }
         out += '<div style="font-size:11px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + payee + '</div></div>';
         if (hasMul) out += '<div style="font-size:10px;color:var(--ink4);flex-shrink:0;">' + pd.txns.length + 'x</div>';
-        out += '<div style="font-size:12px;color:var(--gold);font-family:var(--mono);min-width:52px;text-align:right;">' + fmtK(pd.total) + '</div></div>';
+        out += '<div style="font-size:12px;color:var(--gold);font-family:var(--fm);min-width:52px;text-align:right;">' + fmtK(pd.total) + '</div></div>';
 
         if (pOpen || !hasMul) {
           pd.txns.slice().sort((a,b)=>b.date.localeCompare(a.date)).forEach(t => {
@@ -4720,7 +5092,7 @@ function renderPulsePL(drillSection) {
             out += '<div style="display:flex;justify-content:space-between;padding:4px 14px 4px 62px;border-bottom:1px solid rgba(255,255,255,.015);background:rgba(0,0,0,.35);">';
             out += '<div><div style="font-size:9px;color:var(--ink4);">' + t.date + '</div>';
             if (subLbl) out += '<div style="font-size:9px;color:'+(isSplit?'var(--river)':'var(--ink4)')+';font-style:'+(isSplit?'italic':'normal')+';">' + subLbl.slice(0,32) + '</div>';
-            out += '</div><div style="font-size:10px;font-family:var(--mono);color:'+(t.amount>0?'var(--positive)':'var(--gold)')+';"> ' + fmtK(Math.abs(t.amount)) + '</div></div>';
+            out += '</div><div style="font-size:10px;font-family:var(--fm);color:'+(t.amount>0?'var(--positive)':'var(--gold)')+';"> ' + fmtK(Math.abs(t.amount)) + '</div></div>';
           });
         }
       });
@@ -4732,7 +5104,7 @@ function renderPulsePL(drillSection) {
   // Net row
   out += '<div style="display:grid;grid-template-columns:1fr 72px 72px;background:'+(net>=0?'rgba(45,212,191,.06)':'rgba(248,113,113,.06)')+';border:1px solid '+(net>=0?'rgba(45,212,191,.3)':'rgba(248,113,113,.3)')+';border-radius:var(--r-lg);margin-bottom:14px;">';
   out += '<div style="padding:12px 14px;font-size:13px;font-weight:700;color:'+surpCol+';">' + (net>=0?'\u2713 Net Surplus':'\u26A0 Net Deficit') + '</div>';
-  out += '<div style="padding:12px 4px;text-align:right;font-size:14px;font-weight:700;color:'+surpCol+';font-family:var(--mono);">'+(net>=0?'+':'')+fmtK(net)+'</div>';
+  out += '<div style="padding:12px 4px;text-align:right;font-size:14px;font-weight:700;color:'+surpCol+';font-family:var(--fm);">'+(net>=0?'+':'')+fmtK(net)+'</div>';
   out += '<div style="padding:12px 14px;"></div></div>';
 
   // Surplus allocation
@@ -4743,7 +5115,7 @@ function renderPulsePL(drillSection) {
     [['0.40','Emergency Fund','3\u20136 mo expenses'],['0.30','Investments','brokerage/index'],['0.20','College 529','per-child'],['0.10','Experiences','travel, family']].forEach(([p,l,s]) => {
       const amt = net * parseFloat(p);
       out += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px;">';
-      out += '<div style="font-size:8px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">' + l + '</div>';
+      out += '<div style="font-size:8px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">' + l + '</div>';
       out += '<div style="font-size:16px;font-weight:700;color:var(--positive);">' + fmtK(amt) + '</div>';
       out += '<div style="font-size:9px;color:var(--ink4);">' + s + '</div></div>';
     });
@@ -4830,6 +5202,7 @@ function emptyHTML(tab) {
 // BOOT
 // ════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', function() {
+  window.forgeAppInit = function() {
   // Force visible immediately
   document.body.style.opacity = '1';
   document.body.style.visibility = 'visible';
@@ -4877,6 +5250,124 @@ window.addEventListener('DOMContentLoaded', function() {
   // Desktop tooltip mousemove + mobile tap tooltip
   document.addEventListener('mousemove', positionChartTip);
   initPulseTips();
+  };
+
+  // ════════════════════════════════════════════════════════════════════════════
+// FORGE LOCK CONTROLLER
+// ════════════════════════════════════════════════════════════════════════════
+function _lockShow() { const e=document.getElementById('forge-lock'); if(e)e.style.display='flex'; }
+function _lockHide() { const e=document.getElementById('forge-lock'); if(e)e.style.display='none'; }
+function _lockSpinner(show,label) {
+  const sp=document.getElementById('lock-spinner'),lbl=document.getElementById('lock-spinner-lbl');
+  if(sp)sp.style.display=show?'block':'none';
+  if(lbl&&label)lbl.textContent=label;
+}
+
+async function forgeInitAuth() {
+  _lockShow();
+  const setup=document.getElementById('lock-setup'), unlock=document.getElementById('lock-unlock');
+  if (!FORGE_AUTH.isSetup()) {
+    if(setup)setup.style.display='block';
+    if(unlock)unlock.style.display='none';
+    return;
+  }
+  if(setup)setup.style.display='none';
+  if(unlock)unlock.style.display='block';
+  if (FORGE_AUTH.hasWebAuthn()) {
+    const bioBtn=document.getElementById('lock-bio-btn');
+    if(bioBtn)bioBtn.style.display='block';
+    const biometric=await FORGE_AUTH.isBiometricAvailable();
+    if(biometric) setTimeout(async()=>{ const ok=await FORGE_AUTH.unlockWithBiometric(); if(ok)forgePostUnlock(); },300);
+  }
+  setTimeout(()=>{ const p=document.getElementById('lock-pass'); if(p)p.focus(); },100);
+}
+
+async function forgeSetupPIN() {
+  const p1=document.getElementById('lock-pass-new')?.value||'';
+  const p2=document.getElementById('lock-pass-confirm')?.value||'';
+  const err=document.getElementById('lock-setup-err');
+  if(p1.length<4){if(err)err.textContent='Minimum 4 characters.';return;}
+  if(p1!==p2){if(err)err.textContent='Passphrases do not match.';return;}
+  if(err)err.textContent='';
+  _lockSpinner(true,'Encrypting your data\u2026');
+  try {
+    await FORGE_AUTH.setup(p1);
+    const biometric=await FORGE_AUTH.isBiometricAvailable();
+    if(biometric&&!FORGE_AUTH.hasWebAuthn()){
+      _lockSpinner(false);
+      if(confirm('Register Face ID / Touch ID for fast unlock?')){
+        _lockSpinner(true,'Registering biometric\u2026');
+        await FORGE_AUTH.registerBiometric(p1);
+      }
+    }
+    _lockSpinner(false);
+    forgePostUnlock();
+  } catch(e){ _lockSpinner(false); if(err)err.textContent='Setup failed: '+e.message; }
+}
+
+async function forgeUnlock() {
+  const passEl=document.getElementById('lock-pass'),errEl=document.getElementById('lock-err'),btnEl=document.getElementById('lock-btn');
+  const p=passEl?.value||'';
+  if(!p){if(errEl)errEl.textContent='Enter your passphrase.';return;}
+  if(errEl)errEl.textContent='';
+  if(btnEl){btnEl.disabled=true;btnEl.textContent='Checking\u2026';}
+  _lockSpinner(true,'Decrypting\u2026');
+  const ok=await FORGE_AUTH.unlock(p);
+  _lockSpinner(false);
+  if(btnEl){btnEl.disabled=false;btnEl.textContent='Unlock Forge';}
+  if(ok){ forgePostUnlock(); }
+  else{ if(errEl)errEl.textContent='Incorrect passphrase.'; if(passEl){passEl.value='';passEl.focus();} }
+}
+
+async function forgeUnlockBio() {
+  _lockSpinner(true,'Waiting for biometric\u2026');
+  const ok=await FORGE_AUTH.unlockWithBiometric();
+  _lockSpinner(false);
+  if(ok){ forgePostUnlock(); }
+  else{ const e=document.getElementById('lock-err'); if(e)e.textContent='Biometric failed \u2014 use passphrase.'; }
+}
+
+function forgeForgotPIN() {
+  const msg='FORGE: Forgot Passphrase Recovery\n\n1. Clear local data from this browser.\n2. Re-pull from Cloudflare sync.\n3. Set a new passphrase.\n\nNo data is lost if you have Cloudflare sync.\n\nClear local data now?';
+  if(confirm(msg)){
+    ['forge_prod_v1','ledger_v3','forge_settings_v2','forge_settings_v1','forge_lean_v1','forge_file_registry'].forEach(k=>localStorage.removeItem(k));
+    FORGE_AUTH.clearAuth();
+    location.reload();
+  }
+}
+
+async function forgePostUnlock() {
+  _lockSpinner(true,'Loading\u2026');
+  window._forgeDecrypted=window._forgeDecrypted||{};
+  const dataKeys=['forge_prod_v1','ledger_v3','forge_settings_v2','forge_settings_v1'];
+  for(const k of dataKeys){
+    try{ const dec=await FORGE_AUTH.get(k); if(dec)window._forgeDecrypted[k]=dec; }catch(e){}
+  }
+  _patchLocalStorage();
+  _lockSpinner(false);
+  _lockHide();
+  if(typeof forgeAppInit==='function') forgeAppInit();
+}
+
+function _patchLocalStorage(){
+  if(window._lsPatchApplied)return;
+  window._lsPatchApplied=true;
+  const dec=window._forgeDecrypted||{};
+  const og=Storage.prototype.getItem, os=Storage.prototype.setItem, or2=Storage.prototype.removeItem;
+  Storage.prototype.getItem=function(k){ if(this===localStorage&&dec[k]!==undefined)return dec[k]; return og.call(this,k); };
+  Storage.prototype.setItem=function(k,v){
+    if(this===localStorage&&FORGE_AUTH.isUnlocked()){
+      dec[k]=v;
+      FORGE_AUTH.set(k,v).catch(()=>{});
+      return;
+    }
+    os.call(this,k,v);
+  };
+  Storage.prototype.removeItem=function(k){ if(this===localStorage)delete dec[k]; or2.call(this,k); };
+}
+
+
+forgeInitAuth();
 });
 </script>
 

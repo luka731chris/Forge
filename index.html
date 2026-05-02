@@ -12,71 +12,82 @@
 <title>Forge · Pittsburgh Family Finance</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-/* ═══════════════════════════════════════════════════════════════
-   FORGE — Design System  lean_4.0  Pittsburgh Black & Gold
-   Typography: Cormorant Garamond (display) / DM Sans (ui) / Fira Code (mono)
-   Palette: Carbon black + burnished gold + steel teal + Pittsburgh bridges
-═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   FORGE DESIGN SYSTEM  v5.0  — Pittsburgh Black & Gold
+   Canonical spacing: 4px base unit  |  Type scale: 9/11/13/16/24/32/40
+   Surfaces: void→base→lift→float→raised  |  3-font system
+═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Reset & Base ──────────────────────────────────────────── */
-html { height:100%; }
-*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+/* ── Reset ─────────────────────────────────────────────────────────────── */
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
 
-/* ── Design Tokens ─────────────────────────────────────────── */
+/* ── Tokens ─────────────────────────────────────────────────────────────── */
 :root {
-  /* Surfaces */
-  --void:   #060606;
-  --base:   #0C0C0D;
-  --lift:   #141416;
-  --float:  #1A1A1D;
-  --raised: #202024;
+  /* Surfaces (darkest → lightest) */
+  --void:   #050505;
+  --base:   #0A0A0B;
+  --lift:   #111113;
+  --float:  #171719;
+  --raised: #1E1E21;
+  --hover:  rgba(255,255,255,.025);
 
   /* Borders */
-  --line:   #242428;
-  --line2:  #2E2E34;
+  --line:  #1F1F24;
+  --line2: #292930;
+  --line3: #353540;
 
   /* Brand */
-  --gold:      #F5A800;
-  --gold-dim:  rgba(245,168,0,.12);
-  --gold-glow: rgba(245,168,0,.06);
+  --gold:     #F5A800;
+  --gold-10:  rgba(245,168,0,.10);
+  --gold-20:  rgba(245,168,0,.20);
 
   /* Semantic */
-  --positive: #2DD4BF;
-  --negative: #F87171;
-  --river:    #60A5FA;
-  --warn:     #FBBF24;
+  --pos:   #2DD4BF;
+  --neg:   #F87171;
+  --river: #60A5FA;
+  --warn:  #FBBF24;
+  --purple:#C084FC;
 
-  /* Ink — warmer, paper-inspired */
-  --ink:  #EEEAE4;
-  --ink2: #C4BFB8;
-  --ink3: #8A857E;
-  --ink4: #524E4A;
+  /* Ink (text hierarchy) */
+  --ink:   #EDE9E3;   /* headlines, values */
+  --ink2:  #C0BAB2;   /* body, row labels */
+  --ink3:  #857F78;   /* secondary, hints */
+  --ink4:  #4E4A46;   /* metadata, placeholders */
 
   /* Typography */
-  --font-d:  'Cormorant Garamond', Georgia, serif;
-  --font-ui: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-m:  'Fira Code', 'JetBrains Mono', monospace;
+  --fd:  'Cormorant Garamond', Georgia, serif;   /* display numbers */
+  --fu:  'DM Sans', -apple-system, sans-serif;   /* UI text */
+  --fm:  'Fira Code', 'JetBrains Mono', monospace; /* data/mono */
+
+  /* Spacing scale (4px base) */
+  --sp1:  4px;
+  --sp2:  8px;
+  --sp3: 12px;
+  --sp4: 16px;
+  --sp5: 20px;
+  --sp6: 24px;
+  --sp8: 32px;
 
   /* Radius */
-  --r-xs:  4px;
   --r-sm:  6px;
+  --r:     8px;
   --r-md:  10px;
-  --r:     10px;
   --r-lg:  14px;
   --r-xl:  20px;
 
-  /* Elevation */
-  --shadow:    0 1px 8px rgba(0,0,0,.5);
-  --shadow-lg: 0 4px 24px rgba(0,0,0,.7);
+  /* Transitions */
+  --t:  .12s ease;
+  --t2: .2s ease;
 }
 
-/* ── Body ──────────────────────────────────────────────────── */
+/* ── Body / Shell ───────────────────────────────────────────────────────── */
+html { height:100%; }
 body {
-  font-family: var(--font-ui);
+  font-family: var(--fu);
   font-size: 13px;
+  line-height: 1.5;
   font-weight: 400;
-  line-height: 1.55;
-  color: var(--ink);
+  color: var(--ink2);
   background: var(--base);
   height: 100vh;
   overflow: hidden;
@@ -86,146 +97,132 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Header ────────────────────────────────────────────────── */
+/* ── Header ─────────────────────────────────────────────────────────────── */
 header {
-  height: 52px;
+  height: 48px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 var(--sp5);
   background: var(--void);
   border-bottom: 1px solid var(--line);
-  z-index: 100;
+  z-index: 200;
 }
 .logo {
-  font-family: var(--font-d);
-  font-size: 20px;
+  font-family: var(--fd);
+  font-size: 18px;
   font-weight: 600;
-  letter-spacing: .06em;
+  letter-spacing: .1em;
   color: var(--ink);
 }
 .logo span { color: var(--gold); }
-.logo-sub {
-  font-family: var(--font-m);
+.logo-sub  {
+  font-family: var(--fm);
   font-size: 8px;
-  letter-spacing: .20em;
+  letter-spacing: .22em;
   text-transform: uppercase;
   color: var(--ink4);
-  margin-top: -1px;
 }
-.header-right { display:flex; align-items:center; gap:8px; }
+.header-right { display:flex; align-items:center; gap:var(--sp2); }
 .hdr-stat {
-  font-family: var(--font-m);
+  font-family: var(--fm);
   font-size: 10px;
   color: var(--ink4);
-  letter-spacing: .03em;
 }
-.hdr-stat strong { color: var(--ink2); }
+.hdr-stat strong { color: var(--ink3); }
 
-/* ── App Shell ─────────────────────────────────────────────── */
-.app {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  overflow: hidden;
-}
+/* ── App Layout ─────────────────────────────────────────────────────────── */
+.app { flex:1; min-height:0; display:flex; overflow:hidden; }
 
-/* ── Navigation ────────────────────────────────────────────── */
+/* ── Navigation ─────────────────────────────────────────────────────────── */
 nav {
-  width: 196px;
+  width: 188px;
   flex-shrink: 0;
   background: var(--void);
   border-right: 1px solid var(--line);
   overflow-y: auto;
-  padding: 12px 0 24px;
+  padding: var(--sp3) 0 var(--sp6);
   display: flex;
   flex-direction: column;
 }
-nav::-webkit-scrollbar { width: 3px; }
-nav::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
+nav::-webkit-scrollbar { width:2px; }
+nav::-webkit-scrollbar-thumb { background:var(--line2); }
 
-.nav-section { margin-bottom: 20px; }
-.nav-section:last-child { margin-top: auto; margin-bottom: 0; }
+.nav-section { margin-bottom: var(--sp5); }
+.nav-section:last-child { margin-top:auto; padding-top:var(--sp3); border-top:1px solid var(--line); margin-bottom:0; }
 
 .nav-label {
   font-size: 9px;
   font-weight: 700;
-  font-family: var(--font-ui);
-  letter-spacing: .22em;
+  font-family: var(--fm);
+  letter-spacing: .2em;
   text-transform: uppercase;
   color: var(--ink4);
-  padding: 0 16px;
-  margin-bottom: 2px;
+  padding: var(--sp1) var(--sp4);
+  margin-bottom: var(--sp1);
 }
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 8px 16px;
-  font-size: 12.5px;
+  gap: var(--sp2);
+  padding: 7px var(--sp4);
+  font-size: 12px;
   font-weight: 400;
-  color: var(--ink3);
+  color: var(--ink4);
   cursor: pointer;
   border-left: 2px solid transparent;
-  transition: color .12s, background .12s;
+  transition: color var(--t), background var(--t);
   letter-spacing: .01em;
+  line-height: 1;
 }
-.nav-item:hover { color: var(--ink); background: rgba(255,255,255,.025); }
+.nav-item:hover { color:var(--ink2); background:var(--hover); }
 .nav-item.active {
   color: var(--gold);
   border-left-color: var(--gold);
-  background: var(--gold-glow);
+  background: var(--gold-10);
   font-weight: 500;
 }
-.nav-item svg { opacity: .6; flex-shrink: 0; }
-.nav-item.active svg { opacity: 1; }
+.nav-item svg { opacity:.55; flex-shrink:0; }
+.nav-item.active svg { opacity:1; }
 
-/* ── Main Scroll Area ──────────────────────────────────────── */
+/* ── Main Scroll ─────────────────────────────────────────────────────────── */
 main {
   flex: 1 1 0%;
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 24px 28px 64px;
+  padding: var(--sp5) var(--sp6) 80px;
   scrollbar-width: thin;
-  scrollbar-color: var(--ink4) var(--lift);
+  scrollbar-color: var(--line2) transparent;
 }
-main::-webkit-scrollbar { width: 5px; }
-main::-webkit-scrollbar-track { background: transparent; }
-main::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 3px; }
-main::-webkit-scrollbar-thumb:hover { background: var(--ink4); }
+main::-webkit-scrollbar { width:4px; }
+main::-webkit-scrollbar-thumb { background:var(--line2); border-radius:2px; }
+main::-webkit-scrollbar-thumb:hover { background:var(--line3); }
 
-/* ── Pages ─────────────────────────────────────────────────── */
-.page { display: none; }
-.page.active {
-  display: block;
-  width: 100%;
-  min-width: 0;
-}
+/* ── Pages ───────────────────────────────────────────────────────────────── */
+.page { display:none; }
+.page.active { display:block; width:100%; min-width:0; }
 
-/* ── Page Header ───────────────────────────────────────────── */
+/* ── Page Header ─────────────────────────────────────────────────────────── */
 .page-hdr {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: var(--sp4);
+  margin-bottom: var(--sp5);
   width: 100%;
   min-width: 0;
 }
-.page-hdr > div:first-child {
-  flex: 1 1 auto;
-  min-width: 0;
-}
+.page-hdr > div:first-child { flex:1 1 auto; min-width:0; }
 .page-title {
-  font-family: var(--font-d);
-  font-size: 34px;
+  font-family: var(--fd);
+  font-size: 32px;
   font-weight: 400;
   line-height: 1.05;
   letter-spacing: -.01em;
-  background: linear-gradient(150deg, #F5F2EC 0%, #B8B3AA 100%);
+  background: linear-gradient(145deg, #F5F0E8 0%, #AAA49C 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -233,104 +230,65 @@ main::-webkit-scrollbar-thumb:hover { background: var(--ink4); }
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .page-sub {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--ink4);
-  font-family: var(--font-ui);
-  letter-spacing: .01em;
-  line-height: 1.5;
+  font-family: var(--fm);
+  letter-spacing: .03em;
 }
-.page-hdr .page-sub { margin-bottom: 0; }
 
-/* ── KPI Cards ─────────────────────────────────────────────── */
+/* ── KPI Grid ────────────────────────────────────────────────────────────── */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4,1fr);
-  gap: 10px;
-  margin-bottom: 18px;
+  gap: var(--sp2);
+  margin-bottom: var(--sp4);
 }
 .kpi {
   background: var(--float);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  padding: 14px 16px;
+  padding: var(--sp3) var(--sp4);
 }
 .kpi-label {
   font-size: 9px;
-  font-family: var(--font-m);
+  font-family: var(--fm);
   letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--ink4);
-  margin-bottom: 6px;
+  margin-bottom: var(--sp1);
 }
 .kpi-val {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 300;
-  font-family: var(--font-d);
+  font-family: var(--fd);
   color: var(--ink);
   line-height: 1;
   letter-spacing: -.02em;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .kpi-sub {
   font-size: 11px;
   color: var(--ink4);
-  font-family: var(--font-ui);
 }
-.kpi.positive .kpi-val { color: var(--positive); }
-.kpi.gold .kpi-val { color: var(--gold); }
+.kpi.positive .kpi-val { color:var(--pos); }
+.kpi.gold     .kpi-val { color:var(--gold); }
 
-/* ── Section tiles (smaller, used in IS, Financials) ───────── */
-.kpi-cluster {
-  display: grid;
-  grid-template-columns: repeat(4,1fr);
-  gap: 8px;
-  margin-bottom: 12px;
-}
-.kpi-sm {
-  background: var(--float);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  padding: 12px 14px;
-}
-.kpi-sm-lbl {
-  font-size: 9px;
-  font-family: var(--font-m);
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--ink4);
-  margin-bottom: 4px;
-}
-.kpi-sm-val {
-  font-size: 20px;
-  font-weight: 300;
-  font-family: var(--font-d);
-  color: var(--ink);
-  line-height: 1;
-  letter-spacing: -.01em;
-  margin-bottom: 2px;
-}
-.kpi-sm-sub {
-  font-size: 10px;
-  color: var(--ink4);
-  font-family: var(--font-ui);
-}
-
-/* ── Charts ────────────────────────────────────────────────── */
+/* ── Chart cards ─────────────────────────────────────────────────────────── */
 .chart-grid-2 {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: var(--sp2);
+  margin-bottom: var(--sp2);
 }
-.chart-grid-1 { margin-bottom: 12px; }
+.chart-grid-1 { margin-bottom:var(--sp2); }
 .chart-card {
   background: var(--float);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  padding: 16px 18px;
+  padding: var(--sp4);
   contain: paint;
 }
 .chart-title {
@@ -338,37 +296,36 @@ main::-webkit-scrollbar-thumb:hover { background: var(--ink4); }
   font-weight: 600;
   color: var(--ink2);
   margin-bottom: 2px;
-  font-family: var(--font-ui);
 }
 .chart-sub {
   font-size: 10px;
   color: var(--ink4);
-  font-family: var(--font-m);
-  margin-bottom: 12px;
+  font-family: var(--fm);
+  margin-bottom: var(--sp3);
 }
-.chart-area { position: relative; }
+.chart-area { position:relative; }
 
-/* ── Tables ─────────────────────────────────────────────────── */
+/* ── Tables ──────────────────────────────────────────────────────────────── */
 .table-card {
   background: var(--float);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   overflow: hidden;
-  margin-bottom: 12px;
+  margin-bottom: var(--sp2);
 }
 .table-hdr {
-  padding: 11px 16px;
+  padding: var(--sp2) var(--sp4);
   border-bottom: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: var(--lift);
 }
-.table-hdr-title { font-size: 13px; font-weight: 600; color: var(--ink2); }
-table { width: 100%; border-collapse: collapse; }
+.table-hdr-title { font-size:12px; font-weight:600; color:var(--ink2); }
+table { width:100%; border-collapse:collapse; }
 th {
-  padding: 8px 12px;
-  font-family: var(--font-m);
+  padding: 7px var(--sp3);
+  font-family: var(--fm);
   font-size: 9px;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -377,311 +334,325 @@ th {
   border-bottom: 1px solid var(--line);
   background: var(--lift);
   white-space: nowrap;
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  position: sticky; top:0; z-index:1;
 }
 td {
-  padding: 8px 12px;
+  padding: 7px var(--sp3);
   font-size: 12px;
   color: var(--ink2);
-  border-bottom: 1px solid rgba(255,255,255,.03);
+  border-bottom: 1px solid rgba(255,255,255,.028);
+  line-height: 1.4;
 }
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: rgba(255,255,255,.018); }
-.td-num { font-family: var(--font-m); text-align: right; font-size: 12px; }
-.td-pos { color: var(--positive); }
-.td-neg { color: var(--gold); }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:var(--hover); }
+.td-num { font-family:var(--fm); text-align:right; font-size:12px; }
+.td-pos { color:var(--pos); }
+.td-neg { color:var(--gold); }
 
-/* ── Financial Statements (shared between IS, Financials) ────── */
+/* ── Financial statement rows ─────────────────────────────────────────────── */
 .fin-section {
   background: var(--float);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: var(--sp2);
 }
 .fin-hdr {
-  padding: 11px 16px 10px;
+  padding: var(--sp2) var(--sp4);
   border-bottom: 1px solid var(--line);
   background: var(--lift);
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
 }
-.fin-hdr-title {
-  font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: .01em;
-}
-.fin-hdr-sub {
-  font-size: 10px;
-  color: var(--ink4);
-  font-family: var(--font-m);
-  margin-top: 1px;
-}
+.fin-hdr-title { font-family:var(--fu); font-size:12px; font-weight:700; color:var(--ink); }
+.fin-hdr-sub   { font-size:10px; color:var(--ink4); font-family:var(--fm); }
 .fin-row {
   display: grid;
-  grid-template-columns: 1fr repeat(3, 100px);
-  padding: 7px 16px;
-  border-bottom: 1px solid rgba(255,255,255,.03);
+  grid-template-columns: 1fr repeat(3,88px);
+  padding: 6px var(--sp4);
+  border-bottom: 1px solid rgba(255,255,255,.028);
   font-size: 12px;
   color: var(--ink2);
   align-items: center;
-  font-family: var(--font-ui);
 }
-.fin-row:last-child { border-bottom: none; }
+.fin-row:last-child { border-bottom:none; }
 .fin-row.total-row {
   border-top: 1px solid var(--line2);
   border-bottom: 1px solid var(--line2);
   background: var(--lift);
   font-weight: 700;
-  font-size: 12.5px;
-  color: var(--ink);
-}
-.fin-row.subtotal {
-  background: rgba(255,255,255,.018);
-  font-weight: 600;
-  color: var(--ink);
-}
-.fin-row.indent { padding-left: 32px; color: var(--ink3); }
-.fin-col-hdr {
-  font-family: var(--font-m);
-  font-size: 9px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--ink4);
-  text-align: right;
-  white-space: nowrap;
-}
-.fin-num {
-  font-family: var(--font-m);
   font-size: 12px;
-  text-align: right;
-  color: var(--ink2);
+  color: var(--ink);
 }
-.fin-num.pos { color: var(--positive); }
-.fin-num.neg { color: var(--gold); }
-.fin-num.red { color: var(--negative); }
-.fin-row:hover { background: rgba(255,255,255,.02); }
-.fin-row.indent:hover { background: rgba(255,255,255,.018); }
-.fin-row.total-row:hover { background: var(--lift); }
+.fin-row.subtotal { background:rgba(255,255,255,.015); font-weight:600; color:var(--ink); }
+.fin-row.indent   { padding-left: 28px; color:var(--ink3); }
+.fin-col-hdr { font-family:var(--fm); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink4); text-align:right; }
+.fin-num     { font-family:var(--fm); font-size:12px; text-align:right; color:var(--ink2); }
+.fin-num.pos { color:var(--pos); }
+.fin-num.neg { color:var(--gold); }
+.fin-num.red { color:var(--neg); }
+.fin-row:hover:not(.total-row) { background:var(--hover); cursor:pointer; }
 
-/* ── Balance Sheet ──────────────────────────────────────────── */
+/* ── Balance Sheet ───────────────────────────────────────────────────────── */
 .bs-section {
   background: var(--float);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: var(--sp2);
 }
 .bs-hdr {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 11px 16px;
+  padding: var(--sp2) var(--sp4);
   background: var(--lift);
   border-bottom: 1px solid var(--line);
 }
-.bs-hdr-title { font-size: 12.5px; font-weight: 600; color: var(--ink2); font-family: var(--font-ui); }
-.bs-hdr-total { font-size: 13px; font-weight: 700; font-family: var(--font-m); }
+.bs-hdr-title { font-size:12px; font-weight:600; color:var(--ink2); }
+.bs-hdr-total { font-size:13px; font-weight:700; font-family:var(--fm); }
 .bs-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
-  border-bottom: 1px solid rgba(255,255,255,.03);
+  padding: 7px var(--sp4);
+  border-bottom: 1px solid rgba(255,255,255,.028);
   font-size: 12px;
 }
-.bs-row:last-child { border-bottom: none; }
-.bs-row:hover { background: rgba(255,255,255,.02); }
-.bs-row-name { color: var(--ink2); display: flex; align-items: center; gap: 7px; font-family: var(--font-ui); }
-.bs-row-meta { font-size: 10px; color: var(--ink4); font-family: var(--font-m); }
-.bs-row-amt  { font-family: var(--font-m); font-size: 12.5px; font-weight: 600; }
+.bs-row:last-child { border-bottom:none; }
+.bs-row:hover { background:var(--hover); }
+.bs-row-name { color:var(--ink2); display:flex; align-items:center; gap:7px; }
+.bs-row-meta { font-size:10px; color:var(--ink4); font-family:var(--fm); }
+.bs-row-amt  { font-family:var(--fm); font-size:12px; font-weight:600; }
 .bs-flag {
-  display: inline-flex; align-items: center; gap: 3px;
-  font-size: 9px; font-family: var(--font-m);
-  padding: 1px 6px; border-radius: 8px; font-weight: 600; letter-spacing: .04em;
+  display:inline-flex; align-items:center; gap:3px;
+  font-size:9px; font-family:var(--fm);
+  padding:1px 6px; border-radius:8px; font-weight:600; letter-spacing:.04em;
 }
-.bs-flag-stale  { background:rgba(245,168,0,.1);  color:var(--gold);     border:1px solid rgba(245,168,0,.2); }
-.bs-flag-est    { background:rgba(96,165,250,.1);  color:var(--river);    border:1px solid rgba(96,165,250,.2); }
-.bs-flag-miss   { background:rgba(248,113,113,.1); color:var(--negative); border:1px solid rgba(248,113,113,.2); }
-.bs-flag-ok     { background:rgba(45,212,191,.08); color:var(--positive); border:1px solid rgba(45,212,191,.2); }
-.bs-net-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 18px;
-  background: var(--lift);
-  border-radius: var(--r-lg);
-  border: 1px solid var(--line2);
-}
+.bs-flag-stale { background:rgba(245,168,0,.10);  color:var(--gold);  border:1px solid rgba(245,168,0,.2); }
+.bs-flag-est   { background:rgba(96,165,250,.10);  color:var(--river); border:1px solid rgba(96,165,250,.2); }
+.bs-flag-miss  { background:rgba(248,113,113,.10); color:var(--neg);   border:1px solid rgba(248,113,113,.2); }
+.bs-flag-ok    { background:rgba(45,212,191,.08);  color:var(--pos);   border:1px solid rgba(45,212,191,.2); }
 
-/* ── Inputs & Selects ───────────────────────────────────────── */
+/* ── Inputs / Controls ───────────────────────────────────────────────────── */
 input, select, textarea {
-  font-family: var(--font-ui);
+  font-family: var(--fu);
   font-size: 12px;
-  font-weight: 400;
+  color: var(--ink);
+  accent-color: var(--gold);
 }
-input[type=text],
-input[type=search],
-input[type=number],
-input[type=email] {
+input[type=text], input[type=search], input[type=number],
+input[type=email], input[type=password], input[type=url] {
   background: var(--lift);
   border: 1px solid var(--line2);
   border-radius: var(--r-sm);
-  color: var(--ink);
-  padding: 6px 10px;
+  padding: 6px var(--sp2);
   outline: none;
-  transition: border-color .12s;
+  transition: border-color var(--t);
+  width: 100%;
 }
-input:focus { border-color: var(--gold); }
+input:focus { border-color:var(--gold); }
+input[type=range] {
+  background: transparent;
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  padding: 0;
+  border: none;
+  /* Background handled inline per instance */
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 1px 4px rgba(0,0,0,.5);
+  cursor: pointer;
+}
+input[type=range]::-moz-range-thumb {
+  width:16px; height:16px;
+  border-radius:50%;
+  background:var(--gold);
+  border:none;
+  cursor:pointer;
+}
 select {
   background: var(--lift);
   border: 1px solid var(--line2);
   border-radius: var(--r-sm);
-  color: var(--ink2);
-  padding: 6px 10px;
+  padding: 6px var(--sp2);
+  cursor: pointer;
+  outline: none;
+}
+select:focus { border-color:var(--gold); }
+textarea {
+  background: var(--lift);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-sm);
+  padding: var(--sp2);
+  resize: vertical;
+  outline: none;
+  color: var(--ink);
+}
+textarea:focus { border-color:var(--gold); }
+
+/* ── Toggle switch ───────────────────────────────────────────────────────── */
+.toggle-wrap { display:inline-flex; align-items:center; gap:var(--sp2); cursor:pointer; }
+.toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.toggle input { opacity:0; width:0; height:0; position:absolute; }
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: var(--line2);
+  transition: background var(--t2);
   cursor: pointer;
 }
+.toggle input:checked + .toggle-track { background:var(--gold); }
+.toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left var(--t2);
+  pointer-events: none;
+}
+.toggle input:checked ~ .toggle-thumb { left:19px; }
 
-/* ── Buttons ────────────────────────────────────────────────── */
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 7px 14px;
+  gap: var(--sp1);
+  padding: 6px 14px;
   border-radius: var(--r-sm);
   font-size: 12px;
   font-weight: 500;
-  font-family: var(--font-ui);
+  font-family: var(--fu);
   cursor: pointer;
   border: none;
-  transition: opacity .12s;
+  transition: opacity var(--t);
   letter-spacing: .01em;
+  white-space: nowrap;
 }
-.btn:hover { opacity: .82; }
-.btn-gold { background: var(--gold); color: #000; font-weight: 700; }
-.btn-ghost {
-  background: transparent;
-  border: 1px solid var(--line2);
-  color: var(--ink3);
-}
-.btn-ghost:hover { color: var(--ink); border-color: var(--ink4); }
-.btn-danger { background: transparent; border: 1px solid var(--negative); color: var(--negative); }
+.btn:hover { opacity:.8; }
+.btn-gold  { background:var(--gold); color:#000; font-weight:700; }
+.btn-ghost { background:transparent; border:1px solid var(--line2); color:var(--ink3); }
+.btn-ghost:hover { color:var(--ink); border-color:var(--line3); }
+.btn-danger{ background:transparent; border:1px solid var(--neg); color:var(--neg); }
 
-/* ── Filters bar ───────────────────────────────────────────── */
+/* ── Filters row ─────────────────────────────────────────────────────────── */
 .filters {
   display: flex;
-  gap: 8px;
+  gap: var(--sp2);
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: var(--sp3);
   flex-wrap: wrap;
 }
+.filters input[type=search] { width:200px; }
 
-/* ── Range Tabs ─────────────────────────────────────────────── */
-.range-tabs { display: flex; gap: 3px; }
+/* ── Range tabs ──────────────────────────────────────────────────────────── */
+.range-tabs { display:flex; gap:3px; }
 .rtab {
-  padding: 4px 11px;
+  padding: 4px 10px;
   background: transparent;
   border: 1px solid var(--line2);
   border-radius: var(--r-sm);
   color: var(--ink4);
-  font-size: 10.5px;
-  font-family: var(--font-m);
+  font-size: 10px;
+  font-family: var(--fm);
   font-weight: 500;
   cursor: pointer;
   letter-spacing: .04em;
-  transition: color .1s, background .1s;
+  transition: all var(--t);
 }
-.rtab:hover { color: var(--ink2); }
-.rtab.active { background: var(--gold); border-color: var(--gold); color: #000; font-weight: 700; }
+.rtab:hover { color:var(--ink2); }
+.rtab.active { background:var(--gold); border-color:var(--gold); color:#000; font-weight:700; }
 
-/* ── Upload ─────────────────────────────────────────────────── */
+/* ── Upload zone ─────────────────────────────────────────────────────────── */
 .upload-zone {
   border: 2px dashed var(--line2);
   border-radius: var(--r-lg);
-  padding: 44px 28px;
+  padding: 40px var(--sp6);
   text-align: center;
   cursor: pointer;
-  transition: border-color .15s, background .15s;
-  margin-bottom: 16px;
+  transition: border-color var(--t2), background var(--t2);
+  margin-bottom: var(--sp4);
 }
 .upload-zone:hover, .upload-zone.drag {
   border-color: var(--gold);
-  background: var(--gold-glow);
+  background: var(--gold-10);
 }
-.upload-zone input { display: none; }
-.upload-icon { font-size: 36px; margin-bottom: 10px; }
-.upload-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; color: var(--ink); }
-.upload-sub { font-size: 12px; color: var(--ink4); }
+.upload-zone input { display:none; }
+.upload-icon { font-size:32px; margin-bottom:var(--sp2); }
+.upload-title { font-size:16px; font-weight:600; margin-bottom:4px; color:var(--ink); }
+.upload-sub { font-size:12px; color:var(--ink4); }
 .pour-hero-title {
-  font-family: var(--font-d);
-  font-size: 42px;
+  font-family: var(--fd);
+  font-size: 40px;
   font-weight: 300;
   letter-spacing: -.02em;
   color: var(--ink);
   line-height: 1.05;
 }
 
-/* ── Status Strip ───────────────────────────────────────────── */
-.status-strip {
-  padding: 12px 16px;
-  border-radius: var(--r-md);
-  margin-bottom: 18px;
-  display: flex;
+/* ── Status chips / badges ───────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 12px;
-  flex-wrap: wrap;
-}
-.status-empty { background: var(--lift); border: 1px solid var(--line); color: var(--ink4); }
-.status-demo  { background: rgba(245,168,0,.06); border: 1px solid rgba(245,168,0,.18); color: var(--gold); }
-.status-real  { background: rgba(45,212,191,.04); border: 1px solid rgba(45,212,191,.14); }
-
-/* ── Transfer badge ─────────────────────────────────────────── */
-.xfer-badge {
-  display: inline-block;
   font-size: 9px;
-  font-family: var(--font-m);
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: rgba(96,165,250,.12);
-  color: var(--river);
-  border: 1px solid rgba(96,165,250,.18);
+  font-family: var(--fm);
+  font-weight: 600;
+  letter-spacing: .08em;
+  padding: 1px 6px;
+  border-radius: 4px;
 }
+.badge-quicken { background:rgba(45,212,191,.10);  color:var(--pos);    border:1px solid rgba(45,212,191,.2); }
+.badge-amazon  { background:rgba(245,168,0,.10);   color:var(--gold);   border:1px solid rgba(245,168,0,.2); }
+.badge-apple   { background:rgba(192,132,252,.10); color:var(--purple); border:1px solid rgba(192,132,252,.2); }
+.badge-inferred{ background:rgba(255,255,255,.06); color:var(--ink4);   border:1px solid var(--line2); }
+.badge-split   { background:rgba(96,165,250,.10);  color:var(--river);  border:1px solid rgba(96,165,250,.2); }
 
-/* ── Toast ──────────────────────────────────────────────────── */
+/* ── Toast ────────────────────────────────────────────────────────────────── */
 .toast {
   position: fixed;
-  bottom: 20px;
+  bottom: var(--sp5);
   left: 50%;
   transform: translateX(-50%) translateY(60px);
   background: var(--raised);
   border: 1px solid var(--line2);
   border-radius: var(--r-md);
-  padding: 9px 18px;
-  font-size: 12.5px;
+  padding: 8px var(--sp4);
+  font-size: 12px;
   color: var(--ink);
-  box-shadow: var(--shadow-lg);
-  transition: transform .25s ease;
+  box-shadow: 0 4px 24px rgba(0,0,0,.7);
+  transition: transform .24s ease;
   z-index: 1000;
   white-space: nowrap;
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
 
-/* ── Modal ──────────────────────────────────────────────────── */
+/* ── Modal ────────────────────────────────────────────────────────────────── */
 .modal-bg {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.8);
+  background: rgba(0,0,0,.82);
   z-index: 500;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 40px 16px;
+  padding: 40px var(--sp4);
   overflow-y: auto;
 }
 .modal {
@@ -689,81 +660,263 @@ select {
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   width: 100%;
-  max-width: 880px;
+  max-width: 860px;
   overflow: hidden;
 }
 .modal-hdr {
-  padding: 18px 22px;
+  padding: var(--sp4) var(--sp5);
   border-bottom: 1px solid var(--line);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
 }
-.modal-title { font-family: var(--font-d); font-size: 22px; font-weight: 600; }
-.modal-.modal-close {
-  background: none; border: 1px solid var(--line); color: var(--ink4);
-  cursor: pointer; font-size: 12px; padding: 3px 9px; border-radius: var(--r-sm);
+.modal-title { font-family:var(--fd); font-size:22px; font-weight:600; }
+.modal-close {
+  background:none; border:1px solid var(--line); color:var(--ink4);
+  cursor:pointer; font-size:12px; padding:3px 9px; border-radius:var(--r-sm);
 }
 
-/* ── Demo Panel ─────────────────────────────────────────────── */
+/* ── Demo Panel ───────────────────────────────────────────────────────────── */
 .demo-panel {
   display: none;
   position: fixed;
-  top: 53px;
-  right: 10px;
+  top: 49px; right: 10px;
   width: 260px;
   background: var(--float);
   border: 1px solid var(--line);
   border-top: 2px solid var(--gold);
   border-radius: 0 0 var(--r-lg) var(--r-lg);
-  padding: 14px 16px;
+  padding: var(--sp4);
   z-index: 300;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 8px 32px rgba(0,0,0,.7);
 }
 
-/* ── IS-specific row hover ──────────────────────────────────── */
-.is-row:hover { background: rgba(255,255,255,.03) !important; }
-
-/* ── Chart tooltip ──────────────────────────────────────────── */
+/* ── Chart tooltip ────────────────────────────────────────────────────────── */
 #chartTip {
   position: fixed;
   background: var(--raised);
   border: 1px solid var(--line2);
   border-left: 3px solid var(--gold);
   border-radius: var(--r-sm);
-  padding: 6px 12px;
-  font-size: 11.5px;
-  font-family: var(--font-m);
+  padding: 5px var(--sp3);
+  font-size: 11px;
+  font-family: var(--fm);
   color: var(--ink);
   pointer-events: none;
   z-index: 999;
   white-space: nowrap;
-  box-shadow: var(--shadow);
+  box-shadow: 0 2px 12px rgba(0,0,0,.6);
   display: none;
 }
 
-/* ── Scrollbar global ───────────────────────────────────────── */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: var(--ink4); }
-
-/* ── Responsive ─────────────────────────────────────────────── */
-@media (max-width: 900px) {
-  nav { display: none; }
-  .kpi-grid, .kpi-cluster { grid-template-columns: repeat(2,1fr); }
-  .chart-grid-2 { grid-template-columns: 1fr; }
-  .fin-row { grid-template-columns: 1fr 90px 90px; }
-  .fin-row .fin-col-hdr:nth-child(4) { display: none; }
-  .fin-row > *:nth-child(4) { display: none; }
+/* ── Settings-specific ────────────────────────────────────────────────────── */
+.sset-card {
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: var(--sp2);
 }
+.sset-hdr {
+  padding: var(--sp2) var(--sp4);
+  background: var(--lift);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: var(--sp2);
+  cursor: pointer;
+  user-select: none;
+}
+.sset-hdr:hover { background:var(--raised); }
+.sset-icon { font-size:18px; flex-shrink:0; }
+.sset-title { font-size:13px; font-weight:600; color:var(--ink); flex:1; }
+.sset-sub   { font-size:10px; color:var(--ink4); font-family:var(--fm); }
+.sset-chev  { color:var(--ink4); font-size:10px; transition:transform var(--t2); }
+.sset-body  { padding:0; }
 
-/* ── Data table wrap ────────────────────────────────────────── */
-.data-table-wrap { }
+/* Settings row — label + control side by side */
+.sr {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: var(--sp4);
+  align-items: center;
+  padding: var(--sp2) var(--sp4);
+  border-bottom: 1px solid rgba(255,255,255,.035);
+  min-height: 40px;
+}
+.sr:last-child { border-bottom:none; }
+.sr-lbl  { font-size:12px; font-weight:500; color:var(--ink2); line-height:1.35; }
+.sr-hint { font-size:10px; color:var(--ink4); margin-top:1px; line-height:1.4; }
+.sr-ctrl { display:flex; align-items:center; gap:var(--sp2); flex-wrap:wrap; }
 
+/* Multi-modality control strip */
+.ctrl-multi {
+  display: flex;
+  align-items: center;
+  gap: var(--sp2);
+  width: 100%;
+}
+.ctrl-num {
+  background: var(--lift);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-sm);
+  padding: 5px 8px;
+  font-family: var(--fm);
+  font-size: 12px;
+  color: var(--ink);
+  width: 64px;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+.ctrl-num::-webkit-inner-spin-button { -webkit-appearance:none; }
+.ctrl-range {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  -webkit-appearance: none;
+  outline: none;
+  cursor: pointer;
+  border: none;
+  background: var(--line2);
+}
+.ctrl-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width:16px; height:16px;
+  border-radius:50%;
+  background:var(--gold);
+  cursor:pointer;
+  box-shadow:0 1px 4px rgba(0,0,0,.5);
+}
+.ctrl-unit { font-size:11px; color:var(--ink4); white-space:nowrap; }
+
+/* Segmented control */
+.seg-ctrl {
+  display: flex;
+  gap: 2px;
+  background: var(--lift);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-sm);
+  padding: 2px;
+}
+.seg-btn {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: var(--fu);
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--ink4);
+  transition: all var(--t);
+  white-space: nowrap;
+}
+.seg-btn.active { background:var(--gold); color:#000; font-weight:700; }
+.seg-btn:hover:not(.active) { color:var(--ink2); }
+
+/* ── Scrollbars global ────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--line2); border-radius:2px; }
+::-webkit-scrollbar-thumb:hover { background:var(--line3); }
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width:900px) {
+  nav { display:none; }
+  .kpi-grid { grid-template-columns:repeat(2,1fr); }
+  .chart-grid-2 { grid-template-columns:1fr; }
+  .fin-row { grid-template-columns:1fr 80px 80px; }
+}
 </style>
 </head>
 <body>
+<!-- FORGE LOCK SCREEN — shown before any data renders -->
+<div id="forge-lock" style="
+  position:fixed;inset:0;z-index:999999;
+  background:var(--void);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:var(--font-ui,sans-serif);
+  padding:24px;
+">
+  <!-- Logo -->
+  <div style="font-family:var(--font-d,'Georgia,serif');font-size:32px;font-weight:600;letter-spacing:.08em;color:var(--ink,#EEEAE4);margin-bottom:6px;">
+    F<span style="color:var(--gold,#F5A800)">O</span>RGE
+  </div>
+  <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink4,#524E4A);margin-bottom:40px;">Pittsburgh · Est. 2026 · #30 · #87</div>
+
+  <!-- Lock icon SVG -->
+  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--ink4,#524E4A)" stroke-width="1.4" style="margin-bottom:24px;">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </svg>
+
+  <!-- Mode: setup (first time) or unlock -->
+  <div id="lock-setup" style="display:none;width:100%;max-width:320px;text-align:center;">
+    <div style="font-size:15px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:6px;">Create your Forge PIN</div>
+    <div style="font-size:12px;color:var(--ink4,#524E4A);margin-bottom:24px;line-height:1.6;">
+      Your financial data will be encrypted locally.<br>Recovery: clear &amp; re-pull from Cloudflare.
+    </div>
+    <input id="lock-pass-new" type="password" placeholder="Create passphrase" autocomplete="new-password"
+      style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
+             padding:14px 16px;font-size:17px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
+             text-align:center;letter-spacing:.1em;outline:none;-webkit-appearance:none;">
+    <input id="lock-pass-confirm" type="password" placeholder="Confirm passphrase" autocomplete="new-password"
+      style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
+             padding:14px 16px;font-size:17px;color:var(--ink,#EEEAE4);margin-bottom:16px;box-sizing:border-box;
+             text-align:center;letter-spacing:.1em;outline:none;-webkit-appearance:none;">
+    <div id="lock-setup-err" style="color:#F87171;font-size:12px;margin-bottom:10px;min-height:16px;"></div>
+    <button onclick="forgeSetupPIN()"
+      style="width:100%;background:var(--gold,#F5A800);color:#000;border:none;border-radius:8px;
+             padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
+      Create PIN &amp; Encrypt Data
+    </button>
+    <div style="margin-top:12px;font-size:11px;color:var(--ink4,#524E4A);line-height:1.6;">
+      Use a passphrase you'll remember — minimum 4 characters.<br>
+      <strong style="color:var(--ink3,#8A857E);">Forgotten PIN = pull fresh from Cloudflare.</strong>
+    </div>
+  </div>
+
+  <div id="lock-unlock" style="display:none;width:100%;max-width:320px;text-align:center;">
+    <div style="font-size:15px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:20px;">Enter your passphrase</div>
+    <input id="lock-pass" type="password" placeholder="Passphrase" autocomplete="current-password"
+      style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
+             padding:14px 16px;font-size:17px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
+             text-align:center;letter-spacing:.1em;outline:none;-webkit-appearance:none;"
+      onkeydown="if(event.key==='Enter')forgeUnlock()">
+    <div id="lock-err" style="color:#F87171;font-size:12px;margin-bottom:10px;min-height:16px;"></div>
+    <button id="lock-btn" onclick="forgeUnlock()"
+      style="width:100%;background:var(--gold,#F5A800);color:#000;border:none;border-radius:8px;
+             padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">
+      Unlock Forge
+    </button>
+    <button id="lock-bio-btn" style="display:none;width:100%;background:transparent;
+      border:1px solid rgba(255,255,255,.12);color:var(--ink3,#8A857E);border-radius:8px;
+      padding:13px;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:10px;"
+      onclick="forgeUnlockBio()">
+      🔐 Use Face ID / Touch ID
+    </button>
+    <button onclick="forgeForgotPIN()"
+      style="background:transparent;border:none;color:var(--ink4,#524E4A);font-size:12px;
+             cursor:pointer;font-family:inherit;text-decoration:underline;padding:4px;">
+      Forgot passphrase?
+    </button>
+  </div>
+
+  <!-- Spinner shown during crypto ops -->
+  <div id="lock-spinner" style="display:none;margin-top:20px;">
+    <div style="width:28px;height:28px;border:2px solid rgba(245,168,0,.25);border-top-color:var(--gold,#F5A800);
+                border-radius:50%;animation:lock-spin .7s linear infinite;margin:0 auto;"></div>
+    <div id="lock-spinner-lbl" style="font-size:11px;color:var(--ink4,#524E4A);margin-top:8px;letter-spacing:.06em;">Encrypting…</div>
+  </div>
+
+  <style>
+    @keyframes lock-spin { to { transform:rotate(360deg); } }
+    #lock-pass:focus, #lock-pass-new:focus, #lock-pass-confirm:focus {
+      border-color:var(--gold,#F5A800);outline:none;
+    }
+  </style>
+</div>
+
 
 <header>
   <div>
@@ -1318,6 +1471,239 @@ select {
 <div class="toast" id="toast"></div>
 
 <script>
+// ════════════════════════════════════════════════════════════════════════════
+// FORGE AUTH — AES-GCM encryption + WebAuthn (Pulse) + PIN
+// All financial data at rest is encrypted. Key lives only in memory.
+// Recovery: clear local → re-pull from Cloudflare → set new PIN.
+// ════════════════════════════════════════════════════════════════════════════
+
+const FORGE_AUTH = (function () {
+  const SALT_KEY     = 'forge_auth_salt';
+  const CHECK_KEY    = 'forge_auth_check';
+  const WEBAUTHN_KEY = 'forge_auth_webauthn';
+  const SENTINEL     = 'FORGE_VERIFIED_V1';
+  const ENC_PREFIX   = 'ENC1:';              // versioned prefix
+  const PBKDF2_ITER  = 310000;               // OWASP recommended minimum
+
+  let _key      = null;  // CryptoKey — lives only in memory, never written to disk
+  let _isSetup  = false;
+
+  // ── PBKDF2 key derivation ─────────────────────────────────────────────────
+  async function _deriveKey(passphrase, saltB64) {
+    const salt = _b64ToBytes(saltB64);
+    const mat  = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(passphrase),
+      'PBKDF2', false, ['deriveKey']
+    );
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt, iterations: PBKDF2_ITER, hash: 'SHA-256' },
+      mat,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    );
+  }
+
+  // ── AES-GCM encrypt/decrypt (IV prepended) ────────────────────────────────
+  async function _encrypt(key, plaintext) {
+    const iv  = crypto.getRandomValues(new Uint8Array(12));
+    const ct  = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key,
+                  new TextEncoder().encode(plaintext));
+    const buf = new Uint8Array(12 + ct.byteLength);
+    buf.set(iv, 0);
+    buf.set(new Uint8Array(ct), 12);
+    return ENC_PREFIX + _bytesToB64(buf);
+  }
+
+  async function _decrypt(key, encStr) {
+    if (!encStr.startsWith(ENC_PREFIX)) throw new Error('not encrypted');
+    const buf  = _b64ToBytes(encStr.slice(ENC_PREFIX.length));
+    const iv   = buf.slice(0, 12);
+    const ct   = buf.slice(12);
+    const pt   = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+    return new TextDecoder().decode(pt);
+  }
+
+  // ── Byte / Base64 helpers ─────────────────────────────────────────────────
+  function _bytesToB64(buf) {
+    return btoa(String.fromCharCode(...new Uint8Array(buf)));
+  }
+  function _b64ToBytes(b64) {
+    return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  }
+
+  // ── Public API ────────────────────────────────────────────────────────────
+
+  function isSetup() {
+    return !!(localStorage.getItem(SALT_KEY) && localStorage.getItem(CHECK_KEY));
+  }
+
+  function isUnlocked() { return _key !== null; }
+
+  function hasWebAuthn() { return !!localStorage.getItem(WEBAUTHN_KEY); }
+
+  // Create PIN for the first time (or after reset)
+  async function setup(passphrase) {
+    // Generate random salt
+    const salt    = crypto.getRandomValues(new Uint8Array(16));
+    const saltB64 = _bytesToB64(salt);
+    const key     = await _deriveKey(passphrase, saltB64);
+
+    // Encrypt sentinel for future verification
+    const check = await _encrypt(key, SENTINEL);
+
+    // Encrypt any existing unencrypted data
+    const dataKeys = ['forge_prod_v1', 'ledger_v3', 'forge_settings_v2', 'forge_settings_v1'];
+    const toWrite  = {};
+    for (const k of dataKeys) {
+      const v = localStorage.getItem(k);
+      if (v && !v.startsWith(ENC_PREFIX)) {
+        toWrite[k] = await _encrypt(key, v);
+      }
+    }
+
+    // Commit all at once
+    localStorage.setItem(SALT_KEY, saltB64);
+    localStorage.setItem(CHECK_KEY, check);
+    for (const [k, v] of Object.entries(toWrite)) {
+      localStorage.setItem(k, v);
+    }
+
+    _key     = key;
+    _isSetup = true;
+    return true;
+  }
+
+  // Unlock with PIN — returns true/false
+  async function unlock(passphrase) {
+    const saltB64 = localStorage.getItem(SALT_KEY);
+    const check   = localStorage.getItem(CHECK_KEY);
+    if (!saltB64 || !check) return false;
+    try {
+      const key      = await _deriveKey(passphrase, saltB64);
+      const sentinel = await _decrypt(key, check);
+      if (sentinel !== SENTINEL) return false;
+      _key = key;
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // Transparent get/set — reads/writes encrypted if locked
+  async function get(storageKey) {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return null;
+    if (raw.startsWith(ENC_PREFIX)) {
+      if (!_key) return null;  // locked — can't decrypt
+      try { return await _decrypt(_key, raw); } catch (e) { return null; }
+    }
+    return raw;  // unencrypted (demo data or legacy)
+  }
+
+  async function set(storageKey, value) {
+    if (!value) { localStorage.removeItem(storageKey); return; }
+    if (_key) {
+      localStorage.setItem(storageKey, await _encrypt(_key, value));
+    } else {
+      localStorage.setItem(storageKey, value);
+    }
+  }
+
+  // Clear auth (for recovery / reset)
+  function clearAuth() {
+    [SALT_KEY, CHECK_KEY, WEBAUTHN_KEY].forEach(k => localStorage.removeItem(k));
+    _key = null;
+  }
+
+  // ── WebAuthn (Face ID / Touch ID) ─────────────────────────────────────────
+  // Stores encrypted PIN, wrapped with a key derived from the credential ID.
+  // Security: reading localStorage gives you the encrypted PIN but not the
+  // credentialId raw bytes needed to derive the wrapping key — that requires
+  // a successful WebAuthn assertion (which requires biometric).
+
+  async function _wrapKey(credIdBytes) {
+    // Derive a wrapping key from the credential's raw ID
+    const mat = await crypto.subtle.importKey(
+      'raw', credIdBytes, 'PBKDF2', false, ['deriveKey']
+    );
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: new TextEncoder().encode('forge-biometric-wrap-v1'),
+        iterations: 1000, hash: 'SHA-256' },
+      mat,
+      { name: 'AES-GCM', length: 256 },
+      false, ['encrypt', 'decrypt']
+    );
+  }
+
+  async function registerBiometric(passphrase) {
+    if (!window.PublicKeyCredential) return false;
+    try {
+      const chal = crypto.getRandomValues(new Uint8Array(32));
+      const cred = await navigator.credentials.create({
+        publicKey: {
+          challenge:    chal,
+          rp:           { name: 'Forge Family Finance', id: location.hostname },
+          user:         { id: new TextEncoder().encode('forge-luka'), name: 'forge', displayName: 'Forge' },
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+          authenticatorSelection: {
+            authenticatorAttachment: 'platform',
+            userVerification:        'required',
+            residentKey:             'preferred',
+          },
+          timeout: 60000,
+        }
+      });
+
+      const credIdBytes  = new Uint8Array(cred.rawId);
+      const credIdB64    = _bytesToB64(credIdBytes);
+      const wrapKey      = await _wrapKey(credIdBytes);
+      const encPassphrase= await _encrypt(wrapKey, passphrase);
+
+      localStorage.setItem(WEBAUTHN_KEY, JSON.stringify({ credIdB64, encPassphrase }));
+      return true;
+    } catch (e) {
+      console.warn('[Forge Auth] Biometric registration:', e.message);
+      return false;
+    }
+  }
+
+  async function unlockWithBiometric() {
+    const stored = JSON.parse(localStorage.getItem(WEBAUTHN_KEY) || 'null');
+    if (!stored) return false;
+    try {
+      const credIdBytes = _b64ToBytes(stored.credIdB64);
+      const assertion   = await navigator.credentials.get({
+        publicKey: {
+          challenge:        crypto.getRandomValues(new Uint8Array(32)),
+          allowCredentials: [{ type: 'public-key', id: credIdBytes }],
+          userVerification: 'required',
+          timeout:          60000,
+        }
+      });
+      // Assertion success — credential is confirmed, derive wrapping key
+      const wrapKey    = await _wrapKey(new Uint8Array(assertion.rawId));
+      const passphrase = await _decrypt(wrapKey, stored.encPassphrase);
+      return unlock(passphrase);
+    } catch (e) {
+      console.warn('[Forge Auth] Biometric unlock:', e.message);
+      return false;
+    }
+  }
+
+  async function isBiometricAvailable() {
+    if (!window.PublicKeyCredential) return false;
+    try {
+      return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    } catch (e) { return false; }
+  }
+
+  return {
+    isSetup, isUnlocked, hasWebAuthn, isBiometricAvailable,
+    setup, unlock, unlockWithBiometric, registerBiometric,
+    get, set, clearAuth,
+  };
+})();
+
+
 // ════════════════════════════════════════════════
 // FORGE — Lean Core v1.0
 // ════════════════════════════════════════════════
@@ -1759,903 +2145,459 @@ function renderReconcile() {
 // ════════════════════════════════════════════════════════════════════════════
 // SETTINGS & CUSTOMIZATIONS
 // ════════════════════════════════════════════════════════════════════════════
+
+// Fix toggle visual state after settings render
+function fixToggles() {
+  document.querySelectorAll('.toggle input[type=checkbox]').forEach(inp => {
+    const track = inp.nextElementSibling;
+    const thumb = track ? track.nextElementSibling : null;
+    if (track) track.style.background = inp.checked ? 'var(--gold)' : 'var(--line2)';
+    if (thumb) thumb.style.left = inp.checked ? '19px' : '3px';
+    inp.addEventListener('change', function() {
+      const tr = this.nextElementSibling;
+      const th = tr ? tr.nextElementSibling : null;
+      if (tr) tr.style.background = this.checked ? 'var(--gold)' : 'var(--line2)';
+      if (th) th.style.left = this.checked ? '19px' : '3px';
+    });
+  });
+}
+
 function renderSettings() {
   const el = document.getElementById('settingsContent');
   if (!el) return;
 
-  // ── helpers ────────────────────────────────────────────────────────────────
-  let _ssetFirst = true;
-  const section = (id, icon, title, sub, body) => {
-    const open = _ssetFirst; _ssetFirst = false;
-    return `<div id="sset-${id}" style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;">
-       <div style="padding:14px 20px;background:var(--lift);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="toggleSSet('${id}')">
-         <span style="font-size:20px;">${icon}</span>
-         <div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--ink);">${title}</div><div style="font-size:11px;color:var(--ink4);">${sub}</div></div>
-         <span id="sset-chev-${id}" style="color:var(--ink4);font-size:12px;transition:transform .2s;${open?'':'transform:rotate(-90deg)'}">▼</span>
-       </div>
-       <div id="sset-body-${id}" style="padding:20px;${open?'':'display:none;'}">${body}</div>
-     </div>`;
+  // ── Canonical helpers using .sset-card / .sr CSS classes ──────────────────
+  let _first = true;
+  const card = (id, icon, title, sub, body) => {
+    const open = _first; _first = false;
+    return `<div class="sset-card" id="sset-${id}">
+      <div class="sset-hdr" onclick="toggleSSet('${id}')">
+        <span class="sset-icon">${icon}</span>
+        <div style="flex:1;"><div class="sset-title">${title}</div><div class="sset-sub">${sub}</div></div>
+        <span class="sset-chev" id="sset-chev-${id}" style="${open?'':'transform:rotate(-90deg)'}">▼</span>
+      </div>
+      <div class="sset-body" id="sset-body-${id}" style="${open?'':'display:none'}">${body}</div>
+    </div>`;
   };
 
-  const row = (label, hint, input) =>
-    `<div style="display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);">
-       <div><div style="font-size:12px;font-weight:500;color:var(--ink2);">${label}</div>${hint?`<div style="font-size:10px;color:var(--ink4);margin-top:2px;">${hint}</div>`:''}</div>
-       <div>${input}</div>
-     </div>`;
+  // Simple label+control row
+  const sr = (label, hint, ctrl) =>
+    `<div class="sr"><div><div class="sr-lbl">${label}</div>${hint?`<div class="sr-hint">${hint}</div>`:''}</div><div class="sr-ctrl">${ctrl}</div></div>`;
 
-  const inp = (id, val, type='text', extra='') =>
-    `<input id="${id}" type="${type}" value="${String(val||'').replace(/"/g,'&quot;')}" ${extra}
-      style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:7px 10px;font-size:12px;font-family:var(--font-ui);color:var(--ink);box-sizing:border-box;">`;
+  // Text input
+  const txt = (id, val, placeholder='', w='100%') =>
+    `<input type="text" id="${id}" value="${String(val||'').replace(/"/g,'&quot;')}" placeholder="${placeholder}"
+      style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:6px 8px;
+             font-size:12px;color:var(--ink);width:${w};-webkit-appearance:none;">`;
 
+  // Number + slider (multi-modality)
+  const numSlider = (id, val, min, max, step, unit='', oninput='') => {
+    const pct = Math.round((val-min)/(max-min)*100);
+    const bg  = `linear-gradient(to right, var(--gold) ${pct}%, var(--line2) ${pct}%)`;
+    const cb  = oninput || `document.getElementById('${id}-n').value=this.value`;
+    return `<div class="ctrl-multi">
+      <input type="range" class="ctrl-range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"
+        style="background:${bg};" oninput="${cb};this.style.background='linear-gradient(to right,var(--gold) '+Math.round((this.value-${min})/(${max}-${min})*100)+'%,var(--line2) '+Math.round((this.value-${min})/(${max}-${min})*100)+'%)';">
+      <input type="number" class="ctrl-num" id="${id}-n" min="${min}" max="${max}" step="${step}" value="${val}"
+        oninput="const r=document.getElementById('${id}');r.value=this.value;r.dispatchEvent(new Event('input'));">
+      ${unit?`<span class="ctrl-unit">${unit}</span>`:''}
+    </div>`;
+  };
+
+  // Segmented control
+  const seg = (id, val, options, onchange='') =>
+    `<div class="seg-ctrl" id="${id}">
+      ${options.map(([v,l])=>`<button class="seg-btn${v===val?' active':''}" onclick="
+        document.querySelectorAll('#${id} .seg-btn').forEach(b=>b.classList.remove('active'));
+        this.classList.add('active');
+        ${onchange};
+      ">${l}</button>`).join('')}
+    </div>`;
+
+  // Toggle (checkbox)
+  const tog = (id, checked, onchange='') =>
+    `<label class="toggle-wrap" style="cursor:pointer;">
+       <span class="toggle">
+         <input type="checkbox" id="${id}" ${checked?'checked':''} onchange="${onchange}" style="opacity:0;width:0;height:0;position:absolute;">
+         <span class="toggle-track"></span>
+         <span class="toggle-thumb"></span>
+       </span>
+     </label>`;
+
+  // Select dropdown
   const sel = (id, val, opts) =>
-    `<select id="${id}" style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:7px 10px;font-size:12px;color:var(--ink);">
+    `<select id="${id}" style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:6px 8px;font-size:12px;color:var(--ink);">
        ${opts.map(([v,l])=>`<option value="${v}"${v===val?' selected':''}>${l}</option>`).join('')}
      </select>`;
 
-  const chk = (id, checked, label) =>
-    `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-       <input id="${id}" type="checkbox" ${checked?'checked':''} style="width:16px;height:16px;accent-color:var(--gold);">
-       <span style="font-size:12px;color:var(--ink2);">${label}</span>
-     </label>`;
-
-  const pill = (label, color='var(--gold)') =>
-    `<span style="font-size:9px;padding:1px 6px;border-radius:10px;background:${color}22;border:1px solid ${color}55;color:${color};font-family:var(--font-m);letter-spacing:.05em;font-weight:600;">${label}</span>`;
-
-  const badge = (text) => `<span style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(245,168,0,.12);border:1px solid rgba(245,168,0,.25);color:var(--gold);">${text}</span>`;
-
   // ── §1 Family Profile ──────────────────────────────────────────────────────
-  let familyBody = row('Family Name', 'Shown in reports and Confluence', inp('set-family-name', familyProfile.name));
-  familyBody    += row('Home City', 'For weather and regional context in $id', inp('set-city', familyProfile.city));
-  familyBody    += row('Savings Rate Target', '%  — used for goal rings, P&L color coding, and $id benchmarks', inp('set-savings-target', familyProfile.savingsTarget, 'number', 'min="0" max="100" step="1"'));
-  familyBody    += '<div style="margin-top:16px;margin-bottom:8px;font-size:11px;font-weight:600;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;">Family Members</div>';
-  familyBody    += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;font-size:10px;color:var(--ink4);padding-bottom:6px;"><span>Emoji</span><span>Name</span><span>Role</span><span>Birth Year</span></div>';
+  let familyBody = '';
+  familyBody += sr('Family Name', 'Used in reports, Confluence, and $id responses',
+    txt('set-family-name', familyProfile.name, 'The Luka Family', '260px'));
+  familyBody += sr('Home City', 'Regional context for $id',
+    txt('set-city', familyProfile.city, 'Pittsburgh, PA', '200px'));
+  familyBody += sr('Savings Rate Target', 'Drives goal rings, IS color coding, and accrual warnings',
+    numSlider('set-savings-target', familyProfile.savingsTarget||20, 0, 50, 1, '%'));
+  familyBody += sr('Monthly Income Override', '0 = auto-detect from data · set to normalize irregular pay',
+    numSlider('set-monthly-income', familyProfile.monthlyIncome||0, 0, 30000, 250, '/mo'));
+
+  familyBody += `<div style="padding:var(--sp2) var(--sp4) var(--sp2);border-top:1px solid var(--line);
+    font-size:9px;font-family:var(--fm);letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);">Members</div>`;
+  familyBody += `<div style="display:grid;grid-template-columns:44px 1fr 90px 80px;gap:6px;
+    padding:var(--sp1) var(--sp4);font-size:9px;font-family:var(--fm);letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink4);">
+    <span></span><span>Name</span><span>Role</span><span>Born</span></div>`;
   familyProfile.members.forEach((m, i) => {
-    familyBody += `<div style="display:grid;grid-template-columns:56px 1fr 90px 90px;gap:8px;margin-bottom:6px;">
-      <input id="set-member-emoji-${i}" type="text" value="${m.emoji}" maxlength="4" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px;font-size:18px;text-align:center;width:100%;box-sizing:border-box;">
-      <input id="set-member-name-${i}"  type="text" value="${m.name}" placeholder="Name" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);width:100%;box-sizing:border-box;">
-      <select id="set-member-role-${i}" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px;font-size:11px;color:var(--ink);">
+    familyBody += `<div style="display:grid;grid-template-columns:44px 1fr 90px 80px;gap:6px;
+      padding:6px var(--sp4);border-top:1px solid rgba(255,255,255,.035);">
+      <input type="text" id="set-member-emoji-${i}" value="${m.emoji||''}" maxlength="4"
+        style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);
+               padding:4px;font-size:17px;text-align:center;width:100%;-webkit-appearance:none;">
+      <input type="text" id="set-member-name-${i}" value="${m.name||''}" placeholder="Name"
+        style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);
+               padding:6px var(--sp2);font-size:12px;color:var(--ink);width:100%;-webkit-appearance:none;">
+      <select id="set-member-role-${i}"
+        style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);
+               padding:6px 6px;font-size:11px;color:var(--ink);">
         <option value="parent" ${m.role==='parent'?'selected':''}>Parent</option>
         <option value="child"  ${m.role==='child' ?'selected':''}>Child</option>
       </select>
-      <input id="set-member-born-${i}" type="number" value="${m.born||''}" placeholder="YYYY" min="1950" max="2025" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);width:100%;box-sizing:border-box;">
+      <input type="number" id="set-member-born-${i}" value="${m.born||''}" placeholder="YYYY"
+        min="1950" max="2025"
+        style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);
+               padding:6px var(--sp2);font-size:12px;color:var(--ink);width:100%;-webkit-appearance:none;-moz-appearance:textfield;">
     </div>`;
   });
-  familyBody += `<div style="margin-top:6px;font-size:10px;color:var(--ink4);">Ages auto-computed from birth year. Used in life-stage intelligence banner and Confluence insights.</div>`;
+  familyBody += `<div style="padding:var(--sp2) var(--sp4);">
+    <button class="btn btn-gold" onclick="saveAllSettings()" style="font-size:11px;padding:5px 14px;">✓ Save Family Profile</button>
+  </div>`;
 
   // ── §2 Savings Goals ───────────────────────────────────────────────────────
   let goalsBody = '';
-  if (!savingsGoals.length) {
-    goalsBody = '<div style="font-size:12px;color:var(--ink4);margin-bottom:12px;">No goals yet. Add your first goal below.</div>';
-  } else {
+  if (savingsGoals.length) {
     savingsGoals.forEach((g, i) => {
-      const pct = g.targetAmount > 0 ? Math.min(100, g.currentAmount / g.targetAmount * 100) : 0;
-      const col = pct >= 80 ? '#10B981' : pct >= 40 ? '#FFB612' : '#60A5FA';
-      goalsBody += `<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;margin-bottom:8px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <span style="font-size:20px;">${g.icon||'🎯'}</span>
-          <div style="flex:1;">
-            <div style="font-size:13px;font-weight:600;color:var(--ink);">${g.name}</div>
-            <div style="font-size:10px;color:var(--ink4);">${g.member ? 'For: ' + g.member : 'Family'} ${g.targetDate ? '· Target: '+g.targetDate : ''}</div>
+      const pct = g.targetAmount>0 ? Math.min(100,g.currentAmount/g.targetAmount*100) : 0;
+      const col = pct>=80?'var(--pos)':pct>=40?'var(--gold)':'var(--river)';
+      goalsBody += `<div style="display:grid;grid-template-columns:1fr auto auto;gap:var(--sp3);
+        align-items:center;padding:var(--sp2) var(--sp4);border-bottom:1px solid rgba(255,255,255,.035);">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--ink);">${g.icon||'🎯'} ${g.name}</div>
+          <div style="margin-top:4px;height:3px;background:var(--line2);border-radius:2px;overflow:hidden;max-width:200px;">
+            <div style="height:100%;width:${pct.toFixed(1)}%;background:${col};border-radius:2px;"></div>
           </div>
-          <div style="text-align:right;">
-            <div style="font-size:16px;font-weight:700;color:${col};">${pct.toFixed(0)}%</div>
-            <div style="font-size:10px;color:var(--ink4);">${fmt(g.currentAmount)} / ${fmt(g.targetAmount)}</div>
-          </div>
-          <button onclick="removeGoal(${i})" style="background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--negative);padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;">✕</button>
+          <div style="font-size:10px;color:var(--ink4);margin-top:2px;font-family:var(--fm);">
+            ${fmt(g.currentAmount)} / ${fmt(g.targetAmount)}${g.member?' · '+g.member:''}</div>
         </div>
-        <div style="height:6px;background:var(--float);border-radius:3px;overflow:hidden;">
-          <div style="height:100%;width:${pct.toFixed(1)}%;background:${col};border-radius:3px;"></div>
-        </div>
-        ${g.notes ? `<div style="font-size:10px;color:var(--ink4);margin-top:6px;">${g.notes}</div>` : ''}
+        <div style="text-align:right;font-size:16px;font-weight:300;font-family:var(--fd);color:${col};">${pct.toFixed(0)}%</div>
+        <button onclick="removeGoal(${i});renderSettings()"
+          style="background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--neg);
+                 border-radius:var(--r-sm);padding:3px 8px;font-size:11px;cursor:pointer;">✕</button>
       </div>`;
     });
+  } else {
+    goalsBody += `<div style="padding:var(--sp4);font-size:12px;color:var(--ink4);">No goals yet.</div>`;
   }
-  const memberOpts = familyProfile.members.map(m => `<option value="${m.name}">${m.emoji} ${m.name}</option>`).join('');
-  goalsBody += `<div style="background:rgba(245,168,0,.05);border:1px solid rgba(245,168,0,.2);border-radius:var(--r-md);padding:16px;margin-top:8px;">
-    <div style="font-size:12px;font-weight:600;color:var(--gold);margin-bottom:12px;">+ Add New Goal</div>
-    <div style="display:grid;grid-template-columns:48px 1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
-      <input id="ng-icon" type="text" value="🎯" maxlength="4" placeholder="🎯" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px;font-size:18px;text-align:center;box-sizing:border-box;">
-      <input id="ng-name" type="text" placeholder="Goal name" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
-      <input id="ng-target" type="number" placeholder="Target $" min="0" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
-      <input id="ng-current" type="number" placeholder="Current $" min="0" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
-      <select id="ng-member" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);">
-        <option value="">Family Goal</option>${memberOpts}
-      </select>
-      <input id="ng-date" type="text" placeholder="Target date (YYYY-MM)" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
-      <input id="ng-notes" type="text" placeholder="Notes (optional)" style="background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
-    </div>
-    <button onclick="addGoal()" style="background:var(--gold);color:var(--void);border:none;padding:7px 18px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Add Goal</button>
+  const mopts = familyProfile.members.map(m=>`<option value="${m.name}">${m.emoji} ${m.name}</option>`).join('');
+  goalsBody += `<div style="padding:var(--sp3) var(--sp4);background:var(--lift);display:grid;
+    grid-template-columns:44px 1fr 110px 110px auto;gap:6px;align-items:center;border-top:1px solid var(--line);">
+    <input id="ng-icon" type="text" value="🎯" maxlength="4"
+      style="background:var(--float);border:1px solid var(--line2);border-radius:var(--r-sm);
+             padding:4px;font-size:17px;text-align:center;width:100%;-webkit-appearance:none;">
+    <input id="ng-name" type="text" placeholder="Goal name"
+      style="background:var(--float);border:1px solid var(--line2);border-radius:var(--r-sm);
+             padding:6px var(--sp2);font-size:12px;color:var(--ink);width:100%;-webkit-appearance:none;">
+    <input id="ng-target" type="number" placeholder="Target $" min="0"
+      style="background:var(--float);border:1px solid var(--line2);border-radius:var(--r-sm);
+             padding:6px var(--sp2);font-size:12px;color:var(--ink);width:100%;-webkit-appearance:none;-moz-appearance:textfield;">
+    <input id="ng-current" type="number" placeholder="Current $" min="0"
+      style="background:var(--float);border:1px solid var(--line2);border-radius:var(--r-sm);
+             padding:6px var(--sp2);font-size:12px;color:var(--ink);width:100%;-webkit-appearance:none;-moz-appearance:textfield;">
+    <button class="btn btn-gold" onclick="addGoal();renderSettings()" style="font-size:11px;padding:5px 14px;">+ Add</button>
   </div>`;
 
-  // ── §3 Credit Card Billing Cycles ──────────────────────────────────────────
+  // ── §3 Credit Card Billing ─────────────────────────────────────────────────
   const ccAccts = accounts.filter(a => isCreditAcct(a));
   let ccBody = '';
   if (!ccAccts.length) {
-    ccBody = '<div style="font-size:12px;color:var(--ink4);">No credit card accounts detected. Import your Quicken data first.</div>';
+    ccBody = `<div style="padding:var(--sp4);font-size:12px;color:var(--ink4);">No CC accounts detected. Import Quicken data first.</div>`;
   } else {
-    ccBody += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;">';
+    ccBody += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0;">`;
     ccAccts.forEach(a => {
       const cfg = ccSettings[a] || { closeDay:1, dueDay:25 };
-      ccBody += `<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;">
-        <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:10px;">💳 ${a}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div>
-            <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Statement Closes</div>
+      ccBody += `<div style="padding:var(--sp3) var(--sp4);border-bottom:1px solid rgba(255,255,255,.035);">
+        <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:var(--sp2);">💳 ${a.length>30?a.slice(0,28)+'…':a}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp2);">
+          ${['closeDay','dueDay'].map((f,fi)=>`<div>
+            <div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">${fi===0?'Statement Closes':'Payment Due'}</div>
             <div style="display:flex;align-items:center;gap:6px;">
-              <input type="number" min="1" max="31" value="${cfg.closeDay||1}" data-acct="${a}" data-field="closeDay"
-                style="width:55px;background:var(--float);border:1px solid var(--line2);border-radius:4px;padding:5px 8px;font-family:var(--font-m);font-size:13px;color:var(--ink);text-align:center;"
+              <input type="number" min="1" max="31" value="${cfg[f]||1}" data-acct="${a}" data-field="${f}"
+                style="width:52px;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);
+                       padding:5px 6px;font-family:var(--fm);font-size:13px;color:var(--ink);text-align:center;-moz-appearance:textfield;"
                 onchange="updateCCSetting(this)">
-              <span style="font-size:11px;color:var(--ink4);">of month</span>
+              <span style="font-size:10px;color:var(--ink4);">of mo</span>
             </div>
-          </div>
-          <div>
-            <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Payment Due</div>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <input type="number" min="1" max="31" value="${cfg.dueDay||25}" data-acct="${a}" data-field="dueDay"
-                style="width:55px;background:var(--float);border:1px solid var(--line2);border-radius:4px;padding:5px 8px;font-family:var(--font-m);font-size:13px;color:var(--ink);text-align:center;"
-                onchange="updateCCSetting(this)">
-              <span style="font-size:11px;color:var(--ink4);">of month</span>
-            </div>
-          </div>
+          </div>`).join('')}
         </div>
       </div>`;
     });
     ccBody += '</div>';
   }
 
-  // ── §4 Accrual Engine Controls ─────────────────────────────────────────────
-  const accrualBuckets = [
-    { key:'mortgage',      label:'Mortgage',      engine:'fixed',        icon:'🏠' },
-    { key:'car',           label:'Car Payments',  engine:'fixed',        icon:'🚗' },
-    { key:'insurance',     label:'Insurance',     engine:'fixed',        icon:'🛡️' },
-    { key:'education',     label:'Education',     engine:'fixed',        icon:'🎓' },
-    { key:'childcare',     label:'Childcare',     engine:'fixed',        icon:'👶' },
-    { key:'electric',      label:'Electric',      engine:'fixed',        icon:'⚡' },
-    { key:'gas_util',      label:'Gas/Heat',      engine:'fixed',        icon:'🔥' },
-    { key:'water',         label:'Water/Sewer',   engine:'fixed',        icon:'💧' },
-    { key:'internet',      label:'Internet/Cable',engine:'fixed',        icon:'📡' },
-    { key:'cell',          label:'Cell Phones',   engine:'fixed',        icon:'📱' },
-    { key:'subscriptions', label:'Subscriptions', engine:'fixed',        icon:'📺' },
-    { key:'groceries',     label:'Groceries',     engine:'discretionary',icon:'🛒' },
-    { key:'restaurants',   label:'Restaurants',   engine:'discretionary',icon:'🍕' },
-    { key:'gas_car',       label:'Vehicle Fuel',  engine:'discretionary',icon:'⛽' },
-    { key:'transit',       label:'Transit',       engine:'discretionary',icon:'🚌' },
-    { key:'healthcare',    label:'Healthcare',    engine:'discretionary',icon:'⚕️' },
-    { key:'entertainment', label:'Entertainment', engine:'discretionary',icon:'🎭' },
-    { key:'household',     label:'Household',     engine:'discretionary',icon:'🔧' },
-    { key:'personal',      label:'Personal Care', engine:'discretionary',icon:'💅' },
-    { key:'clothing',      label:'Clothing',      engine:'discretionary',icon:'👕' },
-    { key:'travel',        label:'Travel',        engine:'discretionary',icon:'✈️' },
-    { key:'gifts',         label:'Gifts',         engine:'discretionary',icon:'🎁' },
-  ];
-  let accrualBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;line-height:1.7;">
-    <strong style="color:var(--ink3);">Fixed</strong> — uses prior 3-month median per recurring payee. Only projects bills that haven't yet been charged this month.<br>
-    <strong style="color:var(--ink3);">Discretionary</strong> — uses daily run rate × days remaining. Good for variable spending like groceries, dining, gas.<br>
-    <strong style="color:var(--ink3);">No Projection</strong> — no accrual for this bucket. Actual charges only.
-  </div>`;
-  accrualBody += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px;">`;
-  accrualBuckets.forEach(b => {
-    const override = accrualOverrides[b.key];
-    const current  = override || b.engine;
-    accrualBody += `<div style="display:flex;align-items:center;gap:8px;background:var(--lift);border:1px solid var(--line);border-radius:6px;padding:8px 12px;">
-      <span style="font-size:16px;">${b.icon}</span>
-      <div style="flex:1;"><div style="font-size:11px;font-weight:500;color:var(--ink2);">${b.label}</div>
-      <div style="font-size:9px;color:var(--ink4);">Default: ${b.engine}</div></div>
-      <select data-bucket="${b.key}" onchange="accrualOverrides[this.dataset.bucket]=this.value==='default'?undefined:this.value;if(this.value==='default')delete accrualOverrides[this.dataset.bucket];saveSettings()"
-        style="background:var(--float);border:1px solid var(--line2);border-radius:4px;padding:4px 6px;font-size:11px;color:var(--ink);">
-        <option value="default" ${!override?'selected':''}>Default</option>
-        <option value="fixed"         ${current==='fixed'&&override?'selected':''}>Fixed</option>
-        <option value="discretionary" ${current==='discretionary'&&override?'selected':''}>Variable</option>
-        <option value="zero"          ${current==='zero'?'selected':''}>No Projection</option>
-      </select>
-    </div>`;
-  });
-  accrualBody += '</div>';
-
-  // ── §5 Payee Aliases ───────────────────────────────────────────────────────
-  let aliasBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;">Clean up messy Quicken payee names. The alias is shown everywhere in Forge instead of the raw name.</div>`;
-  const aliasEntries = Object.entries(payeeAliases);
-  if (aliasEntries.length) {
-    aliasBody += '<div style="margin-bottom:10px;">';
-    aliasEntries.forEach(([raw, friendly]) => {
-      aliasBody += `<div style="display:grid;grid-template-columns:1fr 1fr 36px;gap:6px;margin-bottom:4px;align-items:center;">
-        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:5px 8px;font-size:11px;color:var(--ink4);">${raw}</div>
-        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:5px 8px;font-size:11px;color:var(--ink2);">→ ${friendly}</div>
-        <button onclick="deleteAlias('${raw.replace(/'/g,"\\'")}');renderSettings()" style="background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--negative);border-radius:4px;padding:4px;cursor:pointer;font-size:12px;">✕</button>
-      </div>`;
-    });
-    aliasBody += '</div>';
-  }
-  aliasBody += `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;background:rgba(245,168,0,.04);border:1px solid rgba(245,168,0,.15);border-radius:6px;padding:12px;">
-    <input id="alias-raw" type="text" placeholder="Raw Quicken name (exact)" style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
-    <input id="alias-friendly" type="text" placeholder="Friendly display name" style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
-    <button onclick="addAlias()" style="background:var(--gold);color:var(--void);border:none;padding:6px 14px;border-radius:4px;font-size:12px;font-weight:700;cursor:pointer;">Add</button>
-  </div>`;
-
-  // ── §6 Split Transaction Rules ─────────────────────────────────────────────
-  let splitBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;">Override the default bucket for split transactions. Pattern is case-insensitive and matches payee name.</div>`;
-  const ruleEntries = Object.entries(splitRules);
-  if (ruleEntries.length) {
-    splitBody += '<div style="margin-bottom:10px;">';
-    ruleEntries.forEach(([pat, bk]) => {
-      const bMeta = BUCKET_META[bk] || { label: bk, icon: '·' };
-      splitBody += `<div style="display:grid;grid-template-columns:1fr 1fr 36px;gap:6px;margin-bottom:4px;align-items:center;">
-        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:5px 8px;font-size:11px;color:var(--ink4);">Payee contains: <em>${pat}</em></div>
-        <div style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:5px 8px;font-size:11px;color:var(--ink2);">${bMeta.icon} ${bMeta.label}</div>
-        <button onclick="deleteSplitRule('${pat.replace(/'/g,"\\'")}');renderSettings()" style="background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--negative);border-radius:4px;padding:4px;cursor:pointer;font-size:12px;">✕</button>
-      </div>`;
-    });
-    splitBody += '</div>';
-  }
-  const bucketOpts = Object.entries(BUCKET_META).map(([k,v])=>`<option value="${k}">${v.icon} ${v.label}</option>`).join('');
-  splitBody += `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;background:rgba(245,168,0,.04);border:1px solid rgba(245,168,0,.15);border-radius:6px;padding:12px;">
-    <input id="rule-pat" type="text" placeholder="Payee contains (e.g. pennymac)" style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:6px 10px;font-size:12px;color:var(--ink);box-sizing:border-box;">
-    <select id="rule-bucket" style="background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:6px 10px;font-size:12px;color:var(--ink);">${bucketOpts}</select>
-    <button onclick="addSplitRule()" style="background:var(--gold);color:var(--void);border:none;padding:6px 14px;border-radius:4px;font-size:12px;font-weight:700;cursor:pointer;">Add</button>
-  </div>`;
-
-  // ── §7 Forge Appearance ────────────────────────────────────────────────────
-  let appearBody = '';
-  appearBody += row('Display Density', 'Adjusts padding and font sizes throughout', sel('set-density', forgeAppearance.density, [['compact','Compact — more data on screen'],['normal','Normal (default)'],['comfortable','Comfortable — easier to scan']]));
-  appearBody += row('Show Goal Rings', 'Display circular progress rings on The Gauge (Pulse)', chk('set-goal-rings', forgeAppearance.showGoalRings, 'Show goal progress rings'));
-  appearBody += row('Default Page', 'Page shown on launch', sel('set-default-page', forgeAppearance.defaultPage, [['dashboard','Dashboard'],['income','Income Statement'],['cashflow','Cash Flow'],['categories','Categories']]));
-  appearBody += row('Show Cents', 'Display cents in all dollar amounts', chk('set-show-cents', forgeAppearance.showCents, 'Show cents (e.g. $1,234.56 instead of $1,235)'));
-
-  // ── §8 Data & Privacy ──────────────────────────────────────────────────────
-  const fileReg  = getFileRegistry();
-  const ledgerRaw= localStorage.getItem('forge_prod_v1') || localStorage.getItem('ledger_v3');
-  const ledgerData= ledgerRaw ? JSON.parse(ledgerRaw) : null;
-  const txnCount  = ledgerData?.txns?.length || 0;
-  const savedAt   = ledgerData?.savedAt ? new Date(ledgerData.savedAt).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}) : '—';
-
-  // File type catalog
-  const FILE_TYPES = [
-    { key:'quicken_csv',    icon:'📊', label:'Quicken Transactions',   desc:'QIF/CSV register export',           ext:'.csv / .qif',   group:'quicken' },
-    { key:'quicken_qif',    icon:'📊', label:'Quicken QIF',            desc:'Quicken Interchange Format',        ext:'.qif',           group:'quicken' },
-    { key:'quicken_qfx',    icon:'📊', label:'Quicken QFX/OFX',        desc:'Bank OFX/QFX feed',                 ext:'.qfx / .ofx',    group:'quicken' },
-    { key:'quicken_networth',icon:'🏦', label:'Net Worth Export',       desc:'Balance Sheet snapshot',            ext:'.csv (NW)',       group:'quicken' },
-    { key:'amazon_orders',  icon:'📦', label:'Amazon Order History',    desc:'itemized purchases + categories',   ext:'.csv',           group:'detail'  },
-    { key:'apple_card',     icon:'🍎', label:'Apple Card',              desc:'Monthly transaction CSV',           ext:'.csv',           group:'detail'  },
-    { key:'home_depot',     icon:'🔨', label:'Home Depot Orders',       desc:'Order history export',              ext:'.csv',           group:'detail'  },
-    { key:'venmo',          icon:'💸', label:'Venmo',                   desc:'Payment history CSV',               ext:'.csv',           group:'detail'  },
-  ];
-
-  const storageKeys = ['forge_prod_v1','ledger_v3','forge_lean_v1','forge_settings_v2','forge_sync_token','forge_file_registry'];
-  let storageSize = 0;
-  storageKeys.forEach(k => { const v = localStorage.getItem(k); if (v) storageSize += v.length; });
-
-  // Derive thru dates from actual data for file types not yet individually tracked
-  const derivedThru = {};
-  if (txns.length) {
-    // All Quicken transactions
-    const qtxns = txns.filter(t => !t._source || t._source === 'quicken');
-    if (qtxns.length) derivedThru['quicken_csv'] = [...qtxns].sort((a,b)=>b.date.localeCompare(a.date))[0]?.date;
-    // Amazon
-    const atxns = txns.filter(t => t._source === 'amazon' && t.itemDetail);
-    if (atxns.length) derivedThru['amazon_orders'] = [...atxns].sort((a,b)=>b.date.localeCompare(a.date))[0]?.date;
-    // Apple Card
-    const actxns = txns.filter(t => t._source === 'apple_card' && t.itemDetail);
-    if (actxns.length) derivedThru['apple_card'] = [...actxns].sort((a,b)=>b.date.localeCompare(a.date))[0]?.date;
-    // Home Depot
-    const hdtxns = txns.filter(t => t._source === 'home_depot' && t.itemDetail);
-    if (hdtxns.length) derivedThru['home_depot'] = [...hdtxns].sort((a,b)=>b.date.localeCompare(a.date))[0]?.date;
-    // Venmo
-    const vtxns = txns.filter(t => t._source === 'venmo');
-    if (vtxns.length) derivedThru['venmo'] = [...vtxns].sort((a,b)=>b.date.localeCompare(a.date))[0]?.date;
-    // NW from overrides
-    const nwDates = Object.values(netWorthOverrides||{}).map(v=>v.date).filter(Boolean).sort();
-    if (nwDates.length) derivedThru['quicken_networth'] = nwDates[nwDates.length-1];
-  }
-
-  const daysSince = (isoDate) => {
-    if (!isoDate) return null;
-    return Math.floor((Date.now() - new Date(isoDate)) / 864e5);
-  };
-  const freshnessColor = (days) => {
-    if (days === null) return 'var(--ink4)';
-    if (days <= 7)  return 'var(--positive)';
-    if (days <= 30) return 'var(--gold)';
-    if (days <= 90) return 'var(--warn)';
-    return 'var(--negative)';
-  };
-  const freshnessLabel = (days) => {
-    if (days === null) return 'Not imported';
-    if (days === 0)  return 'Today';
-    if (days === 1)  return 'Yesterday';
-    if (days <= 7)  return days + 'd ago';
-    if (days <= 30) return Math.floor(days/7) + 'w ago';
-    if (days <= 365) return Math.floor(days/30) + 'mo ago';
-    return Math.floor(days/365) + 'yr ago';
-  };
-
-  let dataBody = '';
-
-  // ── Summary tiles ─────────────────────────────────────────────────────────
-  dataBody += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">
-    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;">
-      <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Transactions</div>
-      <div style="font-size:24px;font-weight:300;font-family:var(--font-d);color:var(--ink);">${txnCount.toLocaleString()}</div>
-      <div style="font-size:10px;color:var(--ink4);">Last sync: ${savedAt}</div>
-    </div>
-    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;">
-      <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Storage</div>
-      <div style="font-size:24px;font-weight:300;font-family:var(--font-d);color:var(--ink);">${(storageSize/1024).toFixed(0)} KB</div>
-      <div style="font-size:10px;color:var(--ink4);">browser localStorage</div>
-    </div>
-    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;">
-      <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Sync Token</div>
-      <div style="font-size:13px;font-weight:600;color:${localStorage.getItem('forge_sync_token')?'var(--positive)':'var(--ink4)'};">${localStorage.getItem('forge_sync_token')?'✓ Configured':'Not set'}</div>
-      <div style="font-size:10px;color:var(--ink4);">cloud sync</div>
-    </div>
-  </div>`;
-
-  // ── File Dashboard ────────────────────────────────────────────────────────
-  dataBody += `<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;">
-    <div style="padding:11px 16px;background:var(--float);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-size:13px;font-weight:700;color:var(--ink2);">📂 Imported File Status</div>
-      <div style="font-size:10px;color:var(--ink4);font-family:var(--font-m);">Thru dates from most recent import of each type</div>
-    </div>`;
-
-  // Quicken group
-  dataBody += `<div style="padding:8px 16px 4px;font-size:9px;font-family:var(--font-m);letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);">Quicken Exports</div>`;
-  FILE_TYPES.filter(f=>f.group==='quicken').forEach(ft => {
-    const reg     = fileReg[ft.key];
-    const thru    = reg?.thruDate || derivedThru[ft.key] || null;
-    const days    = daysSince(thru);
-    const color   = freshnessColor(days);
-    const label   = freshnessLabel(days);
-    const cnt     = reg?.count || (ft.key==='quicken_csv'&&txns.length>0 ? txns.length : null);
-
-    dataBody += `<div style="display:grid;grid-template-columns:32px 1fr auto auto;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.03);">
-      <div style="font-size:20px;text-align:center;">${ft.icon}</div>
-      <div>
-        <div style="font-size:12px;font-weight:500;color:var(--ink);">${ft.label}</div>
-        <div style="font-size:10px;color:var(--ink4);">${ft.desc} · <span style="font-family:var(--font-m);">${ft.ext}</span></div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-size:11px;font-weight:600;font-family:var(--font-m);color:${color};">${thru || '—'}</div>
-        <div style="font-size:10px;color:${color};margin-top:1px;">${label}</div>
-      </div>
-      <div style="width:10px;height:10px;border-radius:50%;background:${color};box-shadow:0 0 ${days===null?'0':'6px'} ${color};flex-shrink:0;"></div>
-    </div>`;
-  });
-
-  // Detail group
-  dataBody += `<div style="padding:12px 16px 4px;font-size:9px;font-family:var(--font-m);letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);border-top:1px solid var(--line);">Merchant Detail Files</div>`;
-  FILE_TYPES.filter(f=>f.group==='detail').forEach(ft => {
-    const reg     = fileReg[ft.key];
-    const thru    = reg?.thruDate || derivedThru[ft.key] || null;
-    const days    = daysSince(thru);
-    const color   = freshnessColor(days);
-    const label   = freshnessLabel(days);
-
-    dataBody += `<div style="display:grid;grid-template-columns:32px 1fr auto auto;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.03);">
-      <div style="font-size:20px;text-align:center;">${ft.icon}</div>
-      <div>
-        <div style="font-size:12px;font-weight:500;color:${thru?'var(--ink)':'var(--ink4)'};">${ft.label}</div>
-        <div style="font-size:10px;color:var(--ink4);">${ft.desc} · <span style="font-family:var(--font-m);">${ft.ext}</span></div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-size:11px;font-weight:600;font-family:var(--font-m);color:${color};">${thru || '—'}</div>
-        <div style="font-size:10px;color:${color};margin-top:1px;">${label}</div>
-      </div>
-      <div style="width:10px;height:10px;border-radius:50%;background:${color};box-shadow:0 0 ${days===null?'0':'6px'} ${color};flex-shrink:0;"></div>
-    </div>`;
-  });
-
-  dataBody += `</div>`;
-
-
-  // ── Masked Transaction Detector ───────────────────────────────────────────
-  // Scan txns for high-volume payees where we don't have itemDetail
-  const VENDOR_CATALOG = [
-    {
-      // Amazon — detect AMZN, AMAZON in payee, no itemDetail
-      key:       'amazon_orders',
-      match:     t => /amaz/i.test(t.payee||'') && !t.itemDetail,
-      label:     'Amazon Order History',
-      icon:      '📦',
-      color:     '#FF9900',
-      desc:      'Your Amazon charges show as lump-sum AMZN.COM entries. The Order History CSV itemizes every product, category, and ASIN.',
-      howTo:     'amazon.com/order-history → Filter by year → Download order history (.csv)',
-      fileType:  'Amazon Order History CSV',
-      priority:  'high',
-      learnMore: 'https://www.amazon.com/gp/b2b/reports',
-    },
-    {
-      key:       'apple_card',
-      match:     t => /apple\s*(card|cash|pay|store)|itunes|app store/i.test(t.payee||'') && !t.itemDetail,
-      label:     'Apple Card Monthly Transactions',
-      icon:      '🍎',
-      color:     '#c084fc',
-      desc:      'Apple Card charges appear as generic APPLE payments. The monthly CSV shows merchant name, category, and amount for every charge.',
-      howTo:     'Wallet app → Apple Card → ··· → Monthly Statements → Download CSV',
-      fileType:  'Apple Card Monthly CSV',
-      priority:  'high',
-      learnMore: null,
-    },
-    {
-      key:       'home_depot',
-      match:     t => /home depot/i.test(t.payee||'') && !t.itemDetail,
-      label:     'Home Depot Order History',
-      icon:      '🔨',
-      color:     '#FF6600',
-      desc:      'Home Depot transactions show total purchase amounts only. The order history export breaks out every SKU, product name, and quantity.',
-      howTo:     'homedepot.com → Account → Order History → Export CSV',
-      fileType:  'Home Depot Order CSV',
-      priority:  'medium',
-      learnMore: null,
-    },
-    {
-      key:       'lowes',
-      match:     t => /lowe'?s/i.test(t.payee||''),
-      label:     "Lowe's Purchase History",
-      icon:      '🏗️',
-      color:     '#004990',
-      desc:      "Lowe's charges are lumped by transaction. The purchase history export shows individual items, SKUs, and project categories.",
-      howTo:     "lowes.com → My Account → Order & Purchase History → Export",
-      fileType:  "Lowe's Purchase History CSV",
-      priority:  'medium',
-      learnMore: null,
-    },
-    {
-      key:       'venmo',
-      match:     t => /venmo/i.test(t.payee||'') && !t.itemDetail,
-      label:     'Venmo Transaction History',
-      icon:      '💸',
-      color:     '#3D95CE',
-      desc:      "Venmo appears as a single entry without the memo, sender/recipient name, or purpose. The CSV export reveals who paid/received and the note on each transfer.",
-      howTo:     'venmo.com → Settings → Statements → Download CSV (select date range)',
-      fileType:  'Venmo Statement CSV',
-      priority:  'medium',
-      learnMore: null,
-    },
-    {
-      key:       'target',
-      match:     t => /target\s*(corp|stores?)?/i.test(t.payee||'') && !/target bank/i.test(t.payee||''),
-      label:     'Target Circle Order History',
-      icon:      '🎯',
-      color:     '#CC0000',
-      desc:      'Target transactions show store total only. Target Circle members can export a purchase history CSV that shows individual items.',
-      howTo:     'target.com/circle → Purchases tab → Export purchase history',
-      fileType:  'Target Circle Purchase CSV',
-      priority:  'low',
-      learnMore: null,
-    },
-    {
-      key:       'walmart',
-      match:     t => /walmart|wal-mart/i.test(t.payee||''),
-      label:     'Walmart Purchase History',
-      icon:      '🛒',
-      color:     '#0071CE',
-      desc:      'Walmart+ and walmart.com orders can be exported with itemized product details. In-store purchases require a receipt scan.',
-      howTo:     'walmart.com → Account → Purchase History → Export (online orders only)',
-      fileType:  'Walmart Order History CSV',
-      priority:  'low',
-      learnMore: null,
-    },
-    {
-      key:       'costco',
-      match:     t => /costco/i.test(t.payee||''),
-      label:     'Costco Purchase History',
-      icon:      '🏪',
-      color:     '#005DAA',
-      desc:      'Costco warehouse charges are lump-sum only. Costco.com orders and warehouse receipts are available via your account.',
-      howTo:     'costco.com → Orders & Returns → Download order history',
-      fileType:  'Costco Order History CSV',
-      priority:  'low',
-      learnMore: null,
-    },
-    {
-      key:       'chewy',
-      match:     t => /chewy/i.test(t.payee||''),
-      label:     'Chewy Order History',
-      icon:      '🐾',
-      color:     '#00AADF',
-      desc:      'Chewy auto-ship and one-time orders are grouped. The order history shows each product, quantity, and price.',
-      howTo:     'chewy.com → My Account → Order History → Export',
-      fileType:  'Chewy Order History CSV',
-      priority:  'low',
-      learnMore: null,
-    },
-    {
-      key:       'paypal',
-      match:     t => /paypal/i.test(t.payee||'') && !t.itemDetail,
-      label:     'PayPal Transaction History',
-      icon:      '🔵',
-      color:     '#003087',
-      desc:      'PayPal transactions hide the actual merchant. The activity export reveals who you paid, the item description, and whether it was goods/services or friends & family.',
-      howTo:     'paypal.com → Activity → Statements → Download · Select date range · CSV',
-      fileType:  'PayPal Activity CSV',
-      priority:  'medium',
-      learnMore: null,
-    },
-    {
-      key:       'doordash_detail',
-      match:     t => /doordash/i.test(t.payee||'') && !t.itemDetail,
-      label:     'DoorDash Order History',
-      icon:      '🍕',
-      color:     '#FF3008',
-      desc:      'DoorDash charges show delivery total only. The order history shows the restaurant, items ordered, and fees vs. food cost.',
-      howTo:     'doordash.com → Account → Order History → Request data export (GDPR)',
-      fileType:  'DoorDash Order History',
-      priority:  'low',
-      learnMore: null,
-    },
-    {
-      key:       'instacart_detail',
-      match:     t => /instacart/i.test(t.payee||'') && !t.itemDetail,
-      label:     'Instacart Order History',
-      icon:      '🥦',
-      color:     '#43B02A',
-      desc:      'Instacart deliveries show as a lump sum. The order history CSV shows each grocery item purchased, store, and unit price.',
-      howTo:     'instacart.com → Account → Order History → Request order data export',
-      fileType:  'Instacart Order Export',
-      priority:  'low',
-      learnMore: null,
-    },
-  ];
-
-  // ── Detect which vendors are active and not yet fully imported ─────────────
-  const alreadyImported = new Set(Object.keys(fileReg));
-  const spendable_all   = spendable(txns);
-
-  const vendorFindings = [];
-  VENDOR_CATALOG.forEach(v => {
-    // Skip if this vendor has a file already imported
-    if (alreadyImported.has(v.key) && fileReg[v.key].count > 0) return;
-    // Also skip Amazon if amazon_orders already imported
-    if (v.key === 'amazon_orders' && alreadyImported.has('amazon_orders')) return;
-
-    const matched = spendable_all.filter(t => v.match(t) && t.amount < 0);
-    if (!matched.length) return;
-
-    const total    = matched.reduce((s,t)=>s+Math.abs(t.amount),0);
-    const count    = matched.length;
-    const dateRange = (() => {
-      const dates = matched.map(t=>t.date).sort();
-      return dates[0].slice(0,7) + ' → ' + dates[dates.length-1].slice(0,7);
-    })();
-    const months   = new Set(matched.map(t=>t.date.slice(0,7))).size;
-    const avgMo    = total / Math.max(months, 1);
-
-    vendorFindings.push({ ...v, matched, total, count, dateRange, months, avgMo });
-  });
-
-  // Sort: high priority first, then by total spend descending
-  const priorityOrder = { high: 0, medium: 1, low: 2 };
-  vendorFindings.sort((a,b) => priorityOrder[a.priority] - priorityOrder[b.priority] || b.total - a.total);
-
-  // ── Render recommendations ─────────────────────────────────────────────────
-  if (vendorFindings.length) {
-    dataBody += `<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;">
-      <div style="padding:11px 16px;background:var(--float);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
-        <div>
-          <div style="font-size:13px;font-weight:700;color:var(--ink2);">🔍 Unmask These Transactions</div>
-          <div style="font-size:10px;color:var(--ink4);margin-top:1px;">${vendorFindings.length} vendor${vendorFindings.length>1?'s':''} detected with masked charges — importing detail files reveals individual purchases</div>
-        </div>
-        <div style="font-size:22px;font-weight:300;font-family:var(--font-d);color:var(--gold);">${fmt(vendorFindings.reduce((s,v)=>s+v.total,0))}</div>
-      </div>`;
-
-    // High-priority section header
-    const highPri = vendorFindings.filter(v=>v.priority==='high');
-    const medPri  = vendorFindings.filter(v=>v.priority==='medium');
-    const lowPri  = vendorFindings.filter(v=>v.priority==='low');
-
-    const renderVendorRow = (v, isLast) => {
-      const urgency  = v.priority === 'high' ? 'var(--negative)' : v.priority === 'medium' ? 'var(--gold)' : 'var(--ink4)';
-      const urgLabel = v.priority === 'high' ? 'HIGH IMPACT' : v.priority === 'medium' ? 'RECOMMENDED' : 'OPTIONAL';
-      const borderStyle = isLast ? '' : 'border-bottom:1px solid rgba(255,255,255,.04);';
-      return `<div style="padding:14px 16px;${borderStyle}">
-        <div style="display:flex;align-items:flex-start;gap:12px;">
-          <!-- Vendor icon + spend -->
-          <div style="flex-shrink:0;text-align:center;width:52px;">
-            <div style="font-size:24px;margin-bottom:4px;">${v.icon}</div>
-            <div style="font-size:9px;font-family:var(--font-m);color:var(--ink4);">${fmtK(v.total)}</div>
-          </div>
-          <!-- Details -->
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap;">
-              <div style="font-size:12.5px;font-weight:600;color:var(--ink);">${v.label}</div>
-              <span style="font-size:8px;padding:1px 6px;border-radius:8px;background:rgba(0,0,0,.3);border:1px solid ${urgency};color:${urgency};font-family:var(--font-m);letter-spacing:.08em;">${urgLabel}</span>
-            </div>
-            <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;margin-bottom:8px;">${v.desc}</div>
-            <!-- Stats row -->
-            <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px;">
-              <div style="font-size:10px;font-family:var(--font-m);color:var(--ink4);">
-                <span style="color:var(--ink2);font-weight:600;">${v.count}</span> transactions
-              </div>
-              <div style="font-size:10px;font-family:var(--font-m);color:var(--ink4);">
-                <span style="color:var(--ink2);font-weight:600;">${v.months}</span> months
-              </div>
-              <div style="font-size:10px;font-family:var(--font-m);color:var(--ink4);">
-                Avg <span style="color:var(--gold);font-weight:600;">${fmtK(v.avgMo)}</span>/mo
-              </div>
-              <div style="font-size:10px;font-family:var(--font-m);color:var(--ink4);">${v.dateRange}</div>
-            </div>
-            <!-- How-to instruction -->
-            <div style="background:rgba(255,255,255,.03);border:1px solid var(--line2);border-left:3px solid ${v.color};border-radius:var(--r-sm);padding:8px 12px;">
-              <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">How to export → <span style="color:var(--ink3);">${v.fileType}</span></div>
-              <div style="font-size:11px;color:var(--ink2);line-height:1.6;">${v.howTo}</div>
-            </div>
-          </div>
-          <!-- Spend bar (visual weight of this vendor) -->
-          <div style="flex-shrink:0;width:6px;align-self:stretch;border-radius:3px;background:linear-gradient(to bottom,${v.color}44,${v.color}22);position:relative;overflow:visible;">
-            <div style="position:absolute;bottom:0;left:0;right:0;border-radius:3px;background:${v.color};height:${Math.min(100,Math.round(v.total/Math.max(...vendorFindings.map(x=>x.total))*100))}%;"></div>
-          </div>
-        </div>
-      </div>`;
-    };
-
-    if (highPri.length) {
-      dataBody += `<div style="padding:6px 16px 3px;font-size:9px;font-family:var(--font-m);letter-spacing:.16em;text-transform:uppercase;color:var(--negative);border-bottom:1px solid var(--line);">⚡ High Impact · Import These First</div>`;
-      highPri.forEach((v,i) => { dataBody += renderVendorRow(v, i===highPri.length-1&&!medPri.length&&!lowPri.length); });
-    }
-    if (medPri.length) {
-      dataBody += `<div style="padding:6px 16px 3px;font-size:9px;font-family:var(--font-m);letter-spacing:.16em;text-transform:uppercase;color:var(--gold);border-bottom:1px solid var(--line);${highPri.length?'border-top:1px solid var(--line);':''}">Recommended</div>`;
-      medPri.forEach((v,i) => { dataBody += renderVendorRow(v, i===medPri.length-1&&!lowPri.length); });
-    }
-    if (lowPri.length) {
-      const lowShown = lowPri.slice(0,3);
-      const lowHidden= lowPri.slice(3);
-      dataBody += `<div style="padding:6px 16px 3px;font-size:9px;font-family:var(--font-m);letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);border-bottom:1px solid var(--line);${(highPri.length||medPri.length)?'border-top:1px solid var(--line);':''}">Optional</div>`;
-      lowShown.forEach((v,i) => { dataBody += renderVendorRow(v, i===lowShown.length-1&&!lowHidden.length); });
-      if (lowHidden.length) {
-        dataBody += `<div style="padding:10px 16px;font-size:11px;color:var(--ink4);text-align:center;cursor:pointer;" onclick="this.style.display='none';this.nextElementSibling.style.display='block';">↓ ${lowHidden.length} more optional vendors detected</div>`;
-        dataBody += `<div style="display:none;">`;
-        lowHidden.forEach((v,i) => { dataBody += renderVendorRow(v, i===lowHidden.length-1); });
-        dataBody += `</div>`;
-      }
-    }
-
-    dataBody += `</div>`;
-  } else if (txns.length > 0) {
-    dataBody += `<div style="background:rgba(45,212,191,.04);border:1px solid rgba(45,212,191,.14);border-radius:var(--r-md);padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--positive);">
-      ✓ No additional detail files detected — all recognized masked vendors have been imported.
-    </div>`;
-  }
-
-
-    // ── Action buttons ────────────────────────────────────────────────────────
-  dataBody += `<div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <button onclick="exportForge()" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink2);padding:7px 16px;border-radius:var(--r-sm);font-size:12px;cursor:pointer;font-family:var(--font-ui);">↓ Export JSON</button>
-    <button onclick="if(confirm('Clear sync token?'))localStorage.removeItem('forge_sync_token');renderSettings()" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink4);padding:7px 16px;border-radius:var(--r-sm);font-size:12px;cursor:pointer;font-family:var(--font-ui);">Reset Sync Token</button>
-    <button onclick="if(confirm('Clear ALL Forge data? Cannot be undone.')){['forge_prod_v1','ledger_v3','forge_lean_v1','forge_settings_v2','forge_file_registry'].forEach(k=>localStorage.removeItem(k));location.reload();}" style="background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--negative);padding:7px 16px;border-radius:var(--r-sm);font-size:12px;cursor:pointer;font-family:var(--font-ui);">✕ Clear All Data</button>
-  </div>`;
-
-
-  // ── Assemble ──────────────────────────────────────────────────────────────
-  // ── §9 Spending Alerts ────────────────────────────────────────────────────
-  let alertsBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;line-height:1.7;">
-    Set a monthly dollar threshold per spending bucket. When the month's projected total exceeds the threshold, the Income Statement header flags it and the Dashboard shows a warning chip. Thresholds are soft limits — for awareness, not enforcement.
-  </div>`;
+  // ── §4 Spending Alerts ─────────────────────────────────────────────────────
   const alertBuckets = [
-    ['groceries','🛒','Groceries'],['restaurants','🍕','Restaurants'],
-    ['entertainment','🎭','Entertainment'],['household','🔧','Household / Amazon'],
-    ['personal','💅','Personal Care'],['clothing','👕','Clothing'],
-    ['travel','✈️','Travel'],['transit','🚌','Transit'],
-    ['healthcare','⚕️','Healthcare'],['gifts','🎁','Gifts & Giving'],
-    ['gas_car','⛽','Vehicle Fuel'],['other','❓','Other'],
+    ['groceries','🛒','Groceries'],['restaurants','🍕','Dining'],['entertainment','🎭','Entertainment'],
+    ['household','🔧','Household'],['personal','💅','Personal'],['clothing','👕','Clothing'],
+    ['travel','✈️','Travel'],['transit','🚌','Transit'],['healthcare','⚕️','Healthcare'],
+    ['gifts','🎁','Gifts'],['gas_car','⛽','Fuel'],['other','❓','Other'],
   ];
-  alertsBody += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">`;
+  let alertsBody = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0;">`;
   alertBuckets.forEach(([bk, icon, label]) => {
-    const cfg = spendingAlerts[bk] || { monthly: 0, enabled: false };
-    alertsBody += `<div style="background:var(--lift);border:1px solid var(--line);border-radius:6px;padding:12px 14px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <span style="font-size:16px;">${icon}</span>
-        <div style="font-size:12px;font-weight:500;color:var(--ink2);flex:1;">${label}</div>
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
-          <input type="checkbox" data-bk="${bk}" class="alert-chk" ${cfg.enabled?'checked':''}
-            onchange="spendingAlerts['${bk}']=spendingAlerts['${bk}']||{};spendingAlerts['${bk}'].enabled=this.checked;saveSettings()"
-            style="width:14px;height:14px;accent-color:var(--gold);">
-          <span style="font-size:10px;color:var(--ink4);">Alert</span>
-        </label>
+    const cfg = spendingAlerts[bk] || { monthly:0, enabled:false };
+    alertsBody += `<div style="padding:var(--sp2) var(--sp4);border-bottom:1px solid rgba(255,255,255,.035);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:12px;font-weight:500;color:var(--ink2);">${icon} ${label}</span>
+        ${tog(`alert-en-${bk}`, cfg.enabled, `spendingAlerts['${bk}']=spendingAlerts['${bk}']||{};spendingAlerts['${bk}'].enabled=this.checked;saveSettings()`)}
       </div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <span style="font-size:11px;color:var(--ink4);">$</span>
-        <input type="number" min="0" step="50" value="${cfg.monthly||''}" placeholder="Monthly limit"
-          onchange="spendingAlerts['${bk}']=spendingAlerts['${bk}']||{};spendingAlerts['${bk}'].monthly=parseFloat(this.value)||0;saveSettings()"
-          style="flex:1;background:var(--float);border:1px solid var(--line2);border-radius:4px;padding:5px 8px;font-size:12px;font-family:var(--font-m);color:var(--ink);">
-        <span style="font-size:10px;color:var(--ink4);">/month</span>
-      </div>
+      ${numSlider(`alert-${bk}`, cfg.monthly||0, 0, 5000, 50, '/mo',
+        `spendingAlerts['${bk}']=spendingAlerts['${bk}']||{};spendingAlerts['${bk}'].monthly=parseFloat(this.value)||0;saveSettings();document.getElementById('alert-${bk}-n').value=this.value`)}
     </div>`;
   });
   alertsBody += '</div>';
 
-  // ── §10 Confluence Agenda Editor ─────────────────────────────────────────
-  let confBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;line-height:1.7;">
-    Customize the 6-step monthly family review agenda. $id uses these prompts when generating the Confluence narrative. Drag to reorder (future), edit titles and prompts inline.
-  </div>`;
-  confBody += `<div id="conf-items" style="display:flex;flex-direction:column;gap:6px;">`;
-  confluenceAgenda.forEach((item, i) => {
-    confBody += `<div style="background:var(--lift);border:1px solid var(--line);border-radius:8px;padding:14px 16px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        <span style="font-size:20px;cursor:default;">${item.emoji}</span>
-        <input type="text" value="${item.title}" data-idx="${i}" data-field="title"
-          onchange="confluenceAgenda[${i}].title=this.value;saveSettings()"
-          style="flex:1;background:var(--float);border:1px solid var(--line2);border-radius:4px;padding:5px 10px;font-size:13px;font-weight:600;color:var(--ink);">
-        <input type="text" value="${item.emoji}" data-idx="${i}" data-field="emoji" maxlength="4"
-          onchange="confluenceAgenda[${i}].emoji=this.value;saveSettings()"
-          style="width:44px;background:var(--float);border:1px solid var(--line2);border-radius:4px;padding:5px;font-size:18px;text-align:center;">
-      </div>
-      <textarea data-idx="${i}" onchange="confluenceAgenda[${i}].prompt=this.value;saveSettings()"
-        style="width:100%;background:var(--float);border:1px solid var(--line2);border-radius:4px;padding:8px 10px;font-size:11px;color:var(--ink3);font-family:var(--font-ui);resize:vertical;min-height:52px;box-sizing:border-box;">${item.prompt}</textarea>
+  // ── §5 Accrual Engine ──────────────────────────────────────────────────────
+  const accrualBuckets = [
+    {key:'mortgage',label:'Mortgage',engine:'fixed',icon:'🏠'},
+    {key:'car',label:'Car',engine:'fixed',icon:'🚗'},
+    {key:'insurance',label:'Insurance',engine:'fixed',icon:'🛡️'},
+    {key:'education',label:'Education',engine:'fixed',icon:'🎓'},
+    {key:'childcare',label:'Childcare',engine:'fixed',icon:'👶'},
+    {key:'electric',label:'Electric',engine:'fixed',icon:'⚡'},
+    {key:'gas_util',label:'Gas/Heat',engine:'fixed',icon:'🔥'},
+    {key:'water',label:'Water',engine:'fixed',icon:'💧'},
+    {key:'internet',label:'Internet',engine:'fixed',icon:'📡'},
+    {key:'cell',label:'Cell',engine:'fixed',icon:'📱'},
+    {key:'subscriptions',label:'Subscriptions',engine:'fixed',icon:'📺'},
+    {key:'groceries',label:'Groceries',engine:'discretionary',icon:'🛒'},
+    {key:'restaurants',label:'Dining',engine:'discretionary',icon:'🍕'},
+    {key:'gas_car',label:'Fuel',engine:'discretionary',icon:'⛽'},
+    {key:'healthcare',label:'Healthcare',engine:'discretionary',icon:'⚕️'},
+    {key:'entertainment',label:'Entertainment',engine:'discretionary',icon:'🎭'},
+    {key:'household',label:'Household',engine:'discretionary',icon:'🔧'},
+    {key:'personal',label:'Personal',engine:'discretionary',icon:'💅'},
+    {key:'clothing',label:'Clothing',engine:'discretionary',icon:'👕'},
+    {key:'travel',label:'Travel',engine:'discretionary',icon:'✈️'},
+    {key:'gifts',label:'Gifts',engine:'discretionary',icon:'🎁'},
+  ];
+  let accrualBody = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0;">`;
+  accrualBuckets.forEach(b => {
+    const ov = accrualOverrides[b.key];
+    const cur = ov || b.engine;
+    accrualBody += `<div style="display:flex;align-items:center;gap:var(--sp2);padding:var(--sp2) var(--sp4);border-bottom:1px solid rgba(255,255,255,.035);">
+      <span style="font-size:15px;">${b.icon}</span>
+      <div style="flex:1;font-size:11px;font-weight:500;color:var(--ink2);">${b.label}</div>
+      ${seg(`acr-${b.key}`, ov||'default',
+        [['default','Auto'],['fixed','Fixed'],['discretionary','Var'],['zero','Off']],
+        `accrualOverrides['${b.key}']=this.textContent==='Auto'?undefined:['fixed','discretionary','zero'].find(v=>document.querySelectorAll('#acr-${b.key} .seg-btn.active')[0]?.textContent.toLowerCase().startsWith(v.slice(0,3)))||undefined;if(!accrualOverrides['${b.key}'])delete accrualOverrides['${b.key}'];saveSettings()`
+      )}
     </div>`;
   });
-  confBody += `</div>
-  <div style="margin-top:10px;display:flex;gap:8px;">
-    <button onclick="confluenceAgenda.push({id:'item'+Date.now(),title:'New Step',prompt:'Discussion prompt...',emoji:'📌'});saveSettings();renderSettings()"
-      style="background:var(--lift);border:1px solid var(--line2);color:var(--ink3);padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;">+ Add Step</button>
-    <button onclick="if(confirm('Reset to default agenda?')){confluenceAgenda=[{id:'income',title:'Income & Savings',prompt:'How did our income compare to expectations? Did we hit our savings target?',emoji:'💵'},{id:'spending',title:'Spending Review',prompt:'Where did we overspend? Any categories that surprised us?',emoji:'📊'},{id:'goals',title:'Goals Progress',prompt:'How are our savings goals tracking? Any adjustments needed?',emoji:'🎯'},{id:'coming',title:'Coming This Month',prompt:'What big expenses are coming up? How do we plan for them?',emoji:'📅'},{id:'wins',title:'Wins & Positives',prompt:'What financial wins did we have this month?',emoji:'🏆'},{id:'action',title:'Action Items',prompt:'What three things will we change or do differently next month?',emoji:'✅'}];saveSettings();renderSettings();}"
-      style="background:transparent;border:1px solid var(--line2);color:var(--ink4);padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;">↺ Reset to Default</button>
+  accrualBody += '</div>';
+
+  // ── §6 Payee Aliases ───────────────────────────────────────────────────────
+  const aliasEntries = Object.entries(payeeAliases);
+  let aliasBody = '';
+  if (aliasEntries.length) {
+    aliasEntries.forEach(([raw, friendly]) => {
+      aliasBody += `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;
+        align-items:center;padding:6px var(--sp4);border-bottom:1px solid rgba(255,255,255,.035);">
+        <div style="font-size:11px;color:var(--ink3);font-family:var(--fm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${raw}</div>
+        <div style="font-size:11px;color:var(--ink2);">→ ${friendly}</div>
+        <button onclick="deleteAlias('${raw.replace(/'/g,"\\'")}');renderSettings()"
+          style="background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--neg);
+                 border-radius:var(--r-sm);padding:2px 8px;font-size:10px;cursor:pointer;">✕</button>
+      </div>`;
+    });
+  }
+  aliasBody += `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;
+    padding:var(--sp2) var(--sp4);background:var(--lift);align-items:center;">
+    <input id="alias-raw" type="text" placeholder="Raw Quicken payee (exact)"
+      style="background:var(--float);border:1px solid var(--line2);border-radius:var(--r-sm);
+             padding:6px var(--sp2);font-size:11px;color:var(--ink);-webkit-appearance:none;">
+    <input id="alias-friendly" type="text" placeholder="Friendly name"
+      style="background:var(--float);border:1px solid var(--line2);border-radius:var(--r-sm);
+             padding:6px var(--sp2);font-size:11px;color:var(--ink);-webkit-appearance:none;">
+    <button class="btn btn-gold" onclick="addAlias()" style="font-size:11px;padding:5px 12px;">Add</button>
   </div>`;
 
-  // ── §11 Fiscal / Tax Year ─────────────────────────────────────────────────
-  let taxBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;line-height:1.7;">
-    When set, all year-based views (Income Statement year selector, Balance Sheet YE comparisons, Cash Flow annual waterfall) shift to the selected fiscal year. Month 1 is the start month of your fiscal year.
-  </div>`;
-  const tyOpts = [
-    [0,'January — Calendar Year (Jan–Dec)'],
-    [3,'April — UK Tax Year (Apr–Mar)'],
-    [-3,'October — US Fiscal Year (Oct–Sep)'],
-    [-1,'December — Feb–Jan Retail Year'],
-  ];
-  taxBody += `<div style="max-width:480px;">`;
-  taxBody += row('Fiscal Year Start', 'Sets the "Year 1 month" for all annual reporting',
-    `<select onchange="taxYearOffset=parseInt(this.value);saveSettings()" style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:6px;padding:7px 10px;font-size:12px;color:var(--ink);">
-      ${tyOpts.map(([v,l])=>`<option value="${v}" ${taxYearOffset===v?'selected':''}>${l}</option>`).join('')}
-    </select>`);
-  const curYear = new Date().getFullYear();
-  const fyStart = new Date(curYear, ((0 - taxYearOffset) % 12 + 12) % 12, 1);
-  taxBody += `<div style="margin-top:12px;background:var(--lift);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font-size:11px;color:var(--ink4);">
-    <strong style="color:var(--ink3);">Current fiscal year:</strong> ${fyStart.toLocaleDateString('en-US',{month:'long',year:'numeric'})} → ${new Date(fyStart.getFullYear()+(taxYearOffset===0?0:1), fyStart.getMonth()-1+12, 31).toLocaleDateString('en-US',{month:'long',year:'numeric'})}
-  </div></div>`;
+  // ── §7 Appearance ──────────────────────────────────────────────────────────
+  let appearBody = '';
+  appearBody += sr('Display Density', 'Padding and spacing throughout',
+    seg('set-density', forgeAppearance.density||'normal',
+      [['compact','Compact'],['normal','Normal'],['comfortable','Roomy']],
+      `forgeAppearance.density=this.textContent.toLowerCase().trim();saveSettings()`));
+  appearBody += sr('Default Landing Page', 'First page shown on load',
+    sel('set-default-page', forgeAppearance.defaultPage||'dashboard',
+      [['dashboard','Dashboard'],['income','Income Statement'],['cashflow','Cash Flow'],['categories','Categories']]));
+  appearBody += sr('Show Cents', 'Display $1,234.56 instead of $1,235',
+    tog('set-show-cents', !!forgeAppearance.showCents,
+      'forgeAppearance.showCents=this.checked;saveSettings()'));
+  appearBody += sr('Goal Progress Rings', 'Circular rings on The Gauge',
+    tog('set-goal-rings', forgeAppearance.showGoalRings!==false,
+      'forgeAppearance.showGoalRings=this.checked;saveSettings()'));
 
-  // ── §12 Net Worth Snapshots ───────────────────────────────────────────────
-  const nwHistRaw = localStorage.getItem('forge_nw_history');
-  const nwHist    = nwHistRaw ? JSON.parse(nwHistRaw) : {};
-  const nwSnaps   = Object.keys(nwHist).sort().reverse();
-  let nwBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;line-height:1.7;">
-    Manual snapshots lock a point-in-time net worth for the Balance Sheet comparison dropdown. Use this to record investment account values, home appraisals, or any balance that doesn't come through Quicken transactions.
-  </div>`;
+  // ── §8 Fiscal Year ─────────────────────────────────────────────────────────
+  const tyOpts = [[0,'January — Calendar Year (Jan–Dec)'],[3,'April — UK Tax Year (Apr–Mar)'],[-3,'October — US Fiscal Year (Oct–Sep)']];
+  let fiscalBody = '';
+  fiscalBody += sr('Fiscal Year Start', 'Shifts all annual views: IS year, BS comparisons, Cash Flow waterfall',
+    sel('set-fiscal', taxYearOffset, tyOpts.map(([v,l])=>[v+'',l]).concat([]))
+      .replace('sel(', '') // inline
+  );
+  // Manual: rewrite directly
+  fiscalBody = `<div class="sr"><div><div class="sr-lbl">Fiscal Year Start</div>
+    <div class="sr-hint">Shifts all annual views: IS, BS comparisons, Cash Flow waterfall</div></div>
+    <div class="sr-ctrl">
+      <select id="set-fiscal"
+        style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:6px var(--sp2);font-size:12px;color:var(--ink);"
+        onchange="taxYearOffset=parseInt(this.value);saveSettings()">
+        ${tyOpts.map(([v,l])=>`<option value="${v}"${taxYearOffset===v?' selected':''}>${l}</option>`).join('')}
+      </select>
+    </div></div>`;
 
-  // Manual override entry
-  const bsAcctKeys = Object.keys(BS_ACCOUNTS).filter(k => BS_ACCOUNTS[k]?.class === 'asset' && BS_ACCOUNTS[k]?.sub === 'investment');
-  nwBody += `<div style="background:rgba(245,168,0,.04);border:1px solid rgba(245,168,0,.2);border-radius:8px;padding:16px;margin-bottom:14px;">
-    <div style="font-size:12px;font-weight:600;color:var(--gold);margin-bottom:12px;">Override Account Value</div>
-    <div style="display:grid;grid-template-columns:1fr 160px 160px auto;gap:8px;align-items:end;">
-      <div>
-        <div style="font-size:10px;color:var(--ink4);margin-bottom:4px;">Account</div>
-        <select id="nwov-acct" style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:6px 8px;font-size:12px;color:var(--ink);">
-          ${Object.keys(BS_ACCOUNTS).filter(k=>BS_ACCOUNTS[k]?.sub==='investment'||BS_ACCOUNTS[k]?.sub==='property').map(k=>`<option value="${k}">${BS_ACCOUNTS[k].icon} ${BS_ACCOUNTS[k].label||k}</option>`).join('')}
-          <option value="__custom__">Custom account name...</option>
-        </select>
-      </div>
-      <div>
-        <div style="font-size:10px;color:var(--ink4);margin-bottom:4px;">Current Value ($)</div>
-        <input id="nwov-value" type="number" min="0" step="100" placeholder="245000"
-          style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:6px 8px;font-size:12px;font-family:var(--font-m);color:var(--ink);box-sizing:border-box;">
-      </div>
-      <div>
-        <div style="font-size:10px;color:var(--ink4);margin-bottom:4px;">As Of Date</div>
-        <input id="nwov-date" type="text" placeholder="${new Date().toISOString().slice(0,10)}"
-          style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:4px;padding:6px 8px;font-size:12px;font-family:var(--font-m);color:var(--ink);box-sizing:border-box;">
-      </div>
-      <button onclick="addNWOverride()" style="background:var(--gold);color:var(--void);border:none;padding:7px 14px;border-radius:4px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Set Value</button>
+  // Security, Data, Hierarchy sections (abbreviated but consistent)
+  const authSetup = FORGE_AUTH.isSetup();
+  let secBody2 = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp2);padding:var(--sp3) var(--sp4);">
+    <div style="background:var(--lift);border:1px solid ${authSetup?'rgba(45,212,191,.2)':'rgba(245,168,0,.2)'};border-radius:var(--r-md);padding:var(--sp3) var(--sp4);">
+      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Data Protection</div>
+      <div style="font-size:13px;font-weight:700;color:${authSetup?'var(--pos)':'var(--gold)'};">${authSetup?'🔒 AES-256':'⚠️ Open'}</div>
+      <div style="font-size:10px;color:var(--ink4);margin-top:2px;">${authSetup?'Encrypted at rest':'Not yet encrypted'}</div>
+    </div>
+    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp3) var(--sp4);">
+      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Session</div>
+      <div style="font-size:13px;font-weight:700;color:${FORGE_AUTH.isUnlocked()?'var(--pos)':'var(--ink4)'};">${FORGE_AUTH.isUnlocked()?'🔓 Unlocked':'🔒 Locked'}</div>
+      <div style="font-size:10px;color:var(--ink4);margin-top:2px;">Current browser session</div>
     </div>
   </div>`;
-
-  // Current overrides table
-  const ovEntries = Object.entries(netWorthOverrides);
-  if (ovEntries.length) {
-    nwBody += `<div style="margin-bottom:14px;">
-      <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">Current Overrides</div>
-      ${ovEntries.map(([acct,ov]) => `<div style="display:grid;grid-template-columns:1fr 1fr 120px 36px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
-        <div style="font-size:12px;color:var(--ink2);">${acct}</div>
-        <div style="font-size:13px;font-weight:600;color:var(--positive);font-family:var(--font-m);">$${Math.round(ov.value).toLocaleString()}</div>
-        <div style="font-size:11px;color:var(--ink4);">${ov.date||'—'} · ${ov.source||'manual'}</div>
-        <button onclick="delete netWorthOverrides['${acct.replace(/'/g,"\\'")}'];saveSettings();renderSettings()"
-          style="background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--negative);border-radius:4px;padding:4px;cursor:pointer;font-size:12px;">✕</button>
-      </div>`).join('')}
-    </div>`;
-  }
-
-  // Snapshot history
-  if (nwSnaps.length) {
-    nwBody += `<div>
-      <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">Saved NW Snapshots (${nwSnaps.length})</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;">
-        ${nwSnaps.slice(0,12).map(d => {
-          const snap = nwHist[d];
-          const nw   = snap.netWorth || 0;
-          return `<div style="background:var(--lift);border:1px solid var(--line);border-radius:6px;padding:8px 12px;font-size:11px;">
-            <div style="font-family:var(--font-m);color:var(--ink4);">${d}</div>
-            <div style="font-size:13px;font-weight:700;color:${nw>=0?'var(--positive)':'var(--negative)'};">$${Math.round(nw).toLocaleString()}</div>
-          </div>`;
-        }).join('')}
+  if (!authSetup) {
+    secBody2 += `<div style="padding:var(--sp3) var(--sp4);border-top:1px solid var(--line);">
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center;">
+        <input type="password" id="sec-pin1" placeholder="Passphrase (min 4 chars)"
+          style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:6px var(--sp2);font-size:12px;color:var(--ink);-webkit-appearance:none;">
+        <input type="password" id="sec-pin2" placeholder="Confirm passphrase"
+          style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:6px var(--sp2);font-size:12px;color:var(--ink);-webkit-appearance:none;">
+        <button class="btn btn-gold" onclick="desktopEnableEncryption()" style="font-size:11px;padding:5px 14px;">Encrypt</button>
       </div>
+      <div id="sec-err" style="font-size:10px;color:var(--neg);margin-top:4px;min-height:14px;"></div>
     </div>`;
   } else {
-    nwBody += `<div style="font-size:11px;color:var(--ink4);">No snapshots yet. Snapshots are captured automatically each month when you push data to the cloud.</div>`;
+    secBody2 += `<div style="padding:var(--sp2) var(--sp4);border-top:1px solid var(--line);">
+      <button class="btn btn-danger" onclick="forgeForgotPIN()" style="font-size:11px;padding:5px 12px;">Reset / Recover PIN</button>
+    </div>`;
   }
 
+  // File status (condensed)
+  const fileReg = getFileRegistry();
+  const ledgerRaw = localStorage.getItem('forge_prod_v1') || localStorage.getItem('ledger_v3');
+  const txnCount = ledgerRaw ? (JSON.parse(ledgerRaw)?.txns?.length||0) : 0;
+  const storageKB = Math.round(['forge_prod_v1','ledger_v3','forge_settings_v2','forge_file_registry'].reduce((s,k)=>s+(localStorage.getItem(k)||'').length,0)/1024);
+  const FILE_TYPES_S = [
+    {key:'quicken_csv',icon:'📊',label:'Quicken Txns'},
+    {key:'quicken_networth',icon:'🏦',label:'Net Worth'},
+    {key:'amazon_orders',icon:'📦',label:'Amazon'},
+    {key:'apple_card',icon:'🍎',label:'Apple Card'},
+    {key:'home_depot',icon:'🔨',label:'Home Depot'},
+    {key:'venmo',icon:'💸',label:'Venmo'},
+  ];
+  const daysSince = iso => iso?Math.floor((Date.now()-new Date(iso))/864e5):null;
+  const dotColor = d => d===null?'var(--line2)':d<=7?'var(--pos)':d<=30?'var(--gold)':'var(--neg)';
+  const freshLbl = d => d===null?'—':d===0?'Today':d===1?'Yesterday':d<=7?d+'d ago':d<=30?Math.floor(d/7)+'w ago':Math.floor(d/30)+'mo ago';
 
-  // ── §13 Forge Hierarchy Editor ─────────────────────────────────────────────
-  let hierBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;line-height:1.6;">
-    The Forge Hierarchy maps every Quicken category and payee keyword to one of 26 expense buckets.
-    Edit bucket keyword lists to improve how transactions are classified. Changes apply immediately to all views.
-    <span style="color:var(--gold);">Use commas to separate keywords — partial matches are used.</span>
+  let dataBody = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp2);padding:var(--sp3) var(--sp4);">
+    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp2) var(--sp3);">
+      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Transactions</div>
+      <div style="font-size:20px;font-weight:300;font-family:var(--fd);color:var(--ink);">${txnCount.toLocaleString()}</div>
+    </div>
+    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp2) var(--sp3);">
+      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Storage</div>
+      <div style="font-size:20px;font-weight:300;font-family:var(--fd);color:var(--ink);">${storageKB} KB</div>
+    </div>
+  </div>
+  <div style="border-top:1px solid var(--line);">`;
+  FILE_TYPES_S.forEach((ft,i) => {
+    const reg  = fileReg[ft.key];
+    const thru = reg?.thruDate || null;
+    const d    = daysSince(thru);
+    const col  = dotColor(d);
+    dataBody += `<div style="display:grid;grid-template-columns:24px 1fr auto auto;gap:var(--sp2);align-items:center;
+      padding:7px var(--sp4);${i<FILE_TYPES_S.length-1?'border-bottom:1px solid rgba(255,255,255,.035)':''}">
+      <span style="font-size:14px;">${ft.icon}</span>
+      <span style="font-size:11px;color:var(--ink2);">${ft.label}</span>
+      <span style="font-size:10px;font-family:var(--fm);color:var(--ink3);">${thru?thru.slice(0,10):'—'}</span>
+      <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${col};${d!==null&&d<=7?'box-shadow:0 0 5px '+col:''};" title="${freshLbl(d)}"></span>
+    </div>`;
+  });
+  dataBody += `</div>
+  <div style="display:flex;gap:var(--sp2);padding:var(--sp2) var(--sp4);border-top:1px solid var(--line);flex-wrap:wrap;">
+    <button class="btn btn-ghost" onclick="exportForge()" style="font-size:11px;">↓ Export JSON</button>
+    <button class="btn btn-danger" onclick="if(confirm('Clear ALL data?')){['forge_prod_v1','ledger_v3','forge_lean_v1','forge_settings_v2','forge_file_registry'].forEach(k=>localStorage.removeItem(k));location.reload();}" style="font-size:11px;">✕ Clear All</button>
   </div>`;
 
-  // Get current overrides from localStorage
-  let hierOverrides = {};
-  try { hierOverrides = JSON.parse(localStorage.getItem('forge_hierarchy_overrides') || '{}'); } catch(e) {}
-
-  // Build the editor UI for each bucket
+  // Hierarchy editor (abbreviated for space)
+  let hierBody = `<div style="font-size:11px;color:var(--ink4);padding:var(--sp2) var(--sp4);line-height:1.6;">
+    Edit keyword lists to improve bucket classification. Comma-separated, case-insensitive partial match.<br>
+    <span style="color:var(--gold);">Changes apply immediately and persist in localStorage.</span>
+  </div><div style="display:flex;flex-direction:column;">`;
   const kwLookup = {};
-  if (typeof KW_MAP !== 'undefined') {
-    KW_MAP.forEach(([bk, kws]) => { kwLookup[bk] = kws; });
-  }
-
-  const editableBuckets = [
-    'paycheck','other_inc','mortgage','car','education','insurance','childcare',
-    'electric','gas_util','water','internet','cell',
-    'groceries','restaurants','gas_car','transit','healthcare',
-    'entertainment','household','personal','clothing','travel','subscriptions','gifts',
-  ];
-
-  hierBody += '<div id="hierEditorWrap" style="display:flex;flex-direction:column;gap:8px;">';
-  editableBuckets.forEach(bk => {
-    const bMeta = (typeof BUCKET_META !== 'undefined' && BUCKET_META[bk]) || { label: bk, icon: '·' };
-    const baseKws = kwLookup[bk] || [];
-    const overrideKws = hierOverrides[bk];
-    const currentKws = overrideKws || baseKws;
-    const kwStr = currentKws.join(', ');
-    const isOverridden = !!overrideKws;
-
-    hierBody += `<div style="background:var(--lift);border:1px solid ${isOverridden?'rgba(245,168,0,.3)':'var(--line)'};border-radius:var(--r-md);overflow:hidden;">
-      <div style="padding:9px 14px;background:var(--float);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);">
-        <span style="font-size:16px;">${bMeta.icon}</span>
-        <div style="flex:1;font-size:12px;font-weight:600;color:var(--ink2);">${bMeta.label}</div>
-        ${isOverridden ? '<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(245,168,0,.1);color:var(--gold);border:1px solid rgba(245,168,0,.2);font-family:var(--font-m);">CUSTOM</span>' : ''}
-        ${isOverridden ? `<button onclick="revertHierBucket('${bk}')" style="font-size:10px;padding:3px 8px;border-radius:4px;background:transparent;border:1px solid var(--line2);color:var(--ink4);cursor:pointer;font-family:var(--font-ui);">↺ Revert</button>` : ''}
+  if (typeof KW_MAP !== 'undefined') KW_MAP.forEach(([bk,kws])=>{ kwLookup[bk]=kws; });
+  let hierOverrides = {};
+  try { hierOverrides = JSON.parse(localStorage.getItem('forge_hierarchy_overrides')||'{}'); } catch(e) {}
+  ['paycheck','other_inc','mortgage','car','education','insurance','childcare',
+   'electric','gas_util','water','internet','cell','subscriptions',
+   'groceries','restaurants','gas_car','transit','healthcare',
+   'entertainment','household','personal','clothing','travel','gifts'].forEach(bk => {
+    const bMeta = (typeof BUCKET_META!=='undefined'&&BUCKET_META[bk])||{label:bk,icon:'·'};
+    const kws   = (hierOverrides[bk]||(kwLookup[bk]||[])).join(', ');
+    const isOv  = !!hierOverrides[bk];
+    hierBody += `<div style="border-top:1px solid rgba(255,255,255,.035);padding:var(--sp2) var(--sp4);">
+      <div style="display:flex;align-items:center;gap:var(--sp2);margin-bottom:5px;">
+        <span style="font-size:14px;">${bMeta.icon}</span>
+        <span style="font-size:11px;font-weight:600;color:var(--ink2);flex:1;">${bMeta.label}</span>
+        ${isOv?`<span style="font-size:8px;padding:1px 5px;border-radius:4px;background:var(--gold-10);color:var(--gold);border:1px solid var(--gold-20);font-family:var(--fm);">CUSTOM</span>`:''}
+        ${isOv?`<button onclick="revertHierBucket('${bk}')" style="font-size:9px;padding:2px 7px;border-radius:4px;background:transparent;border:1px solid var(--line2);color:var(--ink4);cursor:pointer;font-family:var(--fu);">Revert</button>`:''}
       </div>
-      <div style="padding:10px 14px;">
-        <textarea id="hier-ta-${bk}" rows="2" style="width:100%;background:var(--float);border:1px solid var(--line2);border-radius:var(--r-sm);padding:7px 10px;font-size:11px;font-family:var(--font-m);color:var(--ink);resize:vertical;box-sizing:border-box;line-height:1.5;">${kwStr}</textarea>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
-          <div style="font-size:10px;color:var(--ink4);">${currentKws.length} keywords · ${isOverridden?'Custom override active':'Using default'}</div>
-          <button onclick="saveHierBucket('${bk}')" style="font-size:10px;padding:4px 10px;border-radius:4px;background:var(--gold);color:var(--void);border:none;cursor:pointer;font-weight:700;font-family:var(--font-ui);">Save</button>
-        </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <textarea id="hier-ta-${bk}" rows="2"
+          style="flex:1;background:var(--float);border:1px solid var(--line2);border-radius:var(--r-sm);
+                 padding:5px var(--sp2);font-size:10px;font-family:var(--fm);color:var(--ink);
+                 resize:vertical;min-height:36px;line-height:1.4;">${kws}</textarea>
+        <button onclick="saveHierBucket('${bk}')"
+          style="background:var(--gold);color:#000;border:none;padding:5px 10px;border-radius:var(--r-sm);
+                 font-size:10px;font-weight:700;cursor:pointer;font-family:var(--fu);white-space:nowrap;">Save</button>
       </div>
     </div>`;
   });
-  hierBody += '</div>';
-  hierBody += `<div style="display:flex;gap:8px;margin-top:12px;">
-    <button onclick="revertAllHier()" style="background:transparent;border:1px solid var(--line2);color:var(--ink3);padding:7px 14px;border-radius:var(--r-sm);font-size:12px;cursor:pointer;font-family:var(--font-ui);">↺ Revert All to Default</button>
-    <div style="font-size:11px;color:var(--ink4);padding:7px 0;">${Object.keys(hierOverrides).length} bucket(s) customized</div>
+  hierBody += `</div><div style="padding:var(--sp2) var(--sp4);border-top:1px solid var(--line);display:flex;gap:var(--sp2);">
+    <button class="btn btn-danger" onclick="revertAllHier()" style="font-size:11px;">↺ Revert All to Default</button>
+    <span style="font-size:10px;color:var(--ink4);padding:6px 0;">${Object.keys(hierOverrides).length} bucket(s) customized</span>
   </div>`;
 
-
+  // ── Assemble all sections ──────────────────────────────────────────────────
   el.innerHTML = [
-    section('family',    '👨‍👩‍👧‍👦', 'Family Profile',          'Names · ages · savings target · Pittsburgh',         familyBody),
-    section('goals',     '🎯',      'Savings Goals',            'Track progress toward named financial goals',          goalsBody),
-    section('alerts',    '🔔',      'Spending Alerts',          'Monthly threshold warnings per spending bucket',       alertsBody),
-    section('cc',        '💳',      'Credit Card Billing',      'Statement close dates · payment due dates',            ccBody),
-    section('accrual',   '🔮',      'Accrual Engine Rules',     'Per-bucket projection strategy for in-flight months',  accrualBody),
-    section('confluence','🏛️',     'Confluence Agenda',        'Customize the monthly family review agenda',           confBody),
-    section('fiscal',    '📆',      'Fiscal / Tax Year',        'Shift all annual views to a custom fiscal year',       taxBody),
-    section('nwsnapshot','📸',      'Net Worth Snapshots',      'Manual value overrides · point-in-time snapshots',     nwBody),
-    section('aliases',   '✏️',      'Payee Aliases',            'Clean up messy Quicken merchant names',                aliasBody),
-    section('splits',    '🔀',      'Split Transaction Rules',  'Override bucket assignment for split payees',           splitBody),
-    section('appear',    '🎨',      'Forge Appearance',         'Density · defaults · display preferences',             appearBody),
-    section('data',      '💾',      'Data &amp; Privacy',       'Storage usage · export · sync · clear',                dataBody),
-    section('hierarchy',  '🗂️',     'Forge Hierarchy Editor',   'Customize bucket keyword lists · save or revert changes',   hierBody),
-  ].join('') + '<div style="height:40px;"></div>';
+    card('family',   '👨‍👩‍👧‍👦', 'Family Profile',          'Names · ages · savings target',              familyBody),
+    card('goals',    '🎯',      'Savings Goals',            'Named financial goals with progress',         goalsBody),
+    card('alerts',   '🔔',      'Spending Alerts',          'Monthly threshold warnings per bucket',       alertsBody),
+    card('cc',       '💳',      'Credit Card Billing',      'Statement close · payment due dates',         ccBody),
+    card('accrual',  '🔮',      'Accrual Engine',           'Fixed vs. discretionary projection method',   accrualBody),
+    card('aliases',  '✏️',      'Payee Aliases',            'Clean up messy Quicken merchant names',       aliasBody),
+    card('appear',   '🎨',      'Appearance',               'Density · default page · display options',    appearBody),
+    card('fiscal',   '📆',      'Fiscal Year',              'Shift all annual views to a custom year',     fiscalBody),
+    card('security', '🔒',      'Security & Encryption',    'AES-256 data protection · passphrase',        secBody2),
+    card('data',     '💾',      'Data & File Status',       'Storage · thru dates · export · clear',       dataBody),
+    card('hierarchy','🗂️',     'Forge Hierarchy Editor',   'Keyword lists · save or revert per bucket',   hierBody),
+  ].join('') + '<div style="height:32px;"></div>';
+  // Fix toggle visual state (CSS sibling selectors don't reach nested elements)
+  setTimeout(fixToggles, 0);
 }
 
-// ── Settings helper functions ─────────────────────────────────────────────────
 function toggleSSet(id) {
   const body = document.getElementById('sset-body-' + id);
   const chev = document.getElementById('sset-chev-' + id);
@@ -2744,6 +2686,22 @@ function getAlertedBuckets(selMonth) {
   return alerts.sort((a,b)=>b.pct-a.pct);
 }
 
+
+async function desktopEnableEncryption() {
+  const p1 = document.getElementById('sec-pin1')?.value || '';
+  const p2 = document.getElementById('sec-pin2')?.value || '';
+  const err = document.getElementById('sec-err');
+  if (p1.length < 4) { if(err) err.textContent = 'Minimum 4 characters.'; return; }
+  if (p1 !== p2)     { if(err) err.textContent = 'Passphrases do not match.'; return; }
+  if (err) err.textContent = '';
+  try {
+    await FORGE_AUTH.setup(p1);
+    toast('✓ Data encrypted — you will need this passphrase on next load');
+    renderSettings();
+  } catch(e) {
+    if (err) err.textContent = 'Encryption failed: ' + e.message;
+  }
+}
 
 function exportForge() {
   const data = {
@@ -8799,10 +8757,127 @@ function recurringIncomeAvg(months) {
   const v=Object.values(bm);return v.length?v.reduce((a,b)=>a+b,0)/v.length:0;
 }
 
+
+// ════════════════════════════════════════════════════════════════════════════
+// FORGE LOCK CONTROLLER
+// ════════════════════════════════════════════════════════════════════════════
+function _lockShow() { const e=document.getElementById('forge-lock'); if(e)e.style.display='flex'; }
+function _lockHide() { const e=document.getElementById('forge-lock'); if(e)e.style.display='none'; }
+function _lockSpinner(show,label) {
+  const sp=document.getElementById('lock-spinner'),lbl=document.getElementById('lock-spinner-lbl');
+  if(sp)sp.style.display=show?'block':'none';
+  if(lbl&&label)lbl.textContent=label;
+}
+
+async function forgeInitAuth() {
+  _lockShow();
+  const setup=document.getElementById('lock-setup'), unlock=document.getElementById('lock-unlock');
+  if (!FORGE_AUTH.isSetup()) {
+    if(setup)setup.style.display='block';
+    if(unlock)unlock.style.display='none';
+    return;
+  }
+  if(setup)setup.style.display='none';
+  if(unlock)unlock.style.display='block';
+  if (FORGE_AUTH.hasWebAuthn()) {
+    const bioBtn=document.getElementById('lock-bio-btn');
+    if(bioBtn)bioBtn.style.display='block';
+    const biometric=await FORGE_AUTH.isBiometricAvailable();
+    if(biometric) setTimeout(async()=>{ const ok=await FORGE_AUTH.unlockWithBiometric(); if(ok)forgePostUnlock(); },300);
+  }
+  setTimeout(()=>{ const p=document.getElementById('lock-pass'); if(p)p.focus(); },100);
+}
+
+async function forgeSetupPIN() {
+  const p1=document.getElementById('lock-pass-new')?.value||'';
+  const p2=document.getElementById('lock-pass-confirm')?.value||'';
+  const err=document.getElementById('lock-setup-err');
+  if(p1.length<4){if(err)err.textContent='Minimum 4 characters.';return;}
+  if(p1!==p2){if(err)err.textContent='Passphrases do not match.';return;}
+  if(err)err.textContent='';
+  _lockSpinner(true,'Encrypting your data\u2026');
+  try {
+    await FORGE_AUTH.setup(p1);
+    const biometric=await FORGE_AUTH.isBiometricAvailable();
+    if(biometric&&!FORGE_AUTH.hasWebAuthn()){
+      _lockSpinner(false);
+      if(confirm('Register Face ID / Touch ID for fast unlock?')){
+        _lockSpinner(true,'Registering biometric\u2026');
+        await FORGE_AUTH.registerBiometric(p1);
+      }
+    }
+    _lockSpinner(false);
+    forgePostUnlock();
+  } catch(e){ _lockSpinner(false); if(err)err.textContent='Setup failed: '+e.message; }
+}
+
+async function forgeUnlock() {
+  const passEl=document.getElementById('lock-pass'),errEl=document.getElementById('lock-err'),btnEl=document.getElementById('lock-btn');
+  const p=passEl?.value||'';
+  if(!p){if(errEl)errEl.textContent='Enter your passphrase.';return;}
+  if(errEl)errEl.textContent='';
+  if(btnEl){btnEl.disabled=true;btnEl.textContent='Checking\u2026';}
+  _lockSpinner(true,'Decrypting\u2026');
+  const ok=await FORGE_AUTH.unlock(p);
+  _lockSpinner(false);
+  if(btnEl){btnEl.disabled=false;btnEl.textContent='Unlock Forge';}
+  if(ok){ forgePostUnlock(); }
+  else{ if(errEl)errEl.textContent='Incorrect passphrase.'; if(passEl){passEl.value='';passEl.focus();} }
+}
+
+async function forgeUnlockBio() {
+  _lockSpinner(true,'Waiting for biometric\u2026');
+  const ok=await FORGE_AUTH.unlockWithBiometric();
+  _lockSpinner(false);
+  if(ok){ forgePostUnlock(); }
+  else{ const e=document.getElementById('lock-err'); if(e)e.textContent='Biometric failed \u2014 use passphrase.'; }
+}
+
+function forgeForgotPIN() {
+  const msg='FORGE: Forgot Passphrase Recovery\n\n1. Clear local data from this browser.\n2. Re-pull from Cloudflare sync.\n3. Set a new passphrase.\n\nNo data is lost if you have Cloudflare sync.\n\nClear local data now?';
+  if(confirm(msg)){
+    ['forge_prod_v1','ledger_v3','forge_settings_v2','forge_settings_v1','forge_lean_v1','forge_file_registry'].forEach(k=>localStorage.removeItem(k));
+    FORGE_AUTH.clearAuth();
+    location.reload();
+  }
+}
+
+async function forgePostUnlock() {
+  _lockSpinner(true,'Loading\u2026');
+  window._forgeDecrypted=window._forgeDecrypted||{};
+  const dataKeys=['forge_prod_v1','ledger_v3','forge_settings_v2','forge_settings_v1'];
+  for(const k of dataKeys){
+    try{ const dec=await FORGE_AUTH.get(k); if(dec)window._forgeDecrypted[k]=dec; }catch(e){}
+  }
+  _patchLocalStorage();
+  _lockSpinner(false);
+  _lockHide();
+  if(typeof forgeAppInit==='function') forgeAppInit();
+}
+
+function _patchLocalStorage(){
+  if(window._lsPatchApplied)return;
+  window._lsPatchApplied=true;
+  const dec=window._forgeDecrypted||{};
+  const og=Storage.prototype.getItem, os=Storage.prototype.setItem, or2=Storage.prototype.removeItem;
+  Storage.prototype.getItem=function(k){ if(this===localStorage&&dec[k]!==undefined)return dec[k]; return og.call(this,k); };
+  Storage.prototype.setItem=function(k,v){
+    if(this===localStorage&&FORGE_AUTH.isUnlocked()){
+      dec[k]=v;
+      FORGE_AUTH.set(k,v).catch(()=>{});
+      return;
+    }
+    os.call(this,k,v);
+  };
+  Storage.prototype.removeItem=function(k){ if(this===localStorage)delete dec[k]; or2.call(this,k); };
+}
+
 // ════════════════════════════════════════════════
 // BOOT
 // ════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
+  // Auth gate — all init deferred until forgePostUnlock() calls forgeAppInit()
+  window.forgeAppInit = async function () {
   netWorthOverrides = loadNetWorthOverrides();
   if (loadData(false) && txns.length) {
     autoDetectNonRecurring();
@@ -8811,6 +8886,10 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     showPage('upload');
   }
+  };
+
+  // Start auth flow — will call forgeAppInit() after successful unlock
+  forgeInitAuth();
 });
 </script>
 </body>
