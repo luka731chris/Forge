@@ -9,53 +9,566 @@
 <meta name="theme-color" content="#0D0D0D">
 <title>Forge Pulse · $id · Pittsburgh</title>
 <style>
+/* ═══════════════════════════════════════════════════════════════
+   FORGE PULSE — Mobile Design System  v2.0  Pittsburgh Black & Gold
+   Typography: Cormorant Garamond (display) / DM Sans (ui) / Fira Code (mono)
+   Mobile-first: safe areas, touch targets, smooth scroll, backdrop blur
+═══════════════════════════════════════════════════════════════ */
 
-:root {
-  --void:      #080808;
-  --base:      #0E0E0E;
-  --lift:      #151515;
-  --float:     #1C1C1C;
-  --line:      #2A2A2A;
-  --line2:     #333333;
-  --ink:       #F2EFE9;
-  --ink2:      #D0CBC4;
-  --ink3:      #9E9890;
-  --ink4:      #6E6A65;
-  --gold:      #F5A800;
-  --gold-lt:   #FFB612;
-  --gold-dim:  rgba(245,168,0,.10);
-  --gold-line: rgba(245,168,0,.18);
-  --positive:  #2DD4BF;
-  --negative:  #F87171;
-  --river:     #60A5FA;
-  --font-d:    'Cormorant Garamond', Georgia, serif;
-  --font-num:  'Sora', 'Outfit', system-ui, sans-serif;
-  --font-ui:   'DM Sans', system-ui, sans-serif;
-  /* Aliases used by ported desktop components */
-  --card:      #1C1C1C;
-  --border:    #2A2A2A;
-  --mono:      'DM Mono', 'Fira Code', monospace;
-  --muted:     #6E6A65;
-  --bg:        #0E0E0E;
-  --serif:     'Cormorant Garamond', Georgia, serif;  --font-m:    'Fira Code', monospace;
-  --ease:      cubic-bezier(0.16, 1, 0.3, 1);
-  --r-sm:      4px; --r-md: 8px; --r: 8px; --r-lg: 14px;
-  --accent: var(--gold); --accent2: var(--river); --accent3: var(--positive); --accent4: var(--gold); --slate: var(--ink3); --cream: var(--lift);
-  --safe-top:  env(safe-area-inset-top, 44px);
-  --safe-bot:  env(safe-area-inset-bottom, 34px);
-  --tab-h:     62px;
+/* ── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* ── Chart tooltip ─────────────────────────────────────────── */
+/* ── Design Tokens ─────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --void:   #060606;
+  --base:   #0C0C0D;
+  --lift:   #141416;
+  --float:  #1A1A1D;
+  --raised: #202024;
+
+  /* Borders */
+  --line:   #232327;
+  --line2:  #2D2D33;
+
+  /* Brand */
+  --gold:      #F5A800;
+  --gold-dim:  rgba(245,168,0,.10);
+  --gold-line: rgba(245,168,0,.20);
+
+  /* Semantic */
+  --positive: #2DD4BF;
+  --negative: #F87171;
+  --river:    #60A5FA;
+
+  /* Ink */
+  --ink:  #EEEAE4;
+  --ink2: #C4BFB8;
+  --ink3: #8A857E;
+  --ink4: #524E4A;
+
+  /* Typography */
+  --font-d:  'Cormorant Garamond', Georgia, serif;
+  --font-ui: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-m:  'Fira Code', 'JetBrains Mono', monospace;
+  --mono:    'Fira Code', 'JetBrains Mono', monospace;
+
+  /* Legacy aliases — keep for ported components */
+  --card:     #1A1A1D;
+  --border:   #232327;
+  --bg:       #0C0C0D;
+  --serif:    'Cormorant Garamond', Georgia, serif;
+  --muted:    #524E4A;
+  --font-num: 'Cormorant Garamond', Georgia, serif;
+
+  /* Radius */
+  --r-xs: 4px;
+  --r-sm: 8px;
+  --r:    10px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+
+  /* Safe areas & layout */
+  --safe-top: env(safe-area-inset-top, 44px);
+  --safe-bot: env(safe-area-inset-bottom, 34px);
+  --tab-h:    58px;
+
+  /* Easing */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Base ──────────────────────────────────────────────────── */
+html { height: 100%; overflow: hidden; }
+
+body {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--base);
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--safe-top);
+  padding-bottom: calc(var(--tab-h) + var(--safe-bot));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* ── Shell & Pages ─────────────────────────────────────────── */
+.status-fill {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--safe-top);
+  background: var(--void);
+  z-index: 300;
+}
+.shell {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+.page {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  display: none;
+  background: var(--base);
+  touch-action: pan-y;
+}
+.page.active { display: block; }
+
+/* ── Tab Bar ───────────────────────────────────────────────── */
+.tab-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: calc(var(--tab-h) + var(--safe-bot));
+  padding-bottom: var(--safe-bot);
+  background: rgba(6,6,6,.97);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  padding-top: 6px;
+  z-index: 200;
+  touch-action: none;
+}
+.tab-bar::before {
+  content: '';
+  position: absolute; top: 0; left: 16%; right: 16%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+}
+.tab-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 12px;
+  border: none;
+  background: transparent;
+  color: var(--ink4);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .03em;
+  transition: color .18s var(--ease);
+  position: relative;
+  min-width: 62px;
+  min-height: 44px;
+}
+.tab-btn.active { color: var(--gold); }
+.tab-btn.active svg { filter: drop-shadow(0 0 5px rgba(245,168,0,.4)); }
+.tab-dot {
+  position: absolute; top: 3px; right: 8px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--negative);
+  border: 1.5px solid var(--base);
+  display: none;
+}
+.tab-dot.show { display: block; }
+
+/* ── Page Header ───────────────────────────────────────────── */
+.pg-head {
+  background: rgba(6,6,6,.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 16px 20px 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid var(--line);
+}
+.pg-head::after {
+  content: '';
+  position: absolute; bottom: -1px; left: 20px; right: 20px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+}
+.pg-title {
+  font-family: var(--font-d);
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1;
+  letter-spacing: -.01em;
+}
+.pg-sub {
+  font-size: 11px;
+  color: var(--ink4);
+  margin-top: 3px;
+  font-family: var(--font-m);
+  letter-spacing: .05em;
+}
+
+/* ── Snapshot Hero ─────────────────────────────────────────── */
+.snap-hero {
+  background: linear-gradient(160deg, #0F0E09 0%, #0C0B07 60%, var(--void) 100%);
+  padding: 24px 20px 26px;
+  position: relative;
+  overflow: hidden;
+}
+.snap-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(45deg, transparent, transparent 30px, rgba(245,168,0,.008) 30px, rgba(245,168,0,.008) 31px),
+    repeating-linear-gradient(-45deg, transparent, transparent 30px, rgba(245,168,0,.008) 30px, rgba(245,168,0,.008) 31px);
+}
+.snap-hero::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+}
+.hero-eyebrow {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  margin-bottom: 8px;
+  position: relative; z-index: 1;
+}
+.hero-net {
+  font-family: var(--font-d);
+  font-size: 60px;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--ink);
+  margin-bottom: 5px;
+  position: relative; z-index: 1;
+  letter-spacing: -.02em;
+}
+.hero-net.neg { color: var(--negative); }
+.hero-sub {
+  font-size: 12px;
+  color: var(--ink4);
+  position: relative; z-index: 1;
+}
+.hero-chips {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+  position: relative; z-index: 1;
+}
+.chip {
+  padding: 5px 12px;
+  border-radius: var(--r-sm);
+  font-size: 11.5px;
+  font-weight: 500;
+  border: 1px solid;
+  font-family: var(--font-ui);
+  letter-spacing: .01em;
+}
+.chip-gold  { background: var(--gold-dim); color: var(--gold);     border-color: var(--gold-line); }
+.chip-grn   { background: rgba(45,212,191,.07); color: var(--positive); border-color: rgba(45,212,191,.18); }
+.chip-red   { background: rgba(248,113,113,.07); color: var(--negative); border-color: rgba(248,113,113,.18); }
+
+.bridge-wm {
+  position: absolute; bottom: 0; right: -10px;
+  width: 200px; opacity: .05;
+  pointer-events: none; z-index: 0;
+}
+.bridge-wm circle { animation: pulseLedGlow 3s ease-in-out infinite alternate; }
+.bridge-wm circle:nth-child(even) { animation-delay: .7s; }
+@keyframes pulseLedGlow { 0% { opacity:.4; } 100% { opacity:1; } }
+
+/* ── Section Label ─────────────────────────────────────────── */
+.sec-lbl {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .20em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  padding: 18px 20px 8px;
+}
+
+/* ── Horizontal Scroll Row ─────────────────────────────────── */
+.hscroll {
+  display: flex;
+  gap: 12px;
+  padding: 0 20px 4px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.hscroll::-webkit-scrollbar { display: none; }
+
+/* ── KPI Cards ─────────────────────────────────────────────── */
+.kpi-card {
+  flex-shrink: 0;
+  width: 148px;
+  scroll-snap-align: start;
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  min-height: 44px;
+}
+.kpi-card.gborder { border-color: var(--gold-line); }
+.kpi-lbl {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  margin-bottom: 8px;
+}
+.kpi-val {
+  font-family: var(--font-d);
+  font-size: 26px;
+  font-weight: 300;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 4px;
+  letter-spacing: -.01em;
+}
+.kpi-sub   { font-size: 11px; color: var(--ink4); font-family: var(--font-ui); }
+.kpi-delta { font-size: 11.5px; font-weight: 500; margin-top: 4px; font-family: var(--font-ui); }
+.up  { color: var(--negative); }
+.dn  { color: var(--positive); }
+.pos { color: var(--positive); }
+.neg-c { color: var(--negative); }
+
+/* ── Goal Rings ────────────────────────────────────────────── */
+.rings-row {
+  display: flex; gap: 10px;
+  padding: 0 20px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.rings-row::-webkit-scrollbar { display: none; }
+.ring-card {
+  flex-shrink: 0;
+  width: 104px;
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 12px 10px;
+  text-align: center;
+}
+.ring-svg   { width: 60px; height: 60px; margin: 0 auto 8px; }
+.ring-bg    { fill: none; stroke: #1c1c1c; stroke-width: 7; }
+.ring-fill  { fill: none; stroke-width: 7; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s var(--ease); }
+.ring-pct   { font-family: var(--font-d); font-size: 13px; fill: var(--ink); font-weight: 600; }
+.ring-name  { font-size: 10px; font-weight: 500; color: var(--ink4); line-height: 1.4; }
+
+/* ── Category Rows ─────────────────────────────────────────── */
+.cat-row {
+  display: flex; align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255,255,255,.03);
+  gap: 12px;
+  min-height: 44px;
+}
+.cat-row:last-child { border-bottom: none; }
+.cat-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.cat-info { flex: 1; min-width: 0; }
+.cat-name { font-weight: 500; font-size: 13.5px; color: var(--ink); font-family: var(--font-ui); }
+.cat-pct  { font-size: 11px; color: var(--ink4); margin-top: 1px; }
+.cat-bar-bg   { height: 3px; background: var(--line2); border-radius: 2px; overflow: hidden; flex: 1; max-width: 72px; }
+.cat-bar-fill { height: 100%; border-radius: 2px; transition: width .5s var(--ease); }
+.cat-amt  { font-family: var(--font-m); font-size: 12.5px; font-weight: 500; color: var(--ink); text-align: right; flex-shrink: 0; min-width: 68px; }
+
+/* ── Life Stage Banner ─────────────────────────────────────── */
+.life-stage-banner {
+  margin: 4px 14px 8px;
+  padding: 11px 14px;
+  background: var(--gold-dim);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-lg);
+  display: flex; align-items: center; gap: 10px;
+}
+.ls-icon { font-size: 18px; flex-shrink: 0; }
+.ls-text { font-size: 12px; color: var(--ink3); line-height: 1.5; }
+.ls-text strong { color: var(--gold); font-weight: 600; }
+
+/* ── Alert Cards ───────────────────────────────────────────── */
+.alert-card {
+  margin: 0 14px 10px;
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  border: 1px solid;
+  display: flex; gap: 12px;
+}
+.a-danger { background: rgba(248,113,113,.05); border-color: rgba(248,113,113,.16); }
+.a-warn   { background: rgba(245,168,0,.05);   border-color: rgba(245,168,0,.16); }
+.a-info   { background: rgba(96,165,250,.05);  border-color: rgba(96,165,250,.16); }
+.a-good   { background: rgba(45,212,191,.05);  border-color: rgba(45,212,191,.16); }
+.a-ls     { background: rgba(167,139,250,.05); border-color: rgba(167,139,250,.16); }
+.alert-emoji   { font-size: 20px; flex-shrink: 0; line-height: 1.2; }
+.alert-content { flex: 1; min-width: 0; }
+.alert-title   { font-weight: 600; font-size: 13px; color: var(--ink); margin-bottom: 4px; line-height: 1.35; font-family: var(--font-ui); }
+.alert-body    { font-size: 12.5px; color: var(--ink2); line-height: 1.6; font-family: var(--font-ui); }
+.alert-action  { margin-top: 7px; font-size: 11.5px; font-weight: 500; color: var(--river); }
+
+/* ── Net Worth (Amz tab) ───────────────────────────────────── */
+.amz-hero {
+  background: linear-gradient(160deg, #100E00, var(--void));
+  padding: 20px 20px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.amz-eyebrow { font-family: var(--font-m); font-size: 9px; letter-spacing: .20em; text-transform: uppercase; color: var(--ink4); margin-bottom: 5px; }
+.amz-title { font-family: var(--font-d); font-size: 28px; font-weight: 400; color: var(--ink); letter-spacing: -.01em; }
+.amz-big { font-family: var(--font-d); font-size: 42px; font-weight: 300; color: var(--positive); margin: 6px 0 3px; letter-spacing: -.02em; }
+.amz-big-sub { font-size: 11px; color: var(--ink4); }
+.amz-stats { display: flex; gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--line); }
+.amz-stat { flex: 1; background: var(--float); border-radius: var(--r-md); padding: 11px 12px; border: 1px solid var(--line); }
+.amz-stat-lbl { font-family: var(--font-m); font-size: 9px; letter-spacing: .13em; text-transform: uppercase; color: var(--ink4); margin-bottom: 4px; }
+.amz-stat-val { font-family: var(--font-d); font-size: 20px; font-weight: 300; color: var(--ink); letter-spacing: -.01em; }
+.amz-filters { display: flex; gap: 8px; padding: 11px 20px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); }
+.amz-filters::-webkit-scrollbar { display: none; }
+.f-pill { flex-shrink: 0; padding: 6px 14px; border-radius: var(--r-sm); font-size: 11.5px; font-weight: 500; border: 1px solid var(--line2); background: var(--float); color: var(--ink4); cursor: pointer; white-space: nowrap; transition: all .13s; font-family: var(--font-ui); }
+.f-pill.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
+.amz-item { padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,.03); display: flex; gap: 12px; }
+.amz-item:last-child { border-bottom: none; }
+.amz-icon { width: 38px; height: 38px; border-radius: var(--r-sm); background: rgba(45,212,191,.07); border: 1px solid rgba(45,212,191,.14); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.amz-info { flex: 1; min-width: 0; }
+.amz-item-title { font-weight: 500; font-size: 13px; color: var(--ink); line-height: 1.4; margin-bottom: 5px; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; font-family: var(--font-ui); }
+.amz-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.amz-date { font-size: 10.5px; color: var(--ink4); font-family: var(--font-m); }
+.amz-cat  { font-size: 9.5px; padding: 2px 7px; border-radius: 12px; background: rgba(96,165,250,.08); color: var(--river); font-family: var(--font-m); }
+.imp-hi   { background: rgba(248,113,113,.1); color: var(--negative); font-size: 9.5px; font-weight: 500; padding: 2px 7px; border-radius: 12px; font-family: var(--font-m); }
+.imp-md   { background: var(--gold-dim); color: var(--gold); font-size: 9.5px; font-weight: 500; padding: 2px 7px; border-radius: 12px; font-family: var(--font-m); }
+.amz-price { font-family: var(--font-m); font-size: 14px; font-weight: 500; color: var(--positive); margin-left: auto; flex-shrink: 0; }
+
+/* ── Analytics Cards ───────────────────────────────────────── */
+.p-ana-card {
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 14px 16px 12px;
+  margin-bottom: 10px;
+}
+.p-ana-header {
+  font-size: 9px;
+  font-family: var(--font-m);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  margin-bottom: 8px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.p-ana-pill {
+  font-size: 9px; padding: 2px 7px; border-radius: 12px;
+  background: rgba(245,168,0,.08); color: var(--gold);
+  border: 1px solid rgba(245,168,0,.18);
+}
+.p-ana-dim-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.p-dim-chip {
+  font-size: 10.5px; padding: 5px 10px; border-radius: 16px;
+  border: 1px solid var(--line2); background: var(--lift);
+  color: var(--ink4); cursor: pointer; font-family: var(--font-m);
+  transition: all .13s;
+}
+.p-dim-chip.active { background: var(--gold); color: #000; border-color: var(--gold); }
+.p-ana-canvas-wrap { position: relative; height: 180px; }
+.p-insight-row { display: flex; gap: 8px; margin-top: 10px; }
+.p-insight { flex: 1; background: var(--lift); border-radius: var(--r-sm); padding: 8px 10px; text-align: center; }
+.p-insight-lbl { font-size: 9px; color: var(--ink4); font-family: var(--font-m); letter-spacing: .08em; text-transform: uppercase; }
+.p-insight-val { font-size: 15px; font-weight: 300; font-family: var(--font-d); color: var(--ink); margin-top: 2px; }
+
+/* ── Chat ──────────────────────────────────────────────────── */
+.chat-wrap { display: flex; flex-direction: column; height: 100%; }
+.chat-head {
+  background: rgba(6,6,6,.92);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  padding: 16px 20px 12px;
+  position: sticky; top: 0; z-index: 100;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.chat-head::after {
+  content: ''; position: absolute; bottom: -1px; left: 20px; right: 20px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+}
+.chat-title { font-family: var(--font-d); font-size: 28px; font-weight: 400; color: var(--ink); letter-spacing: -.01em; }
+.chat-sub   { font-size: 10.5px; color: var(--ink4); margin-top: 2px; font-family: var(--font-m); letter-spacing: .05em; }
+.chat-status { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.status-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--positive); box-shadow: 0 0 6px var(--positive); }
+.status-txt  { font-size: 10.5px; color: var(--positive); font-weight: 500; font-family: var(--font-m); letter-spacing: .04em; }
+.chat-msgs {
+  flex: 1; overflow-y: auto; padding: 16px 16px 8px;
+  display: flex; flex-direction: column; gap: 12px;
+  -webkit-overflow-scrolling: touch; min-height: 0;
+}
+.bubble { max-width: 86%; border-radius: var(--r-lg); padding: 12px 16px; font-size: 13.5px; line-height: 1.6; font-family: var(--font-ui); }
+.bubble-u { align-self: flex-end; background: var(--gold); color: #000; font-weight: 600; border-bottom-right-radius: var(--r-sm); }
+.bubble-a { align-self: flex-start; background: var(--float); color: var(--ink); border-bottom-left-radius: var(--r-sm); border: 1px solid var(--line); }
+.sid-lbl { font-family: var(--font-m); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); margin-bottom: 7px; display: flex; align-items: center; gap: 6px; }
+.sid-icon { width: 11px; height: 11px; background: var(--gold); clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%); flex-shrink: 0; }
+.typing-wrap { align-self: flex-start; background: var(--float); padding: 13px 18px; border-radius: var(--r-lg); border-bottom-left-radius: var(--r-sm); display: flex; gap: 6px; align-items: center; border: 1px solid var(--line); }
+.tdot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink4); animation: tb 1.2s infinite ease-in-out; }
+.tdot:nth-child(2) { animation-delay: .2s; }
+.tdot:nth-child(3) { animation-delay: .4s; }
+@keyframes tb { 0%,60%,100%{transform:translateY(0);} 30%{transform:translateY(-7px);} }
+.suggests { display: flex; gap: 8px; padding: 8px 16px 4px; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
+.suggests::-webkit-scrollbar { display: none; }
+.s-pill { flex-shrink: 0; padding: 8px 15px; background: var(--float); border: 1px solid var(--line); border-radius: var(--r-sm); font-size: 12px; font-weight: 400; color: var(--ink3); cursor: pointer; white-space: nowrap; transition: all .13s; font-family: var(--font-ui); min-height: 44px; display: flex; align-items: center; }
+.s-pill:active { background: var(--gold-dim); border-color: var(--gold-line); color: var(--gold); }
+.chat-input-wrap { padding: 10px 16px; background: rgba(6,6,6,.92); border-top: 1px solid var(--line); display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0; }
+.chat-input { flex: 1; border: 1px solid var(--line2); border-radius: var(--r-sm); padding: 11px 14px; font-family: var(--font-ui); font-size: 16px; background: var(--float); color: var(--ink); outline: none; resize: none; max-height: 120px; line-height: 1.45; -webkit-appearance: none; transition: border-color .13s; }
+.chat-input::placeholder { color: var(--ink4); }
+.chat-input:focus { border-color: var(--gold-line); }
+.chat-send { width: 44px; height: 44px; border-radius: var(--r-sm); background: var(--gold); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all .13s; }
+.chat-send:active { transform: scale(.92); }
+.chat-send svg { color: #000; }
+
+/* ── Empty States ──────────────────────────────────────────── */
+.empty-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; min-height: 52vh; text-align: center; }
+.empty-icon  { font-size: 48px; margin-bottom: 14px; }
+.empty-title { font-family: var(--font-d); font-size: 24px; font-weight: 400; color: var(--ink); margin-bottom: 8px; letter-spacing: -.01em; }
+.empty-sub   { font-size: 13px; color: var(--ink4); line-height: 1.6; font-family: var(--font-ui); }
+.data-note   { margin: 14px; padding: 14px 16px; background: var(--gold-dim); border: 1px solid var(--gold-line); border-radius: var(--r-lg); font-size: 12px; color: var(--ink4); line-height: 1.6; }
+.data-note strong { color: var(--gold); }
+
+/* ── Toast ──────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: calc(var(--tab-h) + var(--safe-bot) + 12px);
+  left: 16px; right: 16px;
+  background: var(--gold);
+  color: #000;
+  padding: 12px 18px;
+  border-radius: var(--r-sm);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(245,168,0,.3);
+  z-index: 9999;
+  transform: translateY(16px);
+  opacity: 0;
+  transition: all .28s var(--ease);
+  pointer-events: none;
+  font-family: var(--font-ui);
+  letter-spacing: .01em;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── Chart Tooltip ─────────────────────────────────────────── */
 #chartTip {
   position: fixed;
-  background: var(--float);
+  background: var(--raised);
   border: 1px solid var(--line2);
   border-left: 3px solid var(--gold);
-  border-radius: 6px;
-  padding: 7px 12px;
-  font-size: 12px;
-  font-family: var(--font-m, monospace);
+  border-radius: var(--r-sm);
+  padding: 6px 12px;
+  font-size: 11.5px;
+  font-family: var(--font-m);
   color: var(--ink);
   pointer-events: none;
   z-index: 9000;
@@ -64,300 +577,34 @@
   display: none;
 }
 
-/* ── Touch UX ──────────────────────────────────────────────── */
-.tab-btn, .s-pill, .cat-row, .kpi-card { min-height: 44px; }
-.page { touch-action: pan-y; }
-.tab-bar { touch-action: none; }
-select, input[type="text"], input[type="search"] { font-size: 16px !important; }
+/* ── Scrollbar (thin, elegant) ─────────────────────────────── */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html { height: 100%; overflow: hidden; }
-body {
-  opacity: 1 !important;
-  visibility: visible !important;
-  font-family: var(--font-ui);
-  background: var(--base);
-  color: var(--ink);
-  height: 100%; overflow: hidden;
-  display: flex; flex-direction: column;
-  padding-top: var(--safe-top);
-  padding-bottom: calc(var(--tab-h) + var(--safe-bot));
-  -webkit-font-smoothing: antialiased;
-  font-size: 15px;
-}
-
-.status-fill { position: fixed; top: 0; left: 0; right: 0; height: var(--safe-top); background: var(--void); z-index: 300; }
-.shell { flex: 1; position: relative; overflow: hidden; }
-.page { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; display: none; background: var(--base); }
-.page.active { display: block;  }
-@keyframes pgIn { from { transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
-
-.tab-bar {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  height: calc(var(--tab-h) + var(--safe-bot));
-  padding-bottom: var(--safe-bot);
-  background: rgba(8,8,8,.96);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  border-top: 1px solid var(--line);
-  display: flex; align-items: flex-start;
-  justify-content: space-around;
-  padding-top: 8px; z-index: 200;
-}
-/* Gold rule on tab bar */
-.tab-bar::before { content:''; position:absolute; top:0; left:20%; right:20%; height:1px; background:linear-gradient(90deg,transparent,var(--gold-line),transparent); }
-.tab-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 6px 14px; border: none; background: transparent;
-  color: var(--ink3); cursor: pointer;
-  font-family: var(--font-ui); font-size: 11px; font-weight: 500;
-  transition: color .2s var(--ease); position: relative; min-width: 68px;
-  letter-spacing: 0.03em;
-}
-.tab-btn.active { color: var(--gold); }
-.tab-btn.active svg { filter: drop-shadow(0 0 6px rgba(245,168,0,.35)); }
-.tab-dot { position: absolute; top: 4px; right: 10px; width: 6px; height: 6px; border-radius: 50%; background: var(--negative); border: 1.5px solid var(--base); display: none; }
-.tab-dot.show { display: block; }
-
-.pg-head { background: rgba(8,8,8,.9); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); padding: 18px 22px 14px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--line); }
-.pg-head::after { content:''; position:absolute; bottom:-1px; left:22px; right:22px; height:1px; background:linear-gradient(90deg,transparent,var(--gold-line),transparent); }
-.pg-title { font-family: var(--font-d); font-size: 30px; font-weight: 600; color: var(--ink); line-height: 1; }
-.pg-sub   { font-size: 12px; color: var(--ink3); margin-top: 4px; font-family: var(--font-m); letter-spacing: 0.06em; }
-
-.snap-hero { background: linear-gradient(160deg, #0F0E09 0%, #0C0B07 60%, var(--void) 100%); padding: 28px 22px 30px; position: relative; overflow: hidden; }
-.snap-hero::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(45deg,transparent,transparent 28px,rgba(245,168,0,.01) 28px,rgba(245,168,0,.01) 29px),repeating-linear-gradient(-45deg,transparent,transparent 28px,rgba(245,168,0,.01) 28px,rgba(245,168,0,.01) 29px); }
-.snap-hero::after  { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--gold-line),transparent); }
-.hero-eyebrow { font-family: var(--font-m); font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink4); margin-bottom: 10px; position: relative; z-index: 1; }
-.hero-net { font-family: var(--font-num); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; font-size: 64px; font-weight: 700; line-height: 1; color: var(--ink); margin-bottom: 6px; position: relative; z-index: 1; letter-spacing: -0.01em; }
-.hero-net.neg { color: var(--negative); }
-.hero-sub { font-size: 13px; color: var(--ink4); position: relative; z-index: 1; }
-.hero-chips { display: flex; gap: 9px; margin-top: 20px; flex-wrap: wrap; position: relative; z-index: 1; }
-.chip { padding: 6px 14px; border-radius: var(--r-sm); font-size: 12px; font-weight: 500; border: 1px solid; letter-spacing: 0.01em; }
-.chip-gold  { background: var(--gold-dim);              color: var(--gold);     border-color: var(--gold-line); }
-.chip-grn   { background: rgba(45,212,191,.08);         color: var(--positive); border-color: rgba(45,212,191,.2); }
-.chip-red   { background: rgba(248,113,113,.08);        color: var(--negative); border-color: rgba(248,113,113,.2); }
-
-.bridge-wm  { position: absolute; bottom: 0; right: -12px; width: 220px; opacity: .055; pointer-events: none; z-index: 0; }
-.bridge-wm circle { animation: pulseLedGlow 3s ease-in-out infinite alternate; }
-.bridge-wm circle:nth-child(even) { animation-delay: 0.7s; }
-@keyframes pulseLedGlow { 0% { opacity: 0.4; } 100% { opacity: 1; } }
-
-.sec-lbl { font-family: var(--font-m); font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink4); padding: 22px 22px 9px; }
-
-.hscroll { display: flex; gap: 14px; padding: 0 22px 4px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-.hscroll::-webkit-scrollbar { display: none; }
-
-.kpi-card { flex-shrink: 0; width: 156px; scroll-snap-align: start; background: var(--float); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px 20px; }
-.kpi-card.gborder { border-color: var(--gold-line); }
-.kpi-lbl   { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink4); margin-bottom: 10px; }
-.kpi-val   { font-family: var(--font-num); font-size: 28px; color: var(--ink); line-height: 1; margin-bottom: 5px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.kpi-sub   { font-size: 11.5px; color: var(--ink4); }
-.kpi-delta { font-size: 12px; font-weight: 500; margin-top: 5px; }
-.up { color: var(--negative); } .dn { color: var(--positive); } .pos { color: var(--positive); } .neg-c { color: var(--negative); }
-
-.rings-row { display: flex; gap: 12px; padding: 0 22px; overflow-x: auto; scrollbar-width: none; }
-.rings-row::-webkit-scrollbar { display: none; }
-.ring-card  { flex-shrink: 0; width: 112px; background: var(--float); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 10px; text-align: center; }
-.ring-svg   { width: 64px; height: 64px; margin: 0 auto 9px; }
-.ring-bg    { fill: none; stroke: #1a1a1a; stroke-width: 7; }
-.ring-fill  { fill: none; stroke-width: 7; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s var(--ease); }
-.ring-pct   { font-family: var(--font-d); font-size: 14px; fill: var(--ink); font-weight: 600; }
-.ring-name  { font-size: 10.5px; font-weight: 500; color: var(--ink4); line-height: 1.4; margin-top: 2px; }
-
-.cat-row  { display: flex; align-items: center; padding: 14px 22px; border-bottom: 1px solid rgba(255,255,255,.04); gap: 14px; }
-.cat-row:last-child { border-bottom: none; }
-.cat-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.cat-info { flex: 1; }
-.cat-name { font-weight: 500; font-size: 14px; color: var(--ink); }
-.cat-pct  { font-size: 11px; color: var(--ink4); margin-top: 2px; }
-.cat-bar-bg   { height: 3px; background: var(--line2); border-radius: 2px; overflow: hidden; flex: 1; max-width: 80px; }
-.cat-bar-fill { height: 100%; border-radius: 2px; transition: width .6s var(--ease); }
-.cat-amt  { font-family: var(--font-m); font-size: 13px; font-weight: 500; color: var(--ink); text-align: right; flex-shrink: 0; min-width: 72px; }
-
-.life-stage-banner { margin: 4px 16px 8px; padding: 12px 16px; background: var(--gold-dim); border: 1px solid var(--gold-line); border-radius: var(--r-lg); display: flex; align-items: center; gap: 12px; }
-.ls-icon { font-size: 20px; flex-shrink: 0; }
-.ls-text { font-size: 12px; color: var(--ink3); line-height: 1.55; }
-.ls-text strong { color: var(--gold); font-weight: 600; }
-
-.alert-card { margin: 0 16px 12px; border-radius: var(--r-lg); padding: 18px 20px; border: 1px solid; display: flex; gap: 14px; }
-.a-danger { background: rgba(248,113,113,.05); border-color: rgba(248,113,113,.18); }
-.a-warn   { background: rgba(245,168,0,.05);   border-color: rgba(245,168,0,.18); }
-.a-info   { background: rgba(96,165,250,.05);  border-color: rgba(96,165,250,.18); }
-.a-good   { background: rgba(45,212,191,.05);  border-color: rgba(45,212,191,.18); }
-.a-ls     { background: rgba(167,139,250,.05); border-color: rgba(167,139,250,.18); }
-.alert-emoji   { font-size: 22px; flex-shrink: 0; line-height: 1.2; }
-.alert-content { flex: 1; }
-.alert-title   { font-weight: 600; font-size: 14px; color: var(--ink); margin-bottom: 6px; line-height: 1.35; }
-.alert-body    { font-size: 13px; color: var(--ink2); line-height: 1.65; }
-.alert-action  { margin-top: 9px; font-size: 12px; font-weight: 500; color: var(--river); }
-
-.amz-hero { background: linear-gradient(160deg, #100E00, var(--void)); padding: 24px 22px 22px; border-bottom: 1px solid var(--line); }
-.amz-eyebrow { font-family: var(--font-m); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink4); margin-bottom: 6px; }
-.amz-title { font-family: var(--font-d); font-size: 30px; font-weight: 600; color: var(--ink); }
-.amz-title span { color: #FF9900; }
-.amz-big { font-family: var(--font-d); font-size: 44px; font-weight: 700; color: #FF9900; margin: 8px 0 4px; letter-spacing: -0.01em; }
-.amz-big-sub { font-size: 12px; color: var(--ink4); }
-.amz-stats { display: flex; gap: 12px; padding: 16px 22px; border-bottom: 1px solid var(--line); }
-.amz-stat { flex: 1; background: var(--float); border-radius: var(--r-lg); padding: 13px 14px; border: 1px solid var(--line); }
-.amz-stat-lbl { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink4); margin-bottom: 5px; }
-.amz-stat-val { font-family: var(--font-d); font-size: 21px; font-weight: 600; color: var(--ink); }
-.amz-filters  { display: flex; gap: 9px; padding: 13px 22px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); }
-.amz-filters::-webkit-scrollbar { display: none; }
-.f-pill { flex-shrink: 0; padding: 7px 15px; border-radius: var(--r-sm); font-size: 12px; font-weight: 500; border: 1px solid var(--line2); background: var(--float); color: var(--ink4); cursor: pointer; white-space: nowrap; transition: all .15s; letter-spacing: 0.01em; }
-.f-pill.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 600; }
-.amz-item { padding: 14px 22px; border-bottom: 1px solid rgba(255,255,255,.04); display: flex; gap: 14px; }
-.amz-item:last-child { border-bottom: none; }
-.amz-icon { width: 40px; height: 40px; border-radius: var(--r-sm); background: rgba(255,153,0,.08); border: 1px solid rgba(255,153,0,.15); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
-.amz-info { flex: 1; }
-.amz-item-title { font-weight: 500; font-size: 13.5px; color: var(--ink); line-height: 1.4; margin-bottom: 6px; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; }
-.amz-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.amz-date { font-size: 11px; color: var(--ink4); font-family: var(--font-m); }
-.amz-cat  { font-size: 10px; padding: 2px 8px; border-radius: 20px; background: rgba(96,165,250,.08); color: var(--river); font-family: var(--font-m); }
-.imp-hi   { background: rgba(248,113,113,.12); color: var(--negative); font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; font-family: var(--font-m); }
-.imp-md   { background: var(--gold-dim); color: var(--gold); font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; font-family: var(--font-m); }
-.amz-price { font-family: var(--font-m); font-size: 15px; font-weight: 500; color: var(--gold); margin-left: auto; flex-shrink: 0; }
-
-.chat-wrap { display: flex; flex-direction: column; height: 100%; }
-.chat-head { background: rgba(8,8,8,.9); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); padding: 18px 22px 14px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--line); flex-shrink: 0; }
-.chat-head::after { content:''; position:absolute; bottom:-1px; left:22px; right:22px; height:1px; background:linear-gradient(90deg,transparent,var(--gold-line),transparent); }
-.chat-title  { font-family: var(--font-d); font-size: 30px; font-weight: 600; color: var(--ink); }
-.chat-sub    { font-size: 11px; color: var(--ink4); margin-top: 3px; font-family: var(--font-m); letter-spacing: 0.05em; }
-.chat-status { display: flex; align-items: center; gap: 7px; margin-top: 7px; }
-.status-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--positive); box-shadow: 0 0 7px var(--positive); }
-.status-txt  { font-size: 11px; color: var(--positive); font-weight: 500; font-family: var(--font-m); letter-spacing: 0.04em; }
-.chat-msgs   { flex: 1; overflow-y: auto; padding: 18px 18px 8px; display: flex; flex-direction: column; gap: 14px; -webkit-overflow-scrolling: touch; min-height: 0; }
-.bubble { max-width: 88%; border-radius: var(--r-lg); padding: 14px 18px; font-size: 14px; line-height: 1.65; }
-.bubble-u { align-self: flex-end; background: var(--gold); color: #000; font-weight: 600; border-bottom-right-radius: var(--r-sm); }
-.bubble-a { align-self: flex-start; background: var(--float); color: var(--ink); border-bottom-left-radius: var(--r-sm); border: 1px solid var(--line); }
-.sid-lbl { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; display: flex; align-items: center; gap: 7px; }
-.sid-icon { width: 12px; height: 12px; background: var(--gold); clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%); flex-shrink: 0; }
-.typing-wrap { align-self: flex-start; background: var(--float); padding: 15px 20px; border-radius: var(--r-lg); border-bottom-left-radius: var(--r-sm); display: flex; gap: 6px; align-items: center; border: 1px solid var(--line); }
-.tdot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink4); animation: tb 1.2s infinite ease-in-out; }
-.tdot:nth-child(2) { animation-delay: .2s; } .tdot:nth-child(3) { animation-delay: .4s; }
-@keyframes tb { 0%,60%,100%{transform:translateY(0);} 30%{transform:translateY(-8px);} }
-.suggests { display: flex; gap: 9px; padding: 9px 18px 4px; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
-.suggests::-webkit-scrollbar { display: none; }
-.s-pill { flex-shrink: 0; padding: 9px 16px; background: var(--float); border: 1px solid var(--line); border-radius: var(--r-sm); font-size: 12.5px; font-weight: 400; color: var(--ink3); cursor: pointer; white-space: nowrap; transition: all .15s; letter-spacing: 0.01em; }
-.s-pill:active { background: var(--gold-dim); border-color: var(--gold-line); color: var(--gold); }
-.chat-input-wrap { padding: 11px 18px; background: rgba(8,8,8,.9); border-top: 1px solid var(--line); display: flex; gap: 11px; align-items: flex-end; flex-shrink: 0; }
-.chat-input { flex: 1; border: 1px solid var(--line2); border-radius: var(--r-sm); padding: 12px 16px; font-family: var(--font-ui); font-size: 15px; background: var(--float); color: var(--ink); outline: none; resize: none; max-height: 120px; line-height: 1.45; -webkit-appearance: none; transition: border-color .15s; }
-.chat-input::placeholder { color: var(--ink4); }
-.chat-input:focus { border-color: var(--gold-line); }
-.chat-send { width: 46px; height: 46px; border-radius: var(--r-sm); background: var(--gold); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all .15s; }
-.chat-send:active { transform: scale(.94); background: var(--gold-lt); }
-.chat-send svg { color: #000; }
-
-.empty-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 52px 28px; min-height: 56vh; text-align: center; }
-.empty-icon  { font-size: 52px; margin-bottom: 16px; }
-.empty-title { font-family: var(--font-d); font-size: 26px; font-weight: 600; color: var(--ink); margin-bottom: 9px; }
-.empty-sub   { font-size: 13.5px; color: var(--ink4); line-height: 1.65; }
-.data-note   { margin: 16px; padding: 16px 18px; background: var(--gold-dim); border: 1px solid var(--gold-line); border-radius: var(--r-lg); font-size: 12.5px; color: var(--ink4); line-height: 1.65; }
-.data-note strong { color: var(--gold); }
-
-.toast { position: fixed; bottom: calc(var(--tab-h) + var(--safe-bot) + 14px); left: 18px; right: 18px; background: var(--gold); color: #000; padding: 14px 20px; border-radius: var(--r-sm); font-size: 13px; font-weight: 600; text-align: center; box-shadow: 0 4px 28px rgba(245,168,0,.35); z-index: 9999; transform: translateY(20px); opacity: 0; transition: all .3s var(--ease); pointer-events: none; font-family: var(--font-ui); letter-spacing: 0.01em; }
-.toast.show { transform: translateY(0); opacity: 1; }
-
-.p-ana-card {
-  background: var(--card);
-  border-radius: 14px;
-  padding: 16px 16px 14px;
-  margin-bottom: 12px;
-}
-.p-ana-header {
-  font-size: 10px;
-  font-family: var(--mono);
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.p-ana-pill {
-  font-size: 9px;
-  padding: 2px 7px;
-  border-radius: 20px;
-  background: rgba(245,168,0,.1);
-  color: var(--gold);
-  border: 1px solid rgba(245,168,0,.2);
-}
-.p-ana-dim-row {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-.p-dim-chip {
-  font-size: 11px;
-  padding: 5px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--muted);
-  cursor: pointer;
-  font-family: var(--mono);
-  transition: all .15s;
-}
-.p-dim-chip.active {
-  background: var(--gold);
-  color: #000;
-  border-color: var(--gold);
-}
-.p-ana-canvas-wrap { position: relative; height: 180px; }
-.p-insight-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-.p-insight {
-  flex: 1;
-  background: var(--bg);
-  border-radius: 8px;
-  padding: 8px 10px;
-  text-align: center;
-}
-.p-insight-lbl { font-size: 9px; color: var(--muted); font-family: var(--mono); letter-spacing:.08em; text-transform:uppercase; }
-.p-insight-val { font-size: 16px; font-weight: 700; color: var(--ink); margin-top: 2px; }
-
-
-/* LukaLab branding */
+/* ── Badges ────────────────────────────────────────────────── */
 .ll-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 8.5px;
-  font-family: var(--mono);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(245,168,0,0.45);
-  padding: 3px 8px;
-  border: 1px solid rgba(245,168,0,0.15);
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 8px; font-family: var(--font-m);
+  letter-spacing: .12em; text-transform: uppercase;
+  color: rgba(245,168,0,.4);
+  padding: 2px 7px;
+  border: 1px solid rgba(245,168,0,.12);
   border-radius: 3px;
 }
-.ll-badge svg { opacity: 0.7; }
-/* Mini rivers mark for mobile */
-.rivers-mini { display: inline-block; vertical-align: middle; margin-right: 4px; opacity: 0.6; }
-
-/* ── LUKA LAB ── */
+.rivers-mini { display: inline-block; vertical-align: middle; margin-right: 4px; opacity: .55; }
 .lukalab-credit-pulse {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  font-family: var(--mono);
-  font-size: 8px;
-  color: var(--ink4);
-  opacity: 0.4;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 12px 0 4px;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  font-family: var(--font-m); font-size: 8px; color: var(--ink4);
+  opacity: .35; letter-spacing: .12em; text-transform: uppercase; padding: 10px 0 4px;
 }
-.lukalab-credit-pulse svg {
-  width: 13px;
-  height: 13px;
-  flex-shrink: 0;
-}
+
+/* ── Touch targets ─────────────────────────────────────────── */
+.tab-btn, .s-pill, .cat-row, .kpi-card { min-height: 44px; }
+
+/* ── Input zoom prevention ─────────────────────────────────── */
+select, input[type="text"], input[type="search"] { font-size: 16px !important; }
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -466,6 +713,15 @@ body {
     </div>
   </div>
 
+  <!-- ══ PULSE SETTINGS ══ -->
+  <div class="page" id="pg-settings">
+    <div class="pg-head">
+      <div class="pg-title">Settings</div>
+      <div class="pg-sub">Sync · cloud · family · display</div>
+    </div>
+    <div id="pulse-settings-out" style="padding:0 0 100px;"></div>
+  </div>
+
   <!-- ══ ASK SID ══ -->
   <div class="page" id="pg-chat">
     <div class="chat-wrap" style="height:100%;">
@@ -516,6 +772,10 @@ body {
   <button class="tab-btn" id="tab-analytics" onclick="go('analytics')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
     Analytics
+  </button>
+  <button class="tab-btn" id="tab-settings" onclick="go('settings')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Settings
   </button>
   <button class="tab-btn" id="tab-chat" onclick="go('chat')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="8" cy="10" r="1" fill="currentColor"/><circle cx="12" cy="10" r="1" fill="currentColor"/><circle cx="16" cy="10" r="1" fill="currentColor"/></svg>
@@ -1154,42 +1414,6 @@ function isCreditAcct(acctName) {
 // Quicken marks these with [AccountName] bracket syntax in the category.
 // CC payments from checking to CC account = transfer (the CC charges are the real expenses).
 
-KW_MAP = [
-  // paycheck income
-  ['paycheck',     ['direct deposit','payroll','employer','salary','wages','adp','gusto','paychex']],
-  ['other_inc',    ['interest','dividend','refund','reimbursement','rental','freelance','venmo','paypal','zelle']],
-  // savings
-  ['auto_save',    ['savings account','investment account','fidelity','vanguard','schwab','401k','ira','roth','hsa','529','college fund']],
-  // fixed
-  ['mortgage',     ['mortgage','rent ','hoa','association fee']],
-  ['car',          ['car payment','auto loan','gm financial','ally auto','ford credit','toyota financial','honda financial','auto insurance','geico','progressive','state farm auto']],
-  ['education',    ['tuition','student loan','sallie mae','navient','pitt ','cmu ','carnegie']],
-  ['insurance',    ['highmark','aetna','cigna','anthem','bcbs','upmc insurance','health plan','life insurance','disability ins']],
-  ['childcare',    ['daycare','childcare','babysit','nanny','preschool','after school','camp ']],
-  // utilities
-  ['electric',     ['duquesne','ppl electric','dominion light','con edison','pepco']],
-  ['gas_util',     ['peoples gas','equitable gas','national fuel','columbia gas','piedmont natural']],
-  ['water',        ['pwsa','water authority','municipal water','aqua pa']],
-  ['internet',     ['comcast','xfinity','spectrum','cox cable','verizon fios','at&t internet','directv','dish network']],
-  ['cell',         ['verizon wireless','at&t wireless','t-mobile','sprint','metro pcs','cricket wireless','boost mobile']],
-  // food
-  ['groceries',    ['giant eagle','whole foods','trader joe','aldi','costco','kroger','safeway','wegmans','market district','fresh market','sprouts','food lion']],
-  ['restaurants',  ['restaurant','doordash','grubhub','ubereats','seamless','chipotle','mcdonald','starbucks','panera','subway','chick-fil','taco bell','pizza','sushi','primanti','condado','noodlehead']],
-  // transport
-  ['gas_car',      ['shell ','bp ','gulf ','exxon','mobil ','sunoco','speedway','wawa','sheetz','marathon gas']],
-  ['transit',      ['uber ','lyft ','ezpass','parking ','port authority','amtrak','greyhound','airport ']],
-  // health
-  ['healthcare',   ['cvs ','walgreens','rite aid','pharmacy','upmc ','hospital','clinic','dental','orthodont','vision','optometrist','doctor ']],
-  // discretionary
-  ['entertainment',['movie','cinema','amc ','regal ','concert','ticketmaster','stubhub','pnc park','ppg arena','bowling','golf ','museum','zoo ','aquarium']],
-  ['household',    ['amazon','home depot','lowes ','target ','walmart','ikea','wayfair','bed bath','ace hardware','menards','container store']],
-  ['personal',     ['salon','barber','hair ','nail ','spa ','massage','sephora','ulta','planet fitness',"gold's gym",'anytime fitness','ymca']],
-  ['clothing',     ['nordstrom','macy','gap ','old navy','h&m','zara','tj maxx','ross ','marshalls','nike ','adidas ','lululemon','under armour']],
-  ['travel',       ['airbnb','vrbo','marriott','hilton','hyatt','expedia','booking.com','southwest air','united air','delta air','american air','frontier','spirit air','cruise','resort ']],
-  ['subscriptions',['netflix','hulu','disney+','disney plus','spotify','apple music','amazon prime','youtube premium','hbo','paramount+','peacock','apple icloud']],
-  ['gifts',        ['gift ','hallmark','1-800-flowers','donation','charity','church ','tithe','gofundme','npo ']],
-];
-
 
 
 // ── SVG CHART ENGINE (ported from desktop) ──────────────────────────────────
@@ -1542,6 +1766,211 @@ function bindChartTips(container) {
 document.addEventListener('mousemove', positionChartTip);
 
 
+const KW_MAP = [
+  // ── Income ─────────────────────────────────────────────────────────────────
+  ['paycheck',  ['direct deposit','payroll','employer payroll','salary','wages','adp ','gusto','paychex','ceridian','workday payroll',
+                 'highmark benefit','employer direct','hr direct','payroll deposit','compensation','w-2','biweekly pay']],
+  ['other_inc', ['interest income','interest earned','dividend','capital gain','realized gain','investment income',
+                 'rental income','airbnb host','vrbo host','freelance','consulting fee','contractor pay','1099',
+                 'venmo from','paypal from','zelle from','cashapp from','square payment received','reimbursement',
+                 'insurance reimburs','tax refund','irs treas','pa dept revenue','state refund','google play balance',
+                 'apple card cash','credit card reward','cashback reward']],
+
+  // ── Savings Transfers ───────────────────────────────────────────────────────
+  ['auto_save', ['savings account transfer','investment account','fidelity','vanguard schwab',
+                 '401k contribution','ira contribution','roth ira','hsa contribution','hsa deposit',
+                 '529 plan','college fund','brokerage transfer','retirement contribution','empower retirement',
+                 'principal financial','merrill lynch transfer']],
+
+  // ── Mortgage & Housing ──────────────────────────────────────────────────────
+  ['mortgage',  ['mortgage payment','pennymac','quicken loans','rocket mortgage','mr. cooper','loancare','newrez',
+                 'flagstar','freedom mortgage','homepoint','us bank home','chase mortgage','wells fargo mortgage',
+                 'hoa fee','homeowner assoc','property tax','home insurance','hazard insurance','pmi ',
+                 'rent payment','zillow rent','apartments.com','renters insurance']],
+
+  // ── Auto ────────────────────────────────────────────────────────────────────
+  ['car',       ['car payment','auto loan payment','gm financial','ally auto','ford motor credit','toyota financial',
+                 'honda financial','hyundai motor','kia motors','nissan motor','chrysler capital','capital one auto',
+                 'car insurance','auto insurance','geico ','progressive ins','state farm auto','allstate auto',
+                 'usaa auto','nationwide auto','liberty mutual auto','erie insurance auto',
+                 'vehicle registration','dmv ','emissions test','inspection sticker',
+                 'car repair','auto service','jiffy lube','firestone','pep boys','midas ','goodyear tire',
+                 'brake check','napa auto','advance auto','oreilly auto']],
+
+  // ── Education ───────────────────────────────────────────────────────────────
+  ['education', ['tuition payment','university','community college','student loan','sallie mae','navient','nelnet',
+                 'great lakes edu','mohela','edfinancial','fedloan','commonbond','earnest student',
+                 'pitt ','pittsburgh univ','cmu ','carnegie mellon','duquesne univ','chatham college',
+                 'school tuition','private school','k-12 tuition','montessori',
+                 'online course','udemy','coursera','skillshare','masterclass','linkedin learning',
+                 'books textbook','school supply','college board','sat fee','ap exam']],
+
+  // ── Insurance (Health/Life) ─────────────────────────────────────────────────
+  ['insurance', ['health premium','health insurance premium','highmark ','aetna ','cigna ','anthem ','bcbs ',
+                 'upmc health plan','independence blue','oscar health','united health','humana health',
+                 'life insurance','whole life','term life','northwestern mutual','new york life','mass mutual',
+                 'disability insurance','aflac ','guardian life','protective life',
+                 'vision insurance','dental premium','delta dental','metlife dental',
+                 'umbrella policy','renters insurance','pet insurance']],
+
+  // ── Childcare & Kids ────────────────────────────────────────────────────────
+  ['childcare', ['daycare ','child care','day care center','bright horizons','kindercare','learning care group',
+                 'babysitter','nanny pay','au pair','preschool ','montessori school',
+                 'after school program','ymca after school','boys & girls club',
+                 'summer camp','sports camp','arts camp','camp registration',
+                 'youth sports','little league','soccer registration','swim lessons','gymnastics','dance class',
+                 'music lesson','tutoring ','kaplan ','sylvan learning','kumon ',
+                 'school lunch','school trip','school fundraiser']],
+
+  // ── Utilities ───────────────────────────────────────────────────────────────
+  ['electric',  ['duquesne light','ppl electric','dominion energy','con edison electric','pepco ','pse&g ',
+                 'pacific gas','southern california edison','xcel energy','evergy','entergy','eversource',
+                 'national grid electric','american electric power','duke energy','georgia power','electric bill']],
+  ['gas_util',  ['peoples gas','equitable gas','national fuel gas','columbia gas','piedmont natural',
+                 'atmos energy','centerpoint energy','nicor gas','laclede gas','southwest gas','spire energy',
+                 'heating oil','propane delivery','oil company','gas bill heating']],
+  ['water',     ['pwsa ','water authority','municipal water','aqua pa','american water','cal water',
+                 'york water','middlesex water','seiu water','water & sewer','water services','water bill']],
+  ['internet',  ['comcast ','xfinity ','spectrum ','cox cable','verizon fios','at&t internet',
+                 'directv ','dish network','century link','frontier comm','mediacom','rcn cable',
+                 'consolidated comm','optimum online','wow internet','cable tv','internet service',
+                 'streaming bundle','youtube tv','sling tv','fubo tv','philo ']],
+  ['cell',      ['verizon wireless','att wireless','t-mobile ','sprint ','metro pcs','cricket wireless',
+                 'boost mobile','mint mobile','consumer cellular','visible wireless','us cellular','tracfone',
+                 'google fi','apple one','cell phone bill','mobile phone']],
+
+  // ── Groceries ───────────────────────────────────────────────────────────────
+  ['groceries', ['giant eagle','whole foods','trader joe','aldi ','costco ','kroger ','safeway ',
+                 'wegmans ','market district','fresh market','sprouts','food lion','harris teeter',
+                 'publix ','meijer ','stop & shop','giant food','shoprite ','weis markets',
+                 'hyvee ','brookshire','food 4 less','winco foods','stater bros',
+                 'walmart grocery','target grocery','dollar tree food','aldi market',
+                 'instacart ','shipt ','amazon fresh','farmers market','butcher box']],
+
+  // ── Restaurants & Dining ────────────────────────────────────────────────────
+  ['restaurants',['doordash ','grubhub ','ubereats ','seamless ','postmates ','caviar app','delivery.com',
+                  'chipotle ','mcdonald','burger king',"wendy's",'taco bell','chick-fil-a','popeyes',
+                  'starbucks ','dunkin ','tim hortons','peets coffee','caribou coffee',
+                  'panera ','subway ','jersey mike','wawa food','sheetz food',
+                  'primanti ','condado ','noodlehead','barley house','federal galley','acorn','apteka',
+                  'restaurant ','dining ','pizz','sushi ','ramen ','thai ','indian rest','mexican rest',
+                  'chinese rest','bbq ','steakhouse','bar & grill','tavern ','brewery food']],
+
+  // ── Vehicle Fuel ─────────────────────────────────────────────────────────────
+  ['gas_car',   ['shell ','bp ','gulf oil','exxon ','mobil ','sunoco ','speedway ','marathon gas',
+                 'wawa gas','sheetz gas','circle k gas',"casey's gas",'pilot flying',"love's travel",
+                 'kwik trip','racetrac ','thorntons gas','getgo ','quik stop','ev charging',
+                 'chargepoint','electrify america','tesla supercharger','blink charging','evgo ']],
+
+  // ── Transit & Parking ────────────────────────────────────────────────────────
+  ['transit',   ['uber ','lyft ','waymo ','via rideshare','ezpass ','ipass ','pike pass','fastrak',
+                 'sunpass ','pikepass','parking ','parkway ','parkmobile','spothero ','reef parking',
+                 'port authority transit','mta ','bart ','wmata ','cta transit','mbta ',
+                 'amtrak ','greyhound ','megabus ','flixbus ','peter pan bus',
+                 'airport parking','airport shuttle']],
+
+  // ── Healthcare ───────────────────────────────────────────────────────────────
+  ['healthcare',['cvs pharmacy','walgreens ','rite aid','duane reade','hyvee pharmacy','publix pharmacy',
+                 'prescription fill','rx pickup',
+                 'upmc ','allegheny health','ahn ','cedars sinai','mayo clinic','cleveland clinic',
+                 'hospital ','medical center','urgent care','patient first','concentra ',
+                 'doctor ','physicians ','md office','healthcare billing','medical bill',
+                 'dental ','orthodont ','braces payment','oral surgery',
+                 'vision center','lenscrafters','americas best','walmart vision',
+                 'physical therapy','chiropract','occupational therapy']],
+
+  // ── Entertainment ────────────────────────────────────────────────────────────
+  ['entertainment',['movie theater','amc ','regal ','cinemark ','alamo drafthouse','imax ',
+                    'concert ticket','ticketmaster ','stubhub ','seatgeek ','vivid seats','axs tickets',
+                    'pnc park ','ppg paints arena','acrisure ','heinz field','petco park',
+                    'bowling ','topgolf ','pinstripes ','dave & buster',
+                    'museum ','carnegie museum',"children's museum",'zoo admission','aquarium ',
+                    'escape room','trampoline park','go-kart','mini golf','putt-putt',
+                    'sporting event','hockey game','baseball game','football game',
+                    'steam purchase','xbox game','playstation','nintendo eshop',
+                    'spotify premium','apple music','youtube premium music']],
+
+  // ── Household & Shopping ─────────────────────────────────────────────────────
+  ['household', ['amazon purchase','amazon.com','amazon marketplace','home depot ','lowes ','menards ',
+                 'ace hardware ','true value','do it best hardware',
+                 'target ','walmart ','kmart ','dollar general','family dollar','five below',
+                 'ikea ','wayfair ','overstock ','article furniture','west elm',
+                 'bed bath beyond','crate & barrel','pottery barn','williams sonoma',
+                 'container store','the home depot','harbor freight',
+                 'cleaning service','merry maids','molly maid','jan-pro',
+                 'landscaping ','lawn care','trugreen ','scotts lawn',
+                 'pest control','orkin ','terminix ',
+                 'home repair','plumber ','electrician ','hvac service','furnace repair',
+                 'instacart household',"sam's club general"]],
+
+  // ── Personal Care ────────────────────────────────────────────────────────────
+  ['personal',  ['hair salon','barber shop','great clips','supercuts','sport clips','fantastic sams',
+                 'nail salon','nail spa','beauty salon','sephora ','ulta beauty','bath & body',
+                 'spa ','massage envy','hand and stone','elements massage',
+                 'planet fitness','la fitness','anytime fitness',"gold's gym",
+                 '24 hour fitness','crunch fitness','orangetheory','f45 training',
+                 'ymca membership','life time fitness','equinox gym',
+                 'classpass ','peloton ','beachbody',
+                 'dry cleaning','laundromat ','alterations ',
+                 'dentist hygiene','eye exam','contacts order']],
+
+  // ── Clothing ────────────────────────────────────────────────────────────────
+  ['clothing',  ['nordstrom ',"macy's ",'jcpenney ','saks fifth','neiman marcus','bloomingdale',
+                 'gap ','old navy','banana republic','j.crew ','ann taylor','loft ',
+                 'h&m ','zara ','uniqlo ','forever 21','express cloth',
+                 'tj maxx ','marshalls ','ross stores','burlington coat',
+                 'nike ','adidas ','under armour','lululemon ','athleta ','fabletics ',
+                 'foot locker ','finish line','new balance','brooks running',
+                 'amazon clothing','zappos ','dsw shoes','shoe carnival',
+                 'kids clothing',"carter's ",'osh kosh',"children's place",'gap kids']],
+
+  // ── Travel ──────────────────────────────────────────────────────────────────
+  ['travel',    ['airbnb ','vrbo ','booking.com','hotels.com','expedia hotel','priceline hotel',
+                 'marriott ','hilton ','hyatt ','ihg hotel','wyndham ','best western',
+                 'southwest air','united airlines','delta air','american airlines',
+                 'jetblue ','frontier air','spirit air','alaska air','lufthansa ','british airways',
+                 'kayak flights','google flights','seat purchase','baggage fee',
+                 'cruise ','carnival cruise','royal caribbean','norwegian cruise',
+                 'resort ','vacation package','travel insurance','global entry',
+                 'enterprise rental','hertz ','avis ','budget rental','national car']],
+
+  // ── Subscriptions ────────────────────────────────────────────────────────────
+  ['subscriptions',['netflix ','hulu ','disney+ ','disney plus','max streaming','hbo max',
+                    'paramount+','peacock ','apple tv+','amazon prime video','tubi ',
+                    'spotify ','apple music sub','pandora ','tidal music','deezer ',
+                    'youtube premium','youtube music','audible ','kindle unlimited',
+                    'icloud storage','google one','dropbox ','box.com ',
+                    'microsoft 365','office 365','adobe creative','figma ','notion ',
+                    'nytimes subscription','washington post sub','wsj subscription',
+                    'apple one sub','google play sub','xbox game pass','playstation plus',
+                    'duolingo plus','calm app','headspace ']],
+
+  // ── Gifts & Giving ───────────────────────────────────────────────────────────
+  ['gifts',     ['gift card purchase','gift wrap','hallmark ','1-800-flowers','ftd flowers',
+                 'teleflora ','proflowers','amazon gift','apple gift card',
+                 'charitable donation','charity donation','nonprofit donation','gofundme ',
+                 'united way','red cross','salvation army','habitat humanity',
+                 'church offering','tithe ','church donation','religious offering',
+                 'school donation','pto donation','booster club']],
+];
+
+
+
+function recordFileImport(type, filename, thruDate, count) {
+  try {
+    const reg = JSON.parse(localStorage.getItem('forge_file_registry') || '{}');
+    if (!reg[type] || thruDate > (reg[type].thruDate || '')) {
+      reg[type] = { type, filename, thruDate, count, importedAt: new Date().toISOString() };
+    }
+    localStorage.setItem('forge_file_registry', JSON.stringify(reg));
+  } catch(e) {}
+}
+
+function getFileRegistry() {
+  try { return JSON.parse(localStorage.getItem('forge_file_registry') || '{}'); } catch(e) { return {}; }
+}
+
+
 function classifyTxn(t) {
   const cat  = (t.category || '').toLowerCase().trim();
   const pay  = (t.payee    || '').toLowerCase().trim();
@@ -1784,12 +2213,267 @@ function go(tab) {
   if (tab==='alerts')   safe(function(){ renderPulsePL(); }, 'pl');
   if (tab==='amazon')   safe(function(){ renderPulseNW(); }, 'nw');
   if (tab==='analytics') safe(function(){ renderPulseAnalytics(); }, 'analytics');
+  if (tab==='settings') safe(function(){ renderPulseSettings(); }, 'settings');
   if (tab==='chat' && !chatReady) { chatReady=true; safe(function(){ sendWelcome(); }, 'welcome'); }
 }
 
 // ════════════════════════════════════════════
 // SNAPSHOT — THE GAUGE
 // ════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════════════════
+// PULSE SETTINGS
+// ════════════════════════════════════════════════════════════════════════════
+function renderPulseSettings() {
+  const el = document.getElementById('pulse-settings-out');
+  if (!el) return;
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  const sec = (title, icon, body) => `
+    <div style="margin:0 14px 12px;">
+      <div style="font-family:var(--font-m);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);padding:14px 0 7px;">${icon} ${title}</div>
+      <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">${body}</div>
+    </div>`;
+
+  const row = (label, sub, input) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.04);">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--ink);font-family:var(--font-ui);">${label}</div>
+        ${sub ? `<div style="font-size:11px;color:var(--ink4);margin-top:1px;font-family:var(--font-ui);">${sub}</div>` : ''}
+      </div>
+      <div style="flex-shrink:0;">${input}</div>
+    </div>`;
+
+  const divider = () => `<div style="height:1px;background:var(--line);"></div>`;
+
+  const toggle = (id, checked, onchange) => `
+    <label style="position:relative;display:inline-block;width:44px;height:26px;cursor:pointer;">
+      <input type="checkbox" id="${id}" ${checked?'checked':''} onchange="${onchange}"
+        style="opacity:0;width:0;height:0;position:absolute;">
+      <span style="position:absolute;inset:0;border-radius:13px;background:${checked?'var(--gold)':'var(--line2)'};transition:background .2s;"
+            onclick="this.previousElementSibling.click()">
+        <span style="position:absolute;top:3px;left:${checked?'21':'3'}px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s;"></span>
+      </span>
+    </label>`;
+
+  const inputEl = (id, val, type='text', placeholder='') => `
+    <input id="${id}" type="${type}" value="${String(val||'').replace(/"/g,'&quot;')}" placeholder="${placeholder}"
+      style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:8px 12px;font-size:14px;font-family:var(--font-ui);color:var(--ink);width:160px;-webkit-appearance:none;"
+      oninput="pulseSaveSettings()">`;
+
+  // ── Read current state ─────────────────────────────────────────────────────
+  const workerUrl   = localStorage.getItem('forge_worker_url') || '';
+  const syncToken   = localStorage.getItem('forge_sync_token') || '';
+  const lastSync    = (() => {
+    try { return JSON.parse(localStorage.getItem('forge_last_sync') || '{}'); } catch(e) { return {}; }
+  })();
+  const ledgerRaw   = localStorage.getItem('forge_prod_v1') || localStorage.getItem('ledger_v3');
+  const ledger      = ledgerRaw ? JSON.parse(ledgerRaw) : null;
+  const txnCount    = ledger?.txns?.length || 0;
+  const savedAt     = ledger?.savedAt ? new Date(ledger.savedAt) : null;
+  const settings2   = (() => {
+    try { return JSON.parse(localStorage.getItem('forge_settings_v2') || '{}'); } catch(e) { return {}; }
+  })();
+  const family      = settings2.familyProfile || {};
+  const appearance  = settings2.forgeAppearance || {};
+  const fileReg     = (() => {
+    try { return JSON.parse(localStorage.getItem('forge_file_registry') || '{}'); } catch(e) { return {}; }
+  })();
+
+  // Thru dates per source
+  const FILE_TYPES = [
+    { key:'quicken_csv',     icon:'📊', label:'Quicken Transactions' },
+    { key:'quicken_networth',icon:'🏦', label:'Net Worth Export'      },
+    { key:'amazon_orders',   icon:'📦', label:'Amazon Orders'         },
+    { key:'apple_card',      icon:'🍎', label:'Apple Card'            },
+    { key:'home_depot',      icon:'🔨', label:'Home Depot'            },
+    { key:'venmo',           icon:'💸', label:'Venmo'                 },
+  ];
+
+  const derivedThru = {};
+  if (ledger?.txns) {
+    const ts = ledger.txns;
+    const latest = arr => arr.length ? arr.map(t=>t.date).sort().pop() : null;
+    derivedThru.quicken_csv     = latest(ts.filter(t=>!t._source||t._source==='quicken'));
+    derivedThru.amazon_orders   = latest(ts.filter(t=>t._source==='amazon'&&t.itemDetail));
+    derivedThru.apple_card      = latest(ts.filter(t=>t._source==='apple_card'&&t.itemDetail));
+    derivedThru.home_depot      = latest(ts.filter(t=>t._source==='home_depot'&&t.itemDetail));
+    derivedThru.venmo           = latest(ts.filter(t=>t._source==='venmo'));
+    const nwDates = Object.values(JSON.parse(localStorage.getItem('forge_nw_history')||'{}')||{}).map(v=>v?.syncedAt||'').filter(Boolean).sort();
+    derivedThru.quicken_networth = nwDates.length ? nwDates[nwDates.length-1].slice(0,10) : null;
+  }
+
+  const daysSince = iso => iso ? Math.floor((Date.now()-new Date(iso))/864e5) : null;
+  const freshLabel = days => {
+    if (days===null) return '<span style="color:var(--ink4);">—</span>';
+    if (days===0)    return '<span style="color:var(--positive);">Today</span>';
+    if (days<=7)     return `<span style="color:var(--positive);">${days}d ago</span>`;
+    if (days<=30)    return `<span style="color:var(--gold);">${Math.floor(days/7)}w ago</span>`;
+    return `<span style="color:var(--negative);">${Math.floor(days/30)}mo ago</span>`;
+  };
+  const dot = days => {
+    const c = days===null?'var(--line2)':days<=7?'var(--positive)':days<=30?'var(--gold)':'var(--negative)';
+    return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};box-shadow:${days!==null&&days<=7?`0 0 6px ${c}`:''};flex-shrink:0;"></span>`;
+  };
+
+  // ── §1 Sync Status ──────────────────────────────────────────────────────────
+  const syncSince = lastSync.syncedAt ? daysSince(lastSync.syncedAt) : null;
+  const syncLabel = lastSync.syncedAt
+    ? new Date(lastSync.syncedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})
+    : 'Never synced';
+
+  let syncBody = `
+    <div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.04);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div>
+          <div style="font-size:11px;color:var(--ink4);font-family:var(--font-m);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;">Last Pull</div>
+          <div style="font-size:16px;font-weight:500;color:${syncSince!==null&&syncSince<=1?'var(--positive)':syncSince!==null&&syncSince<=7?'var(--gold)':'var(--ink)'};">${syncLabel}</div>
+          ${txnCount ? `<div style="font-size:11px;color:var(--ink4);margin-top:2px;font-family:var(--font-m);">${txnCount.toLocaleString()} txns loaded</div>` : ''}
+        </div>
+        <button onclick="syncPull()" style="background:var(--gold);color:#000;border:none;border-radius:var(--r-sm);padding:10px 18px;font-size:13px;font-weight:700;font-family:var(--font-ui);cursor:pointer;">↓ Pull</button>
+      </div>
+    </div>`;
+
+  // File thru-date table
+  syncBody += `<div style="padding:8px 16px 4px;font-size:9px;font-family:var(--font-m);letter-spacing:.15em;text-transform:uppercase;color:var(--ink4);">File Thru Dates</div>`;
+  FILE_TYPES.forEach((ft, i) => {
+    const thru  = fileReg[ft.key]?.thruDate || derivedThru[ft.key] || null;
+    const days  = daysSince(thru);
+    const isLast= i === FILE_TYPES.length - 1;
+    syncBody += `<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;${isLast?'':'border-bottom:1px solid rgba(255,255,255,.035)'}">
+      ${dot(days)}
+      <div style="flex:1;font-size:12px;font-family:var(--font-ui);">
+        <span style="color:var(--ink2);">${ft.icon} ${ft.label}</span>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11.5px;font-family:var(--font-m);color:var(--ink3);">${thru ? thru.slice(0,10) : '—'}</div>
+        <div style="font-size:10px;margin-top:1px;">${freshLabel(days)}</div>
+      </div>
+    </div>`;
+  });
+
+  // ── §2 Cloud Config ─────────────────────────────────────────────────────────
+  let cloudBody = `
+    <div style="padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.04);">
+      <div style="font-size:11px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Worker URL</div>
+      <input id="ps-worker-url" type="url" value="${workerUrl}"
+        placeholder="https://forge-sid.xxx.workers.dev"
+        style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:10px 12px;font-size:14px;font-family:var(--font-m);color:var(--ink);-webkit-appearance:none;box-sizing:border-box;"
+        oninput="localStorage.setItem('forge_worker_url',this.value)">
+    </div>
+    <div style="padding:13px 16px;">
+      <div style="font-size:11px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Sync Token</div>
+      <div style="display:flex;gap:8px;">
+        <input id="ps-sync-token" type="password" value="${syncToken}"
+          placeholder="Enter sync token"
+          style="flex:1;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:10px 12px;font-size:14px;font-family:var(--font-m);color:var(--ink);-webkit-appearance:none;"
+          oninput="localStorage.setItem('forge_sync_token',this.value)">
+        <button onclick="const el=document.getElementById('ps-sync-token');el.type=el.type==='password'?'text':'password'"
+          style="background:var(--lift);border:1px solid var(--line2);color:var(--ink4);border-radius:var(--r-sm);padding:0 14px;font-size:12px;cursor:pointer;font-family:var(--font-ui);white-space:nowrap;">Show</button>
+      </div>
+    </div>`;
+
+  // ── §3 Family Info ──────────────────────────────────────────────────────────
+  const members = family.members || [
+    {name:'Chris',emoji:'🧢'},{name:'Kira',emoji:'💛'},
+    {name:'Sam',emoji:'⚾'},{name:'Whitney',emoji:'🎨'},{name:'Will',emoji:'🎮'},
+  ];
+  let familyBody = '';
+  familyBody += row('Family Name', 'Shown in reports', `<input id="ps-family-name" type="text" value="${(family.name||'').replace(/"/g,'&quot;')}" placeholder="The Luka Family" style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:8px 12px;font-size:14px;font-family:var(--font-ui);color:var(--ink);width:160px;-webkit-appearance:none;" oninput="pulseSaveFamilyName(this.value)">`);
+
+  familyBody += `<div style="padding:13px 16px;">
+    <div style="font-size:11px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px;">Members</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">`;
+  members.forEach((m, i) => {
+    familyBody += `<div style="display:flex;align-items:center;gap:10px;">
+      <input type="text" value="${m.emoji||''}" maxlength="4" style="width:44px;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:6px;font-size:20px;text-align:center;-webkit-appearance:none;">
+      <input type="text" value="${(m.name||'').replace(/"/g,'&quot;')}" placeholder="Name" style="flex:1;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:8px 12px;font-size:14px;font-family:var(--font-ui);color:var(--ink);-webkit-appearance:none;">
+      <span style="font-size:11px;color:var(--ink4);font-family:var(--font-m);width:40px;text-align:center;">${m.role==='parent'?'Parent':'Child'}</span>
+    </div>`;
+  });
+  familyBody += `</div></div>`;
+
+  // ── §4 Display ──────────────────────────────────────────────────────────────
+  const showCents = !!appearance.showCents;
+  const showGoalRings = appearance.showGoalRings !== false;
+  let displayBody = '';
+  displayBody += row('Savings Target', '% used for goal rings & color coding',
+    `<div style="display:flex;align-items:center;gap:6px;"><input id="ps-savings-target" type="number" min="0" max="100" value="${family.savingsTarget||20}" style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:8px 10px;font-size:14px;font-family:var(--font-m);color:var(--ink);width:70px;text-align:center;-webkit-appearance:none;" oninput="pulseSaveAppearance()"><span style="font-size:13px;color:var(--ink4);">%</span></div>`);
+  displayBody += row('Show Cents', '$1,234.56 vs $1,235',
+    `<label style="position:relative;display:inline-block;width:44px;height:26px;cursor:pointer;"><input type="checkbox" id="ps-show-cents" ${showCents?'checked':''} onchange="pulseSaveAppearance()" style="opacity:0;width:0;height:0;position:absolute;"><span id="ps-show-cents-track" style="position:absolute;inset:0;border-radius:13px;background:${showCents?'var(--gold)':'var(--line2)'};transition:background .2s;cursor:pointer;" onclick="document.getElementById('ps-show-cents').click()"><span id="ps-show-cents-thumb" style="position:absolute;top:3px;left:${showCents?'21':'3'}px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s;pointer-events:none;"></span></span></label>`);
+  displayBody += row('Goal Rings', 'Circular progress on The Gauge',
+    `<label style="position:relative;display:inline-block;width:44px;height:26px;cursor:pointer;"><input type="checkbox" id="ps-goal-rings" ${showGoalRings?'checked':''} onchange="pulseSaveAppearance()" style="opacity:0;width:0;height:0;position:absolute;"><span id="ps-goal-rings-track" style="position:absolute;inset:0;border-radius:13px;background:${showGoalRings?'var(--gold)':'var(--line2)'};transition:background .2s;cursor:pointer;" onclick="document.getElementById('ps-goal-rings').click()"><span id="ps-goal-rings-thumb" style="position:absolute;top:3px;left:${showGoalRings?'21':'3'}px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s;pointer-events:none;"></span></span></label>`);
+
+  // ── §5 Data ─────────────────────────────────────────────────────────────────
+  const keys = ['forge_prod_v1','ledger_v3','forge_settings_v2','forge_file_registry','forge_sync_token','forge_worker_url'];
+  let storageKB = 0;
+  keys.forEach(k => { const v = localStorage.getItem(k); if (v) storageKB += v.length; });
+  let dataBody = row('Storage Used', 'browser localStorage', `<span style="font-family:var(--font-m);font-size:14px;color:var(--ink2);">${(storageKB/1024).toFixed(0)} KB</span>`);
+  dataBody += row('Transactions', 'loaded in this session', `<span style="font-family:var(--font-d);font-size:20px;font-weight:300;color:var(--ink);">${txnCount.toLocaleString()}</span>`);
+  dataBody += `<div style="padding:13px 16px;display:flex;gap:8px;flex-wrap:wrap;">
+    <button onclick="if(confirm('Clear all Forge data on this device?')){keys.forEach(k=>localStorage.removeItem(k));location.reload();}" style="background:transparent;border:1px solid rgba(248,113,113,.35);color:var(--negative);padding:9px 16px;border-radius:var(--r-sm);font-size:13px;font-family:var(--font-ui);cursor:pointer;">Clear Local Data</button>
+    <button onclick="if(confirm('Reset sync token?'))localStorage.removeItem('forge_sync_token');renderPulseSettings();" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink4);padding:9px 16px;border-radius:var(--r-sm);font-size:13px;font-family:var(--font-ui);cursor:pointer;">Reset Token</button>
+  </div>`;
+
+  // ── Assemble ──────────────────────────────────────────────────────────────
+  el.innerHTML =
+    sec('Sync & Data',   '☁️',  syncBody)  +
+    sec('Cloud Config',  '🔗',  cloudBody) +
+    sec('Family',        '👨‍👩‍👧‍👦', familyBody) +
+    sec('Display',       '🎨',  displayBody) +
+    sec('Storage',       '💾',  dataBody) +
+    `<div style="height:24px;"></div>`;
+
+  // Wire toggle visual state updates
+  ['ps-show-cents','ps-goal-rings'].forEach(id => {
+    const chk = document.getElementById(id);
+    if (!chk) return;
+    chk.addEventListener('change', function() {
+      const track = document.getElementById(id+'-track');
+      const thumb = document.getElementById(id+'-thumb');
+      if (track) track.style.background = this.checked ? 'var(--gold)' : 'var(--line2)';
+      if (thumb) thumb.style.left = this.checked ? '21px' : '3px';
+    });
+  });
+}
+
+// ── Pulse settings save helpers ────────────────────────────────────────────
+function pulseSaveSettings() {
+  // Generic debounced save — inputs call this on input event
+  clearTimeout(pulseSaveSettings._t);
+  pulseSaveSettings._t = setTimeout(() => {
+    pulseSaveAppearance();
+  }, 400);
+}
+
+function pulseSaveFamilyName(val) {
+  try {
+    const s = JSON.parse(localStorage.getItem('forge_settings_v2')||'{}');
+    if (!s.familyProfile) s.familyProfile = {};
+    s.familyProfile.name = val;
+    localStorage.setItem('forge_settings_v2', JSON.stringify(s));
+  } catch(e) {}
+}
+
+function pulseSaveAppearance() {
+  try {
+    const s = JSON.parse(localStorage.getItem('forge_settings_v2')||'{}');
+    if (!s.forgeAppearance) s.forgeAppearance = {};
+    const target = document.getElementById('ps-savings-target');
+    const cents  = document.getElementById('ps-show-cents');
+    const rings  = document.getElementById('ps-goal-rings');
+    if (target) {
+      s.savingsTarget = parseFloat(target.value)||20;
+      if (!s.familyProfile) s.familyProfile = {};
+      s.familyProfile.savingsTarget = s.savingsTarget;
+    }
+    if (cents)  s.forgeAppearance.showCents   = cents.checked;
+    if (rings)  s.forgeAppearance.showGoalRings= rings.checked;
+    localStorage.setItem('forge_settings_v2', JSON.stringify(s));
+  } catch(e) {}
+}
+
+
 function renderSnapshot() {
   const el = document.getElementById('snap-out');
   if (!txns.length) { el.innerHTML = emptyHTML('snapshot'); return; }
@@ -2271,7 +2955,7 @@ async function syncPush() {
   if (!token) return;
   const ledger   = JSON.parse(localStorage.getItem('ledger_v3') || 'null');
   const settings = JSON.parse(localStorage.getItem('forge_settings_v1') || 'null');
-  if (!ledger) { alert('No data loaded. Import data before pushing.'); return; }
+  if (!ledger) { pulseToast('No data — pull from cloud first'); return; }
   try {
     const resp = await fetch(workerUrl + '/sync/push', {
       method: 'POST',
@@ -2279,34 +2963,55 @@ async function syncPush() {
       body: JSON.stringify({ ledger, settings })
     });
     const data = await resp.json();
-    if (data.ok) alert('Pushed to cloud.');
-    else alert('Push failed: ' + JSON.stringify(data));
-  } catch(e) { alert('Push error: ' + e.message); }
+    if (data.ok) pulseToast('✓ Pushed to cloud successfully');
+    else pulseToast('Push failed: ' + (data.error||'server error'));
+  } catch(e) { pulseToast('Push error: ' + e.message); }
 }
 
 async function syncPull() {
   const workerUrl = getWorkerUrl();
-  if (!workerUrl) return;
+  if (!workerUrl) { pulseToast('Set Worker URL in Settings first'); return; }
   const token = getSyncToken();
-  if (!token) return;
+  if (!token) { pulseToast('Set sync token in Settings first'); return; }
+
+  // Update PTR label if visible
+  const lbl = document.getElementById('ptr-label');
+  if (lbl) lbl.textContent = 'Syncing…';
+
   try {
     const resp = await fetch(workerUrl + '/sync/pull', {
       headers: { 'X-Sync-Token': token }
     });
+    if (!resp.ok) { pulseToast('Sync failed: ' + resp.status); return; }
     const data = await resp.json();
-    if (!data.ledger) { alert('No sync data found. Push from desktop first.'); return; }
-    // Store under forge_prod_v1 — the key the lean build reads on load
+    if (!data.ledger) { pulseToast('No cloud data yet — push from desktop first'); return; }
+
     localStorage.setItem('forge_prod_v1', data.ledger);
-    // Also write to ledger_v3 for compatibility
-    localStorage.setItem('ledger_v3', data.ledger);
+    localStorage.setItem('ledger_v3',     data.ledger);
     if (data.settings) {
       localStorage.setItem('forge_settings_v1', data.settings);
       localStorage.setItem('forge_settings_v2', data.settings);
     }
-    const when = data.syncedAt ? new Date(data.syncedAt).toLocaleString() : 'unknown time';
-    alert('Data loaded from ' + when + '. Reloading.');
+    // Record sync time for Settings display
+    const syncMeta = { syncedAt: data.syncedAt || new Date().toISOString(), source: 'cloud' };
+    localStorage.setItem('forge_last_sync', JSON.stringify(syncMeta));
+
+    // Reload immediately — no alert, minimal delay
     location.reload();
-  } catch(e) { alert('Pull error: ' + e.message); }
+  } catch(e) {
+    pulseToast('Sync error: ' + e.message);
+  }
+}
+
+function pulseToast(msg, duration=2800) {
+  const t = document.querySelector('.toast') || (() => {
+    const el = document.createElement('div'); el.className = 'toast';
+    document.body.appendChild(el); return el;
+  })();
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), duration);
 }
 
 async function callSid(msg) {
@@ -2815,6 +3520,7 @@ function buildAccrualEngine(selMonth, sp) {
   const daysElapsed   = Math.min(today.getDate(), daysInMonth);
   const daysRemaining = daysInMonth - daysElapsed;
 
+  // ── Bucket classification sets ─────────────────────────────────────────────
   const FIXED_BUCKETS        = new Set(['mortgage','car','insurance','education','childcare']);
   const UTILITY_BUCKETS      = new Set(['electric','gas_util','water','internet','cell']);
   const SUBSCRIPTION_BUCKETS = new Set(['subscriptions']);
@@ -2823,28 +3529,32 @@ function buildAccrualEngine(selMonth, sp) {
                                          'personal','clothing','travel','gifts','other']);
   const ZERO_ACCRUAL_BUCKETS = new Set(['paycheck','other_inc','auto_save']);
 
-  const priorMonths = [];
-  for (let i = 1; i <= 3; i++) {
+  // ── Historical window: 6 months for stability ─────────────────────────────
+  // (3 months is too short for quarterly/semi-annual bills)
+  const priorMonths6 = [], priorMonths3 = [];
+  for (let i = 1; i <= 6; i++) {
     const d = new Date(sy, sm - 1 - i, 1);
-    priorMonths.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
+    const mo = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    priorMonths6.push(mo);
+    if (i <= 3) priorMonths3.push(mo);
   }
-  const priorTxns    = sp.filter(t => priorMonths.some(m => t.date.startsWith(m)));
+
+  const priorTxns    = sp.filter(t => priorMonths6.some(m => t.date.startsWith(m)));
+  const priorTxns3   = sp.filter(t => priorMonths3.some(m => t.date.startsWith(m)));
   const curMonthStr  = String(sy).padStart(4,'0')+'-'+String(sm).padStart(2,'0');
   const curMonthTxns = sp.filter(t => t.date.startsWith(curMonthStr));
 
-  function removeOutliers(totals) {
-    if (totals.length < 2) return totals;
-    const mean  = totals.reduce((s,v)=>s+v,0) / totals.length;
-    const sigma = Math.sqrt(totals.reduce((s,v)=>s+Math.pow(v-mean,2),0) / totals.length);
-    const clean = totals.filter(v => v <= mean + 2*sigma);
-    return clean.length > 0 ? clean : totals;
-  }
-
-  const priorByBucket = {}, curByBucket = {};
+  // Group by bucket (6-month and 3-month)
+  const priorByBucket = {}, priorByBucket3 = {}, curByBucket = {};
   priorTxns.forEach(t => {
     const bk = classifyTxn(t);
     if (!priorByBucket[bk]) priorByBucket[bk] = [];
     priorByBucket[bk].push(t);
+  });
+  priorTxns3.forEach(t => {
+    const bk = classifyTxn(t);
+    if (!priorByBucket3[bk]) priorByBucket3[bk] = [];
+    priorByBucket3[bk].push(t);
   });
   curMonthTxns.forEach(t => {
     const bk = classifyTxn(t);
@@ -2852,40 +3562,191 @@ function buildAccrualEngine(selMonth, sp) {
     curByBucket[bk].push(t);
   });
 
-  // ── Per-payee discrete known-amount accrual for fixed bills ───────────────
-  // Groups prior transactions by payee, computes median per-payee expected
-  // amount, then projects ONLY payees that haven't yet been charged this month.
+  // ── Statistical helpers ────────────────────────────────────────────────────
+  function median(arr) {
+    if (!arr.length) return 0;
+    const s = arr.slice().sort((a,b)=>a-b);
+    const mid = Math.floor(s.length/2);
+    return s.length % 2 ? s[mid] : (s[mid-1]+s[mid])/2;
+  }
+
+  function mean(arr) {
+    return arr.length ? arr.reduce((s,v)=>s+v,0)/arr.length : 0;
+  }
+
+  function sigma(arr, m) {
+    if (arr.length < 2) return 0;
+    const avg = m !== undefined ? m : mean(arr);
+    return Math.sqrt(arr.reduce((s,v)=>s+Math.pow(v-avg,2),0)/arr.length);
+  }
+
+  function removeOutliers(vals, threshold=2.0) {
+    if (vals.length < 3) return vals;
+    const m  = mean(vals);
+    const sd = sigma(vals, m);
+    if (sd === 0) return vals;
+    const clean = vals.filter(v => Math.abs(v - m) <= threshold * sd);
+    return clean.length >= 2 ? clean : vals;
+  }
+
+  // ── Income normalization ───────────────────────────────────────────────────
+  // Handles: 3-paycheck months, bonus payments, one-time receipts
+  // Returns { normalizedIncome, rawIncome, extraPaycheck, oneTimeItems }
+  function normalizeIncome() {
+    const incTxns    = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'paycheck');
+    const otherInc   = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc');
+    const autoSaves  = sp.filter(t => classifyTxn(t) === 'auto_save');
+
+    // Build monthly paycheck totals across all history
+    const payByMonth = {};
+    incTxns.forEach(t => {
+      const mo = t.date.slice(0,7);
+      payByMonth[mo] = (payByMonth[mo]||0) + t.amount;
+    });
+
+    // Current month paycheck
+    const curPaycheck = (curByBucket['paycheck']||[]).reduce((s,t)=>s+t.amount,0);
+    const curAutoSave = (curByBucket['auto_save']||[]).reduce((s,t)=>s+Math.abs(t.amount),0);
+
+    // Prior monthly paycheck amounts (6 months, excluding current)
+    const priorPayAmts = priorMonths6
+      .map(mo => payByMonth[mo] || 0)
+      .filter(v => v > 0);
+
+    // Detect biweekly pay pattern: count paycheck transactions per month
+    const payCountByMonth = {};
+    incTxns.forEach(t => {
+      const mo = t.date.slice(0,7);
+      payCountByMonth[mo] = (payCountByMonth[mo]||0) + 1;
+    });
+    const priorPayCounts = priorMonths6.map(mo => payCountByMonth[mo] || 0).filter(v => v > 0);
+    const avgPayCount = priorPayCounts.length ? mean(priorPayCounts) : 2;
+    const curPayCount = (payCountByMonth[curMonthStr]||0);
+    const isThreePayMonth = curPayCount > 0 && curPayCount > Math.round(avgPayCount) + 0.5;
+
+    // Normalized paycheck: use median of prior months if this is a 3-pay month
+    const normalPaycheck = priorPayAmts.length > 0
+      ? median(removeOutliers(priorPayAmts))
+      : curPaycheck;
+    const extraPaycheck = isThreePayMonth ? Math.max(0, curPaycheck - normalPaycheck) : 0;
+
+    // Detect one-time income in other_inc (bonuses, tax refunds, etc.)
+    // Per-payee: if amount is >2σ above that payee's historical average, flag it
+    const oneTimeItems = [];
+    const curOtherInc = (curByBucket['other_inc']||[]);
+    curOtherInc.forEach(t => {
+      const payee = (t.payee||'').toLowerCase().trim();
+      const hist  = priorTxns.filter(p => classifyTxn(p)==='other_inc' &&
+                                          (p.payee||'').toLowerCase().trim() === payee)
+                              .map(p => p.amount);
+      if (!hist.length) {
+        // Never seen before — flag as one-time if > $500
+        if (t.amount > 500) oneTimeItems.push({ payee: t.payee, amount: t.amount, reason: 'first occurrence' });
+        return;
+      }
+      const m  = mean(hist);
+      const sd = sigma(hist, m);
+      if (sd > 0 && t.amount > m + 2*sd) {
+        oneTimeItems.push({ payee: t.payee, amount: t.amount, normal: m, reason: 'spike' });
+      }
+    });
+
+    const oneTimeTotal = oneTimeItems.reduce((s,v)=>s+v.amount,0);
+
+    const rawIncome        = curPaycheck + curOtherInc.reduce((s,t)=>s+t.amount,0);
+    const normalizedIncome = (isThreePayMonth ? normalPaycheck : curPaycheck)
+                           + curOtherInc.reduce((s,t)=>s+t.amount,0)
+                           - oneTimeTotal;
+
+    return {
+      rawIncome,
+      normalizedIncome: Math.max(0, normalizedIncome),
+      extraPaycheck,
+      oneTimeItems,
+      oneTimeTotal,
+      isThreePayMonth,
+      curPayCount,
+      avgPayCount: Math.round(avgPayCount * 10)/10,
+      normalPaycheck,
+      curAutoSave,
+      normalDeployable: Math.max(0, normalizedIncome - curAutoSave),
+    };
+  }
+
+  // ── Fixed-bill accrual: per-payee discrete median, uncharged only ─────────
+  // Uses 6-month history to catch quarterly (every 3mo) and semi-annual bills.
+  // A payee must appear in at least 2 of the prior 6 months to be projected.
   function getFixedAccrual(bk) {
-    const prior = priorByBucket[bk] || [];
-    const cur   = curByBucket[bk]   || [];
+    // Use 3-month window for month-to-month fixed bills (mortgage, car, etc.)
+    // Use 6-month window for infrequent ones (insurance, HOA, etc.)
+    const useWide  = bk === 'insurance' || bk === 'education';
+    const prior    = useWide ? (priorByBucket[bk]||[]) : (priorByBucket3[bk]||[]);
+    const cur      = curByBucket[bk] || [];
     if (!prior.length) return 0;
 
+    // Group prior by payee → month → amount
     const payeeData = {};
     prior.forEach(t => {
-      const p = (t.payee||'').toLowerCase().trim();
-      if (!payeeData[p]) payeeData[p] = {};
+      const p  = (t.payee||'').toLowerCase().trim();
       const mo = t.date.slice(0,7);
+      if (!payeeData[p]) payeeData[p] = {};
       payeeData[p][mo] = (payeeData[p][mo]||0) + Math.abs(t.amount);
     });
 
+    // Which payees has the current month already seen?
     const chargedPayees = new Set(cur.map(t => (t.payee||'').toLowerCase().trim()));
 
+    const horizon = useWide ? 6 : 3;
     let accrued = 0;
     Object.entries(payeeData).forEach(([payee, moAmts]) => {
       const monthlyAmounts = Object.values(moAmts);
-      if (monthlyAmounts.length < 2) return; // appeared in only 1 prior month = one-time, skip
-      if (chargedPayees.has(payee)) return;  // already charged this month
-      const sorted = monthlyAmounts.slice().sort((a,b)=>a-b);
-      const median = sorted[Math.floor(sorted.length/2)];
-      accrued += median;
+
+      // Must appear in at least 2 distinct months OR be >50% of months (covers quarterly)
+      const appearCount = Object.keys(moAmts).length;
+      if (appearCount < 2) return; // one-time charge in history, skip
+
+      if (chargedPayees.has(payee)) return; // already paid this month
+
+      // For infrequent bills: check if it's "due" this month based on pattern
+      if (appearCount < horizon * 0.5) {
+        // Appeared in less than half the months — quarterly or semi-annual
+        // Estimate when it's next due from the most recent occurrence
+        const sortedMonths = Object.keys(moAmts).sort();
+        const lastMo = sortedMonths[sortedMonths.length-1];
+        const lastDate = new Date(lastMo + '-01');
+        const curDate  = new Date(curMonthStr + '-01');
+        const monthsApart = (curDate - lastDate) / (1000*60*60*24*30.44);
+
+        // Estimate period: if appeared every ~3mo, project if we're 3mo from last
+        const avgPeriod = sortedMonths.length > 1
+          ? (new Date(sortedMonths[sortedMonths.length-1]+'-01') -
+             new Date(sortedMonths[0]+'-01')) / (1000*60*60*24*30.44)
+            / (sortedMonths.length - 1)
+          : 12; // default: annual
+
+        // Only project if we're within ±1 month of expected due date
+        if (Math.abs(monthsApart - avgPeriod) > 1.5) return;
+      }
+
+      const med = median(monthlyAmounts);
+      accrued += med;
     });
 
     return parseFloat(accrued.toFixed(2));
   }
 
-  // ── Discretionary: daily run rate x remaining days ────────────────────────
+  // ── Utility accrual: per-payee discrete, but allow for seasonality ────────
+  // Gas and electric vary by season — use median of 3 prior months rather than
+  // same-month prior year (we don't always have that data)
+  function getUtilityAccrual(bk) {
+    // Utilities are fixed-schedule but variable-amount — same logic as fixed
+    return getFixedAccrual(bk);
+  }
+
+  // ── Discretionary: daily run rate × remaining days ────────────────────────
+  // Uses outlier removal so one big Amazon haul month doesn't inflate projection
   function getDiscretionaryAccrual(bk) {
-    const prior = priorByBucket[bk] || [];
+    const prior = priorByBucket3[bk] || [];
     if (!prior.length) return 0;
     const byMonth = {};
     prior.forEach(t => {
@@ -2893,17 +3754,19 @@ function buildAccrualEngine(selMonth, sp) {
       byMonth[mo] = (byMonth[mo]||0) + Math.abs(t.amount);
     });
     const totals   = removeOutliers(Object.values(byMonth));
-    const avgDaily = (totals.reduce((s,v)=>s+v,0) / totals.length) / 30.44;
+    if (!totals.length) return 0;
+    // Current month partial actual already counted — project only remaining days
+    const avgDaily = mean(totals) / 30.44;
     return parseFloat((avgDaily * daysRemaining).toFixed(2));
   }
 
   function getDailyRate(bk) {
-    const prior = priorByBucket[bk] || [];
+    const prior = priorByBucket3[bk] || [];
     if (!prior.length) return 0;
     const byMonth = {};
     prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
     const totals = removeOutliers(Object.values(byMonth));
-    return (totals.reduce((s,v)=>s+v,0)/totals.length)/30.44;
+    return totals.length ? mean(totals)/30.44 : 0;
   }
 
   function currentMonthActual(bk) {
@@ -2911,45 +3774,47 @@ function buildAccrualEngine(selMonth, sp) {
   }
 
   function priorMonthlyAvg(bk) {
-    const prior = priorByBucket[bk] || [];
+    const prior = priorByBucket3[bk] || [];
     if (!prior.length) return 0;
     const byMonth = {};
     prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
     const totals = removeOutliers(Object.values(byMonth));
-    return totals.reduce((s,v)=>s+v,0)/totals.length;
+    return totals.length ? mean(totals) : 0;
   }
 
-  function accrueAmount(bk) {
-    if (ZERO_ACCRUAL_BUCKETS.has(bk)) return 0;
-    if (FIXED_BUCKETS.has(bk) || UTILITY_BUCKETS.has(bk) || SUBSCRIPTION_BUCKETS.has(bk)) {
-      return getFixedAccrual(bk);
-    }
-    if (DISCRETIONARY_BUCKETS.has(bk)) {
-      return getDiscretionaryAccrual(bk);
-    }
-    // Fallback
-    const prior = priorByBucket[bk] || [];
-    if (!prior.length) return 0;
-    const byMonth = {};
-    prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
-    const totals = removeOutliers(Object.values(byMonth));
-    return parseFloat(((totals.reduce((s,v)=>s+v,0)/totals.length)/30.44*daysRemaining).toFixed(2));
-  }
-
+  // ── isOneTime: flag transactions that look like one-offs ──────────────────
   function isOneTime(t, bk) {
     const payee = (t.payee||'').toLowerCase().trim();
     const amt   = Math.abs(t.amount);
-    const bkTxns = priorByBucket[bk] || [];
-    const payeeTxns = bkTxns.filter(p => (p.payee||'').toLowerCase().trim() === payee);
-    if (!payeeTxns.length) return false;
-    const months = new Set(payeeTxns.map(p => p.date.slice(0,7)));
-    if (months.size <= 1) return true;
-    const amts  = payeeTxns.map(p => Math.abs(p.amount));
-    const mean  = amts.reduce((s,v)=>s+v,0)/amts.length;
-    const sigma = Math.sqrt(amts.reduce((s,v)=>s+Math.pow(v-mean,2),0)/amts.length);
-    return sigma > 0 && amt > mean + 2*sigma;
+    const bkTxns = (priorByBucket[bk]||[]).filter(p =>
+      (p.payee||'').toLowerCase().trim() === payee
+    );
+    if (!bkTxns.length) return true; // never seen this payee before
+    const months = new Set(bkTxns.map(p => p.date.slice(0,7)));
+    if (months.size <= 1) return true; // only one prior month
+    const amts  = bkTxns.map(p => Math.abs(p.amount));
+    const m     = mean(amts);
+    const sd    = sigma(amts, m);
+    return sd > 0 && amt > m + 2.5*sd; // raised threshold to avoid false positives
   }
 
+  // ── Central accrual dispatch ───────────────────────────────────────────────
+  function accrueAmount(bk) {
+    if (ZERO_ACCRUAL_BUCKETS.has(bk)) return 0;
+    if (FIXED_BUCKETS.has(bk))        return getFixedAccrual(bk);
+    if (UTILITY_BUCKETS.has(bk))      return getUtilityAccrual(bk);
+    if (SUBSCRIPTION_BUCKETS.has(bk)) return getFixedAccrual(bk);
+    if (DISCRETIONARY_BUCKETS.has(bk)) return getDiscretionaryAccrual(bk);
+    // Unknown bucket: daily rate fallback
+    const prior = priorByBucket3[bk] || [];
+    if (!prior.length) return 0;
+    const byMonth = {};
+    prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
+    const totals = removeOutliers(Object.values(byMonth));
+    return parseFloat((mean(totals)/30.44*daysRemaining).toFixed(2));
+  }
+
+  // ── Projection breakdown (used by IS hero and thermometer) ───────────────
   function getProjectionBreakdown(sectionData) {
     let fixedActual = 0, fixedProjected = 0, variableActual = 0, variableProjected = 0;
     const fixedDueItems = [], varPaceItems = [];
@@ -2962,13 +3827,13 @@ function buildAccrualEngine(selMonth, sp) {
         if (FIXED_BUCKETS.has(bk) || UTILITY_BUCKETS.has(bk) || SUBSCRIPTION_BUCKETS.has(bk)) {
           fixedActual    += bd.actual  || 0;
           fixedProjected += bd.accrued || 0;
-          if ((bd.accrued||0) > 10) fixedDueItems.push({ label: bMeta.label, amount: bd.accrued });
+          if ((bd.accrued||0) > 10)
+            fixedDueItems.push({ label: bMeta.label, amount: bd.accrued });
         } else if (DISCRETIONARY_BUCKETS.has(bk)) {
           variableActual    += bd.actual  || 0;
           variableProjected += bd.accrued || 0;
-          if ((bd.accrued||0) > 10) {
+          if ((bd.accrued||0) > 10)
             varPaceItems.push({ label: bMeta.label, dailyRate: getDailyRate(bk), projected: bd.accrued||0 });
-          }
         }
       });
     });
@@ -2985,7 +3850,7 @@ function buildAccrualEngine(selMonth, sp) {
 
   return {
     isInFlight, daysElapsed, daysRemaining, daysInMonth,
-    getDailyRate, isOneTime, accrueAmount, getProjectionBreakdown,
+    getDailyRate, isOneTime, accrueAmount, getProjectionBreakdown, normalizeIncome,
     FIXED_BUCKETS, UTILITY_BUCKETS, SUBSCRIPTION_BUCKETS, DISCRETIONARY_BUCKETS,
   };
 }
@@ -3079,6 +3944,324 @@ function renderPulseDetailLens(sourceKey) {
   out += '</div>';
   el.innerHTML = out;
 }
+
+function renderThermometer(containerId, selMonth) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  const sp = operatingSpendable(txns);
+  if (!sp.length) { el.innerHTML = ''; return; }
+
+  // ── Get data ───────────────────────────────────────────────────────────────
+  const accrual = selMonth ? buildAccrualEngine(selMonth, sp) : null;
+  const isInFlight = !!accrual;
+
+  // Filter to selected month or trailing 30 days
+  const now = new Date();
+  const selOrDefault = selMonth || now.toISOString().slice(0,7);
+  const monthTxns = sp.filter(t => t.date.startsWith(selOrDefault));
+
+  const totalInc   = monthTxns.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+  const autoSaveAmt= monthTxns.filter(t=>classifyTxn(t)==='auto_save').reduce((s,t)=>s+Math.abs(t.amount),0);
+  const deployable = Math.max(0, totalInc - autoSaveAmt); // post-savings income available for bills+discretionary
+
+  // Bucket classification
+  const FIXED_BKS = ['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','cell','subscriptions'];
+  const VAR_BKS   = ['restaurants','groceries','gas_car','transit','healthcare','entertainment','household','personal','clothing','travel','gifts','other'];
+
+  const fixedActual = monthTxns.filter(t=>FIXED_BKS.includes(classifyTxn(t))&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+  const varActual   = monthTxns.filter(t=>VAR_BKS.includes(classifyTxn(t))&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+
+  // Accrual projections for in-flight months
+  let fixedProj = 0, varProj = 0;
+  if (isInFlight && accrual) {
+    FIXED_BKS.forEach(bk => { fixedProj += accrual.accrueAmount(bk) || 0; });
+    VAR_BKS.forEach(bk   => { varProj   += accrual.accrueAmount(bk) || 0; });
+  }
+
+  const fixedTotal  = fixedActual + fixedProj;
+  const varTotal    = varActual + varProj;
+  const totalSpend  = fixedTotal + varTotal;
+  const overflow    = Math.max(0, totalSpend - deployable);
+  const capacity    = Math.max(deployable, totalSpend) * 1.15; // 15% headroom above max
+
+  // Percentages (of capacity)
+  const capH     = 280; // px height of the tube body
+  const fixedPx  = Math.min(capH, (fixedTotal / capacity) * capH);
+  const varPx    = Math.min(capH - fixedPx, (varTotal / capacity) * capH);
+  const freePx   = Math.max(0, (deployable / capacity) * capH);
+  const overflowPx = Math.min(60, (overflow / capacity) * capH);
+  const fillPx   = fixedPx + varPx;
+  const overflows = overflow > 0;
+  const savePct  = deployable > 0 ? ((deployable - totalSpend) / deployable * 100) : 0;
+
+  // Colors
+  const fixedColor = '#F87171';   // --negative (red)
+  const varColor   = '#F5A800';   // --gold
+  const freeColor  = '#2DD4BF';   // --positive (teal)
+  const overColor  = '#FF4040';   // bright danger red
+
+  const W = 200; // SVG width
+  const TW = 54; // tube inner width
+  const TX = (W - TW) / 2; // tube x
+  const TY = 40;  // tube top y (not counting overflow)
+  const BTMY = TY + capH + 20; // tube bottom y
+  const BBASE = BTMY + 20; // bulb center y
+
+  // Build horizontal legend entries
+  const pctFix = deployable > 0 ? (fixedTotal/deployable*100).toFixed(0) : 0;
+  const pctVar = deployable > 0 ? (varTotal/deployable*100).toFixed(0) : 0;
+  const pctFree= deployable > 0 ? Math.max(0,(deployable-totalSpend)/deployable*100).toFixed(0) : 0;
+
+  const fmtK = n => Math.abs(n) >= 1000 ? '$' + (n/1000).toFixed(1) + 'K' : '$' + Math.round(n);
+
+  el.innerHTML = `<div style="padding:16px 18px 12px;">
+    <!-- Title row -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--ink2);">Income Pressure Gauge</div>
+        <div style="font-size:10px;color:var(--ink4);font-family:var(--font-m);">${selOrDefault} · ${isInFlight?'actuals + projected':'closed month'}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;font-weight:600;font-family:var(--font-m);color:${overflows?'var(--negative)':'var(--positive)'};">${overflows?'⚠ Over by '+fmtK(overflow):'✓ '+fmtK(deployable-totalSpend)+' free'}</div>
+        <div style="font-size:10px;color:var(--ink4);">${fmtK(deployable)} deployable income</div>
+      </div>
+    </div>
+
+    <!-- Chart + legend layout -->
+    <div style="display:flex;gap:18px;align-items:flex-start;">
+      <!-- SVG Thermometer -->
+      <div style="flex-shrink:0;">
+        <svg width="${W}" height="${BBASE + 50}" viewBox="0 0 ${W} ${BBASE + 50}" style="overflow:visible;">
+          <defs>
+            <!-- Tube glass gradient -->
+            <linearGradient id="tubeGlass" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="rgba(255,255,255,.04)"/>
+              <stop offset="30%"  stop-color="rgba(255,255,255,.01)"/>
+              <stop offset="70%"  stop-color="rgba(255,255,255,.0)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,.06)"/>
+            </linearGradient>
+            <!-- Fixed fill gradient (top-lit) -->
+            <linearGradient id="fixGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#FF6B6B"/>
+              <stop offset="40%"  stop-color="${fixedColor}"/>
+              <stop offset="100%" stop-color="#C94444"/>
+            </linearGradient>
+            <!-- Variable fill gradient -->
+            <linearGradient id="varGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#FFD066"/>
+              <stop offset="40%"  stop-color="${varColor}"/>
+              <stop offset="100%" stop-color="#C88600"/>
+            </linearGradient>
+            <!-- Free space gradient -->
+            <linearGradient id="freeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#4EEEDD"/>
+              <stop offset="40%"  stop-color="${freeColor}"/>
+              <stop offset="100%" stop-color="#1BA89A"/>
+            </linearGradient>
+            <!-- Overflow gradient -->
+            <linearGradient id="overGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#FF6666"/>
+              <stop offset="50%"  stop-color="${overColor}"/>
+              <stop offset="100%" stop-color="#CC0000"/>
+            </linearGradient>
+            <!-- Bulb glow -->
+            <radialGradient id="bulbGlow" cx="50%" cy="40%" r="50%">
+              <stop offset="0%"   stop-color="${overflows?overColor:fixedColor}" stop-opacity=".9"/>
+              <stop offset="100%" stop-color="${overflows?overColor:fixedColor}" stop-opacity=".3"/>
+            </radialGradient>
+            <!-- Clip for tube interior -->
+            <clipPath id="tubeClip">
+              <rect x="${TX+3}" y="${TY}" width="${TW-6}" height="${capH}"/>
+            </clipPath>
+            <!-- Drop shadow filter -->
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+            </filter>
+            <filter id="innerShadow">
+              <feGaussianBlur stdDeviation="2" result="blur"/>
+              <feComposite in2="SourceGraphic" operator="in" result="shadow"/>
+              <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0" in="shadow"/>
+            </filter>
+          </defs>
+
+          <!-- Tick marks (capacity reference lines) -->
+          ${[25,50,75,100].map(pct => {
+            const y = TY + capH - (pct/100) * capH;
+            const isDeployLine = Math.abs(pct/100 - deployable/capacity) < 0.05;
+            return `<line x1="${TX-8}" y1="${y}" x2="${TX}" y2="${y}" stroke="${pct===75?'rgba(255,255,255,.3)':'rgba(255,255,255,.12)'}" stroke-width="${pct===75?1.5:1}"/>
+              <text x="${TX-10}" y="${y+3}" text-anchor="end" font-size="7" fill="rgba(255,255,255,.3)" font-family="monospace">${pct}%</text>`;
+          }).join('')}
+
+          <!-- Deployable income line (the "lid") -->
+          ${(() => {
+            const depY = TY + capH - (deployable/capacity)*capH;
+            if (depY >= TY && depY <= TY+capH) {
+              return `<line x1="${TX-4}" y1="${depY}" x2="${TX+TW+4}" y2="${depY}" stroke="rgba(45,212,191,.8)" stroke-width="1.5" stroke-dasharray="3,2"/>
+                <text x="${TX+TW+7}" y="${depY+3}" font-size="8" fill="rgba(45,212,191,.8)" font-family="monospace">Lid</text>`;
+            }
+            return '';
+          })()}
+
+          <!-- TUBE OUTER SHELL — 3D cylinder effect using rounded rect + side gradient -->
+          <!-- Left wall highlight -->
+          <rect x="${TX}" y="${TY}" width="3" height="${capH}" rx="1"
+            fill="rgba(255,255,255,.08)" filter="url(#glow)"/>
+          <!-- Right wall highlight -->
+          <rect x="${TX+TW-3}" y="${TY}" width="3" height="${capH}" rx="1"
+            fill="rgba(255,255,255,.04)"/>
+          <!-- Tube border -->
+          <rect x="${TX}" y="${TY}" width="${TW}" height="${capH}" rx="6" ry="6"
+            fill="none" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/>
+
+          <!-- TUBE FILL LAYERS (clipped to tube interior) -->
+          <g clip-path="url(#tubeClip)">
+            <!-- Background (empty/used space visual) -->
+            <rect x="${TX+3}" y="${TY}" width="${TW-6}" height="${capH}"
+              fill="rgba(20,20,22,1)"/>
+
+            <!-- Free space (top) — only if not overflowing -->
+            ${!overflows && freePx > 0 ? `<rect x="${TX+3}" y="${TY}" width="${TW-6}" height="${capH - fillPx}"
+              fill="url(#freeGrad)" opacity=".25"/>` : ''}
+
+            <!-- Variable expenses (middle layer) -->
+            ${varPx > 0 ? `<rect x="${TX+3}" y="${TY + capH - fillPx}" width="${TW-6}" height="${varPx}"
+              fill="url(#varGrad)" opacity="${isInFlight&&varProj>0?'.7':'.9'}"/>
+            <!-- Variable projection hatching -->
+            ${isInFlight && varProj > 0 ? (() => {
+              const projPx = (varProj/capacity)*capH;
+              const projY  = TY + capH - fillPx;
+              return `<rect x="${TX+3}" y="${projY}" width="${TW-6}" height="${Math.min(projPx,varPx)}"
+                fill="none" stroke="${varColor}" stroke-width="2" stroke-dasharray="3,3" opacity=".5"/>`;
+            })() : ''}` : ''}
+
+            <!-- Fixed expenses (bottom layer) -->
+            ${fixedPx > 0 ? `<rect x="${TX+3}" y="${TY + capH - fixedPx}" width="${TW-6}" height="${fixedPx}"
+              fill="url(#fixGrad)" opacity="${isInFlight&&fixedProj>0?'.75':'.95'}"/>
+            ${isInFlight && fixedProj > 0 ? (() => {
+              const projPx = (fixedProj/capacity)*capH;
+              return `<rect x="${TX+3}" y="${TY + capH - fixedPx}" width="${TW-6}" height="${Math.min(projPx,fixedPx)}"
+                fill="none" stroke="${fixedColor}" stroke-width="2" stroke-dasharray="2,2" opacity=".5"/>`;
+            })() : ''}` : ''}
+
+            <!-- Shine overlay -->
+            <rect x="${TX+3}" y="${TY}" width="${Math.floor((TW-6)*0.35)}" height="${capH}"
+              fill="url(#tubeGlass)"/>
+          </g>
+
+          <!-- OVERFLOW — liquid spilling over the top -->
+          ${overflows && overflowPx > 0 ? `
+            <!-- Overflow pool spreading out above tube -->
+            <ellipse cx="${TX + TW/2}" cy="${TY - overflowPx/2}" rx="${TW/2 + Math.min(overflowPx*0.8, 20)}" ry="${overflowPx*0.6}"
+              fill="url(#overGrad)" opacity=".85" filter="url(#glow)"/>
+            <!-- Overflow drips on sides -->
+            <path d="M ${TX} ${TY+10} Q ${TX-8} ${TY+overflowPx+15} ${TX-2} ${TY+overflowPx+25}"
+              fill="none" stroke="${overColor}" stroke-width="3" opacity=".7" stroke-linecap="round"/>
+            <path d="M ${TX+TW} ${TY+15} Q ${TX+TW+9} ${TY+overflowPx+18} ${TX+TW+2} ${TY+overflowPx+28}"
+              fill="none" stroke="${overColor}" stroke-width="2.5" opacity=".6" stroke-linecap="round"/>
+            <!-- Overflow amount label -->
+            <text x="${TX + TW/2}" y="${TY - overflowPx - 10}" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="${overColor}">↑ ${fmtK(overflow)}</text>
+          ` : ''}
+
+          <!-- TUBE CAP (top rim) -->
+          <rect x="${TX-2}" y="${TY-4}" width="${TW+4}" height="6" rx="3"
+            fill="rgba(255,255,255,.12)"/>
+          <rect x="${TX-2}" y="${TY-4}" width="${TW+4}" height="2" rx="1"
+            fill="rgba(255,255,255,.2)"/>
+
+          <!-- BULB (bottom) — 3D sphere with glow -->
+          <!-- Bulb outer shadow -->
+          <circle cx="${TX + TW/2}" cy="${BBASE}" r="26"
+            fill="rgba(0,0,0,.5)"/>
+          <!-- Bulb main fill -->
+          <circle cx="${TX + TW/2}" cy="${BBASE}" r="24"
+            fill="url(#bulbGlow)"/>
+          <!-- Bulb specular highlight -->
+          <ellipse cx="${TX + TW/2 - 7}" cy="${BBASE - 8}" rx="6" ry="5"
+            fill="rgba(255,255,255,.25)"/>
+          <!-- Bulb rim -->
+          <circle cx="${TX + TW/2}" cy="${BBASE}" r="24"
+            fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
+          <!-- Tube-to-bulb connector -->
+          <rect x="${TX+8}" y="${BTMY}" width="${TW-16}" height="24"
+            fill="${overflows?overColor:fixedColor}" opacity=".6"/>
+
+          <!-- Amount in bulb -->
+          <text x="${TX + TW/2}" y="${BBASE + 4}" text-anchor="middle"
+            font-size="9" font-weight="700" font-family="monospace" fill="rgba(255,255,255,.9)">${fmtK(fixedTotal)}</text>
+
+          <!-- Bottom label -->
+          <text x="${TX + TW/2}" y="${BBASE + 40}" text-anchor="middle"
+            font-size="9" font-family="var(--font-m)" fill="rgba(255,255,255,.4)">FIXED</text>
+
+        </svg>
+      </div>
+
+      <!-- Legend + metrics -->
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;padding-top:8px;">
+        <!-- Deployable income bar -->
+        <div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;border:1px solid rgba(45,212,191,.2);">
+          <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Post-Savings Income</div>
+          <div style="font-size:22px;font-weight:300;font-family:var(--font-d);color:var(--positive);">${fmtK(deployable)}</div>
+          <div style="font-size:10px;color:var(--ink4);">${fmtK(totalInc)} gross · ${fmtK(autoSaveAmt)} auto-save</div>
+        </div>
+
+        <!-- Fixed expenses -->
+        <div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;border-left:3px solid ${fixedColor};">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Fixed Obligations</div>
+              <div style="font-size:18px;font-weight:300;font-family:var(--font-d);color:${fixedColor};">${fmtK(fixedTotal)}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:16px;font-weight:600;color:${fixedColor};">${pctFix}%</div>
+              <div style="font-size:9px;color:var(--ink4);">of income</div>
+            </div>
+          </div>
+          ${isInFlight&&fixedProj>0?`<div style="margin-top:5px;font-size:10px;color:var(--ink4);">${fmtK(fixedActual)} paid · <span style="color:${fixedColor};">${fmtK(fixedProj)} due</span></div>`:''}
+        </div>
+
+        <!-- Variable expenses -->
+        <div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;border-left:3px solid ${varColor};">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Variable Spending</div>
+              <div style="font-size:18px;font-weight:300;font-family:var(--font-d);color:${varColor};">${fmtK(varTotal)}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:16px;font-weight:600;color:${varColor};">${pctVar}%</div>
+              <div style="font-size:9px;color:var(--ink4);">of income</div>
+            </div>
+          </div>
+          ${isInFlight&&varProj>0?`<div style="margin-top:5px;font-size:10px;color:var(--ink4);">${fmtK(varActual)} spent · <span style="color:${varColor};">${fmtK(varProj)} next ${accrual?.daysRemaining||0}d</span></div>`:''}
+        </div>
+
+        <!-- Free / Overflow -->
+        <div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;border-left:3px solid ${overflows?'var(--negative)':'var(--positive)'};">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">${overflows?'Overspend':'Remaining'}</div>
+              <div style="font-size:18px;font-weight:300;font-family:var(--font-d);color:${overflows?'var(--negative)':'var(--positive)'};">${overflows?fmtK(overflow):fmtK(deployable-totalSpend)}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:16px;font-weight:600;color:${overflows?'var(--negative)':'var(--positive)'};">${overflows?'-':'+'} ${Math.abs(Math.round((deployable-totalSpend)/deployable*100))}%</div>
+              <div style="font-size:9px;color:var(--ink4);">of income</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category drill hint -->
+        <div style="font-size:10px;color:var(--ink4);line-height:1.6;margin-top:2px;">
+          <span style="color:${fixedColor};">■ Fixed</span>: mortgage · car · insurance · utilities · subscriptions<br>
+          <span style="color:${varColor};">■ Variable</span>: dining · groceries · entertainment · shopping<br>
+          <span style="cursor:pointer;color:var(--river);text-decoration:underline;" onclick="showPage('income')">→ Income Statement for detail</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
 
 function renderPulsePL(drillSection) {
   const el    = document.getElementById('pl-out');
@@ -3806,9 +4989,10 @@ function initPulseTips() {
     if (dy >= THRESHOLD) {
       const lbl = indicator && indicator.querySelector('#ptr-label');
       if (lbl) lbl.textContent = 'Syncing…';
-      await syncPull();
+      syncPull(); // intentionally not awaited — reload() handles the completion
+    } else {
+      hideIndicator();
     }
-    hideIndicator();
   }, { passive: true });
 
   // Keyframe for spinner

@@ -190,7 +190,7 @@ main {
   overflow-x: hidden;
   padding: 24px 28px 64px;
   scrollbar-width: thin;
-  scrollbar-color: var(--line2) transparent;
+  scrollbar-color: var(--ink4) var(--lift);
 }
 main::-webkit-scrollbar { width: 5px; }
 main::-webkit-scrollbar-track { background: transparent; }
@@ -974,6 +974,7 @@ select {
   </div>
   <div class="kpi-grid" id="dashKPIs"></div>
   <div id="dashAlerts" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
+  <div id="dashThermo" style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;"></div>
   <div class="chart-grid-2">
     <div class="chart-card">
       <div class="chart-title">Monthly Cash Flow</div>
@@ -1201,6 +1202,7 @@ select {
       <button onclick="isSort.dir=isSort.dir==='desc'?'asc':'desc';document.getElementById('isSortDir').textContent=isSort.dir==='desc'?'↓':'↑';renderIncomeStatement()" style="font-size:12px;padding:5px 10px;background:var(--lift);border:1px solid var(--line2);color:var(--ink);border-radius:4px;cursor:pointer;"><span id="isSortDir">↓</span></button>
     </div>
   </div>
+  <div id="isThermo" style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px;"></div>
   <div id="incomeStatement"></div>
 </div>
 
@@ -2002,36 +2004,427 @@ function renderSettings() {
   appearBody += row('Show Cents', 'Display cents in all dollar amounts', chk('set-show-cents', forgeAppearance.showCents, 'Show cents (e.g. $1,234.56 instead of $1,235)'));
 
   // ── §8 Data & Privacy ──────────────────────────────────────────────────────
-  const ledgerRaw = localStorage.getItem('forge_prod_v1') || localStorage.getItem('ledger_v3');
-  const ledgerData = ledgerRaw ? JSON.parse(ledgerRaw) : null;
-  const txnCount   = ledgerData?.txns?.length || 0;
-  const savedAt    = ledgerData?.savedAt ? new Date(ledgerData.savedAt).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}) : 'unknown';
-  const storageKeys = ['forge_prod_v1','ledger_v3','forge_lean_v1','forge_settings_v2','forge_sync_token','forge_worker_url'];
+  const fileReg  = getFileRegistry();
+  const ledgerRaw= localStorage.getItem('forge_prod_v1') || localStorage.getItem('ledger_v3');
+  const ledgerData= ledgerRaw ? JSON.parse(ledgerRaw) : null;
+  const txnCount  = ledgerData?.txns?.length || 0;
+  const savedAt   = ledgerData?.savedAt ? new Date(ledgerData.savedAt).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}) : '—';
+
+  // File type catalog
+  const FILE_TYPES = [
+    { key:'quicken_csv',    icon:'📊', label:'Quicken Transactions',   desc:'QIF/CSV register export',           ext:'.csv / .qif',   group:'quicken' },
+    { key:'quicken_qif',    icon:'📊', label:'Quicken QIF',            desc:'Quicken Interchange Format',        ext:'.qif',           group:'quicken' },
+    { key:'quicken_qfx',    icon:'📊', label:'Quicken QFX/OFX',        desc:'Bank OFX/QFX feed',                 ext:'.qfx / .ofx',    group:'quicken' },
+    { key:'quicken_networth',icon:'🏦', label:'Net Worth Export',       desc:'Balance Sheet snapshot',            ext:'.csv (NW)',       group:'quicken' },
+    { key:'amazon_orders',  icon:'📦', label:'Amazon Order History',    desc:'itemized purchases + categories',   ext:'.csv',           group:'detail'  },
+    { key:'apple_card',     icon:'🍎', label:'Apple Card',              desc:'Monthly transaction CSV',           ext:'.csv',           group:'detail'  },
+    { key:'home_depot',     icon:'🔨', label:'Home Depot Orders',       desc:'Order history export',              ext:'.csv',           group:'detail'  },
+    { key:'venmo',          icon:'💸', label:'Venmo',                   desc:'Payment history CSV',               ext:'.csv',           group:'detail'  },
+  ];
+
+  const storageKeys = ['forge_prod_v1','ledger_v3','forge_lean_v1','forge_settings_v2','forge_sync_token','forge_file_registry'];
   let storageSize = 0;
   storageKeys.forEach(k => { const v = localStorage.getItem(k); if (v) storageSize += v.length; });
 
-  let dataBody = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
-    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;">
-      <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Transactions</div>
-      <div style="font-size:22px;font-weight:700;color:var(--ink);">${txnCount.toLocaleString()}</div>
-      <div style="font-size:10px;color:var(--ink4);">Last import: ${savedAt}</div>
+  // Derive thru dates from actual data for file types not yet individually tracked
+  const derivedThru = {};
+  if (txns.length) {
+    // All Quicken transactions
+    const qtxns = txns.filter(t => !t._source || t._source === 'quicken');
+    if (qtxns.length) derivedThru['quicken_csv'] = [...qtxns].sort((a,b)=>b.date.localeCompare(a.date))[0]?.date;
+    // Amazon
+    const atxns = txns.filter(t => t._source === 'amazon' && t.itemDetail);
+    if (atxns.length) derivedThru['amazon_orders'] = [...atxns].sort((a,b)=>b.date.localeCompare(a.date))[0]?.date;
+    // Apple Card
+    const actxns = txns.filter(t => t._source === 'apple_card' && t.itemDetail);
+    if (actxns.length) derivedThru['apple_card'] = [...actxns].sort((a,b)=>b.date.localeCompare(a.date))[0]?.date;
+    // Home Depot
+    const hdtxns = txns.filter(t => t._source === 'home_depot' && t.itemDetail);
+    if (hdtxns.length) derivedThru['home_depot'] = [...hdtxns].sort((a,b)=>b.date.localeCompare(a.date))[0]?.date;
+    // Venmo
+    const vtxns = txns.filter(t => t._source === 'venmo');
+    if (vtxns.length) derivedThru['venmo'] = [...vtxns].sort((a,b)=>b.date.localeCompare(a.date))[0]?.date;
+    // NW from overrides
+    const nwDates = Object.values(netWorthOverrides||{}).map(v=>v.date).filter(Boolean).sort();
+    if (nwDates.length) derivedThru['quicken_networth'] = nwDates[nwDates.length-1];
+  }
+
+  const daysSince = (isoDate) => {
+    if (!isoDate) return null;
+    return Math.floor((Date.now() - new Date(isoDate)) / 864e5);
+  };
+  const freshnessColor = (days) => {
+    if (days === null) return 'var(--ink4)';
+    if (days <= 7)  return 'var(--positive)';
+    if (days <= 30) return 'var(--gold)';
+    if (days <= 90) return 'var(--warn)';
+    return 'var(--negative)';
+  };
+  const freshnessLabel = (days) => {
+    if (days === null) return 'Not imported';
+    if (days === 0)  return 'Today';
+    if (days === 1)  return 'Yesterday';
+    if (days <= 7)  return days + 'd ago';
+    if (days <= 30) return Math.floor(days/7) + 'w ago';
+    if (days <= 365) return Math.floor(days/30) + 'mo ago';
+    return Math.floor(days/365) + 'yr ago';
+  };
+
+  let dataBody = '';
+
+  // ── Summary tiles ─────────────────────────────────────────────────────────
+  dataBody += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">
+    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;">
+      <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Transactions</div>
+      <div style="font-size:24px;font-weight:300;font-family:var(--font-d);color:var(--ink);">${txnCount.toLocaleString()}</div>
+      <div style="font-size:10px;color:var(--ink4);">Last sync: ${savedAt}</div>
     </div>
-    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;">
-      <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Storage Used</div>
-      <div style="font-size:22px;font-weight:700;color:var(--ink);">${(storageSize/1024).toFixed(0)} KB</div>
+    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;">
+      <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Storage</div>
+      <div style="font-size:24px;font-weight:300;font-family:var(--font-d);color:var(--ink);">${(storageSize/1024).toFixed(0)} KB</div>
       <div style="font-size:10px;color:var(--ink4);">browser localStorage</div>
     </div>
-    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;">
-      <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Sync Token</div>
-      <div style="font-size:14px;font-weight:600;color:${localStorage.getItem('forge_sync_token')?'var(--positive)':'var(--ink4)'};">${localStorage.getItem('forge_sync_token')?'✓ Configured':'Not set'}</div>
-      <div style="font-size:10px;color:var(--ink4);">cloud sync status</div>
+    <div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;">
+      <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Sync Token</div>
+      <div style="font-size:13px;font-weight:600;color:${localStorage.getItem('forge_sync_token')?'var(--positive)':'var(--ink4)'};">${localStorage.getItem('forge_sync_token')?'✓ Configured':'Not set'}</div>
+      <div style="font-size:10px;color:var(--ink4);">cloud sync</div>
     </div>
   </div>`;
+
+  // ── File Dashboard ────────────────────────────────────────────────────────
+  dataBody += `<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;">
+    <div style="padding:11px 16px;background:var(--float);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);">📂 Imported File Status</div>
+      <div style="font-size:10px;color:var(--ink4);font-family:var(--font-m);">Thru dates from most recent import of each type</div>
+    </div>`;
+
+  // Quicken group
+  dataBody += `<div style="padding:8px 16px 4px;font-size:9px;font-family:var(--font-m);letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);">Quicken Exports</div>`;
+  FILE_TYPES.filter(f=>f.group==='quicken').forEach(ft => {
+    const reg     = fileReg[ft.key];
+    const thru    = reg?.thruDate || derivedThru[ft.key] || null;
+    const days    = daysSince(thru);
+    const color   = freshnessColor(days);
+    const label   = freshnessLabel(days);
+    const cnt     = reg?.count || (ft.key==='quicken_csv'&&txns.length>0 ? txns.length : null);
+
+    dataBody += `<div style="display:grid;grid-template-columns:32px 1fr auto auto;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.03);">
+      <div style="font-size:20px;text-align:center;">${ft.icon}</div>
+      <div>
+        <div style="font-size:12px;font-weight:500;color:var(--ink);">${ft.label}</div>
+        <div style="font-size:10px;color:var(--ink4);">${ft.desc} · <span style="font-family:var(--font-m);">${ft.ext}</span></div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;font-weight:600;font-family:var(--font-m);color:${color};">${thru || '—'}</div>
+        <div style="font-size:10px;color:${color};margin-top:1px;">${label}</div>
+      </div>
+      <div style="width:10px;height:10px;border-radius:50%;background:${color};box-shadow:0 0 ${days===null?'0':'6px'} ${color};flex-shrink:0;"></div>
+    </div>`;
+  });
+
+  // Detail group
+  dataBody += `<div style="padding:12px 16px 4px;font-size:9px;font-family:var(--font-m);letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);border-top:1px solid var(--line);">Merchant Detail Files</div>`;
+  FILE_TYPES.filter(f=>f.group==='detail').forEach(ft => {
+    const reg     = fileReg[ft.key];
+    const thru    = reg?.thruDate || derivedThru[ft.key] || null;
+    const days    = daysSince(thru);
+    const color   = freshnessColor(days);
+    const label   = freshnessLabel(days);
+
+    dataBody += `<div style="display:grid;grid-template-columns:32px 1fr auto auto;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.03);">
+      <div style="font-size:20px;text-align:center;">${ft.icon}</div>
+      <div>
+        <div style="font-size:12px;font-weight:500;color:${thru?'var(--ink)':'var(--ink4)'};">${ft.label}</div>
+        <div style="font-size:10px;color:var(--ink4);">${ft.desc} · <span style="font-family:var(--font-m);">${ft.ext}</span></div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;font-weight:600;font-family:var(--font-m);color:${color};">${thru || '—'}</div>
+        <div style="font-size:10px;color:${color};margin-top:1px;">${label}</div>
+      </div>
+      <div style="width:10px;height:10px;border-radius:50%;background:${color};box-shadow:0 0 ${days===null?'0':'6px'} ${color};flex-shrink:0;"></div>
+    </div>`;
+  });
+
+  dataBody += `</div>`;
+
+
+  // ── Masked Transaction Detector ───────────────────────────────────────────
+  // Scan txns for high-volume payees where we don't have itemDetail
+  const VENDOR_CATALOG = [
+    {
+      // Amazon — detect AMZN, AMAZON in payee, no itemDetail
+      key:       'amazon_orders',
+      match:     t => /amaz/i.test(t.payee||'') && !t.itemDetail,
+      label:     'Amazon Order History',
+      icon:      '📦',
+      color:     '#FF9900',
+      desc:      'Your Amazon charges show as lump-sum AMZN.COM entries. The Order History CSV itemizes every product, category, and ASIN.',
+      howTo:     'amazon.com/order-history → Filter by year → Download order history (.csv)',
+      fileType:  'Amazon Order History CSV',
+      priority:  'high',
+      learnMore: 'https://www.amazon.com/gp/b2b/reports',
+    },
+    {
+      key:       'apple_card',
+      match:     t => /apple\s*(card|cash|pay|store)|itunes|app store/i.test(t.payee||'') && !t.itemDetail,
+      label:     'Apple Card Monthly Transactions',
+      icon:      '🍎',
+      color:     '#c084fc',
+      desc:      'Apple Card charges appear as generic APPLE payments. The monthly CSV shows merchant name, category, and amount for every charge.',
+      howTo:     'Wallet app → Apple Card → ··· → Monthly Statements → Download CSV',
+      fileType:  'Apple Card Monthly CSV',
+      priority:  'high',
+      learnMore: null,
+    },
+    {
+      key:       'home_depot',
+      match:     t => /home depot/i.test(t.payee||'') && !t.itemDetail,
+      label:     'Home Depot Order History',
+      icon:      '🔨',
+      color:     '#FF6600',
+      desc:      'Home Depot transactions show total purchase amounts only. The order history export breaks out every SKU, product name, and quantity.',
+      howTo:     'homedepot.com → Account → Order History → Export CSV',
+      fileType:  'Home Depot Order CSV',
+      priority:  'medium',
+      learnMore: null,
+    },
+    {
+      key:       'lowes',
+      match:     t => /lowe'?s/i.test(t.payee||''),
+      label:     "Lowe's Purchase History",
+      icon:      '🏗️',
+      color:     '#004990',
+      desc:      "Lowe's charges are lumped by transaction. The purchase history export shows individual items, SKUs, and project categories.",
+      howTo:     "lowes.com → My Account → Order & Purchase History → Export",
+      fileType:  "Lowe's Purchase History CSV",
+      priority:  'medium',
+      learnMore: null,
+    },
+    {
+      key:       'venmo',
+      match:     t => /venmo/i.test(t.payee||'') && !t.itemDetail,
+      label:     'Venmo Transaction History',
+      icon:      '💸',
+      color:     '#3D95CE',
+      desc:      "Venmo appears as a single entry without the memo, sender/recipient name, or purpose. The CSV export reveals who paid/received and the note on each transfer.",
+      howTo:     'venmo.com → Settings → Statements → Download CSV (select date range)',
+      fileType:  'Venmo Statement CSV',
+      priority:  'medium',
+      learnMore: null,
+    },
+    {
+      key:       'target',
+      match:     t => /target\s*(corp|stores?)?/i.test(t.payee||'') && !/target bank/i.test(t.payee||''),
+      label:     'Target Circle Order History',
+      icon:      '🎯',
+      color:     '#CC0000',
+      desc:      'Target transactions show store total only. Target Circle members can export a purchase history CSV that shows individual items.',
+      howTo:     'target.com/circle → Purchases tab → Export purchase history',
+      fileType:  'Target Circle Purchase CSV',
+      priority:  'low',
+      learnMore: null,
+    },
+    {
+      key:       'walmart',
+      match:     t => /walmart|wal-mart/i.test(t.payee||''),
+      label:     'Walmart Purchase History',
+      icon:      '🛒',
+      color:     '#0071CE',
+      desc:      'Walmart+ and walmart.com orders can be exported with itemized product details. In-store purchases require a receipt scan.',
+      howTo:     'walmart.com → Account → Purchase History → Export (online orders only)',
+      fileType:  'Walmart Order History CSV',
+      priority:  'low',
+      learnMore: null,
+    },
+    {
+      key:       'costco',
+      match:     t => /costco/i.test(t.payee||''),
+      label:     'Costco Purchase History',
+      icon:      '🏪',
+      color:     '#005DAA',
+      desc:      'Costco warehouse charges are lump-sum only. Costco.com orders and warehouse receipts are available via your account.',
+      howTo:     'costco.com → Orders & Returns → Download order history',
+      fileType:  'Costco Order History CSV',
+      priority:  'low',
+      learnMore: null,
+    },
+    {
+      key:       'chewy',
+      match:     t => /chewy/i.test(t.payee||''),
+      label:     'Chewy Order History',
+      icon:      '🐾',
+      color:     '#00AADF',
+      desc:      'Chewy auto-ship and one-time orders are grouped. The order history shows each product, quantity, and price.',
+      howTo:     'chewy.com → My Account → Order History → Export',
+      fileType:  'Chewy Order History CSV',
+      priority:  'low',
+      learnMore: null,
+    },
+    {
+      key:       'paypal',
+      match:     t => /paypal/i.test(t.payee||'') && !t.itemDetail,
+      label:     'PayPal Transaction History',
+      icon:      '🔵',
+      color:     '#003087',
+      desc:      'PayPal transactions hide the actual merchant. The activity export reveals who you paid, the item description, and whether it was goods/services or friends & family.',
+      howTo:     'paypal.com → Activity → Statements → Download · Select date range · CSV',
+      fileType:  'PayPal Activity CSV',
+      priority:  'medium',
+      learnMore: null,
+    },
+    {
+      key:       'doordash_detail',
+      match:     t => /doordash/i.test(t.payee||'') && !t.itemDetail,
+      label:     'DoorDash Order History',
+      icon:      '🍕',
+      color:     '#FF3008',
+      desc:      'DoorDash charges show delivery total only. The order history shows the restaurant, items ordered, and fees vs. food cost.',
+      howTo:     'doordash.com → Account → Order History → Request data export (GDPR)',
+      fileType:  'DoorDash Order History',
+      priority:  'low',
+      learnMore: null,
+    },
+    {
+      key:       'instacart_detail',
+      match:     t => /instacart/i.test(t.payee||'') && !t.itemDetail,
+      label:     'Instacart Order History',
+      icon:      '🥦',
+      color:     '#43B02A',
+      desc:      'Instacart deliveries show as a lump sum. The order history CSV shows each grocery item purchased, store, and unit price.',
+      howTo:     'instacart.com → Account → Order History → Request order data export',
+      fileType:  'Instacart Order Export',
+      priority:  'low',
+      learnMore: null,
+    },
+  ];
+
+  // ── Detect which vendors are active and not yet fully imported ─────────────
+  const alreadyImported = new Set(Object.keys(fileReg));
+  const spendable_all   = spendable(txns);
+
+  const vendorFindings = [];
+  VENDOR_CATALOG.forEach(v => {
+    // Skip if this vendor has a file already imported
+    if (alreadyImported.has(v.key) && fileReg[v.key].count > 0) return;
+    // Also skip Amazon if amazon_orders already imported
+    if (v.key === 'amazon_orders' && alreadyImported.has('amazon_orders')) return;
+
+    const matched = spendable_all.filter(t => v.match(t) && t.amount < 0);
+    if (!matched.length) return;
+
+    const total    = matched.reduce((s,t)=>s+Math.abs(t.amount),0);
+    const count    = matched.length;
+    const dateRange = (() => {
+      const dates = matched.map(t=>t.date).sort();
+      return dates[0].slice(0,7) + ' → ' + dates[dates.length-1].slice(0,7);
+    })();
+    const months   = new Set(matched.map(t=>t.date.slice(0,7))).size;
+    const avgMo    = total / Math.max(months, 1);
+
+    vendorFindings.push({ ...v, matched, total, count, dateRange, months, avgMo });
+  });
+
+  // Sort: high priority first, then by total spend descending
+  const priorityOrder = { high: 0, medium: 1, low: 2 };
+  vendorFindings.sort((a,b) => priorityOrder[a.priority] - priorityOrder[b.priority] || b.total - a.total);
+
+  // ── Render recommendations ─────────────────────────────────────────────────
+  if (vendorFindings.length) {
+    dataBody += `<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;">
+      <div style="padding:11px 16px;background:var(--float);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--ink2);">🔍 Unmask These Transactions</div>
+          <div style="font-size:10px;color:var(--ink4);margin-top:1px;">${vendorFindings.length} vendor${vendorFindings.length>1?'s':''} detected with masked charges — importing detail files reveals individual purchases</div>
+        </div>
+        <div style="font-size:22px;font-weight:300;font-family:var(--font-d);color:var(--gold);">${fmt(vendorFindings.reduce((s,v)=>s+v.total,0))}</div>
+      </div>`;
+
+    // High-priority section header
+    const highPri = vendorFindings.filter(v=>v.priority==='high');
+    const medPri  = vendorFindings.filter(v=>v.priority==='medium');
+    const lowPri  = vendorFindings.filter(v=>v.priority==='low');
+
+    const renderVendorRow = (v, isLast) => {
+      const urgency  = v.priority === 'high' ? 'var(--negative)' : v.priority === 'medium' ? 'var(--gold)' : 'var(--ink4)';
+      const urgLabel = v.priority === 'high' ? 'HIGH IMPACT' : v.priority === 'medium' ? 'RECOMMENDED' : 'OPTIONAL';
+      const borderStyle = isLast ? '' : 'border-bottom:1px solid rgba(255,255,255,.04);';
+      return `<div style="padding:14px 16px;${borderStyle}">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <!-- Vendor icon + spend -->
+          <div style="flex-shrink:0;text-align:center;width:52px;">
+            <div style="font-size:24px;margin-bottom:4px;">${v.icon}</div>
+            <div style="font-size:9px;font-family:var(--font-m);color:var(--ink4);">${fmtK(v.total)}</div>
+          </div>
+          <!-- Details -->
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap;">
+              <div style="font-size:12.5px;font-weight:600;color:var(--ink);">${v.label}</div>
+              <span style="font-size:8px;padding:1px 6px;border-radius:8px;background:rgba(0,0,0,.3);border:1px solid ${urgency};color:${urgency};font-family:var(--font-m);letter-spacing:.08em;">${urgLabel}</span>
+            </div>
+            <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;margin-bottom:8px;">${v.desc}</div>
+            <!-- Stats row -->
+            <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px;">
+              <div style="font-size:10px;font-family:var(--font-m);color:var(--ink4);">
+                <span style="color:var(--ink2);font-weight:600;">${v.count}</span> transactions
+              </div>
+              <div style="font-size:10px;font-family:var(--font-m);color:var(--ink4);">
+                <span style="color:var(--ink2);font-weight:600;">${v.months}</span> months
+              </div>
+              <div style="font-size:10px;font-family:var(--font-m);color:var(--ink4);">
+                Avg <span style="color:var(--gold);font-weight:600;">${fmtK(v.avgMo)}</span>/mo
+              </div>
+              <div style="font-size:10px;font-family:var(--font-m);color:var(--ink4);">${v.dateRange}</div>
+            </div>
+            <!-- How-to instruction -->
+            <div style="background:rgba(255,255,255,.03);border:1px solid var(--line2);border-left:3px solid ${v.color};border-radius:var(--r-sm);padding:8px 12px;">
+              <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">How to export → <span style="color:var(--ink3);">${v.fileType}</span></div>
+              <div style="font-size:11px;color:var(--ink2);line-height:1.6;">${v.howTo}</div>
+            </div>
+          </div>
+          <!-- Spend bar (visual weight of this vendor) -->
+          <div style="flex-shrink:0;width:6px;align-self:stretch;border-radius:3px;background:linear-gradient(to bottom,${v.color}44,${v.color}22);position:relative;overflow:visible;">
+            <div style="position:absolute;bottom:0;left:0;right:0;border-radius:3px;background:${v.color};height:${Math.min(100,Math.round(v.total/Math.max(...vendorFindings.map(x=>x.total))*100))}%;"></div>
+          </div>
+        </div>
+      </div>`;
+    };
+
+    if (highPri.length) {
+      dataBody += `<div style="padding:6px 16px 3px;font-size:9px;font-family:var(--font-m);letter-spacing:.16em;text-transform:uppercase;color:var(--negative);border-bottom:1px solid var(--line);">⚡ High Impact · Import These First</div>`;
+      highPri.forEach((v,i) => { dataBody += renderVendorRow(v, i===highPri.length-1&&!medPri.length&&!lowPri.length); });
+    }
+    if (medPri.length) {
+      dataBody += `<div style="padding:6px 16px 3px;font-size:9px;font-family:var(--font-m);letter-spacing:.16em;text-transform:uppercase;color:var(--gold);border-bottom:1px solid var(--line);${highPri.length?'border-top:1px solid var(--line);':''}">Recommended</div>`;
+      medPri.forEach((v,i) => { dataBody += renderVendorRow(v, i===medPri.length-1&&!lowPri.length); });
+    }
+    if (lowPri.length) {
+      const lowShown = lowPri.slice(0,3);
+      const lowHidden= lowPri.slice(3);
+      dataBody += `<div style="padding:6px 16px 3px;font-size:9px;font-family:var(--font-m);letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);border-bottom:1px solid var(--line);${(highPri.length||medPri.length)?'border-top:1px solid var(--line);':''}">Optional</div>`;
+      lowShown.forEach((v,i) => { dataBody += renderVendorRow(v, i===lowShown.length-1&&!lowHidden.length); });
+      if (lowHidden.length) {
+        dataBody += `<div style="padding:10px 16px;font-size:11px;color:var(--ink4);text-align:center;cursor:pointer;" onclick="this.style.display='none';this.nextElementSibling.style.display='block';">↓ ${lowHidden.length} more optional vendors detected</div>`;
+        dataBody += `<div style="display:none;">`;
+        lowHidden.forEach((v,i) => { dataBody += renderVendorRow(v, i===lowHidden.length-1); });
+        dataBody += `</div>`;
+      }
+    }
+
+    dataBody += `</div>`;
+  } else if (txns.length > 0) {
+    dataBody += `<div style="background:rgba(45,212,191,.04);border:1px solid rgba(45,212,191,.14);border-radius:var(--r-md);padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--positive);">
+      ✓ No additional detail files detected — all recognized masked vendors have been imported.
+    </div>`;
+  }
+
+
+    // ── Action buttons ────────────────────────────────────────────────────────
   dataBody += `<div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <button onclick="exportForge()" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink2);padding:7px 16px;border-radius:6px;font-size:12px;cursor:pointer;">↓ Export Data as JSON</button>
-    <button onclick="if(confirm('Clear sync token? You will be prompted to re-enter it on next sync.'))localStorage.removeItem('forge_sync_token');renderSettings()" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink4);padding:7px 16px;border-radius:6px;font-size:12px;cursor:pointer;">Reset Sync Token</button>
-    <button onclick="if(confirm('Clear ALL Forge data from this browser? This cannot be undone.')){['forge_prod_v1','ledger_v3','forge_lean_v1','forge_settings_v2'].forEach(k=>localStorage.removeItem(k));location.reload();}" style="background:transparent;border:1px solid rgba(248,113,113,.35);color:var(--negative);padding:7px 16px;border-radius:6px;font-size:12px;cursor:pointer;">✕ Clear All Data</button>
+    <button onclick="exportForge()" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink2);padding:7px 16px;border-radius:var(--r-sm);font-size:12px;cursor:pointer;font-family:var(--font-ui);">↓ Export JSON</button>
+    <button onclick="if(confirm('Clear sync token?'))localStorage.removeItem('forge_sync_token');renderSettings()" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink4);padding:7px 16px;border-radius:var(--r-sm);font-size:12px;cursor:pointer;font-family:var(--font-ui);">Reset Sync Token</button>
+    <button onclick="if(confirm('Clear ALL Forge data? Cannot be undone.')){['forge_prod_v1','ledger_v3','forge_lean_v1','forge_settings_v2','forge_file_registry'].forEach(k=>localStorage.removeItem(k));location.reload();}" style="background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--negative);padding:7px 16px;border-radius:var(--r-sm);font-size:12px;cursor:pointer;font-family:var(--font-ui);">✕ Clear All Data</button>
   </div>`;
+
 
   // ── Assemble ──────────────────────────────────────────────────────────────
   // ── §9 Spending Alerts ────────────────────────────────────────────────────
@@ -2188,6 +2581,63 @@ function renderSettings() {
     nwBody += `<div style="font-size:11px;color:var(--ink4);">No snapshots yet. Snapshots are captured automatically each month when you push data to the cloud.</div>`;
   }
 
+
+  // ── §13 Forge Hierarchy Editor ─────────────────────────────────────────────
+  let hierBody = `<div style="font-size:12px;color:var(--ink4);margin-bottom:14px;line-height:1.6;">
+    The Forge Hierarchy maps every Quicken category and payee keyword to one of 26 expense buckets.
+    Edit bucket keyword lists to improve how transactions are classified. Changes apply immediately to all views.
+    <span style="color:var(--gold);">Use commas to separate keywords — partial matches are used.</span>
+  </div>`;
+
+  // Get current overrides from localStorage
+  let hierOverrides = {};
+  try { hierOverrides = JSON.parse(localStorage.getItem('forge_hierarchy_overrides') || '{}'); } catch(e) {}
+
+  // Build the editor UI for each bucket
+  const kwLookup = {};
+  if (typeof KW_MAP !== 'undefined') {
+    KW_MAP.forEach(([bk, kws]) => { kwLookup[bk] = kws; });
+  }
+
+  const editableBuckets = [
+    'paycheck','other_inc','mortgage','car','education','insurance','childcare',
+    'electric','gas_util','water','internet','cell',
+    'groceries','restaurants','gas_car','transit','healthcare',
+    'entertainment','household','personal','clothing','travel','subscriptions','gifts',
+  ];
+
+  hierBody += '<div id="hierEditorWrap" style="display:flex;flex-direction:column;gap:8px;">';
+  editableBuckets.forEach(bk => {
+    const bMeta = (typeof BUCKET_META !== 'undefined' && BUCKET_META[bk]) || { label: bk, icon: '·' };
+    const baseKws = kwLookup[bk] || [];
+    const overrideKws = hierOverrides[bk];
+    const currentKws = overrideKws || baseKws;
+    const kwStr = currentKws.join(', ');
+    const isOverridden = !!overrideKws;
+
+    hierBody += `<div style="background:var(--lift);border:1px solid ${isOverridden?'rgba(245,168,0,.3)':'var(--line)'};border-radius:var(--r-md);overflow:hidden;">
+      <div style="padding:9px 14px;background:var(--float);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);">
+        <span style="font-size:16px;">${bMeta.icon}</span>
+        <div style="flex:1;font-size:12px;font-weight:600;color:var(--ink2);">${bMeta.label}</div>
+        ${isOverridden ? '<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(245,168,0,.1);color:var(--gold);border:1px solid rgba(245,168,0,.2);font-family:var(--font-m);">CUSTOM</span>' : ''}
+        ${isOverridden ? `<button onclick="revertHierBucket('${bk}')" style="font-size:10px;padding:3px 8px;border-radius:4px;background:transparent;border:1px solid var(--line2);color:var(--ink4);cursor:pointer;font-family:var(--font-ui);">↺ Revert</button>` : ''}
+      </div>
+      <div style="padding:10px 14px;">
+        <textarea id="hier-ta-${bk}" rows="2" style="width:100%;background:var(--float);border:1px solid var(--line2);border-radius:var(--r-sm);padding:7px 10px;font-size:11px;font-family:var(--font-m);color:var(--ink);resize:vertical;box-sizing:border-box;line-height:1.5;">${kwStr}</textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+          <div style="font-size:10px;color:var(--ink4);">${currentKws.length} keywords · ${isOverridden?'Custom override active':'Using default'}</div>
+          <button onclick="saveHierBucket('${bk}')" style="font-size:10px;padding:4px 10px;border-radius:4px;background:var(--gold);color:var(--void);border:none;cursor:pointer;font-weight:700;font-family:var(--font-ui);">Save</button>
+        </div>
+      </div>
+    </div>`;
+  });
+  hierBody += '</div>';
+  hierBody += `<div style="display:flex;gap:8px;margin-top:12px;">
+    <button onclick="revertAllHier()" style="background:transparent;border:1px solid var(--line2);color:var(--ink3);padding:7px 14px;border-radius:var(--r-sm);font-size:12px;cursor:pointer;font-family:var(--font-ui);">↺ Revert All to Default</button>
+    <div style="font-size:11px;color:var(--ink4);padding:7px 0;">${Object.keys(hierOverrides).length} bucket(s) customized</div>
+  </div>`;
+
+
   el.innerHTML = [
     section('family',    '👨‍👩‍👧‍👦', 'Family Profile',          'Names · ages · savings target · Pittsburgh',         familyBody),
     section('goals',     '🎯',      'Savings Goals',            'Track progress toward named financial goals',          goalsBody),
@@ -2201,7 +2651,8 @@ function renderSettings() {
     section('splits',    '🔀',      'Split Transaction Rules',  'Override bucket assignment for split payees',           splitBody),
     section('appear',    '🎨',      'Forge Appearance',         'Density · defaults · display preferences',             appearBody),
     section('data',      '💾',      'Data &amp; Privacy',       'Storage usage · export · sync · clear',                dataBody),
-  ].join('');
+    section('hierarchy',  '🗂️',     'Forge Hierarchy Editor',   'Customize bucket keyword lists · save or revert changes',   hierBody),
+  ].join('') + '<div style="height:40px;"></div>';
 }
 
 // ── Settings helper functions ─────────────────────────────────────────────────
@@ -2310,6 +2761,390 @@ function exportForge() {
   toast('\u2713 Exported forge-export-' + new Date().toISOString().slice(0,10) + '.json');
 }
 
+
+
+// ── Hierarchy editor helpers ───────────────────────────────────────────────
+function saveHierBucket(bk) {
+  const ta = document.getElementById('hier-ta-' + bk);
+  if (!ta) return;
+  const kws = ta.value.split(',').map(s=>s.trim()).filter(Boolean);
+  let overrides = {};
+  try { overrides = JSON.parse(localStorage.getItem('forge_hierarchy_overrides') || '{}'); } catch(e) {}
+  overrides[bk] = kws;
+  localStorage.setItem('forge_hierarchy_overrides', JSON.stringify(overrides));
+  // Apply override to KW_MAP
+  const idx = KW_MAP.findIndex(([k])=>k===bk);
+  if (idx >= 0) KW_MAP[idx][1] = kws;
+  else KW_MAP.push([bk, kws]);
+  toast('✓ ' + bk + ' keywords saved');
+  renderSettings();
+}
+
+function revertHierBucket(bk) {
+  if (!confirm('Revert ' + bk + ' to default keywords?')) return;
+  let overrides = {};
+  try { overrides = JSON.parse(localStorage.getItem('forge_hierarchy_overrides') || '{}'); } catch(e) {}
+  delete overrides[bk];
+  localStorage.setItem('forge_hierarchy_overrides', JSON.stringify(overrides));
+  toast('✓ ' + bk + ' reverted to default');
+  renderSettings();
+}
+
+function revertAllHier() {
+  if (!confirm('Revert ALL bucket keywords to default? This removes all customizations.')) return;
+  localStorage.removeItem('forge_hierarchy_overrides');
+  toast('✓ All buckets reverted to default');
+  renderSettings();
+}
+
+function applyHierarchyOverrides() {
+  try {
+    const overrides = JSON.parse(localStorage.getItem('forge_hierarchy_overrides') || '{}');
+    Object.entries(overrides).forEach(([bk, kws]) => {
+      const idx = KW_MAP.findIndex(([k])=>k===bk);
+      if (idx >= 0) KW_MAP[idx][1] = kws;
+      else KW_MAP.push([bk, kws]);
+    });
+  } catch(e) {}
+}
+
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// THERMOMETER — Fixed vs Variable expense pressure gauge
+// Shows how fixed obligations consume post-savings take-home income
+// ════════════════════════════════════════════════════════════════════════════
+function renderThermometer(containerId, selMonth) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  const sp = operatingSpendable(txns);
+  if (!sp.length) { el.innerHTML = ''; return; }
+
+  // ── Get data ───────────────────────────────────────────────────────────────
+  const accrual = selMonth ? buildAccrualEngine(selMonth, sp) : null;
+  const isInFlight = !!accrual;
+
+  // Filter to selected month or trailing 30 days
+  const now = new Date();
+  const selOrDefault = selMonth || now.toISOString().slice(0,7);
+  const monthTxns = sp.filter(t => t.date.startsWith(selOrDefault));
+
+  const totalInc   = monthTxns.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+  const autoSaveAmt= monthTxns.filter(t=>classifyTxn(t)==='auto_save').reduce((s,t)=>s+Math.abs(t.amount),0);
+
+  // ── Normalized income for thermometer ──────────────────────────────────────
+  // Use the same normalizeIncome() from buildAccrualEngine to strip
+  // extra paychecks and one-time bonuses from the baseline
+  let _normInc = null;
+  if (accrual && accrual.normalizeIncome) {
+    try { _normInc = accrual.normalizeIncome(); } catch(e) {}
+  }
+  const deployableRaw  = Math.max(0, totalInc - autoSaveAmt);
+  const deployable     = _normInc && _normInc.normalizedIncome > 0
+    ? Math.max(0, _normInc.normalizedIncome - (_normInc.curAutoSave || autoSaveAmt))
+    : deployableRaw;
+  const normAnnotation = _normInc && (_normInc.isThreePayMonth || _normInc.oneTimeTotal > 0)
+    ? (_normInc.isThreePayMonth ? '3-pay mo normalized' : '') +
+      (_normInc.oneTimeTotal > 0 ? (_normInc.isThreePayMonth?' · ':'')+fmtK(_normInc.oneTimeTotal)+' excl.' : '')
+    : '';
+
+  // Bucket classification
+  const FIXED_BKS = ['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','cell','subscriptions'];
+  const VAR_BKS   = ['restaurants','groceries','gas_car','transit','healthcare','entertainment','household','personal','clothing','travel','gifts','other'];
+
+  const fixedActual = monthTxns.filter(t=>FIXED_BKS.includes(classifyTxn(t))&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+  const varActual   = monthTxns.filter(t=>VAR_BKS.includes(classifyTxn(t))&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+
+  // Accrual projections for in-flight months
+  let fixedProj = 0, varProj = 0;
+  if (isInFlight && accrual) {
+    FIXED_BKS.forEach(bk => { fixedProj += accrual.accrueAmount(bk) || 0; });
+    VAR_BKS.forEach(bk   => { varProj   += accrual.accrueAmount(bk) || 0; });
+  }
+
+  const fixedTotal  = fixedActual + fixedProj;
+  const varTotal    = varActual + varProj;
+  const totalSpend  = fixedTotal + varTotal;
+  const overflow    = Math.max(0, totalSpend - deployable);
+  const capacity    = Math.max(deployable, totalSpend) * 1.15; // 15% headroom above max
+
+  // Percentages (of capacity)
+  const capH     = 280; // px height of the tube body
+  const fixedPx  = Math.min(capH, (fixedTotal / capacity) * capH);
+  const varPx    = Math.min(capH - fixedPx, (varTotal / capacity) * capH);
+  const freePx   = Math.max(0, (deployable / capacity) * capH);
+  const overflowPx = Math.min(60, (overflow / capacity) * capH);
+  const fillPx   = fixedPx + varPx;
+  const overflows = overflow > 0;
+  const savePct  = deployable > 0 ? ((deployable - totalSpend) / deployable * 100) : 0;
+
+  // Colors
+  const fixedColor = '#F87171';   // --negative (red)
+  const varColor   = '#F5A800';   // --gold
+  const freeColor  = '#2DD4BF';   // --positive (teal)
+  const overColor  = '#FF4040';   // bright danger red
+
+  const W = 200; // SVG width
+  const TW = 54; // tube inner width
+  const TX = (W - TW) / 2; // tube x
+  const TY = 40;  // tube top y (not counting overflow)
+  const BTMY = TY + capH + 20; // tube bottom y
+  const BBASE = BTMY + 20; // bulb center y
+
+  // Build horizontal legend entries
+  const pctFix = deployable > 0 ? (fixedTotal/deployable*100).toFixed(0) : 0;
+  const pctVar = deployable > 0 ? (varTotal/deployable*100).toFixed(0) : 0;
+  const pctFree= deployable > 0 ? Math.max(0,(deployable-totalSpend)/deployable*100).toFixed(0) : 0;
+
+  const fmtK = n => Math.abs(n) >= 1000 ? '$' + (n/1000).toFixed(1) + 'K' : '$' + Math.round(n);
+
+  el.innerHTML = `<div style="padding:16px 18px 12px;">
+    <!-- Title row -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--ink2);">Income Pressure Gauge</div>
+        <div style="font-size:10px;color:var(--ink4);font-family:var(--font-m);">${selOrDefault} · ${isInFlight?'actuals + projected':'closed month'}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;font-weight:600;font-family:var(--font-m);color:${overflows?'var(--negative)':'var(--positive)'};">${overflows?'⚠ Over by '+fmtK(overflow):'✓ '+fmtK(deployable-totalSpend)+' free'}</div>
+        <div style="font-size:10px;color:var(--ink4);">${fmtK(deployable)} deployable income</div>
+      </div>
+    </div>
+
+    <!-- Chart + legend layout -->
+    <div style="display:flex;gap:18px;align-items:flex-start;">
+      <!-- SVG Thermometer -->
+      <div style="flex-shrink:0;">
+        <svg width="${W}" height="${BBASE + 50}" viewBox="0 0 ${W} ${BBASE + 50}" style="overflow:visible;">
+          <defs>
+            <!-- Tube glass gradient -->
+            <linearGradient id="tubeGlass" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="rgba(255,255,255,.04)"/>
+              <stop offset="30%"  stop-color="rgba(255,255,255,.01)"/>
+              <stop offset="70%"  stop-color="rgba(255,255,255,.0)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,.06)"/>
+            </linearGradient>
+            <!-- Fixed fill gradient (top-lit) -->
+            <linearGradient id="fixGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#FF6B6B"/>
+              <stop offset="40%"  stop-color="${fixedColor}"/>
+              <stop offset="100%" stop-color="#C94444"/>
+            </linearGradient>
+            <!-- Variable fill gradient -->
+            <linearGradient id="varGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#FFD066"/>
+              <stop offset="40%"  stop-color="${varColor}"/>
+              <stop offset="100%" stop-color="#C88600"/>
+            </linearGradient>
+            <!-- Free space gradient -->
+            <linearGradient id="freeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#4EEEDD"/>
+              <stop offset="40%"  stop-color="${freeColor}"/>
+              <stop offset="100%" stop-color="#1BA89A"/>
+            </linearGradient>
+            <!-- Overflow gradient -->
+            <linearGradient id="overGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#FF6666"/>
+              <stop offset="50%"  stop-color="${overColor}"/>
+              <stop offset="100%" stop-color="#CC0000"/>
+            </linearGradient>
+            <!-- Bulb glow -->
+            <radialGradient id="bulbGlow" cx="50%" cy="40%" r="50%">
+              <stop offset="0%"   stop-color="${overflows?overColor:fixedColor}" stop-opacity=".9"/>
+              <stop offset="100%" stop-color="${overflows?overColor:fixedColor}" stop-opacity=".3"/>
+            </radialGradient>
+            <!-- Clip for tube interior -->
+            <clipPath id="tubeClip">
+              <rect x="${TX+3}" y="${TY}" width="${TW-6}" height="${capH}"/>
+            </clipPath>
+            <!-- Drop shadow filter -->
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+            </filter>
+            <filter id="innerShadow">
+              <feGaussianBlur stdDeviation="2" result="blur"/>
+              <feComposite in2="SourceGraphic" operator="in" result="shadow"/>
+              <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0" in="shadow"/>
+            </filter>
+          </defs>
+
+          <!-- Tick marks (capacity reference lines) -->
+          ${[25,50,75,100].map(pct => {
+            const y = TY + capH - (pct/100) * capH;
+            const isDeployLine = Math.abs(pct/100 - deployable/capacity) < 0.05;
+            return `<line x1="${TX-8}" y1="${y}" x2="${TX}" y2="${y}" stroke="${pct===75?'rgba(255,255,255,.3)':'rgba(255,255,255,.12)'}" stroke-width="${pct===75?1.5:1}"/>
+              <text x="${TX-10}" y="${y+3}" text-anchor="end" font-size="7" fill="rgba(255,255,255,.3)" font-family="monospace">${pct}%</text>`;
+          }).join('')}
+
+          <!-- Deployable income line (the "lid") -->
+          ${(() => {
+            const depY = TY + capH - (deployable/capacity)*capH;
+            if (depY >= TY && depY <= TY+capH) {
+              return `<line x1="${TX-4}" y1="${depY}" x2="${TX+TW+4}" y2="${depY}" stroke="rgba(45,212,191,.8)" stroke-width="1.5" stroke-dasharray="3,2"/>
+                <text x="${TX+TW+7}" y="${depY+3}" font-size="8" fill="rgba(45,212,191,.8)" font-family="monospace">Lid</text>`;
+            }
+            return '';
+          })()}
+
+          <!-- TUBE OUTER SHELL — 3D cylinder effect using rounded rect + side gradient -->
+          <!-- Left wall highlight -->
+          <rect x="${TX}" y="${TY}" width="3" height="${capH}" rx="1"
+            fill="rgba(255,255,255,.08)" filter="url(#glow)"/>
+          <!-- Right wall highlight -->
+          <rect x="${TX+TW-3}" y="${TY}" width="3" height="${capH}" rx="1"
+            fill="rgba(255,255,255,.04)"/>
+          <!-- Tube border -->
+          <rect x="${TX}" y="${TY}" width="${TW}" height="${capH}" rx="6" ry="6"
+            fill="none" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/>
+
+          <!-- TUBE FILL LAYERS (clipped to tube interior) -->
+          <g clip-path="url(#tubeClip)">
+            <!-- Background (empty/used space visual) -->
+            <rect x="${TX+3}" y="${TY}" width="${TW-6}" height="${capH}"
+              fill="rgba(20,20,22,1)"/>
+
+            <!-- Free space (top) — only if not overflowing -->
+            ${!overflows && freePx > 0 ? `<rect x="${TX+3}" y="${TY}" width="${TW-6}" height="${capH - fillPx}"
+              fill="url(#freeGrad)" opacity=".25"/>` : ''}
+
+            <!-- Variable expenses (middle layer) -->
+            ${varPx > 0 ? `<rect x="${TX+3}" y="${TY + capH - fillPx}" width="${TW-6}" height="${varPx}"
+              fill="url(#varGrad)" opacity="${isInFlight&&varProj>0?'.7':'.9'}"/>
+            <!-- Variable projection hatching -->
+            ${isInFlight && varProj > 0 ? (() => {
+              const projPx = (varProj/capacity)*capH;
+              const projY  = TY + capH - fillPx;
+              return `<rect x="${TX+3}" y="${projY}" width="${TW-6}" height="${Math.min(projPx,varPx)}"
+                fill="none" stroke="${varColor}" stroke-width="2" stroke-dasharray="3,3" opacity=".5"/>`;
+            })() : ''}` : ''}
+
+            <!-- Fixed expenses (bottom layer) -->
+            ${fixedPx > 0 ? `<rect x="${TX+3}" y="${TY + capH - fixedPx}" width="${TW-6}" height="${fixedPx}"
+              fill="url(#fixGrad)" opacity="${isInFlight&&fixedProj>0?'.75':'.95'}"/>
+            ${isInFlight && fixedProj > 0 ? (() => {
+              const projPx = (fixedProj/capacity)*capH;
+              return `<rect x="${TX+3}" y="${TY + capH - fixedPx}" width="${TW-6}" height="${Math.min(projPx,fixedPx)}"
+                fill="none" stroke="${fixedColor}" stroke-width="2" stroke-dasharray="2,2" opacity=".5"/>`;
+            })() : ''}` : ''}
+
+            <!-- Shine overlay -->
+            <rect x="${TX+3}" y="${TY}" width="${Math.floor((TW-6)*0.35)}" height="${capH}"
+              fill="url(#tubeGlass)"/>
+          </g>
+
+          <!-- OVERFLOW — liquid spilling over the top -->
+          ${overflows && overflowPx > 0 ? `
+            <!-- Overflow pool spreading out above tube -->
+            <ellipse cx="${TX + TW/2}" cy="${TY - overflowPx/2}" rx="${TW/2 + Math.min(overflowPx*0.8, 20)}" ry="${overflowPx*0.6}"
+              fill="url(#overGrad)" opacity=".85" filter="url(#glow)"/>
+            <!-- Overflow drips on sides -->
+            <path d="M ${TX} ${TY+10} Q ${TX-8} ${TY+overflowPx+15} ${TX-2} ${TY+overflowPx+25}"
+              fill="none" stroke="${overColor}" stroke-width="3" opacity=".7" stroke-linecap="round"/>
+            <path d="M ${TX+TW} ${TY+15} Q ${TX+TW+9} ${TY+overflowPx+18} ${TX+TW+2} ${TY+overflowPx+28}"
+              fill="none" stroke="${overColor}" stroke-width="2.5" opacity=".6" stroke-linecap="round"/>
+            <!-- Overflow amount label -->
+            <text x="${TX + TW/2}" y="${TY - overflowPx - 10}" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="${overColor}">↑ ${fmtK(overflow)}</text>
+          ` : ''}
+
+          <!-- TUBE CAP (top rim) -->
+          <rect x="${TX-2}" y="${TY-4}" width="${TW+4}" height="6" rx="3"
+            fill="rgba(255,255,255,.12)"/>
+          <rect x="${TX-2}" y="${TY-4}" width="${TW+4}" height="2" rx="1"
+            fill="rgba(255,255,255,.2)"/>
+
+          <!-- BULB (bottom) — 3D sphere with glow -->
+          <!-- Bulb outer shadow -->
+          <circle cx="${TX + TW/2}" cy="${BBASE}" r="26"
+            fill="rgba(0,0,0,.5)"/>
+          <!-- Bulb main fill -->
+          <circle cx="${TX + TW/2}" cy="${BBASE}" r="24"
+            fill="url(#bulbGlow)"/>
+          <!-- Bulb specular highlight -->
+          <ellipse cx="${TX + TW/2 - 7}" cy="${BBASE - 8}" rx="6" ry="5"
+            fill="rgba(255,255,255,.25)"/>
+          <!-- Bulb rim -->
+          <circle cx="${TX + TW/2}" cy="${BBASE}" r="24"
+            fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
+          <!-- Tube-to-bulb connector -->
+          <rect x="${TX+8}" y="${BTMY}" width="${TW-16}" height="24"
+            fill="${overflows?overColor:fixedColor}" opacity=".6"/>
+
+          <!-- Amount in bulb -->
+          <text x="${TX + TW/2}" y="${BBASE + 4}" text-anchor="middle"
+            font-size="9" font-weight="700" font-family="monospace" fill="rgba(255,255,255,.9)">${fmtK(fixedTotal)}</text>
+
+          <!-- Bottom label -->
+          <text x="${TX + TW/2}" y="${BBASE + 40}" text-anchor="middle"
+            font-size="9" font-family="var(--font-m)" fill="rgba(255,255,255,.4)">FIXED</text>
+
+        </svg>
+      </div>
+
+      <!-- Legend + metrics -->
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;padding-top:8px;">
+        <!-- Deployable income bar -->
+        <div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;border:1px solid rgba(45,212,191,.2);">
+          <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Post-Savings Income</div>
+          <div style="font-size:22px;font-weight:300;font-family:var(--font-d);color:var(--positive);">${fmtK(deployable)}${normAnnotation?'<span style="font-size:11px;color:var(--ink4);margin-left:5px;font-family:var(--font-ui);">normalized</span>':''}</div>
+          <div style="font-size:10px;color:var(--ink4);">${fmtK(totalInc)} gross · ${fmtK(autoSaveAmt)} auto-save${normAnnotation?' · <span style="color:var(--warn);font-family:var(--font-m);">⚡ '+normAnnotation+'</span>':''}</div>
+        </div>
+
+        <!-- Fixed expenses -->
+        <div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;border-left:3px solid ${fixedColor};">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Fixed Obligations</div>
+              <div style="font-size:18px;font-weight:300;font-family:var(--font-d);color:${fixedColor};">${fmtK(fixedTotal)}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:16px;font-weight:600;color:${fixedColor};">${pctFix}%</div>
+              <div style="font-size:9px;color:var(--ink4);">of income</div>
+            </div>
+          </div>
+          ${isInFlight&&fixedProj>0?`<div style="margin-top:5px;font-size:10px;color:var(--ink4);">${fmtK(fixedActual)} paid · <span style="color:${fixedColor};">${fmtK(fixedProj)} due</span></div>`:''}
+        </div>
+
+        <!-- Variable expenses -->
+        <div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;border-left:3px solid ${varColor};">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Variable Spending</div>
+              <div style="font-size:18px;font-weight:300;font-family:var(--font-d);color:${varColor};">${fmtK(varTotal)}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:16px;font-weight:600;color:${varColor};">${pctVar}%</div>
+              <div style="font-size:9px;color:var(--ink4);">of income</div>
+            </div>
+          </div>
+          ${isInFlight&&varProj>0?`<div style="margin-top:5px;font-size:10px;color:var(--ink4);">${fmtK(varActual)} spent · <span style="color:${varColor};">${fmtK(varProj)} next ${accrual?.daysRemaining||0}d</span></div>`:''}
+        </div>
+
+        <!-- Free / Overflow -->
+        <div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;border-left:3px solid ${overflows?'var(--negative)':'var(--positive)'};">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">${overflows?'Overspend':'Remaining'}</div>
+              <div style="font-size:18px;font-weight:300;font-family:var(--font-d);color:${overflows?'var(--negative)':'var(--positive)'};">${overflows?fmtK(overflow):fmtK(deployable-totalSpend)}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:16px;font-weight:600;color:${overflows?'var(--negative)':'var(--positive)'};">${overflows?'-':'+'} ${Math.abs(Math.round((deployable-totalSpend)/deployable*100))}%</div>
+              <div style="font-size:9px;color:var(--ink4);">of income</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category drill hint -->
+        <div style="font-size:10px;color:var(--ink4);line-height:1.6;margin-top:2px;">
+          <span style="color:${fixedColor};">■ Fixed</span>: mortgage · car · insurance · utilities · subscriptions<br>
+          <span style="color:${varColor};">■ Variable</span>: dining · groceries · entertainment · shopping<br>
+          <span style="cursor:pointer;color:var(--river);text-decoration:underline;" onclick="showPage('income')">→ Income Statement for detail</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
 
 async function syncPush() {
   if (!WORKER_URL) { alert('Sync not configured. Set WORKER_URL in index.html.'); return; }
@@ -3066,19 +3901,19 @@ function renderFinancials() {
     </tr>`;
 
   const kpiCard = (label, value, sub, color='var(--gold)') => `
-    <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;">
-      <div style="font-family:var(--font-m);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">${label}</div>
-      <div style="font-size:26px;font-weight:700;color:${color};font-family:var(--font-m);letter-spacing:-.02em;">${value}</div>
+    <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;">
+      <div style="font-family:var(--font-m);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">${label}</div>
+      <div style="font-size:26px;font-weight:300;color:${color};font-family:var(--font-d);letter-spacing:-.02em;">${value}</div>
       <div style="font-size:11px;color:var(--ink4);margin-top:4px;">${sub}</div>
     </div>`;
 
   el.innerHTML = `
-    <div style="max-width:960px;">
+    <div>
 
       <!-- Header banner -->
       <div style="background:linear-gradient(135deg,#0F0E09,var(--void));border:1px solid var(--line);border-radius:var(--r-lg);padding:24px 28px;margin-bottom:24px;">
         <div style="font-family:var(--font-m);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);opacity:.7;margin-bottom:6px;">Luka Family Office</div>
-        <div style="font-family:var(--font-d);font-size:28px;font-weight:600;color:var(--ink);margin-bottom:4px;">Financial Statements</div>
+        <div style="font-family:var(--font-d);font-size:28px;font-weight:400;color:var(--ink);margin-bottom:4px;">Financial Statements</div>
         <div style="font-size:12px;color:var(--ink4);">${periodLabel} &nbsp;·&nbsp; Compared to ${priorLabel} &nbsp;·&nbsp; ${periodTxns.length.toLocaleString()} transactions</div>
       </div>
 
@@ -3195,8 +4030,13 @@ function renderDashboard() {
     <div class="kpi-sub">${k.sub}</div>
   </div>`).join('');
 
-  // Spending alert chips — show only if alerts are configured and triggered
+  // Thermometer chart
   const curMo = new Date().toISOString().slice(0,7);
+  if (typeof renderThermometer === 'function') {
+    renderThermometer('dashThermo', curMo);
+  }
+
+  // Spending alert chips — show only if alerts are configured and triggered
   const alerts = typeof getAlertedBuckets === 'function' ? getAlertedBuckets(curMo) : [];
   const alertEl = document.getElementById('dashAlerts');
   if (alertEl) {
@@ -4358,7 +5198,8 @@ async function processFiles() {
           if (!nwHistory[snapDate]) nwHistory[snapDate] = {};
           Object.entries(nwData).forEach(([k,v]) => { nwHistory[snapDate][k] = v.value; });
           saveNetWorthOverrides();
-          toast('✓ ' + f.name + ' — Balance snapshot: ' + nwCount + ' account values loaded (as of ' + snapDate + ')');
+          recordFileImport('quicken_networth', f.name, snapDate || new Date().toISOString().slice(0,10), nwCount);
+        toast('✓ ' + f.name + ' — Balance snapshot: ' + nwCount + ' account values loaded (as of ' + snapDate + ')');
           nwSuccessCount++;
           continue;  // only skip transaction parsing when NW parse actually succeeded
         }
@@ -4380,7 +5221,18 @@ async function processFiles() {
         const spndbl = parsed.length - xfers;
         const accts  = [...new Set(parsed.map(t => t.account))];
         parsed.forEach(t => newTxns.push(t));
-        toast('✓ ' + f.name + ' — ' + parsed.length + ' rows (' + spndbl + ' spendable, ' + xfers + ' transfers, ' + accts.length + ' accounts)');
+        // Detect file type for registry
+      let _ftype = 'quicken_csv';
+      const _fl = firstLine || (text.slice(0,200).toLowerCase());
+      if      (_fl.includes('clearing date') && _fl.includes('merchant'))     _ftype = 'apple_card';
+      else if (_fl.includes('order id') && _fl.includes('asin'))              _ftype = 'amazon_orders';
+      else if (_fl.includes('order number') && _fl.includes('items ordered')) _ftype = 'home_depot';
+      else if (_fl.includes('funding source') && _fl.includes('destination')) _ftype = 'venmo';
+      else if (ext === 'qif')                                                  _ftype = 'quicken_qif';
+      else if (ext === 'qfx' || ext === 'ofx')                               _ftype = 'quicken_qfx';
+      const _thru = parsed.length ? [...parsed].sort((a,b)=>b.date.localeCompare(a.date))[0]?.date || '' : '';
+      recordFileImport(_ftype, f.name, _thru, parsed.length);
+      toast('✓ ' + f.name + ' — ' + parsed.length + ' rows (' + spndbl + ' spendable, ' + xfers + ' transfers, ' + accts.length + ' accounts)');
       }
     } catch(e) {
       console.error('[Forge] parse error', f.name, e);
@@ -4895,11 +5747,24 @@ function saveData() {
     localStorage.setItem(key, JSON.stringify({
       txns, accounts, acctMeta, isDemoMode, surplusTargets, savedAt: Date.now()
     }));
-    // Settings are stored separately so they survive a data wipe
     localStorage.setItem(SETTINGS_KEY, JSON.stringify({
       ccSettings, budgetTargets, nonRecurringIds: [...nonRecurringIds]
     }));
   } catch(e) { toast('⚠ Storage full — try clearing old data'); }
+}
+
+function recordFileImport(type, filename, thruDate, count) {
+  try {
+    const reg = JSON.parse(localStorage.getItem('forge_file_registry') || '{}');
+    if (!reg[type] || thruDate > (reg[type].thruDate || '')) {
+      reg[type] = { type, filename, thruDate, count, importedAt: new Date().toISOString() };
+    }
+    localStorage.setItem('forge_file_registry', JSON.stringify(reg));
+  } catch(e) {}
+}
+
+function getFileRegistry() {
+  try { return JSON.parse(localStorage.getItem('forge_file_registry') || '{}'); } catch(e) { return {}; }
 }
 
 function loadData(preferDemo) {
@@ -5338,40 +6203,193 @@ const QUICKEN_CAT_MAP = {
 
 // Keyword matching (fallback when Quicken category doesn't match above)
 const KW_MAP = [
-  // paycheck income
-  ['paycheck',     ['direct deposit','payroll','employer','salary','wages','adp','gusto','paychex']],
-  ['other_inc',    ['interest','dividend','refund','reimbursement','rental','freelance','venmo','paypal','zelle']],
-  // savings
-  ['auto_save',    ['savings account','investment account','fidelity','vanguard','schwab','401k','ira','roth','hsa','529','college fund']],
-  // fixed
-  ['mortgage',     ['mortgage','rent ','hoa','association fee']],
-  ['car',          ['car payment','auto loan','gm financial','ally auto','ford credit','toyota financial','honda financial','auto insurance','geico','progressive','state farm auto']],
-  ['education',    ['tuition','student loan','sallie mae','navient','pitt ','cmu ','carnegie']],
-  ['insurance',    ['highmark','aetna','cigna','anthem','bcbs','upmc insurance','health plan','life insurance','disability ins']],
-  ['childcare',    ['daycare','childcare','babysit','nanny','preschool','after school','camp ']],
-  // utilities
-  ['electric',     ['duquesne','ppl electric','dominion light','con edison','pepco']],
-  ['gas_util',     ['peoples gas','equitable gas','national fuel','columbia gas','piedmont natural']],
-  ['water',        ['pwsa','water authority','municipal water','aqua pa']],
-  ['internet',     ['comcast','xfinity','spectrum','cox cable','verizon fios','at&t internet','directv','dish network']],
-  ['cell',         ['verizon wireless','at&t wireless','t-mobile','sprint','metro pcs','cricket wireless','boost mobile']],
-  // food
-  ['groceries',    ['giant eagle','whole foods','trader joe','aldi','costco','kroger','safeway','wegmans','market district','fresh market','sprouts','food lion']],
-  ['restaurants',  ['restaurant','doordash','grubhub','ubereats','seamless','chipotle','mcdonald','starbucks','panera','subway','chick-fil','taco bell','pizza','sushi','primanti','condado','noodlehead']],
-  // transport
-  ['gas_car',      ['shell ','bp ','gulf ','exxon','mobil ','sunoco','speedway','wawa','sheetz','marathon gas']],
-  ['transit',      ['uber ','lyft ','ezpass','parking ','port authority','amtrak','greyhound','airport ']],
-  // health
-  ['healthcare',   ['cvs ','walgreens','rite aid','pharmacy','upmc ','hospital','clinic','dental','orthodont','vision','optometrist','doctor ']],
-  // discretionary
-  ['entertainment',['movie','cinema','amc ','regal ','concert','ticketmaster','stubhub','pnc park','ppg arena','bowling','golf ','museum','zoo ','aquarium']],
-  ['household',    ['amazon','home depot','lowes ','target ','walmart','ikea','wayfair','bed bath','ace hardware','menards','container store']],
-  ['personal',     ['salon','barber','hair ','nail ','spa ','massage','sephora','ulta','planet fitness',"gold's gym",'anytime fitness','ymca']],
-  ['clothing',     ['nordstrom','macy','gap ','old navy','h&m','zara','tj maxx','ross ','marshalls','nike ','adidas ','lululemon','under armour']],
-  ['travel',       ['airbnb','vrbo','marriott','hilton','hyatt','expedia','booking.com','southwest air','united air','delta air','american air','frontier','spirit air','cruise','resort ']],
-  ['subscriptions',['netflix','hulu','disney+','disney plus','spotify','apple music','amazon prime','youtube premium','hbo','paramount+','peacock','apple icloud']],
-  ['gifts',        ['gift ','hallmark','1-800-flowers','donation','charity','church ','tithe','gofundme','npo ']],
+  // ── Income ─────────────────────────────────────────────────────────────────
+  ['paycheck',  ['direct deposit','payroll','employer payroll','salary','wages','adp ','gusto','paychex','ceridian','workday payroll',
+                 'highmark benefit','employer direct','hr direct','payroll deposit','compensation','w-2','biweekly pay']],
+  ['other_inc', ['interest income','interest earned','dividend','capital gain','realized gain','investment income',
+                 'rental income','airbnb host','vrbo host','freelance','consulting fee','contractor pay','1099',
+                 'venmo from','paypal from','zelle from','cashapp from','square payment received','reimbursement',
+                 'insurance reimburs','tax refund','irs treas','pa dept revenue','state refund','google play balance',
+                 'apple card cash','credit card reward','cashback reward']],
+
+  // ── Savings Transfers ───────────────────────────────────────────────────────
+  ['auto_save', ['savings account transfer','investment account','fidelity','vanguard schwab',
+                 '401k contribution','ira contribution','roth ira','hsa contribution','hsa deposit',
+                 '529 plan','college fund','brokerage transfer','retirement contribution','empower retirement',
+                 'principal financial','merrill lynch transfer']],
+
+  // ── Mortgage & Housing ──────────────────────────────────────────────────────
+  ['mortgage',  ['mortgage payment','pennymac','quicken loans','rocket mortgage','mr. cooper','loancare','newrez',
+                 'flagstar','freedom mortgage','homepoint','us bank home','chase mortgage','wells fargo mortgage',
+                 'hoa fee','homeowner assoc','property tax','home insurance','hazard insurance','pmi ',
+                 'rent payment','zillow rent','apartments.com','renters insurance']],
+
+  // ── Auto ────────────────────────────────────────────────────────────────────
+  ['car',       ['car payment','auto loan payment','gm financial','ally auto','ford motor credit','toyota financial',
+                 'honda financial','hyundai motor','kia motors','nissan motor','chrysler capital','capital one auto',
+                 'car insurance','auto insurance','geico ','progressive ins','state farm auto','allstate auto',
+                 'usaa auto','nationwide auto','liberty mutual auto','erie insurance auto',
+                 'vehicle registration','dmv ','emissions test','inspection sticker',
+                 'car repair','auto service','jiffy lube','firestone','pep boys','midas ','goodyear tire',
+                 'brake check','napa auto','advance auto','oreilly auto']],
+
+  // ── Education ───────────────────────────────────────────────────────────────
+  ['education', ['tuition payment','university','community college','student loan','sallie mae','navient','nelnet',
+                 'great lakes edu','mohela','edfinancial','fedloan','commonbond','earnest student',
+                 'pitt ','pittsburgh univ','cmu ','carnegie mellon','duquesne univ','chatham college',
+                 'school tuition','private school','k-12 tuition','montessori',
+                 'online course','udemy','coursera','skillshare','masterclass','linkedin learning',
+                 'books textbook','school supply','college board','sat fee','ap exam']],
+
+  // ── Insurance (Health/Life) ─────────────────────────────────────────────────
+  ['insurance', ['health premium','health insurance premium','highmark ','aetna ','cigna ','anthem ','bcbs ',
+                 'upmc health plan','independence blue','oscar health','united health','humana health',
+                 'life insurance','whole life','term life','northwestern mutual','new york life','mass mutual',
+                 'disability insurance','aflac ','guardian life','protective life',
+                 'vision insurance','dental premium','delta dental','metlife dental',
+                 'umbrella policy','renters insurance','pet insurance']],
+
+  // ── Childcare & Kids ────────────────────────────────────────────────────────
+  ['childcare', ['daycare ','child care','day care center','bright horizons','kindercare','learning care group',
+                 'babysitter','nanny pay','au pair','preschool ','montessori school',
+                 'after school program','ymca after school','boys & girls club',
+                 'summer camp','sports camp','arts camp','camp registration',
+                 'youth sports','little league','soccer registration','swim lessons','gymnastics','dance class',
+                 'music lesson','tutoring ','kaplan ','sylvan learning','kumon ',
+                 'school lunch','school trip','school fundraiser']],
+
+  // ── Utilities ───────────────────────────────────────────────────────────────
+  ['electric',  ['duquesne light','ppl electric','dominion energy','con edison electric','pepco ','pse&g ',
+                 'pacific gas','southern california edison','xcel energy','evergy','entergy','eversource',
+                 'national grid electric','american electric power','duke energy','georgia power','electric bill']],
+  ['gas_util',  ['peoples gas','equitable gas','national fuel gas','columbia gas','piedmont natural',
+                 'atmos energy','centerpoint energy','nicor gas','laclede gas','southwest gas','spire energy',
+                 'heating oil','propane delivery','oil company','gas bill heating']],
+  ['water',     ['pwsa ','water authority','municipal water','aqua pa','american water','cal water',
+                 'york water','middlesex water','seiu water','water & sewer','water services','water bill']],
+  ['internet',  ['comcast ','xfinity ','spectrum ','cox cable','verizon fios','at&t internet',
+                 'directv ','dish network','century link','frontier comm','mediacom','rcn cable',
+                 'consolidated comm','optimum online','wow internet','cable tv','internet service',
+                 'streaming bundle','youtube tv','sling tv','fubo tv','philo ']],
+  ['cell',      ['verizon wireless','att wireless','t-mobile ','sprint ','metro pcs','cricket wireless',
+                 'boost mobile','mint mobile','consumer cellular','visible wireless','us cellular','tracfone',
+                 'google fi','apple one','cell phone bill','mobile phone']],
+
+  // ── Groceries ───────────────────────────────────────────────────────────────
+  ['groceries', ['giant eagle','whole foods','trader joe','aldi ','costco ','kroger ','safeway ',
+                 'wegmans ','market district','fresh market','sprouts','food lion','harris teeter',
+                 'publix ','meijer ','stop & shop','giant food','shoprite ','weis markets',
+                 'hyvee ','brookshire','food 4 less','winco foods','stater bros',
+                 'walmart grocery','target grocery','dollar tree food','aldi market',
+                 'instacart ','shipt ','amazon fresh','farmers market','butcher box']],
+
+  // ── Restaurants & Dining ────────────────────────────────────────────────────
+  ['restaurants',['doordash ','grubhub ','ubereats ','seamless ','postmates ','caviar app','delivery.com',
+                  'chipotle ','mcdonald','burger king',"wendy's",'taco bell','chick-fil-a','popeyes',
+                  'starbucks ','dunkin ','tim hortons','peets coffee','caribou coffee',
+                  'panera ','subway ','jersey mike','wawa food','sheetz food',
+                  'primanti ','condado ','noodlehead','barley house','federal galley','acorn','apteka',
+                  'restaurant ','dining ','pizz','sushi ','ramen ','thai ','indian rest','mexican rest',
+                  'chinese rest','bbq ','steakhouse','bar & grill','tavern ','brewery food']],
+
+  // ── Vehicle Fuel ─────────────────────────────────────────────────────────────
+  ['gas_car',   ['shell ','bp ','gulf oil','exxon ','mobil ','sunoco ','speedway ','marathon gas',
+                 'wawa gas','sheetz gas','circle k gas',"casey's gas",'pilot flying',"love's travel",
+                 'kwik trip','racetrac ','thorntons gas','getgo ','quik stop','ev charging',
+                 'chargepoint','electrify america','tesla supercharger','blink charging','evgo ']],
+
+  // ── Transit & Parking ────────────────────────────────────────────────────────
+  ['transit',   ['uber ','lyft ','waymo ','via rideshare','ezpass ','ipass ','pike pass','fastrak',
+                 'sunpass ','pikepass','parking ','parkway ','parkmobile','spothero ','reef parking',
+                 'port authority transit','mta ','bart ','wmata ','cta transit','mbta ',
+                 'amtrak ','greyhound ','megabus ','flixbus ','peter pan bus',
+                 'airport parking','airport shuttle']],
+
+  // ── Healthcare ───────────────────────────────────────────────────────────────
+  ['healthcare',['cvs pharmacy','walgreens ','rite aid','duane reade','hyvee pharmacy','publix pharmacy',
+                 'prescription fill','rx pickup',
+                 'upmc ','allegheny health','ahn ','cedars sinai','mayo clinic','cleveland clinic',
+                 'hospital ','medical center','urgent care','patient first','concentra ',
+                 'doctor ','physicians ','md office','healthcare billing','medical bill',
+                 'dental ','orthodont ','braces payment','oral surgery',
+                 'vision center','lenscrafters','americas best','walmart vision',
+                 'physical therapy','chiropract','occupational therapy']],
+
+  // ── Entertainment ────────────────────────────────────────────────────────────
+  ['entertainment',['movie theater','amc ','regal ','cinemark ','alamo drafthouse','imax ',
+                    'concert ticket','ticketmaster ','stubhub ','seatgeek ','vivid seats','axs tickets',
+                    'pnc park ','ppg paints arena','acrisure ','heinz field','petco park',
+                    'bowling ','topgolf ','pinstripes ','dave & buster',
+                    'museum ','carnegie museum',"children's museum",'zoo admission','aquarium ',
+                    'escape room','trampoline park','go-kart','mini golf','putt-putt',
+                    'sporting event','hockey game','baseball game','football game',
+                    'steam purchase','xbox game','playstation','nintendo eshop',
+                    'spotify premium','apple music','youtube premium music']],
+
+  // ── Household & Shopping ─────────────────────────────────────────────────────
+  ['household', ['amazon purchase','amazon.com','amazon marketplace','home depot ','lowes ','menards ',
+                 'ace hardware ','true value','do it best hardware',
+                 'target ','walmart ','kmart ','dollar general','family dollar','five below',
+                 'ikea ','wayfair ','overstock ','article furniture','west elm',
+                 'bed bath beyond','crate & barrel','pottery barn','williams sonoma',
+                 'container store','the home depot','harbor freight',
+                 'cleaning service','merry maids','molly maid','jan-pro',
+                 'landscaping ','lawn care','trugreen ','scotts lawn',
+                 'pest control','orkin ','terminix ',
+                 'home repair','plumber ','electrician ','hvac service','furnace repair',
+                 'instacart household',"sam's club general"]],
+
+  // ── Personal Care ────────────────────────────────────────────────────────────
+  ['personal',  ['hair salon','barber shop','great clips','supercuts','sport clips','fantastic sams',
+                 'nail salon','nail spa','beauty salon','sephora ','ulta beauty','bath & body',
+                 'spa ','massage envy','hand and stone','elements massage',
+                 'planet fitness','la fitness','anytime fitness',"gold's gym",
+                 '24 hour fitness','crunch fitness','orangetheory','f45 training',
+                 'ymca membership','life time fitness','equinox gym',
+                 'classpass ','peloton ','beachbody',
+                 'dry cleaning','laundromat ','alterations ',
+                 'dentist hygiene','eye exam','contacts order']],
+
+  // ── Clothing ────────────────────────────────────────────────────────────────
+  ['clothing',  ['nordstrom ',"macy's ",'jcpenney ','saks fifth','neiman marcus','bloomingdale',
+                 'gap ','old navy','banana republic','j.crew ','ann taylor','loft ',
+                 'h&m ','zara ','uniqlo ','forever 21','express cloth',
+                 'tj maxx ','marshalls ','ross stores','burlington coat',
+                 'nike ','adidas ','under armour','lululemon ','athleta ','fabletics ',
+                 'foot locker ','finish line','new balance','brooks running',
+                 'amazon clothing','zappos ','dsw shoes','shoe carnival',
+                 'kids clothing',"carter's ",'osh kosh',"children's place",'gap kids']],
+
+  // ── Travel ──────────────────────────────────────────────────────────────────
+  ['travel',    ['airbnb ','vrbo ','booking.com','hotels.com','expedia hotel','priceline hotel',
+                 'marriott ','hilton ','hyatt ','ihg hotel','wyndham ','best western',
+                 'southwest air','united airlines','delta air','american airlines',
+                 'jetblue ','frontier air','spirit air','alaska air','lufthansa ','british airways',
+                 'kayak flights','google flights','seat purchase','baggage fee',
+                 'cruise ','carnival cruise','royal caribbean','norwegian cruise',
+                 'resort ','vacation package','travel insurance','global entry',
+                 'enterprise rental','hertz ','avis ','budget rental','national car']],
+
+  // ── Subscriptions ────────────────────────────────────────────────────────────
+  ['subscriptions',['netflix ','hulu ','disney+ ','disney plus','max streaming','hbo max',
+                    'paramount+','peacock ','apple tv+','amazon prime video','tubi ',
+                    'spotify ','apple music sub','pandora ','tidal music','deezer ',
+                    'youtube premium','youtube music','audible ','kindle unlimited',
+                    'icloud storage','google one','dropbox ','box.com ',
+                    'microsoft 365','office 365','adobe creative','figma ','notion ',
+                    'nytimes subscription','washington post sub','wsj subscription',
+                    'apple one sub','google play sub','xbox game pass','playstation plus',
+                    'duolingo plus','calm app','headspace ']],
+
+  // ── Gifts & Giving ───────────────────────────────────────────────────────────
+  ['gifts',     ['gift card purchase','gift wrap','hallmark ','1-800-flowers','ftd flowers',
+                 'teleflora ','proflowers','amazon gift','apple gift card',
+                 'charitable donation','charity donation','nonprofit donation','gofundme ',
+                 'united way','red cross','salvation army','habitat humanity',
+                 'church offering','tithe ','church donation','religious offering',
+                 'school donation','pto donation','booster club']],
 ];
+
 
 function classifyTxn(t) {
   const cat  = (t.category || '').toLowerCase().trim();
@@ -5905,6 +6923,7 @@ function buildAccrualEngine(selMonth, sp) {
   const daysElapsed   = Math.min(today.getDate(), daysInMonth);
   const daysRemaining = daysInMonth - daysElapsed;
 
+  // ── Bucket classification sets ─────────────────────────────────────────────
   const FIXED_BUCKETS        = new Set(['mortgage','car','insurance','education','childcare']);
   const UTILITY_BUCKETS      = new Set(['electric','gas_util','water','internet','cell']);
   const SUBSCRIPTION_BUCKETS = new Set(['subscriptions']);
@@ -5913,28 +6932,32 @@ function buildAccrualEngine(selMonth, sp) {
                                          'personal','clothing','travel','gifts','other']);
   const ZERO_ACCRUAL_BUCKETS = new Set(['paycheck','other_inc','auto_save']);
 
-  const priorMonths = [];
-  for (let i = 1; i <= 3; i++) {
+  // ── Historical window: 6 months for stability ─────────────────────────────
+  // (3 months is too short for quarterly/semi-annual bills)
+  const priorMonths6 = [], priorMonths3 = [];
+  for (let i = 1; i <= 6; i++) {
     const d = new Date(sy, sm - 1 - i, 1);
-    priorMonths.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
+    const mo = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    priorMonths6.push(mo);
+    if (i <= 3) priorMonths3.push(mo);
   }
-  const priorTxns    = sp.filter(t => priorMonths.some(m => t.date.startsWith(m)));
+
+  const priorTxns    = sp.filter(t => priorMonths6.some(m => t.date.startsWith(m)));
+  const priorTxns3   = sp.filter(t => priorMonths3.some(m => t.date.startsWith(m)));
   const curMonthStr  = String(sy).padStart(4,'0')+'-'+String(sm).padStart(2,'0');
   const curMonthTxns = sp.filter(t => t.date.startsWith(curMonthStr));
 
-  function removeOutliers(totals) {
-    if (totals.length < 2) return totals;
-    const mean  = totals.reduce((s,v)=>s+v,0) / totals.length;
-    const sigma = Math.sqrt(totals.reduce((s,v)=>s+Math.pow(v-mean,2),0) / totals.length);
-    const clean = totals.filter(v => v <= mean + 2*sigma);
-    return clean.length > 0 ? clean : totals;
-  }
-
-  const priorByBucket = {}, curByBucket = {};
+  // Group by bucket (6-month and 3-month)
+  const priorByBucket = {}, priorByBucket3 = {}, curByBucket = {};
   priorTxns.forEach(t => {
     const bk = classifyTxn(t);
     if (!priorByBucket[bk]) priorByBucket[bk] = [];
     priorByBucket[bk].push(t);
+  });
+  priorTxns3.forEach(t => {
+    const bk = classifyTxn(t);
+    if (!priorByBucket3[bk]) priorByBucket3[bk] = [];
+    priorByBucket3[bk].push(t);
   });
   curMonthTxns.forEach(t => {
     const bk = classifyTxn(t);
@@ -5942,40 +6965,191 @@ function buildAccrualEngine(selMonth, sp) {
     curByBucket[bk].push(t);
   });
 
-  // ── Per-payee discrete known-amount accrual for fixed bills ───────────────
-  // Groups prior transactions by payee, computes median per-payee expected
-  // amount, then projects ONLY payees that haven't yet been charged this month.
+  // ── Statistical helpers ────────────────────────────────────────────────────
+  function median(arr) {
+    if (!arr.length) return 0;
+    const s = arr.slice().sort((a,b)=>a-b);
+    const mid = Math.floor(s.length/2);
+    return s.length % 2 ? s[mid] : (s[mid-1]+s[mid])/2;
+  }
+
+  function mean(arr) {
+    return arr.length ? arr.reduce((s,v)=>s+v,0)/arr.length : 0;
+  }
+
+  function sigma(arr, m) {
+    if (arr.length < 2) return 0;
+    const avg = m !== undefined ? m : mean(arr);
+    return Math.sqrt(arr.reduce((s,v)=>s+Math.pow(v-avg,2),0)/arr.length);
+  }
+
+  function removeOutliers(vals, threshold=2.0) {
+    if (vals.length < 3) return vals;
+    const m  = mean(vals);
+    const sd = sigma(vals, m);
+    if (sd === 0) return vals;
+    const clean = vals.filter(v => Math.abs(v - m) <= threshold * sd);
+    return clean.length >= 2 ? clean : vals;
+  }
+
+  // ── Income normalization ───────────────────────────────────────────────────
+  // Handles: 3-paycheck months, bonus payments, one-time receipts
+  // Returns { normalizedIncome, rawIncome, extraPaycheck, oneTimeItems }
+  function normalizeIncome() {
+    const incTxns    = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'paycheck');
+    const otherInc   = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc');
+    const autoSaves  = sp.filter(t => classifyTxn(t) === 'auto_save');
+
+    // Build monthly paycheck totals across all history
+    const payByMonth = {};
+    incTxns.forEach(t => {
+      const mo = t.date.slice(0,7);
+      payByMonth[mo] = (payByMonth[mo]||0) + t.amount;
+    });
+
+    // Current month paycheck
+    const curPaycheck = (curByBucket['paycheck']||[]).reduce((s,t)=>s+t.amount,0);
+    const curAutoSave = (curByBucket['auto_save']||[]).reduce((s,t)=>s+Math.abs(t.amount),0);
+
+    // Prior monthly paycheck amounts (6 months, excluding current)
+    const priorPayAmts = priorMonths6
+      .map(mo => payByMonth[mo] || 0)
+      .filter(v => v > 0);
+
+    // Detect biweekly pay pattern: count paycheck transactions per month
+    const payCountByMonth = {};
+    incTxns.forEach(t => {
+      const mo = t.date.slice(0,7);
+      payCountByMonth[mo] = (payCountByMonth[mo]||0) + 1;
+    });
+    const priorPayCounts = priorMonths6.map(mo => payCountByMonth[mo] || 0).filter(v => v > 0);
+    const avgPayCount = priorPayCounts.length ? mean(priorPayCounts) : 2;
+    const curPayCount = (payCountByMonth[curMonthStr]||0);
+    const isThreePayMonth = curPayCount > 0 && curPayCount > Math.round(avgPayCount) + 0.5;
+
+    // Normalized paycheck: use median of prior months if this is a 3-pay month
+    const normalPaycheck = priorPayAmts.length > 0
+      ? median(removeOutliers(priorPayAmts))
+      : curPaycheck;
+    const extraPaycheck = isThreePayMonth ? Math.max(0, curPaycheck - normalPaycheck) : 0;
+
+    // Detect one-time income in other_inc (bonuses, tax refunds, etc.)
+    // Per-payee: if amount is >2σ above that payee's historical average, flag it
+    const oneTimeItems = [];
+    const curOtherInc = (curByBucket['other_inc']||[]);
+    curOtherInc.forEach(t => {
+      const payee = (t.payee||'').toLowerCase().trim();
+      const hist  = priorTxns.filter(p => classifyTxn(p)==='other_inc' &&
+                                          (p.payee||'').toLowerCase().trim() === payee)
+                              .map(p => p.amount);
+      if (!hist.length) {
+        // Never seen before — flag as one-time if > $500
+        if (t.amount > 500) oneTimeItems.push({ payee: t.payee, amount: t.amount, reason: 'first occurrence' });
+        return;
+      }
+      const m  = mean(hist);
+      const sd = sigma(hist, m);
+      if (sd > 0 && t.amount > m + 2*sd) {
+        oneTimeItems.push({ payee: t.payee, amount: t.amount, normal: m, reason: 'spike' });
+      }
+    });
+
+    const oneTimeTotal = oneTimeItems.reduce((s,v)=>s+v.amount,0);
+
+    const rawIncome        = curPaycheck + curOtherInc.reduce((s,t)=>s+t.amount,0);
+    const normalizedIncome = (isThreePayMonth ? normalPaycheck : curPaycheck)
+                           + curOtherInc.reduce((s,t)=>s+t.amount,0)
+                           - oneTimeTotal;
+
+    return {
+      rawIncome,
+      normalizedIncome: Math.max(0, normalizedIncome),
+      extraPaycheck,
+      oneTimeItems,
+      oneTimeTotal,
+      isThreePayMonth,
+      curPayCount,
+      avgPayCount: Math.round(avgPayCount * 10)/10,
+      normalPaycheck,
+      curAutoSave,
+      normalDeployable: Math.max(0, normalizedIncome - curAutoSave),
+    };
+  }
+
+  // ── Fixed-bill accrual: per-payee discrete median, uncharged only ─────────
+  // Uses 6-month history to catch quarterly (every 3mo) and semi-annual bills.
+  // A payee must appear in at least 2 of the prior 6 months to be projected.
   function getFixedAccrual(bk) {
-    const prior = priorByBucket[bk] || [];
-    const cur   = curByBucket[bk]   || [];
+    // Use 3-month window for month-to-month fixed bills (mortgage, car, etc.)
+    // Use 6-month window for infrequent ones (insurance, HOA, etc.)
+    const useWide  = bk === 'insurance' || bk === 'education';
+    const prior    = useWide ? (priorByBucket[bk]||[]) : (priorByBucket3[bk]||[]);
+    const cur      = curByBucket[bk] || [];
     if (!prior.length) return 0;
 
+    // Group prior by payee → month → amount
     const payeeData = {};
     prior.forEach(t => {
-      const p = (t.payee||'').toLowerCase().trim();
-      if (!payeeData[p]) payeeData[p] = {};
+      const p  = (t.payee||'').toLowerCase().trim();
       const mo = t.date.slice(0,7);
+      if (!payeeData[p]) payeeData[p] = {};
       payeeData[p][mo] = (payeeData[p][mo]||0) + Math.abs(t.amount);
     });
 
+    // Which payees has the current month already seen?
     const chargedPayees = new Set(cur.map(t => (t.payee||'').toLowerCase().trim()));
 
+    const horizon = useWide ? 6 : 3;
     let accrued = 0;
     Object.entries(payeeData).forEach(([payee, moAmts]) => {
       const monthlyAmounts = Object.values(moAmts);
-      if (monthlyAmounts.length < 2) return; // appeared in only 1 prior month = one-time, skip
-      if (chargedPayees.has(payee)) return;  // already charged this month
-      const sorted = monthlyAmounts.slice().sort((a,b)=>a-b);
-      const median = sorted[Math.floor(sorted.length/2)];
-      accrued += median;
+
+      // Must appear in at least 2 distinct months OR be >50% of months (covers quarterly)
+      const appearCount = Object.keys(moAmts).length;
+      if (appearCount < 2) return; // one-time charge in history, skip
+
+      if (chargedPayees.has(payee)) return; // already paid this month
+
+      // For infrequent bills: check if it's "due" this month based on pattern
+      if (appearCount < horizon * 0.5) {
+        // Appeared in less than half the months — quarterly or semi-annual
+        // Estimate when it's next due from the most recent occurrence
+        const sortedMonths = Object.keys(moAmts).sort();
+        const lastMo = sortedMonths[sortedMonths.length-1];
+        const lastDate = new Date(lastMo + '-01');
+        const curDate  = new Date(curMonthStr + '-01');
+        const monthsApart = (curDate - lastDate) / (1000*60*60*24*30.44);
+
+        // Estimate period: if appeared every ~3mo, project if we're 3mo from last
+        const avgPeriod = sortedMonths.length > 1
+          ? (new Date(sortedMonths[sortedMonths.length-1]+'-01') -
+             new Date(sortedMonths[0]+'-01')) / (1000*60*60*24*30.44)
+            / (sortedMonths.length - 1)
+          : 12; // default: annual
+
+        // Only project if we're within ±1 month of expected due date
+        if (Math.abs(monthsApart - avgPeriod) > 1.5) return;
+      }
+
+      const med = median(monthlyAmounts);
+      accrued += med;
     });
 
     return parseFloat(accrued.toFixed(2));
   }
 
-  // ── Discretionary: daily run rate x remaining days ────────────────────────
+  // ── Utility accrual: per-payee discrete, but allow for seasonality ────────
+  // Gas and electric vary by season — use median of 3 prior months rather than
+  // same-month prior year (we don't always have that data)
+  function getUtilityAccrual(bk) {
+    // Utilities are fixed-schedule but variable-amount — same logic as fixed
+    return getFixedAccrual(bk);
+  }
+
+  // ── Discretionary: daily run rate × remaining days ────────────────────────
+  // Uses outlier removal so one big Amazon haul month doesn't inflate projection
   function getDiscretionaryAccrual(bk) {
-    const prior = priorByBucket[bk] || [];
+    const prior = priorByBucket3[bk] || [];
     if (!prior.length) return 0;
     const byMonth = {};
     prior.forEach(t => {
@@ -5983,17 +7157,19 @@ function buildAccrualEngine(selMonth, sp) {
       byMonth[mo] = (byMonth[mo]||0) + Math.abs(t.amount);
     });
     const totals   = removeOutliers(Object.values(byMonth));
-    const avgDaily = (totals.reduce((s,v)=>s+v,0) / totals.length) / 30.44;
+    if (!totals.length) return 0;
+    // Current month partial actual already counted — project only remaining days
+    const avgDaily = mean(totals) / 30.44;
     return parseFloat((avgDaily * daysRemaining).toFixed(2));
   }
 
   function getDailyRate(bk) {
-    const prior = priorByBucket[bk] || [];
+    const prior = priorByBucket3[bk] || [];
     if (!prior.length) return 0;
     const byMonth = {};
     prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
     const totals = removeOutliers(Object.values(byMonth));
-    return (totals.reduce((s,v)=>s+v,0)/totals.length)/30.44;
+    return totals.length ? mean(totals)/30.44 : 0;
   }
 
   function currentMonthActual(bk) {
@@ -6001,45 +7177,47 @@ function buildAccrualEngine(selMonth, sp) {
   }
 
   function priorMonthlyAvg(bk) {
-    const prior = priorByBucket[bk] || [];
+    const prior = priorByBucket3[bk] || [];
     if (!prior.length) return 0;
     const byMonth = {};
     prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
     const totals = removeOutliers(Object.values(byMonth));
-    return totals.reduce((s,v)=>s+v,0)/totals.length;
+    return totals.length ? mean(totals) : 0;
   }
 
-  function accrueAmount(bk) {
-    if (ZERO_ACCRUAL_BUCKETS.has(bk)) return 0;
-    if (FIXED_BUCKETS.has(bk) || UTILITY_BUCKETS.has(bk) || SUBSCRIPTION_BUCKETS.has(bk)) {
-      return getFixedAccrual(bk);
-    }
-    if (DISCRETIONARY_BUCKETS.has(bk)) {
-      return getDiscretionaryAccrual(bk);
-    }
-    // Fallback
-    const prior = priorByBucket[bk] || [];
-    if (!prior.length) return 0;
-    const byMonth = {};
-    prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
-    const totals = removeOutliers(Object.values(byMonth));
-    return parseFloat(((totals.reduce((s,v)=>s+v,0)/totals.length)/30.44*daysRemaining).toFixed(2));
-  }
-
+  // ── isOneTime: flag transactions that look like one-offs ──────────────────
   function isOneTime(t, bk) {
     const payee = (t.payee||'').toLowerCase().trim();
     const amt   = Math.abs(t.amount);
-    const bkTxns = priorByBucket[bk] || [];
-    const payeeTxns = bkTxns.filter(p => (p.payee||'').toLowerCase().trim() === payee);
-    if (!payeeTxns.length) return false;
-    const months = new Set(payeeTxns.map(p => p.date.slice(0,7)));
-    if (months.size <= 1) return true;
-    const amts  = payeeTxns.map(p => Math.abs(p.amount));
-    const mean  = amts.reduce((s,v)=>s+v,0)/amts.length;
-    const sigma = Math.sqrt(amts.reduce((s,v)=>s+Math.pow(v-mean,2),0)/amts.length);
-    return sigma > 0 && amt > mean + 2*sigma;
+    const bkTxns = (priorByBucket[bk]||[]).filter(p =>
+      (p.payee||'').toLowerCase().trim() === payee
+    );
+    if (!bkTxns.length) return true; // never seen this payee before
+    const months = new Set(bkTxns.map(p => p.date.slice(0,7)));
+    if (months.size <= 1) return true; // only one prior month
+    const amts  = bkTxns.map(p => Math.abs(p.amount));
+    const m     = mean(amts);
+    const sd    = sigma(amts, m);
+    return sd > 0 && amt > m + 2.5*sd; // raised threshold to avoid false positives
   }
 
+  // ── Central accrual dispatch ───────────────────────────────────────────────
+  function accrueAmount(bk) {
+    if (ZERO_ACCRUAL_BUCKETS.has(bk)) return 0;
+    if (FIXED_BUCKETS.has(bk))        return getFixedAccrual(bk);
+    if (UTILITY_BUCKETS.has(bk))      return getUtilityAccrual(bk);
+    if (SUBSCRIPTION_BUCKETS.has(bk)) return getFixedAccrual(bk);
+    if (DISCRETIONARY_BUCKETS.has(bk)) return getDiscretionaryAccrual(bk);
+    // Unknown bucket: daily rate fallback
+    const prior = priorByBucket3[bk] || [];
+    if (!prior.length) return 0;
+    const byMonth = {};
+    prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
+    const totals = removeOutliers(Object.values(byMonth));
+    return parseFloat((mean(totals)/30.44*daysRemaining).toFixed(2));
+  }
+
+  // ── Projection breakdown (used by IS hero and thermometer) ───────────────
   function getProjectionBreakdown(sectionData) {
     let fixedActual = 0, fixedProjected = 0, variableActual = 0, variableProjected = 0;
     const fixedDueItems = [], varPaceItems = [];
@@ -6052,13 +7230,13 @@ function buildAccrualEngine(selMonth, sp) {
         if (FIXED_BUCKETS.has(bk) || UTILITY_BUCKETS.has(bk) || SUBSCRIPTION_BUCKETS.has(bk)) {
           fixedActual    += bd.actual  || 0;
           fixedProjected += bd.accrued || 0;
-          if ((bd.accrued||0) > 10) fixedDueItems.push({ label: bMeta.label, amount: bd.accrued });
+          if ((bd.accrued||0) > 10)
+            fixedDueItems.push({ label: bMeta.label, amount: bd.accrued });
         } else if (DISCRETIONARY_BUCKETS.has(bk)) {
           variableActual    += bd.actual  || 0;
           variableProjected += bd.accrued || 0;
-          if ((bd.accrued||0) > 10) {
+          if ((bd.accrued||0) > 10)
             varPaceItems.push({ label: bMeta.label, dailyRate: getDailyRate(bk), projected: bd.accrued||0 });
-          }
         }
       });
     });
@@ -6075,7 +7253,7 @@ function buildAccrualEngine(selMonth, sp) {
 
   return {
     isInFlight, daysElapsed, daysRemaining, daysInMonth,
-    getDailyRate, isOneTime, accrueAmount, getProjectionBreakdown,
+    getDailyRate, isOneTime, accrueAmount, getProjectionBreakdown, normalizeIncome,
     FIXED_BUCKETS, UTILITY_BUCKETS, SUBSCRIPTION_BUCKETS, DISCRETIONARY_BUCKETS,
   };
 }
@@ -6190,9 +7368,20 @@ function renderIncomeStatement() {
   const totalIncome  = sectionData.find(s=>s.id==='income')?.total || 0;
   const autoSave     = sectionData.find(s=>s.id==='auto_save')?.total || 0;
   const totalExp     = sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.total,0);
+
+  // ── Income normalization — critical for accurate forward view ──────────────
+  // Removes 3rd paycheck windfall and one-time bonuses from the baseline
+  // so the P&L reflects what a "normal" month looks like
+  let incNorm = null;
+  if (isInFlightMonth && accrual && accrual.normalizeIncome) {
+    incNorm = accrual.normalizeIncome();
+  }
+  const displayIncome  = (incNorm && incNorm.normalizedIncome > 0) ? incNorm.normalizedIncome : totalIncome;
+  const displayAutoSave= (incNorm && incNorm.curAutoSave   > 0)  ? incNorm.curAutoSave      : autoSave;
+  const checkingIn     = displayIncome - displayAutoSave;
+
   const netSurplus   = totalIncome - autoSave - totalExp;
-  const savingsPct   = totalIncome>0 ? ((autoSave+Math.max(0,netSurplus))/totalIncome*100) : 0;
-  const checkingIn   = totalIncome - autoSave;
+  const savingsPct   = displayIncome>0 ? ((displayAutoSave+Math.max(0,displayIncome-displayAutoSave-totalExp))/displayIncome*100) : 0;
   const surpColor    = netSurplus>=0?'var(--positive)':'var(--negative)';
 
   // Populate projBreakdown now that sectionData is available
@@ -6262,14 +7451,21 @@ function renderIncomeStatement() {
       + '</div>';
   }
 
-  // Tile 1: Income
+  // Tile 1: Income — normalized
+  const wasNormalized  = incNorm && (incNorm.isThreePayMonth || incNorm.oneTimeTotal > 0);
+  const extraNote      = wasNormalized
+    ? (incNorm.isThreePayMonth ? '3-pay mo · +' + fmt(incNorm.extraPaycheck) + ' extra' : '')
+      + (incNorm.oneTimeTotal > 0 ? (incNorm.isThreePayMonth ? ' · ' : '') + fmt(incNorm.oneTimeTotal) + ' one-time excl.' : '')
+    : '';
   const incomeSub = isInFlightMonth
-    ? 'payroll received' + (autoSave > 0 ? ' · <span style="color:var(--river);">' + fmt(checkingIn) + '</span> deployable' : '')
-    : 'total household income';
+    ? (wasNormalized
+        ? '<span style="color:var(--river);">' + fmt(displayIncome) + '</span> normalized · ' + fmt(checkingIn) + ' deployable'
+        : fmt(checkingIn) + ' deployable after auto-save')
+    : 'total household income · ' + fmt(checkingIn) + ' deployable';
   out += '<div style="background:var(--float);border-radius:var(--r-lg);padding:14px 16px;border-top:2px solid var(--positive);border:1px solid rgba(255,255,255,.06);">';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.13em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">' + (isInFlightMonth ? 'Income · MTD' : 'Gross Income') + '</div>';
-  out += '<div style="font-size:24px;font-family:var(--font-d);font-weight:300;color:var(--positive);line-height:1;letter-spacing:-.01em;margin-bottom:4px;">' + fmt(totalIncome) + '</div>';
-  out += '<div style="font-size:10px;color:var(--ink4);">' + incomeSub + '</div>';
+  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.13em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">' + (isInFlightMonth ? (wasNormalized ? 'Income · Normalized' : 'Income · MTD') : 'Gross Income') + '</div>';
+  out += '<div style="font-size:24px;font-family:var(--font-d);font-weight:300;color:var(--positive);line-height:1;letter-spacing:-.01em;margin-bottom:4px;">' + fmt(isInFlightMonth ? displayIncome : totalIncome) + (isInFlightMonth && wasNormalized ? '<span style="font-size:12px;color:var(--ink4);margin-left:6px;font-family:var(--font-ui);">vs ' + fmt(totalIncome) + ' actual</span>' : '') + '</div>';
+  out += '<div style="font-size:10px;color:var(--ink4);line-height:1.6;">' + incomeSub + (extraNote ? '<br><span style="color:var(--warn);font-family:var(--font-m);">⚡ ' + extraNote + '</span>' : '') + '</div>';
   out += '</div>';
 
   // Tile 2: Fixed Expenses
@@ -6307,7 +7503,7 @@ function renderIncomeStatement() {
   out += '<div style="background:var(--float);border-radius:var(--r-lg);padding:14px 16px;border-top:2px solid ' + _netColor + ';border:1px solid rgba(255,255,255,.06);">';
   out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.13em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">' + (isInFlightMonth ? 'Proj. Net' : 'Net Surplus') + '</div>';
   out += '<div style="font-size:24px;font-family:var(--font-d);font-weight:300;color:' + _netColor + ';line-height:1;letter-spacing:-.01em;margin-bottom:4px;">' + (displayNet>=0?'+':'') + fmt(displayNet) + '</div>';
-  out += '<div style="font-size:10px;color:' + _savColor + ';">' + displaySavPct.toFixed(1) + '% save rate · target 20%' + (isInFlightMonth ? ' · '+daysElapsed+'d+'+daysRemaining+'d' : '') + '</div>';
+  out += '<div style="font-size:10px;color:' + _savColor + ';">' + displaySavPct.toFixed(1) + '% save rate · ' + (isInFlightMonth&&wasNormalized?'normalized · ':'') + 'target 20%' + (isInFlightMonth ? ' · '+daysElapsed+'d+'+daysRemaining+'d' : '') + '</div>';
   out += '</div>';
   out += '</div>'; // end 4-tile grid
 
@@ -7495,24 +8691,17 @@ function renderBillCalendar() {
   const in30=new Date(today); in30.setDate(in30.getDate()+30);
   const i30=in30.toISOString().slice(0,10);
   const rec=detectRecurring(), up=rec.filter(r=>r.nextDate>=ts&&r.nextDate<=i30);
-  const ccA=Object.entries(acctMeta).filter(([,m])=>m.isCreditCard).map(([a])=>a);
-  let out='';
-
-  out+='<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px;">';
-  out+='<div style="padding:12px 16px;background:var(--lift);border-bottom:1px solid var(--line);"><div style="font-size:13px;font-weight:600;color:var(--ink2);">Credit Card Billing Cycles</div></div>';
-  if(!ccA.length){out+='<div style="padding:16px;font-size:12px;color:var(--ink4);">No CC accounts detected.</div>';}
-  else{
-    out+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0;">';
+  // CC billing moved to Settings tab
+  const ccA=Object.entries(acctMeta||{}).filter(([,m])=>m&&m.isCreditCard).map(([a])=>a);
+  if(ccA.length){
+    out+='<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;">';
+    out+='<div style="padding:11px 16px;background:var(--lift);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">';
+    out+='<div style="font-size:13px;font-weight:700;color:var(--ink2);">💳 Credit Card Billing Cycles</div>';
+    out+='<button onclick="showPage(\'settings\')" style="font-size:11px;padding:5px 12px;border-radius:var(--r-sm);background:transparent;border:1px solid var(--line2);color:var(--gold);cursor:pointer;font-family:var(--font-ui);">Edit in Settings ↗</button>';
+    out+="</div>";
+    out+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:0;">';
     ccA.forEach(a=>{
       const cfg=ccSettings[a]||{closeDay:1,dueDay:25};
-      out+='<div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.04);">';
-      out+='<div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:10px;">💳 '+a+'</div>';
-      out+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
-      [['closeDay','Statement Closes'],['dueDay','Payment Due']].forEach(([f,l])=>{
-        out+='<div><div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">'+l+'</div>';
-        out+='<div style="display:flex;align-items:center;gap:6px;"><input type="number" min="1" max="31" value="'+(cfg[f]||1)+'" data-acct="'+a+'" data-field="'+f+'" style="width:55px;background:var(--lift);border:1px solid var(--line);border-radius:4px;padding:4px 8px;font-family:var(--font-m);font-size:13px;color:var(--ink);text-align:center;" onchange="updateCCSetting(this)"><span style="font-size:11px;color:var(--ink4);">of month</span></div></div>';
-      });
-      out+='</div>';
       const cd=cfg.closeDay||1, tc=new Date(today.getFullYear(),today.getMonth(),cd);
       if(tc<today)tc.setMonth(tc.getMonth()+1);
       const cs=new Date(tc);cs.setMonth(cs.getMonth()-1);
@@ -7520,14 +8709,17 @@ function renderBillCalendar() {
       const ct=txns.filter(t=>t.account===a&&t.date>=cs.toISOString().slice(0,10)&&t.date<=ts&&t.amount<0&&!isTransfer(t));
       const ca=ct.reduce((s,t)=>s+Math.abs(t.amount),0), dv=dic>0?ca/dic:0;
       const dl=Math.max(0,Math.round((tc-today)/864e5));
-      out+='<div style="margin-top:10px;padding:8px 10px;background:var(--lift);border-radius:var(--r-sm);font-size:11px;color:var(--ink3);line-height:1.9;">';
-      out+='📅 '+cs.toISOString().slice(0,10)+' → '+tc.toISOString().slice(0,10)+'<br>';
-      out+='📊 Charges: <strong style="color:var(--gold);">'+fmt(ca)+'</strong> · '+fmt(dv)+'/day · '+dl+'d left<br>';
-      out+='🎯 Projected: <strong>'+fmt(ca+dv*dl)+'</strong></div></div>';
+      out+='<div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);">';
+      out+='<div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px;">💳 '+a+'</div>';
+      out+='<div style="font-size:10px;color:var(--ink4);font-family:var(--font-m);">Closes day '+cd+' · Due day '+(cfg.dueDay||25)+'</div>';
+      out+='<div style="margin-top:6px;font-size:11px;color:var(--ink3);">';
+      out+='Charged: <strong style="color:var(--gold);">'+fmt(ca)+'</strong>';
+      if(dl>0)out+=' · <span style="color:var(--river);">'+fmt(ca+dv*dl)+' projected</span> · '+dl+'d left';
+      else out+=' · <span style="color:var(--positive);">✓ Statement closed</span>';
+      out+='</div></div>';
     });
-    out+='</div>';
+    out+='</div></div>';
   }
-  out+='</div>';
 
   out+='<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px;">';
   out+='<div style="padding:12px 16px;background:var(--lift);border-bottom:1px solid var(--line);"><div style="font-size:13px;font-weight:600;color:var(--ink2);">Upcoming 30 Days</div></div>';
