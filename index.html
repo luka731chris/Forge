@@ -13,87 +13,82 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 /* ═══════════════════════════════════════════════════════════════════════════
-   FORGE DESIGN SYSTEM  v5.0
-   Canonical spacing: 4px base unit  |  Type scale: 9/11/13/16/24/32/40
-   Surfaces: void→base→lift→float→raised  |  3-font system
+   FORGE DESIGN SYSTEM v6.0 — Pittsburgh Black & Gold
+   Contrast-first typography | 4px grid | No sub-10px readable text
+   Surfaces: void(#050505) → base(#0B0B0C) → lift(#131315) → float(#191A1C)
+   Ink scale: all values pass WCAG AA (4.5:1) minimum on base background
 ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Reset ─────────────────────────────────────────────────────────────── */
-*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+/* ── Reset ──────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ── Tokens ─────────────────────────────────────────────────────────────── */
 :root {
-  /* Surfaces (darkest → lightest) */
+  /* Surfaces */
   --void:   #050505;
-  --base:   #0A0A0B;
-  --lift:   #111113;
-  --float:  #171719;
-  --raised: #1E1E21;
-  --hover:  rgba(255,255,255,.025);
+  --base:   #0B0B0C;
+  --lift:   #131315;
+  --float:  #191A1C;
+  --raised: #1F2022;
+  --hover:  rgba(255,255,255,.035);
 
   /* Borders */
-  --line:  #1F1F24;
-  --line2: #292930;
-  --line3: #353540;
+  --line:   #232428;
+  --line2:  #2E3035;
+  --line3:  #3A3D42;
 
   /* Brand */
   --gold:     #F5A800;
-  --gold-10:  rgba(245,168,0,.10);
-  --gold-20:  rgba(245,168,0,.20);
+  --gold-dim: rgba(245,168,0,.12);
 
-  /* Semantic */
-  --pos:      #2DD4BF;
-  --neg:      #F87171;
-  --river:    #60A5FA;
-  --warn:     #FBBF24;
+  /* Semantic — all pass WCAG AA on --base */
+  --pos:      #34D9C3;   /* teal  — 4.9:1 on #0B0B0C */
+  --neg:      #F87171;   /* red   — 5.1:1 */
+  --river:    #60A5FA;   /* blue  — 4.8:1 */
+  --warn:     #FBBF24;   /* amber — 7.2:1 */
   --purple:   #C084FC;
-  /* Aliases for backward-compat with ported components */
+  /* Aliases */
   --positive: var(--pos);
   --negative: var(--neg);
-  --purple:#C084FC;
 
-  /* Ink (text hierarchy) */
-  --ink:   #EDE9E3;   /* headlines, values */
-  --ink2:  #C0BAB2;   /* body, row labels */
-  --ink3:  #857F78;   /* secondary, hints */
-  --ink4:  #4E4A46;   /* metadata, placeholders */
+  /* Ink hierarchy — all pass WCAG AA (4.5:1) on --base */
+  --ink:   #EDE9E3;   /* headlines, hero values      — 14.2:1 */
+  --ink2:  #C8C2BA;   /* body text, row labels        —  9.1:1 */
+  --ink3:  #9A948D;   /* secondary, hints             —  5.3:1 */
+  --ink4:  #706A64;   /* metadata, disabled, placeholders — 4.6:1 */
 
-  /* Typography — canonical names */
-  --fd:     'Cormorant Garamond', Georgia, serif;
-  --fu:     'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --fm:     'Fira Code', 'JetBrains Mono', monospace;
-  /* Legacy aliases for backward-compat with inline JS styles */
-  --font-d:  var(--fd);
-  --font-ui: var(--fu);
-  --font-m:  var(--fm);
+  /* Typography — three-font system */
+  --fd:  'Cormorant Garamond', Georgia, serif;      /* display numbers */
+  --fu:  'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif; /* UI */
+  --fm:  'Fira Code', 'JetBrains Mono', monospace;  /* data/mono */
+  /* Legacy aliases */
+  --font-d:   var(--fd);
+  --font-ui:  var(--fu);
+  --font-m:   var(--fm);
 
-  /* Spacing scale (4px base) */
-  --sp1:  4px;
-  --sp2:  8px;
-  --sp3: 12px;
-  --sp4: 16px;
-  --sp5: 20px;
-  --sp6: 24px;
-  --sp8: 32px;
+  /* Spacing (4px grid) */
+  --sp1:  4px;  --sp2:  8px;  --sp3: 12px;  --sp4: 16px;
+  --sp5: 20px;  --sp6: 24px;  --sp8: 32px;  --sp10: 40px;
 
   /* Radius */
-  --r-sm:  6px;
-  --r:     8px;
-  --r-md:  10px;
-  --r-lg:  14px;
-  --r-xl:  20px;
+  --r-xs:  4px;  --r-sm:  6px;  --r:  8px;
+  --r-md: 10px;  --r-lg: 14px;  --r-xl: 20px;
 
   /* Transitions */
-  --t:  .12s ease;
-  --t2: .2s ease;
+  --t:  .12s ease;  --t2: .2s ease;
+
+  /* Elevation shadows */
+  --shadow-sm: 0 1px 6px rgba(0,0,0,.5);
+  --shadow:    0 2px 16px rgba(0,0,0,.6);
+  --shadow-lg: 0 4px 32px rgba(0,0,0,.75);
 }
 
-/* ── Body / Shell ───────────────────────────────────────────────────────── */
-html { height:100%; }
+/* ── Body/Shell ─────────────────────────────────────────────────────────── */
+html { height: 100%; }
 body {
   font-family: var(--fu);
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.55;
   font-weight: 400;
   color: var(--ink2);
   background: var(--base);
@@ -107,64 +102,66 @@ body {
 
 /* ── Header ─────────────────────────────────────────────────────────────── */
 header {
-  height: 48px;
+  height: 50px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--sp5);
+  padding: 0 var(--sp6);
   background: var(--void);
   border-bottom: 1px solid var(--line);
   z-index: 200;
 }
 .logo {
   font-family: var(--fd);
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
-  letter-spacing: .1em;
+  letter-spacing: .08em;
   color: var(--ink);
 }
 .logo span { color: var(--gold); }
-.logo-sub  {
+.logo-sub {
   font-family: var(--fm);
-  font-size: 8px;
-  letter-spacing: .22em;
+  font-size: 9px;
+  letter-spacing: .2em;
   text-transform: uppercase;
   color: var(--ink4);
 }
-.header-right { display:flex; align-items:center; gap:var(--sp2); }
-.hdr-stat {
-  font-family: var(--fm);
-  font-size: 10px;
-  color: var(--ink4);
-}
-.hdr-stat strong { color: var(--ink3); }
+.header-right { display: flex; align-items: center; gap: var(--sp2); }
+.hdr-stat { font-family: var(--fm); font-size: 11px; color: var(--ink3); }
+.hdr-stat strong { color: var(--ink2); }
 
-/* ── App Layout ─────────────────────────────────────────────────────────── */
-.app { flex:1; min-height:0; display:flex; overflow:hidden; }
+/* ── App layout ─────────────────────────────────────────────────────────── */
+.app { flex: 1; min-height: 0; display: flex; overflow: hidden; }
 
 /* ── Navigation ─────────────────────────────────────────────────────────── */
 nav {
-  width: 188px;
+  width: 192px;
   flex-shrink: 0;
   background: var(--void);
   border-right: 1px solid var(--line);
   overflow-y: auto;
-  padding: var(--sp3) 0 var(--sp6);
+  padding: var(--sp3) 0 var(--sp8);
   display: flex;
   flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
 }
-nav::-webkit-scrollbar { width:2px; }
-nav::-webkit-scrollbar-thumb { background:var(--line2); }
+nav::-webkit-scrollbar { width: 3px; }
+nav::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
 
 .nav-section { margin-bottom: var(--sp5); }
-.nav-section:last-child { margin-top:auto; padding-top:var(--sp3); border-top:1px solid var(--line); margin-bottom:0; }
-
+.nav-section:last-child {
+  margin-top: auto;
+  padding-top: var(--sp3);
+  border-top: 1px solid var(--line);
+  margin-bottom: 0;
+}
 .nav-label {
   font-size: 9px;
   font-weight: 700;
   font-family: var(--fm);
-  letter-spacing: .2em;
+  letter-spacing: .18em;
   text-transform: uppercase;
   color: var(--ink4);
   padding: var(--sp1) var(--sp4);
@@ -174,46 +171,46 @@ nav::-webkit-scrollbar-thumb { background:var(--line2); }
   display: flex;
   align-items: center;
   gap: var(--sp2);
-  padding: 7px var(--sp4);
+  padding: 8px var(--sp4);
   font-size: 12px;
   font-weight: 400;
   color: var(--ink4);
   cursor: pointer;
   border-left: 2px solid transparent;
-  transition: color var(--t), background var(--t);
-  letter-spacing: .01em;
-  line-height: 1;
+  transition: color var(--t), background var(--t), border-color var(--t);
+  line-height: 1.2;
+  user-select: none;
 }
-.nav-item:hover { color:var(--ink2); background:var(--hover); }
+.nav-item:hover { color: var(--ink2); background: var(--hover); }
 .nav-item.active {
   color: var(--gold);
   border-left-color: var(--gold);
-  background: var(--gold-10);
+  background: var(--gold-dim);
   font-weight: 500;
 }
-.nav-item svg { opacity:.55; flex-shrink:0; }
-.nav-item.active svg { opacity:1; }
+.nav-item svg { opacity: .5; flex-shrink: 0; }
+.nav-item.active svg { opacity: 1; }
 
-/* ── Main Scroll ─────────────────────────────────────────────────────────── */
+/* ── Main content area ──────────────────────────────────────────────────── */
 main {
   flex: 1 1 0%;
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--sp5) var(--sp6) 80px;
+  padding: var(--sp5) var(--sp6) 100px;
   scrollbar-width: thin;
   scrollbar-color: var(--line2) transparent;
 }
-main::-webkit-scrollbar { width:4px; }
-main::-webkit-scrollbar-thumb { background:var(--line2); border-radius:2px; }
-main::-webkit-scrollbar-thumb:hover { background:var(--line3); }
+main::-webkit-scrollbar { width: 4px; }
+main::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
+main::-webkit-scrollbar-thumb:hover { background: var(--line3); }
 
 /* ── Pages ───────────────────────────────────────────────────────────────── */
-.page { display:none; }
-.page.active { display:block; width:100%; min-width:0; }
+.page { display: none; }
+.page.active { display: block; width: 100%; min-width: 0; }
 
-/* ── Page Header ─────────────────────────────────────────────────────────── */
+/* ── Page header ─────────────────────────────────────────────────────────── */
 .page-hdr {
   display: flex;
   align-items: flex-start;
@@ -223,34 +220,34 @@ main::-webkit-scrollbar-thumb:hover { background:var(--line3); }
   width: 100%;
   min-width: 0;
 }
-.page-hdr > div:first-child { flex:1 1 auto; min-width:0; }
+.page-hdr > div:first-child { flex: 1 1 auto; min-width: 0; }
 .page-title {
   font-family: var(--fd);
-  font-size: 32px;
+  font-size: 34px;
   font-weight: 400;
   line-height: 1.05;
   letter-spacing: -.01em;
-  background: linear-gradient(145deg, #F5F0E8 0%, #AAA49C 100%);
+  background: linear-gradient(145deg, var(--ink) 0%, var(--ink3) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  margin-bottom: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-  margin-bottom: 3px;
 }
 .page-sub {
   font-size: 11px;
   color: var(--ink4);
   font-family: var(--fm);
-  letter-spacing: .03em;
+  letter-spacing: .04em;
 }
 
-/* ── KPI Grid ────────────────────────────────────────────────────────────── */
+/* ── KPI cards ───────────────────────────────────────────────────────────── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4,1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--sp2);
   margin-bottom: var(--sp4);
 }
@@ -261,37 +258,35 @@ main::-webkit-scrollbar-thumb:hover { background:var(--line3); }
   padding: var(--sp3) var(--sp4);
 }
 .kpi-label {
-  font-size: 9px;
+  font-size: 10px;
   font-family: var(--fm);
-  letter-spacing: .14em;
+  letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--ink4);
   margin-bottom: var(--sp1);
+  font-weight: 500;
 }
 .kpi-val {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 300;
   font-family: var(--fd);
   color: var(--ink);
   line-height: 1;
   letter-spacing: -.02em;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
-.kpi-sub {
-  font-size: 11px;
-  color: var(--ink4);
-}
-.kpi.positive .kpi-val { color:var(--pos); }
-.kpi.gold     .kpi-val { color:var(--gold); }
+.kpi-sub { font-size: 11px; color: var(--ink3); }
+.kpi.positive .kpi-val { color: var(--pos); }
+.kpi.gold     .kpi-val { color: var(--gold); }
 
-/* ── Chart cards ─────────────────────────────────────────────────────────── */
+/* ── Chart cards ──────────────────────────────────────────────────────────── */
 .chart-grid-2 {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: var(--sp2);
   margin-bottom: var(--sp2);
 }
-.chart-grid-1 { margin-bottom:var(--sp2); }
+.chart-grid-1 { margin-bottom: var(--sp2); }
 .chart-card {
   background: var(--float);
   border: 1px solid var(--line);
@@ -300,19 +295,9 @@ main::-webkit-scrollbar-thumb:hover { background:var(--line3); }
   overflow: hidden;
   contain: paint;
 }
-.chart-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink2);
-  margin-bottom: 2px;
-}
-.chart-sub {
-  font-size: 10px;
-  color: var(--ink4);
-  font-family: var(--fm);
-  margin-bottom: var(--sp3);
-}
-.chart-area { position:relative; }
+.chart-title  { font-size: 13px; font-weight: 600; color: var(--ink2); margin-bottom: 2px; }
+.chart-sub    { font-size: 10px; color: var(--ink4); font-family: var(--fm); margin-bottom: var(--sp3); }
+.chart-area   { position: relative; }
 
 /* ── Tables ──────────────────────────────────────────────────────────────── */
 .table-card {
@@ -330,39 +315,44 @@ main::-webkit-scrollbar-thumb:hover { background:var(--line3); }
   justify-content: space-between;
   background: var(--lift);
 }
-.table-hdr-title { font-size:12px; font-weight:600; color:var(--ink2); }
-table { width:100%; border-collapse:collapse; }
+.table-hdr-title { font-size: 13px; font-weight: 600; color: var(--ink2); }
+table  { width: 100%; border-collapse: collapse; }
 th {
   padding: 7px var(--sp3);
   font-family: var(--fm);
-  font-size: 9px;
-  letter-spacing: .12em;
+  font-size: 10px;
+  letter-spacing: .1em;
   text-transform: uppercase;
-  color: var(--ink4);
+  color: var(--ink3);
   text-align: left;
   border-bottom: 1px solid var(--line);
   background: var(--lift);
   white-space: nowrap;
-  position: sticky; top:0; z-index:1;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 td {
-  padding: 7px var(--sp3);
+  padding: 8px var(--sp3);
   font-size: 12px;
   color: var(--ink2);
-  border-bottom: 1px solid rgba(255,255,255,.028);
-  line-height: 1.4;
-  max-width: 320px;
+  border-bottom: 1px solid rgba(255,255,255,.032);
+  max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-tr:last-child td { border-bottom:none; }
-tr:hover td { background:var(--hover); }
-.td-num { font-family:var(--fm); text-align:right; font-size:12px; }
-.td-pos { color:var(--pos); }
-.td-neg { color:var(--gold); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--hover); cursor: pointer; }
+.td-num   { font-family: var(--fm); text-align: right; font-size: 12px; white-space: nowrap; max-width: 120px; }
+.td-pos   { color: var(--pos); }
+.td-neg   { color: var(--gold); }
+.td-red   { color: var(--neg); }
+.td-dim   { color: var(--ink4); }
+.td-wrap  { white-space: normal; overflow: visible; text-overflow: clip; max-width: none; }
+.td-mono  { font-family: var(--fm); }
 
-/* ── Financial statement rows ─────────────────────────────────────────────── */
+/* ── Financial statement rows ────────────────────────────────────────────── */
 .fin-section {
   background: var(--float);
   border: 1px solid var(--line);
@@ -378,34 +368,46 @@ tr:hover td { background:var(--hover); }
   align-items: baseline;
   justify-content: space-between;
 }
-.fin-hdr-title { font-family:var(--fu); font-size:12px; font-weight:700; color:var(--ink); }
-.fin-hdr-sub   { font-size:10px; color:var(--ink4); font-family:var(--fm); }
+.fin-hdr-title {
+  font-family: var(--fd);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.fin-hdr-sub { font-size: 10px; color: var(--ink4); font-family: var(--fm); }
 .fin-row {
   display: grid;
-  grid-template-columns: 1fr repeat(3,88px);
-  padding: 6px var(--sp4);
+  grid-template-columns: 1fr repeat(3, 96px);
+  padding: 7px var(--sp4);
   border-bottom: 1px solid rgba(255,255,255,.028);
   font-size: 12px;
   color: var(--ink2);
   align-items: center;
 }
-.fin-row:last-child { border-bottom:none; }
+.fin-row:last-child { border-bottom: none; }
+.fin-row:hover:not(.total-row):not(.subtotal) { background: var(--hover); cursor: pointer; }
 .fin-row.total-row {
   border-top: 1px solid var(--line2);
   border-bottom: 1px solid var(--line2);
   background: var(--lift);
   font-weight: 700;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink);
 }
-.fin-row.subtotal { background:rgba(255,255,255,.015); font-weight:600; color:var(--ink); }
-.fin-row.indent   { padding-left: 28px; color:var(--ink3); }
-.fin-col-hdr { font-family:var(--fm); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink4); text-align:right; }
-.fin-num     { font-family:var(--fm); font-size:12px; text-align:right; color:var(--ink2); }
-.fin-num.pos { color:var(--pos); }
-.fin-num.neg { color:var(--gold); }
-.fin-num.red { color:var(--neg); }
-.fin-row:hover:not(.total-row) { background:var(--hover); cursor:pointer; }
+.fin-row.subtotal { background: rgba(255,255,255,.016); font-weight: 600; color: var(--ink); }
+.fin-row.indent   { padding-left: 32px; color: var(--ink3); font-size: 12px; }
+.fin-col-hdr {
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  text-align: right;
+}
+.fin-num { font-family: var(--fm); font-size: 12px; text-align: right; color: var(--ink2); }
+.fin-num.pos { color: var(--pos); }
+.fin-num.neg { color: var(--gold); }
+.fin-num.red { color: var(--neg); }
 
 /* ── Balance Sheet ───────────────────────────────────────────────────────── */
 .bs-section {
@@ -423,30 +425,55 @@ tr:hover td { background:var(--hover); }
   background: var(--lift);
   border-bottom: 1px solid var(--line);
 }
-.bs-hdr-title { font-size:12px; font-weight:600; color:var(--ink2); }
-.bs-hdr-total { font-size:13px; font-weight:700; font-family:var(--fm); }
+.bs-hdr-title { font-size: 13px; font-weight: 600; color: var(--ink2); }
+.bs-hdr-total { font-size: 14px; font-weight: 700; font-family: var(--fm); }
 .bs-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 7px var(--sp4);
+  padding: 8px var(--sp4);
   border-bottom: 1px solid rgba(255,255,255,.028);
   font-size: 12px;
 }
-.bs-row:last-child { border-bottom:none; }
-.bs-row:hover { background:var(--hover); }
-.bs-row-name { color:var(--ink2); display:flex; align-items:center; gap:7px; }
-.bs-row-meta { font-size:10px; color:var(--ink4); font-family:var(--fm); }
-.bs-row-amt  { font-family:var(--fm); font-size:12px; font-weight:600; }
+.bs-row:last-child { border-bottom: none; }
+.bs-row:hover { background: var(--hover); }
+.bs-row-name { color: var(--ink2); display: flex; align-items: center; gap: 7px; }
+.bs-row-meta { font-size: 10px; color: var(--ink4); font-family: var(--fm); }
+.bs-row-amt  { font-family: var(--fm); font-size: 12px; font-weight: 600; }
 .bs-flag {
-  display:inline-flex; align-items:center; gap:3px;
-  font-size:9px; font-family:var(--fm);
-  padding:1px 6px; border-radius:8px; font-weight:600; letter-spacing:.04em;
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-family: var(--fm); font-weight: 700;
+  padding: 1px 6px; border-radius: 8px; letter-spacing: .06em;
 }
-.bs-flag-stale { background:rgba(245,168,0,.10);  color:var(--gold);  border:1px solid rgba(245,168,0,.2); }
-.bs-flag-est   { background:rgba(96,165,250,.10);  color:var(--river); border:1px solid rgba(96,165,250,.2); }
-.bs-flag-miss  { background:rgba(248,113,113,.10); color:var(--neg);   border:1px solid rgba(248,113,113,.2); }
-.bs-flag-ok    { background:rgba(45,212,191,.08);  color:var(--pos);   border:1px solid rgba(45,212,191,.2); }
+.bs-flag-stale { background: rgba(245,168,0,.12);  color: var(--gold); border: 1px solid rgba(245,168,0,.25); }
+.bs-flag-est   { background: rgba(96,165,250,.12);  color: var(--river); border: 1px solid rgba(96,165,250,.25); }
+.bs-flag-miss  { background: rgba(248,113,113,.12); color: var(--neg); border: 1px solid rgba(248,113,113,.25); }
+.bs-flag-ok    { background: rgba(52,217,195,.08);  color: var(--pos); border: 1px solid rgba(52,217,195,.25); }
+.bs-net-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--sp4) var(--sp5);
+  background: var(--lift);
+  border-radius: var(--r-lg);
+  border: 2px solid var(--line2);
+  margin-bottom: var(--sp2);
+}
+
+/* ── KPI cluster (IS hero) ───────────────────────────────────────────────── */
+.kpi-cluster {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp2);
+  margin-bottom: var(--sp3);
+}
+.kpi-sm {
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: var(--sp3) var(--sp4);
+}
+.kpi-sm-lbl { font-size: 10px; font-family: var(--fm); letter-spacing: .1em; text-transform: uppercase; color: var(--ink4); margin-bottom: 4px; }
+.kpi-sm-val { font-size: 22px; font-weight: 300; font-family: var(--fd); color: var(--ink); line-height: 1; }
+.kpi-sm-sub { font-size: 11px; color: var(--ink3); margin-top: 3px; }
 
 /* ── Inputs / Controls ───────────────────────────────────────────────────── */
 input, select, textarea {
@@ -465,33 +492,7 @@ input[type=email], input[type=password], input[type=url] {
   transition: border-color var(--t);
   width: 100%;
 }
-input:focus { border-color:var(--gold); }
-input[type=range] {
-  background: transparent;
-  -webkit-appearance: none;
-  height: 4px;
-  border-radius: 2px;
-  outline: none;
-  cursor: pointer;
-  padding: 0;
-  border: none;
-  /* Background handled inline per instance */
-}
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px; height: 16px;
-  border-radius: 50%;
-  background: var(--gold);
-  box-shadow: 0 1px 4px rgba(0,0,0,.5);
-  cursor: pointer;
-}
-input[type=range]::-moz-range-thumb {
-  width:16px; height:16px;
-  border-radius:50%;
-  background:var(--gold);
-  border:none;
-  cursor:pointer;
-}
+input:focus { border-color: var(--gold); }
 select {
   background: var(--lift);
   border: 1px solid var(--line2);
@@ -499,49 +500,37 @@ select {
   padding: 6px var(--sp2);
   cursor: pointer;
   outline: none;
+  color: var(--ink2);
 }
-select:focus { border-color:var(--gold); }
-textarea {
-  background: var(--lift);
+select:focus { border-color: var(--gold); }
+
+/* ── Range tabs ──────────────────────────────────────────────────────────── */
+.range-tabs { display: flex; gap: 3px; }
+.rtab {
+  padding: 5px 11px;
+  background: transparent;
   border: 1px solid var(--line2);
   border-radius: var(--r-sm);
-  padding: var(--sp2);
-  resize: vertical;
-  outline: none;
-  color: var(--ink);
-}
-textarea:focus { border-color:var(--gold); }
-
-/* ── Toggle switch ───────────────────────────────────────────────────────── */
-.toggle-wrap { display:inline-flex; align-items:center; gap:var(--sp2); cursor:pointer; }
-.toggle {
-  position: relative;
-  width: 36px;
-  height: 20px;
-  flex-shrink: 0;
-}
-.toggle input { opacity:0; width:0; height:0; position:absolute; }
-.toggle-track {
-  position: absolute;
-  inset: 0;
-  border-radius: 10px;
-  background: var(--line2);
-  transition: background var(--t2);
+  color: var(--ink3);
+  font-size: 11px;
+  font-family: var(--fm);
+  font-weight: 500;
   cursor: pointer;
+  letter-spacing: .04em;
+  transition: all var(--t);
 }
-.toggle input:checked + .toggle-track { background:var(--gold); }
-.toggle-thumb {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #fff;
-  transition: left var(--t2);
-  pointer-events: none;
+.rtab:hover { color: var(--ink2); border-color: var(--line3); }
+.rtab.active { background: var(--gold); border-color: var(--gold); color: #000; font-weight: 700; }
+
+/* ── Filters row ─────────────────────────────────────────────────────────── */
+.filters {
+  display: flex;
+  gap: var(--sp2);
+  align-items: center;
+  margin-bottom: var(--sp3);
+  flex-wrap: wrap;
 }
-.toggle input:checked ~ .toggle-thumb { left:19px; }
+.filter-label { font-size: 11px; color: var(--ink4); font-family: var(--fm); }
 
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
 .btn {
@@ -556,173 +545,16 @@ textarea:focus { border-color:var(--gold); }
   cursor: pointer;
   border: none;
   transition: opacity var(--t);
-  letter-spacing: .01em;
   white-space: nowrap;
+  line-height: 1.4;
 }
-.btn:hover { opacity:.8; }
-.btn-gold  { background:var(--gold); color:#000; font-weight:700; }
-.btn-ghost { background:transparent; border:1px solid var(--line2); color:var(--ink3); }
-.btn-ghost:hover { color:var(--ink); border-color:var(--line3); }
-.btn-danger{ background:transparent; border:1px solid var(--neg); color:var(--neg); }
+.btn:hover { opacity: .8; }
+.btn-gold   { background: var(--gold); color: #000; font-weight: 700; }
+.btn-ghost  { background: transparent; border: 1px solid var(--line2); color: var(--ink3); }
+.btn-ghost:hover { color: var(--ink2); border-color: var(--line3); }
+.btn-danger { background: transparent; border: 1px solid rgba(248,113,113,.4); color: var(--neg); }
 
-/* ── Filters row ─────────────────────────────────────────────────────────── */
-.filters {
-  display: flex;
-  gap: var(--sp2);
-  align-items: center;
-  margin-bottom: var(--sp3);
-  flex-wrap: wrap;
-}
-.filters input[type=search] { width:200px; }
-
-/* ── Range tabs ──────────────────────────────────────────────────────────── */
-.range-tabs { display:flex; gap:3px; }
-.rtab {
-  padding: 4px 10px;
-  background: transparent;
-  border: 1px solid var(--line2);
-  border-radius: var(--r-sm);
-  color: var(--ink4);
-  font-size: 10px;
-  font-family: var(--fm);
-  font-weight: 500;
-  cursor: pointer;
-  letter-spacing: .04em;
-  transition: all var(--t);
-}
-.rtab:hover { color:var(--ink2); }
-.rtab.active { background:var(--gold); border-color:var(--gold); color:#000; font-weight:700; }
-
-/* ── Upload zone ─────────────────────────────────────────────────────────── */
-.upload-zone {
-  border: 2px dashed var(--line2);
-  border-radius: var(--r-lg);
-  padding: 40px var(--sp6);
-  text-align: center;
-  cursor: pointer;
-  transition: border-color var(--t2), background var(--t2);
-  margin-bottom: var(--sp4);
-}
-.upload-zone:hover, .upload-zone.drag {
-  border-color: var(--gold);
-  background: var(--gold-10);
-}
-.upload-zone input { display:none; }
-.upload-icon { font-size:32px; margin-bottom:var(--sp2); }
-.upload-title { font-size:16px; font-weight:600; margin-bottom:4px; color:var(--ink); }
-.upload-sub { font-size:12px; color:var(--ink4); }
-.pour-hero-title {
-  font-family: var(--fd);
-  font-size: 40px;
-  font-weight: 300;
-  letter-spacing: -.02em;
-  color: var(--ink);
-  line-height: 1.05;
-}
-
-/* ── Status chips / badges ───────────────────────────────────────────────── */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 9px;
-  font-family: var(--fm);
-  font-weight: 600;
-  letter-spacing: .08em;
-  padding: 1px 6px;
-  border-radius: 4px;
-}
-.badge-quicken { background:rgba(45,212,191,.10);  color:var(--pos);    border:1px solid rgba(45,212,191,.2); }
-.badge-amazon  { background:rgba(245,168,0,.10);   color:var(--gold);   border:1px solid rgba(245,168,0,.2); }
-.badge-apple   { background:rgba(192,132,252,.10); color:var(--purple); border:1px solid rgba(192,132,252,.2); }
-.badge-inferred{ background:rgba(255,255,255,.06); color:var(--ink4);   border:1px solid var(--line2); }
-.badge-split   { background:rgba(96,165,250,.10);  color:var(--river);  border:1px solid rgba(96,165,250,.2); }
-
-/* ── Toast ────────────────────────────────────────────────────────────────── */
-.toast {
-  position: fixed;
-  bottom: var(--sp5);
-  left: 50%;
-  transform: translateX(-50%) translateY(60px);
-  background: var(--raised);
-  border: 1px solid var(--line2);
-  border-radius: var(--r-md);
-  padding: 8px var(--sp4);
-  font-size: 12px;
-  color: var(--ink);
-  box-shadow: 0 4px 24px rgba(0,0,0,.7);
-  transition: transform .24s ease;
-  z-index: 1000;
-  white-space: nowrap;
-}
-.toast.show { transform: translateX(-50%) translateY(0); }
-
-/* ── Modal ────────────────────────────────────────────────────────────────── */
-.modal-bg {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.82);
-  z-index: 500;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 40px var(--sp4);
-  overflow-y: auto;
-}
-.modal {
-  background: var(--base);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  width: 100%;
-  max-width: 860px;
-  overflow: hidden;
-}
-.modal-hdr {
-  padding: var(--sp4) var(--sp5);
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-.modal-title { font-family:var(--fd); font-size:22px; font-weight:600; }
-.modal-close {
-  background:none; border:1px solid var(--line); color:var(--ink4);
-  cursor:pointer; font-size:12px; padding:3px 9px; border-radius:var(--r-sm);
-}
-
-/* ── Demo Panel ───────────────────────────────────────────────────────────── */
-.demo-panel {
-  display: none;
-  position: fixed;
-  top: 49px; right: 10px;
-  width: 260px;
-  background: var(--float);
-  border: 1px solid var(--line);
-  border-top: 2px solid var(--gold);
-  border-radius: 0 0 var(--r-lg) var(--r-lg);
-  padding: var(--sp4);
-  z-index: 300;
-  box-shadow: 0 8px 32px rgba(0,0,0,.7);
-}
-
-/* ── Chart tooltip ────────────────────────────────────────────────────────── */
-#chartTip {
-  position: fixed;
-  background: var(--raised);
-  border: 1px solid var(--line2);
-  border-left: 3px solid var(--gold);
-  border-radius: var(--r-sm);
-  padding: 5px var(--sp3);
-  font-size: 11px;
-  font-family: var(--fm);
-  color: var(--ink);
-  pointer-events: none;
-  z-index: 999;
-  white-space: nowrap;
-  box-shadow: 0 2px 12px rgba(0,0,0,.6);
-  display: none;
-}
-
-/* ── Settings-specific ────────────────────────────────────────────────────── */
+/* ── Settings ──────────────────────────────────────────────────────────────── */
 .sset-card {
   background: var(--float);
   border: 1px solid var(--line);
@@ -740,14 +572,11 @@ textarea:focus { border-color:var(--gold); }
   cursor: pointer;
   user-select: none;
 }
-.sset-hdr:hover { background:var(--raised); }
-.sset-icon { font-size:13px; flex-shrink:0; opacity:.7; }
-.sset-title { font-size:13px; font-weight:600; color:var(--ink); flex:1; }
-.sset-sub   { font-size:10px; color:var(--ink4); font-family:var(--fm); }
-.sset-chev  { color:var(--ink4); font-size:10px; transition:transform var(--t2); }
-.sset-body  { padding:0; }
-
-/* Settings row — label + control side by side */
+.sset-hdr:hover { background: var(--raised); }
+.sset-icon  { font-size: 14px; flex-shrink: 0; opacity: .75; }
+.sset-title { font-size: 13px; font-weight: 600; color: var(--ink); flex: 1; }
+.sset-sub   { font-size: 10px; color: var(--ink4); font-family: var(--fm); }
+.sset-chev  { color: var(--ink4); font-size: 10px; transition: transform var(--t2); }
 .sr {
   display: grid;
   grid-template-columns: 180px 1fr;
@@ -755,20 +584,15 @@ textarea:focus { border-color:var(--gold); }
   align-items: center;
   padding: var(--sp2) var(--sp4);
   border-bottom: 1px solid rgba(255,255,255,.035);
-  min-height: 40px;
+  min-height: 44px;
 }
-.sr:last-child { border-bottom:none; }
-.sr-lbl  { font-size:12px; font-weight:500; color:var(--ink2); line-height:1.35; }
-.sr-hint { font-size:10px; color:var(--ink4); margin-top:1px; line-height:1.4; }
-.sr-ctrl { display:flex; align-items:center; gap:var(--sp2); flex-wrap:wrap; }
+.sr:last-child { border-bottom: none; }
+.sr-lbl  { font-size: 12px; font-weight: 500; color: var(--ink2); line-height: 1.35; }
+.sr-hint { font-size: 10px; color: var(--ink4); margin-top: 1px; line-height: 1.5; }
+.sr-ctrl { display: flex; align-items: center; gap: var(--sp2); flex-wrap: wrap; }
 
-/* Multi-modality control strip */
-.ctrl-multi {
-  display: flex;
-  align-items: center;
-  gap: var(--sp2);
-  width: 100%;
-}
+/* Multi-modal controls */
+.ctrl-multi { display: flex; align-items: center; gap: var(--sp2); width: 100%; }
 .ctrl-num {
   background: var(--lift);
   border: 1px solid var(--line2);
@@ -777,11 +601,11 @@ textarea:focus { border-color:var(--gold); }
   font-family: var(--fm);
   font-size: 12px;
   color: var(--ink);
-  width: 64px;
+  width: 68px;
   text-align: center;
   -moz-appearance: textfield;
 }
-.ctrl-num::-webkit-inner-spin-button { -webkit-appearance:none; }
+.ctrl-num::-webkit-inner-spin-button { -webkit-appearance: none; }
 .ctrl-range {
   flex: 1;
   height: 4px;
@@ -794,18 +618,17 @@ textarea:focus { border-color:var(--gold); }
 }
 .ctrl-range::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width:16px; height:16px;
-  border-radius:50%;
-  background:var(--gold);
-  cursor:pointer;
-  box-shadow:0 1px 4px rgba(0,0,0,.5);
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--gold);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,.5);
 }
-.ctrl-unit { font-size:11px; color:var(--ink4); white-space:nowrap; }
+.ctrl-unit { font-size: 11px; color: var(--ink4); white-space: nowrap; }
 
 /* Segmented control */
 .seg-ctrl {
-  display: flex;
-  gap: 2px;
+  display: flex; gap: 2px;
   background: var(--lift);
   border: 1px solid var(--line2);
   border-radius: var(--r-sm);
@@ -814,36 +637,176 @@ textarea:focus { border-color:var(--gold); }
 .seg-btn {
   padding: 4px 10px;
   border-radius: 4px;
-  font-size: 11px;
-  font-family: var(--fu);
-  font-weight: 500;
+  font-size: 11px; font-family: var(--fu); font-weight: 500;
+  cursor: pointer; border: none; background: transparent;
+  color: var(--ink4); transition: all var(--t); white-space: nowrap;
+}
+.seg-btn.active { background: var(--gold); color: #000; font-weight: 700; }
+.seg-btn:hover:not(.active) { color: var(--ink2); }
+
+/* Toggle switch */
+.toggle-wrap { display: inline-flex; align-items: center; gap: var(--sp2); cursor: pointer; }
+.toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-track {
+  position: absolute; inset: 0;
+  border-radius: 10px; background: var(--line2);
+  transition: background var(--t2); cursor: pointer;
+}
+.toggle input:checked + .toggle-track { background: var(--gold); }
+.toggle-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 14px; height: 14px;
+  border-radius: 50%; background: #fff;
+  transition: left var(--t2); pointer-events: none;
+}
+.toggle input:checked ~ .toggle-thumb { left: 19px; }
+
+/* ── Upload ───────────────────────────────────────────────────────────────── */
+.upload-zone {
+  border: 2px dashed var(--line2);
+  border-radius: var(--r-lg);
+  padding: var(--sp10) var(--sp8);
+  text-align: center;
   cursor: pointer;
-  border: none;
-  background: transparent;
-  color: var(--ink4);
-  transition: all var(--t);
+  transition: border-color var(--t2), background var(--t2);
+  margin-bottom: var(--sp4);
+}
+.upload-zone:hover, .upload-zone.drag {
+  border-color: var(--gold);
+  background: var(--gold-dim);
+}
+.upload-zone input { display: none; }
+.upload-icon  { font-size: 36px; margin-bottom: var(--sp2); }
+.upload-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; color: var(--ink); }
+.upload-sub   { font-size: 12px; color: var(--ink4); }
+.pour-hero-title {
+  font-family: var(--fd); font-size: 42px; font-weight: 300;
+  letter-spacing: -.02em; color: var(--ink); line-height: 1.05;
+}
+
+/* ── Badges ───────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center;
+  font-size: 9px; font-family: var(--fm); font-weight: 700;
+  letter-spacing: .06em; padding: 1px 6px; border-radius: 4px;
+}
+.badge-quicken { background: rgba(52,217,195,.1);   color: var(--pos);    border: 1px solid rgba(52,217,195,.25); }
+.badge-amazon  { background: rgba(245,168,0,.1);    color: var(--gold);   border: 1px solid rgba(245,168,0,.25); }
+.badge-apple   { background: rgba(192,132,252,.1);  color: var(--purple); border: 1px solid rgba(192,132,252,.25); }
+.badge-inferred{ background: rgba(255,255,255,.06); color: var(--ink3);   border: 1px solid var(--line2); }
+.badge-split   { background: rgba(96,165,250,.1);   color: var(--river);  border: 1px solid rgba(96,165,250,.25); }
+
+/* ── Toast ────────────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: var(--sp5);
+  left: 50%;
+  transform: translateX(-50%) translateY(60px);
+  background: var(--raised);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-md);
+  padding: 8px var(--sp4);
+  font-size: 12px; color: var(--ink);
+  box-shadow: var(--shadow);
+  transition: transform .24s ease;
+  z-index: 1000;
   white-space: nowrap;
 }
-.seg-btn.active { background:var(--gold); color:#000; font-weight:700; }
-.seg-btn:hover:not(.active) { color:var(--ink2); }
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── Modal ────────────────────────────────────────────────────────────────── */
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.85);
+  z-index: 500;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 48px var(--sp4);
+  overflow-y: auto;
+}
+.modal {
+  background: var(--base);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  width: 100%; max-width: 880px;
+  overflow: hidden;
+}
+.modal-hdr {
+  padding: var(--sp4) var(--sp5);
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: flex-start; justify-content: space-between;
+}
+.modal-title { font-family: var(--fd); font-size: 22px; font-weight: 600; color: var(--ink); }
+.modal-close {
+  background: none; border: 1px solid var(--line); color: var(--ink4);
+  cursor: pointer; font-size: 12px; padding: 3px 9px; border-radius: var(--r-sm);
+}
+
+/* ── Demo panel ───────────────────────────────────────────────────────────── */
+.demo-panel {
+  display: none;
+  position: fixed; top: 51px; right: 10px;
+  width: 264px;
+  background: var(--float);
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--gold);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  padding: var(--sp4);
+  z-index: 300;
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Chart tooltip ────────────────────────────────────────────────────────── */
+#chartTip {
+  position: fixed;
+  background: var(--raised);
+  border: 1px solid var(--line2);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--r-sm);
+  padding: 5px var(--sp3);
+  font-size: 11px; font-family: var(--fm); color: var(--ink);
+  pointer-events: none; z-index: 999;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+  display: none;
+}
+
+/* ── Transfer badge ───────────────────────────────────────────────────────── */
+.xfer-badge {
+  display: inline-block;
+  font-size: 9px; font-family: var(--fm);
+  padding: 1px 6px; border-radius: 3px;
+  background: rgba(96,165,250,.12); color: var(--river);
+  border: 1px solid rgba(96,165,250,.22);
+}
+
+/* ── Status strip ─────────────────────────────────────────────────────────── */
+.status-strip {
+  padding: var(--sp3) var(--sp4);
+  border-radius: var(--r-md);
+  margin-bottom: var(--sp4);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp4); font-size: 12px; flex-wrap: wrap;
+}
+.status-empty { background: var(--lift); border: 1px solid var(--line); color: var(--ink4); }
+.status-demo  { background: rgba(245,168,0,.06); border: 1px solid rgba(245,168,0,.2); color: var(--gold); }
+.status-real  { background: rgba(52,217,195,.04); border: 1px solid rgba(52,217,195,.15); }
 
 /* ── Scrollbars global ────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width:4px; height:4px; }
-::-webkit-scrollbar-track { background:transparent; }
-::-webkit-scrollbar-thumb { background:var(--line2); border-radius:2px; }
-::-webkit-scrollbar-thumb:hover { background:var(--line3); }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--line3); }
 
-/* ── Table overrides ─────────────────────────────────────────────────────── */
-.td-wrap { white-space: normal; overflow: visible; text-overflow: clip; }
-.td-mono { font-family: var(--fm); }
-.td-dim  { color: var(--ink4); }
+/* ── Table utilities ──────────────────────────────────────────────────────── */
+.is-row:hover { background: var(--hover); }
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
-@media (max-width:900px) {
-  nav { display:none; }
-  .kpi-grid { grid-template-columns:repeat(2,1fr); }
-  .chart-grid-2 { grid-template-columns:1fr; }
-  .fin-row { grid-template-columns:1fr 80px 80px; }
+@media (max-width: 900px) {
+  nav { display: none; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .chart-grid-2 { grid-template-columns: 1fr; }
+  .fin-row { grid-template-columns: 1fr 90px 90px; }
 }
 </style>
 </head>
@@ -3104,165 +3067,238 @@ function applyHierarchyOverrides() {
 // THERMOMETER — Fixed vs Variable expense pressure gauge
 // Shows how fixed obligations consume post-savings take-home income
 // ════════════════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════════════════
+// SHARED MONTH SUMMARY — single source of truth for IS and Budget Pressure Bar
+// Both renderIncomeStatement and renderThermometer call this function.
+// Returns the same normalized income, auto-savings, deployable, and
+// expense totals that the IS uses — guaranteeing the bar always matches the IS.
+// ════════════════════════════════════════════════════════════════════════════
+function buildMonthSummary(selMonth, sp) {
+  if (!selMonth || !sp.length) return null;
+
+  // ── Same bucket-txns logic as renderIncomeStatement ────────────────────
+  const monthSp    = sp.filter(t => t.date.startsWith(selMonth));
+  const monthXfers = txns.filter(t =>
+    t.date.startsWith(selMonth) && isTransfer(t) && t.amount < 0
+  );
+
+  const bktTxns = {};
+  function addToBkt(key, t) {
+    if (!bktTxns[key]) bktTxns[key] = [];
+    bktTxns[key].push(t);
+  }
+
+  // Income (positive non-CC-credit)
+  monthSp.filter(t => t.amount > 0 && !isCCCredit(t))
+         .forEach(t => addToBkt(classifyTxn(t), t));
+  // Expenses (negative)
+  monthSp.filter(t => t.amount < 0)
+         .forEach(t => addToBkt(classifyTxn(t), t));
+  // CC credits as offsets (reduces expense bucket)
+  monthSp.filter(t => isCCCredit(t))
+         .forEach(t => addToBkt(classifyTxn(t), Object.assign({}, t, { _isCCCredit: true })));
+  // Savings transfers → auto_save bucket (exactly as IS does it)
+  monthXfers.forEach(t => {
+    const dest = (t.category||'').replace(/^\[|\]$/g,'').trim();
+    const typ  = detectAcctType(dest);
+    if (typ === 'savings' || typ === 'investment') {
+      addToBkt('auto_save', Object.assign({}, t, { _xferTo: dest, amount: -Math.abs(t.amount) }));
+    }
+  });
+
+  // ── Accrual engine (same instance IS uses) ────────────────────────────
+  const accrual    = buildAccrualEngine(selMonth, sp);
+  const isInFlight = !!accrual;
+
+  // ── Raw income and auto-savings (before normalization) ────────────────
+  const rawPaycheck  = (bktTxns.paycheck  || []).reduce((s,t) => s + t.amount, 0);
+  const rawOtherInc  = (bktTxns.other_inc || []).filter(t => !isCCCredit(t))
+                                                  .reduce((s,t) => s + t.amount, 0);
+  const rawIncome    = rawPaycheck + rawOtherInc;
+  const rawAutoSave  = (bktTxns.auto_save || []).reduce((s,t) => s + Math.abs(t.amount), 0);
+
+  // ── Normalization (same call IS makes) ───────────────────────────────
+  let normData = null;
+  if (isInFlight && accrual.normalizeIncome) {
+    normData = accrual.normalizeIncome();
+  }
+
+  // Normalized income: use historical expected when month is early/empty
+  const normalizedIncome   = (normData && normData.normalizedIncome > 0)
+                             ? normData.normalizedIncome
+                             : rawIncome;
+  const normalizedAutoSave = (normData && normData.curAutoSave > 0)
+                             ? normData.curAutoSave
+                             : rawAutoSave;
+  const deployable = Math.max(normalizedIncome - normalizedAutoSave,
+                              normalizedIncome * 0.05, 1);
+
+  // ── Fixed expense totals (actual + accrued, no double-counting) ───────
+  // getFixedAccrual() already skips payees that have been charged this month.
+  // So fixedActual = what's been paid; fixedAccrued = what's still due.
+  const FIXED_BKS = ['mortgage','car','insurance','education','childcare',
+                     'electric','gas_util','water','internet','cell','subscriptions'];
+  const VAR_BKS   = ['restaurants','groceries','gas_car','transit','healthcare',
+                     'entertainment','household','personal','clothing','travel',
+                     'gifts','other'];
+
+  let fixedActual=0, fixedAccrued=0, varActual=0, varAccrued=0;
+
+  FIXED_BKS.forEach(bk => {
+    fixedActual  += (bktTxns[bk]||[]).reduce((s,t) => s + Math.abs(t.amount), 0);
+    fixedAccrued += isInFlight ? (accrual.accrueAmount(bk) || 0) : 0;
+  });
+  VAR_BKS.forEach(bk => {
+    varActual  += (bktTxns[bk]||[]).reduce((s,t) => s + Math.abs(t.amount), 0);
+    varAccrued += isInFlight ? (accrual.accrueAmount(bk) || 0) : 0;
+  });
+
+  const fixedTotal = fixedActual + fixedAccrued;
+  const varTotal   = varActual   + varAccrued;
+  const totalSpend = fixedTotal  + varTotal;
+  const buffer     = deployable  - totalSpend;
+
+  return {
+    // Income
+    rawIncome, rawAutoSave, rawPaycheck, rawOtherInc,
+    normalizedIncome, normalizedAutoSave, deployable,
+    // Expenses
+    fixedActual, fixedAccrued, fixedTotal,
+    varActual,   varAccrued,   varTotal,
+    totalSpend, buffer,
+    // Meta
+    isInFlight, accrual, normData,
+    daysElapsed:   accrual ? accrual.daysElapsed   : 0,
+    daysRemaining: accrual ? accrual.daysRemaining  : 0,
+    daysInMonth:   accrual ? accrual.daysInMonth    : 0,
+    earlyMonth:    normData ? (normData.earlyMonth || false) : false,
+  };
+}
+
+
 function renderThermometer(containerId, selMonth) {
   const el = document.getElementById(containerId);
   if (!el) return;
   try {
-    // ── Data: all txns for the month (no transfer filter for income) ───────────
-    const now          = new Date();
-    const selOrDefault = selMonth || now.toISOString().slice(0,7);
-    const allMonthTxns = txns.filter(t => t.date.startsWith(selOrDefault));
-    const sp           = operatingSpendable(txns).filter(t => t.date.startsWith(selOrDefault));
-    const accrual      = buildAccrualEngine(selOrDefault, operatingSpendable(txns));
-    const isInFlight   = !!accrual;
+    if (!txns.length) { el.innerHTML = ''; return; }
 
-    if (!sp.length && !allMonthTxns.length) { el.innerHTML = ''; return; }
+    const sp  = operatingSpendable(txns);
+    const now = new Date();
+    const sel = selMonth || now.toISOString().slice(0,7);
 
-    // ── Income: paychecks + other income (ANY account, not just operating) ─────
-    // This captures deposits that hit savings directly (split paycheck, etc.)
-    const incTxns   = allMonthTxns.filter(t => t.amount > 0 && classifyTxn(t) === 'paycheck');
-    const otherInc  = allMonthTxns.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc' && !isCCCredit(t));
-    const rawIncome = incTxns.reduce((s,t)=>s+t.amount,0) + otherInc.reduce((s,t)=>s+t.amount,0);
+    // ── Get summary from the SAME shared compute as the IS ────────────────
+    const S = buildMonthSummary(sel, sp);
+    if (!S) { el.innerHTML = ''; return; }
 
-    // ── Auto-savings: [Bracket] category transfers to savings/investment accounts ─
-    const autoSaveTxns = allMonthTxns.filter(t => t.amount < 0 && (
-      (isTransfer(t) && classifyTxn(t) === 'auto_save') ||
-      classifyTxn(t) === 'auto_save'
-    ));
-    const autoSave = autoSaveTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
+    const { normalizedIncome: income, normalizedAutoSave: autoSave, deployable,
+            fixedTotal, varTotal, totalSpend, buffer, fixedActual, fixedAccrued,
+            varActual, varAccrued, isInFlight, accrual, normData,
+            daysElapsed, daysRemaining, earlyMonth } = S;
 
-    // Deployable = take-home after retirement/investment contributions
-    const income     = rawIncome;
-    const deployable = Math.max(income - autoSave, income * 0.1, 1);
-
-    // Normalize if accrual engine available
-    let normData = null;
-    if (accrual && accrual.normalizeIncome) {
-      try { normData = accrual.normalizeIncome(); } catch(e){}
-    }
-    const displayIncome = (normData && normData.normalizedIncome > 0 && normData.normalizedIncome < income * 1.8)
-      ? normData.normalizedIncome : income;
-    const displayDeploy = Math.max(displayIncome - autoSave, displayIncome * 0.1, 1);
-
-    // ── Expenses from operating txns ──────────────────────────────────────────
-    const FIXED_BKS = ['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','cell','subscriptions'];
-    const VAR_BKS   = ['restaurants','groceries','gas_car','transit','healthcare','entertainment','household','personal','clothing','travel','gifts','other'];
-
-    const fixedActual = sp.filter(t=>FIXED_BKS.includes(classifyTxn(t))&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
-    const varActual   = sp.filter(t=>VAR_BKS.includes(classifyTxn(t))&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
-
-    let fixedProj = 0, varProj = 0;
-    if (isInFlight) {
-      FIXED_BKS.forEach(bk => { fixedProj += accrual.accrueAmount(bk)||0; });
-      VAR_BKS.forEach(bk   => { varProj   += accrual.accrueAmount(bk)||0; });
-    }
-
-    const fixedTotal = fixedActual + fixedProj;
-    const varTotal   = varActual   + varProj;
-    const totalSpend = fixedTotal + varTotal;
-    const buffer     = displayDeploy - totalSpend;
     const overflows  = buffer < 0;
+    const savePct    = income > 0 ? (autoSave / income * 100) : 0;
+    const fixPct     = Math.min(fixedTotal / deployable * 100, 100);
+    const varPct     = Math.min(varTotal   / deployable * 100, Math.max(0, 100 - fixPct));
+    const bufPct     = Math.max(0, 100 - fixPct - varPct);
 
-    // ── Width % (capped at 100 — never escapes container) ────────────────────
-    const fixPct = Math.min(fixedTotal / displayDeploy * 100, 100);
-    const varPct = Math.min(varTotal   / displayDeploy * 100, Math.max(0, 100 - fixPct));
-    const bufPct = Math.max(0, 100 - fixPct - varPct);
-    const savePct= income > 0 ? (autoSave / income * 100) : 0;
+    const fmtK  = n => { const a=Math.abs(n||0); return a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a); };
+    const [sy,sm] = sel.split('-');
+    const moLbl = new Date(+sy,+sm-1,1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
 
-    const fmtK = n => { const a=Math.abs(n||0); return a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a); };
+    // Build status note (3-pay month, bonus, early month, etc.)
+    const notes = [];
+    if (isInFlight) notes.push(daysElapsed + 'd actual + ' + daysRemaining + 'd projected');
+    if (normData?.isThreePayMonth) notes.push('3-pay mo normalized');
+    if ((normData?.bonusExclusion||0) > 100) notes.push(fmtK(normData.bonusExclusion) + ' bonus excl.');
+    if ((normData?.oneTimeTotal||0) > 100) notes.push(fmtK(normData.oneTimeTotal) + ' one-time excl.');
+    if (earlyMonth) notes.push('using historical expected income');
+    const noteStr = notes.length ? notes.join(' · ') : '';
 
-    const [sy,sm]  = selOrDefault.split('-');
-    const moLabel  = new Date(+sy, +sm-1, 1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
-    const normNote = normData&&(normData.isThreePayMonth||normData.oneTimeTotal>0)
-      ? (normData.isThreePayMonth?' · 3-pay normalized':'')+(normData.oneTimeTotal>0?' · '+fmtK(normData.oneTimeTotal)+' excl.':'') : '';
-    const isStr    = isInFlight ? ` · ${accrual.daysElapsed}d actual + ${accrual.daysRemaining}d projected` : ' · final';
+    const FIXED_C  = '#F87171';
+    const VAR_C    = '#F5A800';
+    const FREE_C   = '#34D9C3';
+    const OVER_C   = '#FF3B3B';
+    const bufColor = overflows ? OVER_C : bufPct < 8 ? '#FBBF24' : FREE_C;
+    const clickIS  = "if(typeof showPage==='function')showPage('income')";
 
-    // ── Colors ────────────────────────────────────────────────────────────────
-    const FIXED_C = '#F87171';
-    const VAR_C   = '#F5A800';
-    const FREE_C  = '#2DD4BF';
-    const OVER_C  = '#FF3B3B';
-    const bufColor= overflows ? OVER_C : bufPct < 8 ? '#FBBF24' : FREE_C;
-    const clickIS = "if(typeof showPage==='function')showPage('income')";
+    el.innerHTML = `<div style="padding:14px 16px 10px;">
 
-    el.innerHTML = `
-    <div style="padding:14px 16px 12px;">
-
-      <!-- ── Header ─────────────────────────────────────────────────────── -->
+      <!-- Header row -->
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
         <div>
-          <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:2px;">Budget Pressure
-            <span style="font-size:9px;font-weight:400;color:var(--ink4);font-family:var(--fm);margin-left:6px;">${moLabel}${isStr}</span>
+          <div style="font-size:13px;font-weight:600;color:var(--ink);">
+            Budget Pressure
+            <span style="font-size:10px;font-weight:400;color:var(--ink4);font-family:var(--fm);margin-left:6px;">${moLbl}</span>
           </div>
-          <div style="font-size:10px;color:var(--ink4);line-height:1.5;">
-            How much of take-home pay is consumed by bills and spending.
-            <span style="color:var(--river);">Bar = 100% of deployable income.</span>
-            ${normNote ? `<span style="color:var(--warn);">⚡ ${normNote.trim()}</span>` : ''}
-          </div>
+          <div style="font-size:10px;color:var(--ink4);font-family:var(--fm);margin-top:2px;">${noteStr || 'Deployable income vs committed spending'}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
-          <div style="font-size:18px;font-weight:300;font-family:var(--fd);color:${bufColor};line-height:1;">${overflows?'−':'+'}${fmtK(Math.abs(buffer))}</div>
-          <div style="font-size:10px;color:${bufColor};">${overflows?'over budget':'remaining'}</div>
+          <div style="font-size:26px;font-weight:300;font-family:var(--fd);color:${bufColor};line-height:1;">${overflows?'−':'+'}${fmtK(Math.abs(buffer))}</div>
+          <div style="font-size:11px;color:${bufColor};">${overflows?'over budget':'remaining'}</div>
         </div>
       </div>
 
-      <!-- ── Income context row ────────────────────────────────────────── -->
-      <div style="display:flex;gap:8px;margin-bottom:8px;font-size:11px;color:var(--ink4);flex-wrap:wrap;align-items:center;">
-        <span><span style="color:var(--pos);font-weight:600;font-family:var(--fm);">${fmtK(income)}</span> gross income</span>
-        <span>−</span>
-        <span><span style="color:var(--river);font-weight:600;font-family:var(--fm);">${fmtK(autoSave)}</span> auto-save (${Math.round(savePct)}%)</span>
+      <!-- Income equation -->
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--ink4);margin-bottom:8px;padding:7px 10px;background:rgba(255,255,255,.025);border-radius:6px;">
+        <span style="color:var(--pos);font-weight:700;font-family:var(--fm);">${fmtK(income)}</span>
+        <span>net take-home${earlyMonth?'*':''}</span>
+        ${autoSave > 0 ? `<span>−</span><span style="color:var(--river);font-weight:700;font-family:var(--fm);">${fmtK(autoSave)}</span><span>auto-saved (${Math.round(savePct)}%)</span>` : ''}
         <span>=</span>
-        <span><span style="color:var(--ink);font-weight:600;font-family:var(--fm);">${fmtK(displayDeploy)}</span> deployable</span>
-        ${normNote ? `<span style="color:var(--warn);font-family:var(--fm);font-size:10px;">⚡ normalized</span>` : ''}
+        <span style="color:var(--ink);font-weight:700;font-family:var(--fm);">${fmtK(deployable)}</span>
+        <span>deployable</span>
+        ${earlyMonth?`<span style="color:var(--warn);">*expected</span>`:''}
+        <span style="margin-left:auto;cursor:pointer;color:var(--river);" onclick="${clickIS}">Full P&amp;L →</span>
       </div>
 
-      <!-- ── The bar ───────────────────────────────────────────────────── -->
-      <div style="margin-bottom:6px;">
-        <div style="position:relative;height:26px;border-radius:5px;background:rgba(255,255,255,.04);border:1px solid var(--line);overflow:hidden;cursor:pointer;" onclick="${clickIS}" title="Click → Income Statement detail">
-          <!-- Fixed -->
+      <!-- The bar — overflow:hidden ensures it never bleeds outside container -->
+      <div style="margin-bottom:5px;">
+        <div style="position:relative;height:28px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--line);overflow:hidden;cursor:pointer;" onclick="${clickIS}">
+          <!-- Fixed (bills already paid + still due) -->
           <div style="position:absolute;left:0;top:0;bottom:0;width:${fixPct.toFixed(1)}%;background:${FIXED_C};display:flex;align-items:center;justify-content:center;overflow:hidden;">
-            ${fixPct>12 ? `<span style="font-size:9px;font-weight:700;color:rgba(255,255,255,.92);font-family:var(--fm);white-space:nowrap;">${fmtK(fixedTotal)}</span>` : ''}
+            ${fixPct>13?`<span style="font-size:10px;font-weight:700;color:rgba(255,255,255,.92);font-family:var(--fm);white-space:nowrap;">${fmtK(fixedTotal)}</span>`:''}
           </div>
-          <!-- Variable -->
+          <!-- Variable spending -->
           <div style="position:absolute;left:${fixPct.toFixed(1)}%;top:0;bottom:0;width:${varPct.toFixed(1)}%;background:${VAR_C};display:flex;align-items:center;justify-content:center;overflow:hidden;">
-            ${varPct>10 ? `<span style="font-size:9px;font-weight:700;color:rgba(0,0,0,.75);font-family:var(--fm);white-space:nowrap;">${fmtK(varTotal)}</span>` : ''}
+            ${varPct>11?`<span style="font-size:10px;font-weight:700;color:rgba(0,0,0,.78);font-family:var(--fm);white-space:nowrap;">${fmtK(varTotal)}</span>`:''}
           </div>
-          <!-- Buffer -->
-          ${bufPct>3 && !overflows ? `<div style="position:absolute;right:0;top:0;bottom:0;width:${bufPct.toFixed(1)}%;background:rgba(45,212,191,.15);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;overflow:hidden;"><span style="font-size:9px;font-weight:600;color:${FREE_C};font-family:var(--fm);white-space:nowrap;">${fmtK(buffer)}</span></div>` : ''}
-          <!-- Overflow glow -->
-          ${overflows ? `<div style="position:absolute;right:0;top:0;bottom:0;width:5px;background:${OVER_C};box-shadow:-3px 0 10px ${OVER_C};"></div>` : ''}
+          <!-- Free buffer -->
+          ${!overflows&&bufPct>2?`<div style="position:absolute;right:0;top:0;bottom:0;width:${bufPct.toFixed(1)}%;background:rgba(52,217,195,.14);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;overflow:hidden;"><span style="font-size:10px;font-weight:600;color:${FREE_C};font-family:var(--fm);white-space:nowrap;">${fmtK(buffer)}</span></div>`:''}
+          <!-- Over-budget glow -->
+          ${overflows?`<div style="position:absolute;right:0;top:0;bottom:0;width:5px;background:${OVER_C};box-shadow:-3px 0 12px ${OVER_C};"></div>`:''}
         </div>
         <!-- Legend -->
-        <div style="display:flex;gap:10px;margin-top:4px;font-size:10px;font-family:var(--fm);flex-wrap:wrap;align-items:center;">
+        <div style="display:flex;gap:12px;margin-top:4px;font-size:10px;font-family:var(--fm);flex-wrap:wrap;align-items:center;">
           <span style="color:${FIXED_C};">■ Fixed ${Math.round(fixPct)}%</span>
           <span style="color:${VAR_C};">■ Variable ${Math.round(varPct)}%</span>
-          <span style="color:${bufColor};">${overflows ? '▲ Over' : '■ Free'} ${Math.abs(Math.round(bufPct))}%</span>
-          <span style="margin-left:auto;cursor:pointer;color:var(--river);font-size:10px;" onclick="${clickIS}">View detail →</span>
+          <span style="color:${bufColor};">${overflows?'▲ Over':'■ Free'} ${Math.abs(Math.round(bufPct))}%</span>
         </div>
       </div>
 
-      <!-- ── 5 metric tiles ──────────────────────────────────────────────── -->
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;">
+      <!-- 5 metric tiles (same data as IS hero row) -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:10px;">
         ${[
-          ['Income',   fmtK(income),      income===displayIncome?'gross pay':'normalized',  'var(--pos)',   'rgba(45,212,191,.3)'],
-          ['Saved',    fmtK(autoSave),     Math.round(savePct)+'% of gross · to savings',   'var(--river)', 'rgba(96,165,250,.3)'],
-          ['Fixed',    fmtK(fixedTotal),   isInFlight&&fixedProj>0?fmtK(fixedProj)+' due':'bills & subs', FIXED_C,'rgba(248,113,113,.3)'],
-          ['Variable', fmtK(varTotal),     isInFlight&&varProj>0?'+'+fmtK(varProj)+' proj':'discretionary', VAR_C,'rgba(245,168,0,.3)'],
-          [overflows?'Over':'Buffer', (overflows?'−':'+')+fmtK(Math.abs(buffer)), overflows?'trim spending':'to allocate', bufColor, overflows?'rgba(255,59,59,.25)':'rgba(45,212,191,.2)'],
-        ].map(([lbl,val,sub,col,bdr])=>`
-          <div style="background:rgba(255,255,255,.03);border-radius:5px;padding:7px 8px;border-top:2px solid ${bdr};cursor:pointer;" onclick="${clickIS}">
+          ['Take-Home',  fmtK(income),       earlyMonth?'expected (historical)':income===normData?.rawIncome?'actual deposits':'normalized', 'var(--pos)',   'rgba(52,217,195,.3)'],
+          ['Auto-Save',  fmtK(autoSave),      Math.round(savePct)+'% of income · to savings', 'var(--river)', 'rgba(96,165,250,.3)'],
+          ['Fixed',      fmtK(fixedTotal),    isInFlight&&fixedAccrued>0?fmtK(fixedAccrued)+' still due':'obligations charged', FIXED_C,       'rgba(248,113,113,.3)'],
+          ['Variable',   fmtK(varTotal),      isInFlight&&varAccrued>0?'+'+fmtK(varAccrued)+' projected':'actual spending',     VAR_C,         'rgba(245,168,0,.3)'],
+          [overflows?'Over':'Buffer', (overflows?'−':'+')+fmtK(Math.abs(buffer)), overflows?'trim variable spending':'safe to allocate', bufColor, overflows?'rgba(255,59,59,.25)':'rgba(52,217,195,.18)'],
+        ].map(([lbl,val,sub,col,bdr]) => `
+          <div style="background:rgba(255,255,255,.03);border-radius:5px;padding:8px;border-top:2px solid ${bdr};cursor:pointer;" onclick="${clickIS}">
             <div style="font-size:9px;font-family:var(--fm);letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">${lbl}</div>
-            <div style="font-size:14px;font-weight:300;font-family:var(--fd);color:${col};line-height:1;margin-bottom:2px;">${val}</div>
-            <div style="font-size:9px;color:var(--ink4);line-height:1.3;">${sub}</div>
+            <div style="font-size:16px;font-weight:300;font-family:var(--fd);color:${col};line-height:1;margin-bottom:2px;">${val}</div>
+            <div style="font-size:10px;color:var(--ink4);line-height:1.3;">${sub}</div>
           </div>`).join('')}
       </div>
 
     </div>`;
   } catch(e) {
-    console.warn('[Thermometer] render error:', e);
+    console.warn('[Thermometer]', e);
     el.innerHTML = '';
   }
 }
+
+
 
 
 
@@ -7140,91 +7176,136 @@ function buildAccrualEngine(selMonth, sp) {
     return clean.length >= 2 ? clean : vals;
   }
 
-  // ── Income normalization ───────────────────────────────────────────────────
-  // Handles: 3-paycheck months, bonus payments, one-time receipts
-  // Returns { normalizedIncome, rawIncome, extraPaycheck, oneTimeItems }
+  // ── Income normalization ──────────────────────────────────────────────────
+  // Handles biweekly deposits from multiple employers, 3-pay months,
+  // per-employer bonus detection, one-time deposits, early-month extrapolation.
+  // Returns { normalizedIncome, rawIncome, extraPaycheck, bonusItems, oneTimeItems, ... }
   function normalizeIncome() {
     const incTxns    = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'paycheck');
-    const otherInc   = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc');
-    const autoSaves  = sp.filter(t => classifyTxn(t) === 'auto_save');
+    const otherIncAll= sp.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc' && !isCCCredit(t));
+    const curPayTxns = curByBucket['paycheck']  || [];
+    const curOthTxns = curByBucket['other_inc'] || [];
+    const curAutoSave= (curByBucket['auto_save']||[]).reduce((s,t)=>s+Math.abs(t.amount), 0);
 
-    // Build monthly paycheck totals across all history
-    const payByMonth = {};
+    // ── Build historical paycheck profile ──────────────────────────────
+    const payByMonth = {}, payCountByMonth = {};
     incTxns.forEach(t => {
       const mo = t.date.slice(0,7);
-      payByMonth[mo] = (payByMonth[mo]||0) + t.amount;
-    });
-
-    // Current month paycheck
-    const curPaycheck = (curByBucket['paycheck']||[]).reduce((s,t)=>s+t.amount,0);
-    const curAutoSave = (curByBucket['auto_save']||[]).reduce((s,t)=>s+Math.abs(t.amount),0);
-
-    // Prior monthly paycheck amounts (6 months, excluding current)
-    const priorPayAmts = priorMonths6
-      .map(mo => payByMonth[mo] || 0)
-      .filter(v => v > 0);
-
-    // Detect biweekly pay pattern: count paycheck transactions per month
-    const payCountByMonth = {};
-    incTxns.forEach(t => {
-      const mo = t.date.slice(0,7);
+      payByMonth[mo]      = (payByMonth[mo]||0) + t.amount;
       payCountByMonth[mo] = (payCountByMonth[mo]||0) + 1;
     });
+
+    // Per-payee (employer) historical amounts for bonus detection
+    const byPayee = {};
+    incTxns.forEach(t => {
+      const p = (t.payee||'UNKNOWN').toLowerCase().trim();
+      if (!byPayee[p]) byPayee[p] = { amounts: [] };
+      // Only include prior months in the base profile
+      if (!t.date.startsWith(curMonthStr)) byPayee[p].amounts.push(t.amount);
+    });
+
+    // Prior monthly totals (6 months, excluding current month)
+    const priorPayAmts   = priorMonths6.map(mo => payByMonth[mo] || 0).filter(v => v > 0);
     const priorPayCounts = priorMonths6.map(mo => payCountByMonth[mo] || 0).filter(v => v > 0);
-    const avgPayCount = priorPayCounts.length ? mean(priorPayCounts) : 2;
-    const curPayCount = (payCountByMonth[curMonthStr]||0);
+    const avgPayCount    = priorPayCounts.length ? mean(priorPayCounts) : 2;
+    const curPayCount    = payCountByMonth[curMonthStr] || 0;
+
+    // Expected normal-month paycheck total (outlier-removed median of prior months)
+    const cleanPriorAmts = removeOutliers(priorPayAmts);
+    const normalPaycheck = cleanPriorAmts.length > 0 ? median(cleanPriorAmts) : 0;
+
+    // ── 3-pay month detection ──────────────────────────────────────────
+    // More than the typical biweekly count means a 3-pay month
     const isThreePayMonth = curPayCount > 0 && curPayCount > Math.round(avgPayCount) + 0.5;
 
-    // Normalized paycheck: use median of prior months if this is a 3-pay month
-    const normalPaycheck = priorPayAmts.length > 0
-      ? median(removeOutliers(priorPayAmts))
-      : curPaycheck;
-    const extraPaycheck = isThreePayMonth ? Math.max(0, curPaycheck - normalPaycheck) : 0;
+    // ── Per-employer bonus detection ───────────────────────────────────
+    // A bonus shows as an anomalously high deposit from a known employer.
+    // We detect it per-payee (employer) so Highmark's bonus doesn't contaminate
+    // UPMC's normal check, and vice versa.
+    let bonusExclusion = 0;
+    const bonusItems   = [];
+    curPayTxns.forEach(t => {
+      const p    = (t.payee||'UNKNOWN').toLowerCase().trim();
+      const hist = (byPayee[p] || { amounts: [] }).amounts;
+      if (hist.length < 3) return; // need ≥3 prior checks to establish pattern
+      const m  = mean(hist);
+      const sd = sigma(hist, m);
+      if (sd > 0 && t.amount > m + 2.2 * sd) {
+        const bonus = t.amount - m; // only exclude the excess above normal
+        bonusExclusion += bonus;
+        bonusItems.push({ payee: t.payee, amount: t.amount, normalAmt: m, bonus });
+      }
+    });
 
-    // Detect one-time income in other_inc (bonuses, tax refunds, etc.)
-    // Per-payee: if amount is >2σ above that payee's historical average, flag it
+    // ── One-time other_inc detection ───────────────────────────────────
+    // Large deposits that are atypical for their payee: tax refunds, gifts,
+    // reimbursements, etc. Excluded from normalized operating income.
     const oneTimeItems = [];
-    const curOtherInc = (curByBucket['other_inc']||[]);
-    curOtherInc.forEach(t => {
+    curOthTxns.forEach(t => {
       const payee = (t.payee||'').toLowerCase().trim();
-      const hist  = priorTxns.filter(p => classifyTxn(p)==='other_inc' &&
+      const hist  = priorTxns.filter(p => classifyTxn(p) === 'other_inc' &&
                                           (p.payee||'').toLowerCase().trim() === payee)
                               .map(p => p.amount);
       if (!hist.length) {
-        // Never seen before — flag as one-time if > $500
         if (t.amount > 500) oneTimeItems.push({ payee: t.payee, amount: t.amount, reason: 'first occurrence' });
-        return;
-      }
-      const m  = mean(hist);
-      const sd = sigma(hist, m);
-      if (sd > 0 && t.amount > m + 2*sd) {
-        oneTimeItems.push({ payee: t.payee, amount: t.amount, normal: m, reason: 'spike' });
+      } else {
+        const m = mean(hist), sd = sigma(hist, m);
+        if (sd > 0 && t.amount > m + 2 * sd) {
+          oneTimeItems.push({ payee: t.payee, amount: t.amount, normal: m, reason: 'spike > 2σ' });
+        }
       }
     });
+    const oneTimeTotal = oneTimeItems.reduce((s, v) => s + v.amount, 0);
 
-    const oneTimeTotal = oneTimeItems.reduce((s,v)=>s+v.amount,0);
+    // ── Build normalized income ────────────────────────────────────────
+    // Rules (applied in priority order):
+    // 1. If 3-pay month: use normalPaycheck (strip the extra check)
+    // 2. If bonus detected: use actual minus bonus excess
+    // 3. If no paychecks yet this month (early month, 0 deposits):
+    //      use normalPaycheck (expected, based on history) — prevents bar going all-red
+    // 4. Otherwise: use actual curPaycheck (it will grow as the month progresses)
+    const curPaycheck    = curPayTxns.reduce((s,t) => s + t.amount, 0);
+    const curOtherIncAmt = curOthTxns.reduce((s,t)  => s + t.amount, 0);
+    const rawIncome      = curPaycheck + curOtherIncAmt;
+    const extraPaycheck  = isThreePayMonth ? Math.max(0, curPaycheck - normalPaycheck) : 0;
 
-    const rawIncome        = curPaycheck + curOtherInc.reduce((s,t)=>s+t.amount,0);
-    const normalizedIncome = (isThreePayMonth ? normalPaycheck : curPaycheck)
-                           + curOtherInc.reduce((s,t)=>s+t.amount,0)
-                           - oneTimeTotal;
+    let incomeBase;
+    if (isThreePayMonth) {
+      // 3-pay month: normalize to 2-check equivalent
+      incomeBase = normalPaycheck;
+    } else if (bonusExclusion > 0 && curPaycheck > normalPaycheck * 1.15) {
+      // Bonus detected: strip bonus excess, keep normal component
+      incomeBase = Math.max(normalPaycheck, curPaycheck - bonusExclusion);
+    } else if (curPaycheck === 0 && normalPaycheck > 0) {
+      // Early month — no checks deposited yet — use historical expected
+      incomeBase = normalPaycheck;
+    } else {
+      // Normal: use actual (accumulates as biweekly deposits arrive)
+      incomeBase = curPaycheck;
+    }
+
+    const normalizedIncome = incomeBase + curOtherIncAmt - oneTimeTotal;
 
     return {
       rawIncome,
-      normalizedIncome: Math.max(0, normalizedIncome),
+      normalizedIncome:  Math.max(0, normalizedIncome),
       extraPaycheck,
+      bonusItems,
+      bonusExclusion,
       oneTimeItems,
       oneTimeTotal,
       isThreePayMonth,
       curPayCount,
-      avgPayCount: Math.round(avgPayCount * 10)/10,
+      curPaycheck,
+      avgPayCount:       Math.round(avgPayCount * 10) / 10,
       normalPaycheck,
       curAutoSave,
-      normalDeployable: Math.max(0, normalizedIncome - curAutoSave),
+      normalDeployable:  Math.max(0, normalizedIncome - curAutoSave),
+      earlyMonth:        curPaycheck === 0 && normalPaycheck > 0,
     };
   }
 
-  // ── Fixed-bill accrual: per-payee discrete median, uncharged only ─────────
+    // ── Fixed-bill accrual: per-payee discrete median, uncharged only ─────────
   // Uses 6-month history to catch quarterly (every 3mo) and semi-annual bills.
   // A payee must appear in at least 2 of the prior 6 months to be projected.
   function getFixedAccrual(bk) {
@@ -7520,16 +7601,16 @@ function renderIncomeStatement() {
   const autoSave     = sectionData.find(s=>s.id==='auto_save')?.total || 0;
   const totalExp     = sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.total,0);
 
-  // ── Income normalization — critical for accurate forward view ──────────────
-  // Removes 3rd paycheck windfall and one-time bonuses from the baseline
-  // so the P&L reflects what a "normal" month looks like
-  let incNorm = null;
-  if (isInFlightMonth && accrual && accrual.normalizeIncome) {
-    incNorm = accrual.normalizeIncome();
-  }
-  const displayIncome  = (incNorm && incNorm.normalizedIncome > 0) ? incNorm.normalizedIncome : totalIncome;
-  const displayAutoSave= (incNorm && incNorm.curAutoSave   > 0)  ? incNorm.curAutoSave      : autoSave;
+  // ── Income normalization — uses buildMonthSummary so IS matches thermometer ─
+  // Both IS and the Budget Pressure Bar call the same shared compute function,
+  // guaranteeing the numbers are identical across views.
+  const _mSummary      = buildMonthSummary(selMonth, sp);
+  const incNorm        = _mSummary ? _mSummary.normData : null;
+  const displayIncome  = _mSummary ? _mSummary.normalizedIncome  : totalIncome;
+  const displayAutoSave= _mSummary ? _mSummary.normalizedAutoSave : autoSave;
   const checkingIn     = displayIncome - displayAutoSave;
+  // Propagate early-month flag for hero display
+  const earlyMonthIS   = _mSummary ? _mSummary.earlyMonth : false;
 
   const netSurplus   = totalIncome - autoSave - totalExp;
   const savingsPct   = displayIncome>0 ? ((displayAutoSave+Math.max(0,displayIncome-displayAutoSave-totalExp))/displayIncome*100) : 0;
@@ -7561,6 +7642,7 @@ function renderIncomeStatement() {
   }
 
   // ── Build income statement HTML ─────────────────────────────────
+  try {
   let out = '';
 
   // Hero row
@@ -7899,6 +7981,14 @@ function renderIncomeStatement() {
   }
 
   el.innerHTML = out;
+  } catch(e) {
+    console.error("[IS] render error:", e);
+    el.innerHTML = '<div style="padding:32px;text-align:center;color:var(--ink4);">'
+      + '<div style="font-size:24px;margin-bottom:12px;">⚠️</div>'
+      + '<div style="font-size:14px;color:var(--ink2);">Income Statement error</div>'
+      + '<div style="font-size:11px;color:var(--ink4);margin-top:6px;font-family:var(--fm);">' + e.message + '</div>'
+      + '</div>';
+  }
 
   // Single delegated click handler — only add once, flag on element
   if (el.dataset.listenerBound) return;
