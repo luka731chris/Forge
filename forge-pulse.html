@@ -4534,118 +4534,156 @@ function buildMonthSummary(selMonth, sp) {
 }
 
 
-
 function renderThermometer(containerId, selMonth) {
   const el = document.getElementById(containerId);
   if (!el) return;
   try {
     if (!txns.length) { el.innerHTML = ''; return; }
-
     const sp  = operatingSpendable(txns);
     const now = new Date();
     const sel = selMonth || now.toISOString().slice(0,7);
-
-    // ── Get summary from the SAME shared compute as the IS ────────────────
-    const S = buildMonthSummary(sel, sp);
+    const S   = buildMonthSummary(sel, sp);
     if (!S) { el.innerHTML = ''; return; }
 
     const { normalizedIncome: income, normalizedAutoSave: autoSave, deployable,
-            fixedTotal, varTotal, totalSpend, buffer, fixedActual, fixedAccrued,
-            varActual, varAccrued, isInFlight, accrual, normData,
+            fixedTotal, varTotal, fixedActual, fixedAccrued, varActual, varAccrued,
+            totalSpend, buffer, isInFlight, accrual, normData,
             daysElapsed, daysRemaining, earlyMonth } = S;
 
     const overflows  = buffer < 0;
     const savePct    = income > 0 ? (autoSave / income * 100) : 0;
-    const fixPct     = Math.min(fixedTotal / deployable * 100, 100);
-    const varPct     = Math.min(varTotal   / deployable * 100, Math.max(0, 100 - fixPct));
-    const bufPct     = Math.max(0, 100 - fixPct - varPct);
+    const bufColor   = overflows ? '#FF3B3B' : (Math.abs(buffer) / deployable < .08) ? '#FBBF24' : '#34D9C3';
+    const FIXED_C    = '#F87171';
+    const VAR_C      = '#F5A800';
+    const SAVE_C     = '#34D9C3';
+    const OVER_C     = '#FF3B3B';
+    const clickIS    = "if(typeof showPage==='function')showPage('income')";
 
-    const fmtK  = n => { const a=Math.abs(n||0); return a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a); };
+    // Scale: the bar represents max(deployable, totalSpend)*1.05 so overage is visible
+    const barScale   = Math.max(deployable, totalSpend) * (overflows ? 1.08 : 1.0);
+    const fixW       = Math.min(fixedTotal  / barScale * 100, 100);
+    const varW       = Math.min(varTotal    / barScale * 100, Math.max(0, 100 - fixW));
+    const incLine    = Math.min(deployable  / barScale * 100, 100); // income limit line position
+    const bufW       = !overflows ? Math.max(0, incLine - fixW - varW) : 0;
+    const overW      = overflows ? Math.min((Math.abs(buffer)) / barScale * 100, 100 - fixW - varW) : 0;
+
+    const fmtK = n => { const a=Math.abs(n||0); return a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a); };
     const [sy,sm] = sel.split('-');
     const moLbl = new Date(+sy,+sm-1,1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
 
-    // Build status note (3-pay month, bonus, early month, etc.)
     const notes = [];
-    if (isInFlight) notes.push(daysElapsed + 'd actual + ' + daysRemaining + 'd projected');
+    if (isInFlight) notes.push(daysElapsed+'d actual, '+daysRemaining+'d projected');
     if (normData?.isThreePayMonth) notes.push('3-pay mo normalized');
-    if ((normData?.bonusExclusion||0) > 100) notes.push(fmtK(normData.bonusExclusion) + ' bonus excl.');
-    if ((normData?.oneTimeTotal||0) > 100) notes.push(fmtK(normData.oneTimeTotal) + ' one-time excl.');
-    if (earlyMonth) notes.push('using historical expected income');
-    const noteStr = notes.length ? notes.join(' · ') : '';
+    if ((normData?.bonusExclusion||0) > 100) notes.push(fmtK(normData.bonusExclusion)+' bonus excl.');
+    if ((normData?.oneTimeTotal||0) > 100) notes.push(fmtK(normData.oneTimeTotal)+' one-time excl.');
+    if (earlyMonth) notes.push('income projected from history');
+    const noteStr = notes.join(' · ');
 
-    const FIXED_C  = '#F87171';
-    const VAR_C    = '#F5A800';
-    const FREE_C   = '#34D9C3';
-    const OVER_C   = '#FF3B3B';
-    const bufColor = overflows ? OVER_C : bufPct < 8 ? '#FBBF24' : FREE_C;
-    const clickIS  = "if(typeof showPage==='function')showPage('income')";
+    el.innerHTML = `<div style="padding:14px 16px 12px;">
 
-    el.innerHTML = `<div style="padding:14px 16px 10px;">
-
-      <!-- Header row -->
+      <!-- Title + hero amount -->
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
         <div>
-          <div style="font-size:13px;font-weight:600;color:var(--ink);">
-            Budget Pressure
-            <span style="font-size:10px;font-weight:400;color:var(--ink4);font-family:var(--fm);margin-left:6px;">${moLbl}</span>
-          </div>
-          <div style="font-size:10px;color:var(--ink4);font-family:var(--fm);margin-top:2px;">${noteStr || 'Deployable income vs committed spending'}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--ink);">Budget Pressure</div>
+          <div style="font-size:10px;color:var(--ink4);font-family:var(--fm);margin-top:2px;">${moLbl}${noteStr?' · '+noteStr:''}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-size:26px;font-weight:300;font-family:var(--fd);color:${bufColor};line-height:1;">${overflows?'−':'+'}${fmtK(Math.abs(buffer))}</div>
-          <div style="font-size:11px;color:${bufColor};">${overflows?'over budget':'remaining'}</div>
+          <div style="font-size:11px;color:${bufColor};font-weight:600;">${overflows ? 'over budget — action needed' : bufW < 1 ? 'break-even' : 'net positive'}</div>
         </div>
       </div>
 
       <!-- Income equation -->
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--ink4);margin-bottom:8px;padding:7px 10px;background:rgba(255,255,255,.025);border-radius:6px;">
+      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:11px;color:var(--ink4);margin-bottom:10px;padding:7px 10px;background:rgba(255,255,255,.025);border-radius:6px;">
         <span style="color:var(--pos);font-weight:700;font-family:var(--fm);">${fmtK(income)}</span>
-        <span>net take-home${earlyMonth?'*':''}</span>
-        ${autoSave > 0 ? `<span>−</span><span style="color:var(--river);font-weight:700;font-family:var(--fm);">${fmtK(autoSave)}</span><span>auto-saved (${Math.round(savePct)}%)</span>` : ''}
-        <span>=</span>
+        <span>take-home${earlyMonth?' (est.)':''}</span>
+        ${autoSave > 0 ? `<span> − </span><span style="color:var(--river);font-weight:700;font-family:var(--fm);">${fmtK(autoSave)}</span><span>auto-save (${Math.round(savePct)}%)</span>` : ''}
+        <span> = </span>
         <span style="color:var(--ink);font-weight:700;font-family:var(--fm);">${fmtK(deployable)}</span>
         <span>deployable</span>
-        ${earlyMonth?`<span style="color:var(--warn);">*expected</span>`:''}
         <span style="margin-left:auto;cursor:pointer;color:var(--river);" onclick="${clickIS}">Full P&amp;L →</span>
       </div>
 
-      <!-- The bar — overflow:hidden ensures it never bleeds outside container -->
-      <div style="margin-bottom:5px;">
-        <div style="position:relative;height:28px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--line);overflow:hidden;cursor:pointer;" onclick="${clickIS}">
-          <!-- Fixed (bills already paid + still due) -->
-          <div style="position:absolute;left:0;top:0;bottom:0;width:${fixPct.toFixed(1)}%;background:${FIXED_C};display:flex;align-items:center;justify-content:center;overflow:hidden;">
-            ${fixPct>13?`<span style="font-size:10px;font-weight:700;color:rgba(255,255,255,.92);font-family:var(--fm);white-space:nowrap;">${fmtK(fixedTotal)}</span>`:''}
-          </div>
-          <!-- Variable spending -->
-          <div style="position:absolute;left:${fixPct.toFixed(1)}%;top:0;bottom:0;width:${varPct.toFixed(1)}%;background:${VAR_C};display:flex;align-items:center;justify-content:center;overflow:hidden;">
-            ${varPct>11?`<span style="font-size:10px;font-weight:700;color:rgba(0,0,0,.78);font-family:var(--fm);white-space:nowrap;">${fmtK(varTotal)}</span>`:''}
-          </div>
-          <!-- Free buffer -->
-          ${!overflows&&bufPct>2?`<div style="position:absolute;right:0;top:0;bottom:0;width:${bufPct.toFixed(1)}%;background:rgba(52,217,195,.14);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;overflow:hidden;"><span style="font-size:10px;font-weight:600;color:${FREE_C};font-family:var(--fm);white-space:nowrap;">${fmtK(buffer)}</span></div>`:''}
-          <!-- Over-budget glow -->
-          ${overflows?`<div style="position:absolute;right:0;top:0;bottom:0;width:5px;background:${OVER_C};box-shadow:-3px 0 12px ${OVER_C};"></div>`:''}
+      <!-- ════════════════════════════════════════════════════════
+           THE BAR — SVG for crisp hatching patterns
+           Bar width = barScale (stretches past income line when over budget)
+      ═══════════════════════════════════════════════════════════ -->
+      <div style="position:relative;margin-bottom:8px;">
+
+        <!-- Income line label above bar -->
+        <div style="position:absolute;left:${incLine.toFixed(1)}%;top:-17px;transform:translateX(-50%);font-size:9px;font-family:var(--fm);color:var(--ink3);white-space:nowrap;letter-spacing:.04em;">
+          ${fmtK(deployable)} limit
         </div>
-        <!-- Legend -->
-        <div style="display:flex;gap:12px;margin-top:4px;font-size:10px;font-family:var(--fm);flex-wrap:wrap;align-items:center;">
-          <span style="color:${FIXED_C};">■ Fixed ${Math.round(fixPct)}%</span>
-          <span style="color:${VAR_C};">■ Variable ${Math.round(varPct)}%</span>
-          <span style="color:${bufColor};">${overflows?'▲ Over':'■ Free'} ${Math.abs(Math.round(bufPct))}%</span>
+
+        <!-- Bar container — height 36px for presence -->
+        <div style="position:relative;height:36px;border-radius:6px;overflow:hidden;border:1px solid var(--line);">
+
+          <svg width="100%" height="36" preserveAspectRatio="none" style="position:absolute;inset:0;">
+            <defs>
+              <!-- Diagonal warning hatch for overage -->
+              <pattern id="hatch-over" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(-45)">
+                <rect width="10" height="10" fill="${OVER_C}" opacity=".18"/>
+                <line x1="0" y1="0" x2="0" y2="10" stroke="${OVER_C}" stroke-width="4" opacity=".7"/>
+              </pattern>
+              <!-- Diagonal celebration fill for buffer -->
+              <pattern id="hatch-save" patternUnits="userSpaceOnUse" width="12" height="12" patternTransform="rotate(45)">
+                <rect width="12" height="12" fill="${SAVE_C}" opacity=".08"/>
+                <line x1="0" y1="0" x2="0" y2="12" stroke="${SAVE_C}" stroke-width="3.5" opacity=".55"/>
+              </pattern>
+            </defs>
+
+            <!-- Background track -->
+            <rect x="0" y="0" width="100%" height="36" fill="rgba(255,255,255,.03)"/>
+
+            <!-- Fixed bills — solid red -->
+            <rect x="0" y="0" width="${fixW.toFixed(2)}%" height="36" fill="${FIXED_C}"/>
+            ${fixW > 14 ? `<text x="${(fixW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" font-weight="700" fill="rgba(255,255,255,.92)">${fmtK(fixedTotal)}</text>` : ''}
+
+            <!-- Variable spending — solid gold -->
+            <rect x="${fixW.toFixed(2)}%" y="0" width="${varW.toFixed(2)}%" height="36" fill="${VAR_C}"/>
+            ${varW > 12 ? `<text x="${(fixW + varW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" font-weight="700" fill="rgba(0,0,0,.78)">${fmtK(varTotal)}</text>` : ''}
+
+            <!-- Buffer zone — diagonal celebration stripes -->
+            ${!overflows && bufW > 1 ? `
+            <rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${bufW.toFixed(2)}%" height="36" fill="url(#hatch-save)"/>
+            ${bufW > 10 ? `<text x="${(fixW+varW+bufW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" font-weight="700" fill="${SAVE_C}">${fmtK(buffer)}</text>` : ''}` : ''}
+
+            <!-- Overage zone — diagonal warning hatching (beyond income line) -->
+            ${overflows ? `
+            <rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${overW.toFixed(2)}%" height="36" fill="url(#hatch-over)"/>
+            ${overW > 8 ? `<text x="${(fixW+varW+overW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" font-weight="700" fill="${OVER_C}">−${fmtK(Math.abs(buffer))}</text>` : ''}` : ''}
+
+            <!-- Income limit line — strong vertical marker -->
+            <rect x="${(incLine - 0.4).toFixed(2)}%" y="0" width="1.2" height="36" fill="rgba(255,255,255,.55)"/>
+            <!-- Tick marks top/bottom for emphasis -->
+            <rect x="${(incLine - 0.8).toFixed(2)}%" y="0" width="2.2" height="4" fill="rgba(255,255,255,.8)"/>
+            <rect x="${(incLine - 0.8).toFixed(2)}%" y="32" width="2.2" height="4" fill="rgba(255,255,255,.8)"/>
+
+          </svg>
+        </div>
+
+        <!-- Legend row -->
+        <div style="display:flex;gap:10px;margin-top:5px;font-size:10px;font-family:var(--fm);flex-wrap:wrap;align-items:center;">
+          <span style="color:${FIXED_C};">▬ Fixed ${Math.round(fixedTotal/deployable*100)}%</span>
+          <span style="color:${VAR_C};">▬ Variable ${Math.round(varTotal/deployable*100)}%</span>
+          ${!overflows ? `<span style="color:${SAVE_C};">╱╱ Free ${Math.round(buffer/deployable*100)}% → savings or planned spend</span>` :
+                         `<span style="color:${OVER_C};">╱╱ Over by ${fmtK(Math.abs(buffer))} — trim discretionary</span>`}
         </div>
       </div>
 
-      <!-- 5 metric tiles (same data as IS hero row) -->
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:10px;">
+      <!-- 5 metric tiles -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:8px;">
         ${[
-          ['Take-Home',  fmtK(income),       earlyMonth?'expected (historical)':income===normData?.rawIncome?'actual deposits':'normalized', 'var(--pos)',   'rgba(52,217,195,.3)'],
-          ['Auto-Save',  fmtK(autoSave),      Math.round(savePct)+'% of income · to savings', 'var(--river)', 'rgba(96,165,250,.3)'],
-          ['Fixed',      fmtK(fixedTotal),    isInFlight&&fixedAccrued>0?fmtK(fixedAccrued)+' still due':'obligations charged', FIXED_C,       'rgba(248,113,113,.3)'],
-          ['Variable',   fmtK(varTotal),      isInFlight&&varAccrued>0?'+'+fmtK(varAccrued)+' projected':'actual spending',     VAR_C,         'rgba(245,168,0,.3)'],
-          [overflows?'Over':'Buffer', (overflows?'−':'+')+fmtK(Math.abs(buffer)), overflows?'trim variable spending':'safe to allocate', bufColor, overflows?'rgba(255,59,59,.25)':'rgba(52,217,195,.18)'],
+          ['Take-Home',  fmtK(income),       earlyMonth?'projected (historical)':'net deposits', 'var(--pos)',   'rgba(52,217,195,.3)'],
+          ['Auto-Save',  fmtK(autoSave),      Math.round(savePct)+'% to savings first', 'var(--river)', 'rgba(96,165,250,.3)'],
+          ['Fixed',      fmtK(fixedTotal),    isInFlight&&fixedAccrued>0?fmtK(fixedAccrued)+' still due':'all charged', FIXED_C, 'rgba(248,113,113,.3)'],
+          ['Variable',   fmtK(varTotal),      isInFlight&&varAccrued>0?'+'+fmtK(varAccrued)+' on pace':'actual spend', VAR_C, 'rgba(245,168,0,.3)'],
+          [overflows?'Over':'Surplus', (overflows?'−':'+')+fmtK(Math.abs(buffer)), overflows?'reduce discretionary':'adds to net worth', bufColor, overflows?'rgba(255,59,59,.25)':'rgba(52,217,195,.2)'],
         ].map(([lbl,val,sub,col,bdr]) => `
           <div style="background:rgba(255,255,255,.03);border-radius:5px;padding:8px;border-top:2px solid ${bdr};cursor:pointer;" onclick="${clickIS}">
             <div style="font-size:9px;font-family:var(--fm);letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">${lbl}</div>
             <div style="font-size:16px;font-weight:300;font-family:var(--fd);color:${col};line-height:1;margin-bottom:2px;">${val}</div>
-            <div style="font-size:10px;color:var(--ink4);line-height:1.3;">${sub}</div>
+            <div style="font-size:10px;color:var(--ink4);">${sub}</div>
           </div>`).join('')}
       </div>
 
@@ -4655,6 +4693,7 @@ function renderThermometer(containerId, selMonth) {
     el.innerHTML = '';
   }
 }
+
 
 
 
