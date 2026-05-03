@@ -1523,7 +1523,16 @@ const FORGE_AUTH = (function () {
 
   // ── Byte / Base64 helpers ─────────────────────────────────────────────────
   function _bytesToB64(buf) {
-    return btoa(String.fromCharCode(...new Uint8Array(buf)));
+    // Chunked to avoid "maximum call stack size exceeded" on large buffers.
+    // String.fromCharCode(...largeArray) spreads all bytes as function args —
+    // fine for 16-byte IVs, fatal for 400KB ledger ciphertext.
+    const bytes = new Uint8Array(buf);
+    let binary = '';
+    const CHUNK = 8192;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+    }
+    return btoa(binary);
   }
   function _b64ToBytes(b64) {
     return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
