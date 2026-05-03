@@ -42,10 +42,14 @@
   --gold-20:  rgba(245,168,0,.20);
 
   /* Semantic */
-  --pos:   #2DD4BF;
-  --neg:   #F87171;
-  --river: #60A5FA;
-  --warn:  #FBBF24;
+  --pos:      #2DD4BF;
+  --neg:      #F87171;
+  --river:    #60A5FA;
+  --warn:     #FBBF24;
+  --purple:   #C084FC;
+  /* Aliases for backward-compat with ported components */
+  --positive: var(--pos);
+  --negative: var(--neg);
   --purple:#C084FC;
 
   /* Ink (text hierarchy) */
@@ -293,6 +297,7 @@ main::-webkit-scrollbar-thumb:hover { background:var(--line3); }
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   padding: var(--sp4);
+  overflow: hidden;
   contain: paint;
 }
 .chart-title {
@@ -346,6 +351,10 @@ td {
   color: var(--ink2);
   border-bottom: 1px solid rgba(255,255,255,.028);
   line-height: 1.4;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 tr:last-child td { border-bottom:none; }
 tr:hover td { background:var(--hover); }
@@ -824,6 +833,11 @@ textarea:focus { border-color:var(--gold); }
 ::-webkit-scrollbar-thumb { background:var(--line2); border-radius:2px; }
 ::-webkit-scrollbar-thumb:hover { background:var(--line3); }
 
+/* ── Table overrides ─────────────────────────────────────────────────────── */
+.td-wrap { white-space: normal; overflow: visible; text-overflow: clip; }
+.td-mono { font-family: var(--fm); }
+.td-dim  { color: var(--ink4); }
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width:900px) {
   nav { display:none; }
@@ -856,22 +870,22 @@ textarea:focus { border-color:var(--gold); }
 
   <!-- Mode: setup (first time) or unlock -->
   <div id="lock-setup" style="display:none;width:100%;max-width:320px;text-align:center;">
-    <div style="font-size:15px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:6px;">Create your Forge PIN</div>
+    <div style="font-size:14px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:6px;">Create your Forge PIN</div>
     <div style="font-size:12px;color:var(--ink4,#524E4A);margin-bottom:24px;line-height:1.6;">
       Your financial data will be encrypted locally.<br>Recovery: clear &amp; re-pull from Cloudflare.
     </div>
     <input id="lock-pass-new" type="password" placeholder="Create passphrase" autocomplete="new-password"
       style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
-             padding:14px 16px;font-size:17px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
+             padding:14px 16px;font-size:16px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
              text-align:center;letter-spacing:.1em;outline:none;-webkit-appearance:none;">
     <input id="lock-pass-confirm" type="password" placeholder="Confirm passphrase" autocomplete="new-password"
       style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
-             padding:14px 16px;font-size:17px;color:var(--ink,#EEEAE4);margin-bottom:16px;box-sizing:border-box;
+             padding:14px 16px;font-size:16px;color:var(--ink,#EEEAE4);margin-bottom:16px;box-sizing:border-box;
              text-align:center;letter-spacing:.1em;outline:none;-webkit-appearance:none;">
     <div id="lock-setup-err" style="color:#F87171;font-size:12px;margin-bottom:10px;min-height:16px;"></div>
     <button onclick="forgeSetupPIN()"
       style="width:100%;background:var(--gold,#F5A800);color:#000;border:none;border-radius:8px;
-             padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
+             padding:15px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
       Create PIN &amp; Encrypt Data
     </button>
     <div style="margin-top:12px;font-size:11px;color:var(--ink4,#524E4A);line-height:1.6;">
@@ -881,16 +895,16 @@ textarea:focus { border-color:var(--gold); }
   </div>
 
   <div id="lock-unlock" style="display:none;width:100%;max-width:320px;text-align:center;">
-    <div style="font-size:15px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:20px;">Enter your passphrase</div>
+    <div style="font-size:14px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:20px;">Enter your passphrase</div>
     <input id="lock-pass" type="password" placeholder="Passphrase" autocomplete="current-password"
       style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
-             padding:14px 16px;font-size:17px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
+             padding:14px 16px;font-size:16px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
              text-align:center;letter-spacing:.1em;outline:none;-webkit-appearance:none;"
       onkeydown="if(event.key==='Enter')forgeUnlock()">
     <div id="lock-err" style="color:#F87171;font-size:12px;margin-bottom:10px;min-height:16px;"></div>
     <button id="lock-btn" onclick="forgeUnlock()"
       style="width:100%;background:var(--gold,#F5A800);color:#000;border:none;border-radius:8px;
-             padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">
+             padding:15px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">
       Unlock Forge
     </button>
     <button id="lock-bio-btn" style="display:none;width:100%;background:transparent;
@@ -988,7 +1002,7 @@ textarea:focus { border-color:var(--gold); }
     </div>
     <div class="nav-item" onclick="showPage('crosswalk')" id="nav-crosswalk">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h7"/><line x1="17" y1="15" x2="17" y2="21"/><line x1="14" y1="18" x2="20" y2="18"/></svg>
-      Account Hierarchy
+      Category Mapper
     </div>
     <div class="nav-item" onclick="showPage('reconcile')" id="nav-reconcile">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 7H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-3"/><path d="M9 15h3l8.5-8.5a1.5 1.5 0 0 0-3-3L9 12v3"/><line x1="16" y1="5" x2="19" y2="8"/></svg>
@@ -1139,7 +1153,7 @@ textarea:focus { border-color:var(--gold); }
       <div class="chart-title">Spending by Category</div>
       <div class="chart-sub">Top categories</div>
       <div class="chart-area" style="height:220px;position:relative;">
-        <canvas id="dashDonut"></canvas>
+        <canvas id="dashDonut" style="display:block;"></canvas>
       </div>
     </div>
   </div>
@@ -1203,7 +1217,7 @@ textarea:focus { border-color:var(--gold); }
     <div class="chart-card">
       <div class="chart-title">Category Breakdown</div>
       <div class="chart-area" style="height:260px;position:relative;">
-        <canvas id="catDonut"></canvas>
+        <canvas id="catDonut" style="display:block;"></canvas>
       </div>
     </div>
   </div>
@@ -1430,8 +1444,8 @@ textarea:focus { border-color:var(--gold); }
 <div id="page-crosswalk" class="page">
   <div class="page-hdr">
     <div>
-      <div class="page-title">Account Hierarchy</div>
-      <div class="page-sub" id="cwSub">Forge Bucket → Quicken Category → Subcategory → Transaction · live crosswalk from imported data</div>
+      <div class="page-title">Category Mapper</div>
+      <div class="page-sub" id="cwSub">Find uncategorized transactions · AI-powered Quicken category recommendations · export to Excel</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <input id="cwSearch" type="text" placeholder="Search bucket, category, payee…" oninput="renderCrosswalk()" style="font-size:12px;padding:6px 10px;width:220px;">
@@ -1812,153 +1826,376 @@ function getSyncToken() {
 // ════════════════════════════════════════════════════════════════════════
 // ACCOUNT HIERARCHY / CROSSWALK PAGE
 // ════════════════════════════════════════════════════════════════════════
+
 function renderCrosswalk() {
-  const el  = document.getElementById('cwContent');
+  const el = document.getElementById('cwContent');
   if (!el) return;
 
-  const search    = (document.getElementById('cwSearch')?.value || '').toLowerCase();
-  const srcFilter = document.getElementById('cwSource')?.value || 'all';
-  const bkFilter  = document.getElementById('cwBucket')?.value || 'all';
+  const search    = (document.getElementById('cwSearch')?.value  || '').toLowerCase().trim();
+  const srcFilter = document.getElementById('cwSource')?.value   || 'all';
+  const bkFilter  = document.getElementById('cwBucket')?.value   || 'all';
 
   const sp = spendable(txns);
   if (!sp.length) {
-    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">Import data to view the account hierarchy.</div>';
+    el.innerHTML = '<div style="padding:48px;text-align:center;color:var(--ink4);font-size:13px;">Import data to use the Category Mapper.</div>';
     return;
   }
 
-  // Populate bucket dropdown
+  // Bucket dropdown
   const bkSel = document.getElementById('cwBucket');
   if (bkSel && bkSel.options.length <= 1) {
-    const bks = [...new Set(sp.map(t => classifyTxn(t)))].sort();
-    bks.forEach(bk => {
-      const opt = document.createElement('option');
-      opt.value = bk;
-      opt.textContent = (BUCKET_META[bk]||{label:bk}).label;
-      bkSel.appendChild(opt);
+    const allBks = [...new Set(sp.map(t => classifyTxn(t)))].sort();
+    allBks.forEach(bk => {
+      const o = document.createElement('option');
+      o.value = bk;
+      o.textContent = ((BUCKET_META[bk] || {}).label || bk);
+      bkSel.appendChild(o);
     });
   }
 
-  // Build enriched crosswalk rows
-  let rows = crosswalkRows(sp);
+  // ── Identify uncategorized transactions ──────────────────────────────────
+  // "Uncategorized" = category field is blank, generic, or falls into bucket 'other'
+  const isUncat = t => {
+    const cat = (t.category || '').trim();
+    if (!cat || cat === '' || /^uncategorized$/i.test(cat)) return true;
+    const bk  = classifyTxn(t);
+    return bk === 'other';
+  };
 
-  // Apply filters
-  if (bkFilter !== 'all')  rows = rows.filter(r => r.forgeBucket === bkFilter);
-  if (srcFilter !== 'all') rows = rows.filter(r => r.sources.includes(srcFilter));
-  if (search) rows = rows.filter(r =>
-    r.bucketLabel.toLowerCase().includes(search) ||
-    r.qParent.toLowerCase().includes(search) ||
-    r.qSub.toLowerCase().includes(search)
-  );
-
-  // Group by waterfall section
-  const bySection = {};
-  rows.forEach(r => {
-    const sec = r.waterfallLabel;
-    if (!bySection[sec]) bySection[sec] = [];
-    bySection[sec].push(r);
+  // ── Build recommendation engine ──────────────────────────────────────────
+  // For each payee, find what other CATEGORIZED transactions with similar payees use
+  const categorizedTxns = sp.filter(t => !isUncat(t));
+  const catByPayee = {};  // payee → {category, bucket, count}
+  categorizedTxns.forEach(t => {
+    const key = (t.payee || '').toLowerCase().trim();
+    if (!key) return;
+    if (!catByPayee[key]) catByPayee[key] = {};
+    const cat = t.category || '';
+    catByPayee[key][cat] = (catByPayee[key][cat] || 0) + 1;
   });
 
-  const totalTxns = rows.reduce((s,r) => s+r.count, 0);
-  const totalAmt  = rows.reduce((s,r) => s+r.total, 0);
-  document.getElementById('cwSub').textContent =
-    `${rows.length.toLocaleString()} category paths · ${totalTxns.toLocaleString()} transactions · ${fmt(totalAmt)} total`;
+  function getRecommendation(t) {
+    const payee = (t.payee || '').toLowerCase().trim();
+    if (!payee) return null;
 
-  // Summary coverage cards
-  const srcCounts = {};
-  sp.forEach(t => {
-    const src = getQSource(t);
-    srcCounts[src] = (srcCounts[src]||0)+1;
-  });
-  const totalAll = sp.length;
+    // 1. Exact payee match
+    if (catByPayee[payee]) {
+      const cats = Object.entries(catByPayee[payee]).sort((a,b)=>b[1]-a[1]);
+      if (cats.length) return { category: cats[0][0], confidence: 'high', match: 'exact payee', count: cats[0][1] };
+    }
 
-  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px;">';
-  Object.entries(SOURCE_BADGES).forEach(([src, meta]) => {
-    const n = srcCounts[src] || 0;
-    if (!n) return;
-    const pct = (n/totalAll*100).toFixed(0);
-    html += `<div style="background:${meta.color};border:1px solid ${meta.border};border-radius:var(--r-lg);padding:12px 14px;">`;
-    html += `<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:${meta['text']||meta.text};margin-bottom:4px;">${meta.label}</div>`;
-    html += `<div style="font-size:20px;font-weight:700;color:${meta['text']||meta.text};">${n.toLocaleString()}</div>`;
-    html += `<div style="font-size:11px;color:var(--ink4);">${pct}% of transactions</div>`;
-    html += '</div>';
-  });
-  html += '</div>';
-
-  // Per-section hierarchy table
-  const SECTION_ORDER = WATERFALL.map(s => s.label);
-  const sortedSections = Object.keys(bySection).sort((a,b) => {
-    const ai = SECTION_ORDER.indexOf(a);
-    const bi = SECTION_ORDER.indexOf(b);
-    return (ai<0?99:ai) - (bi<0?99:bi);
-  });
-
-  sortedSections.forEach(sec => {
-    const secRows = bySection[sec];
-    const secTotal = secRows.reduce((s,r)=>s+r.total,0);
-    const secColor = secRows[0]?.waterfallColor || 'var(--ink4)';
-
-    html += `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;">`;
-
-    // Section header
-    html += `<div style="background:var(--lift);padding:10px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;">`;
-    html += `<div style="font-size:13px;font-weight:700;color:${secColor};flex:1;">${sec}</div>`;
-    html += `<div style="font-size:12px;font-family:var(--font-m);color:var(--ink4);">${secRows.length} paths · ${fmt(secTotal)}</div>`;
-    html += `</div>`;
-
-    // Column headers
-    html += `<div style="display:grid;grid-template-columns:120px 160px 180px 1fr 64px 64px 80px;padding:7px 16px;background:rgba(0,0,0,.2);border-bottom:1px solid var(--line);gap:8px;">`;
-    ['Forge Bucket','Quicken Category','Subcategory','Source(s)','Txns','Avg','Total'].forEach(h => {
-      html += `<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">${h}</div>`;
-    });
-    html += `</div>`;
-
-    // Group by bucket
-    const byBucket = {};
-    secRows.forEach(r => {
-      if (!byBucket[r.forgeBucket]) byBucket[r.forgeBucket] = [];
-      byBucket[r.forgeBucket].push(r);
-    });
-
-    Object.entries(byBucket).forEach(([bk, bkRows]) => {
-      const bMeta = BUCKET_META[bk] || { label:bk, icon:'·' };
-      const bkTotal = bkRows.reduce((s,r)=>s+r.total,0);
-      const bkTxns  = bkRows.reduce((s,r)=>s+r.count,0);
-      let isFirst = true;
-
-      bkRows.forEach(r => {
-        const avg = r.count > 0 ? r.total/r.count : 0;
-        html += `<div style="display:grid;grid-template-columns:120px 160px 180px 1fr 64px 64px 80px;padding:7px 16px;border-bottom:1px solid rgba(255,255,255,.03);gap:8px;align-items:center;" class="cw-row">`;
-
-        // Bucket (only show on first row for this bucket)
-        html += `<div style="font-size:11px;">`;
-        if (isFirst) {
-          html += `<div style="font-weight:600;color:var(--ink2);">${bMeta.icon} ${bMeta.label}</div>`;
-          html += `<div style="font-size:9px;color:var(--ink4);">${bkTxns} txns · ${fmt(bkTotal)}</div>`;
-          isFirst = false;
+    // 2. Partial payee match (payee contains or is contained by a known payee)
+    const words = payee.split(/\s+/).filter(w => w.length > 3);
+    let bestMatch = null, bestCount = 0;
+    for (const [knownPayee, catCounts] of Object.entries(catByPayee)) {
+      const knownWords = knownPayee.split(/\s+/).filter(w => w.length > 3);
+      const overlap = words.filter(w => knownWords.some(kw => kw.includes(w) || w.includes(kw))).length;
+      if (overlap >= Math.min(1, Math.floor(words.length * 0.6))) {
+        const topCount = Math.max(...Object.values(catCounts));
+        if (topCount > bestCount) {
+          bestCount = topCount;
+          const topCat = Object.entries(catCounts).sort((a,b)=>b[1]-a[1])[0][0];
+          bestMatch = { category: topCat, confidence: overlap >= 2 ? 'medium' : 'low', match: `partial: "${knownPayee}"`, count: topCount };
         }
-        html += `</div>`;
+      }
+    }
+    if (bestMatch) return bestMatch;
 
-        html += `<div style="font-size:11px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.qParent}</div>`;
-        html += `<div style="font-size:11px;color:var(--ink4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.qSub}</div>`;
-        html += `<div style="display:flex;gap:3px;flex-wrap:wrap;">${r.sources.map(s=>srcBadge(s)).join('')}</div>`;
-        html += `<div style="font-size:11px;font-family:var(--font-m);color:var(--ink4);text-align:right;">${r.count}</div>`;
-        html += `<div style="font-size:11px;font-family:var(--font-m);color:var(--ink4);text-align:right;">${fmt(avg)}</div>`;
-        html += `<div style="font-size:12px;font-weight:600;font-family:var(--font-m);color:${secColor};text-align:right;">${fmt(r.total)}</div>`;
-        html += `</div>`;
-      });
-    });
+    // 3. KW_MAP keyword match — use the bucket's typical Quicken category
+    const bk = classifyTxn(t);
+    if (bk !== 'other') {
+      // Find the most common Quicken category for this bucket in categorized txns
+      const sameBucket = categorizedTxns.filter(c => classifyTxn(c) === bk && c.category);
+      if (sameBucket.length) {
+        const catFreq = {};
+        sameBucket.forEach(c => { catFreq[c.category] = (catFreq[c.category]||0)+1; });
+        const top = Object.entries(catFreq).sort((a,b)=>b[1]-a[1])[0];
+        return { category: top[0], confidence: 'low', match: `keyword bucket "${bk}"`, count: top[1] };
+      }
+    }
+    return null;
+  }
 
-    html += `</div>`;
+  // ── Build dataset ─────────────────────────────────────────────────────────
+  const uncatTxns = sp.filter(t => {
+    if (!isUncat(t)) return false;
+    if (srcFilter !== 'all' && (t._source||'quicken') !== srcFilter) return false;
+    if (bkFilter  !== 'all' && classifyTxn(t) !== bkFilter)           return false;
+    if (search) {
+      const haystack = ((t.payee||'')+' '+(t.category||'')+' '+(t.account||'')).toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    return true;
   });
+
+  // Group by payee for display
+  const byPayee = {};
+  uncatTxns.forEach(t => {
+    const key = (t.payee || '(no payee)').trim();
+    if (!byPayee[key]) byPayee[key] = { txns:[], rec: null };
+    byPayee[key].txns.push(t);
+  });
+  Object.entries(byPayee).forEach(([payee, grp]) => {
+    grp.rec = getRecommendation(grp.txns[0]);
+    grp.total = grp.txns.reduce((s,t)=>s+Math.abs(t.amount),0);
+    grp.latest = grp.txns.map(t=>t.date).sort().pop();
+  });
+
+  const sortedPayees = Object.entries(byPayee)
+    .sort((a,b) => b[1].total - a[1].total);
+
+  const totalUncatAmt = uncatTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
+  const highConf      = sortedPayees.filter(([,g])=>g.rec?.confidence==='high').length;
+  const hasRecs       = sortedPayees.filter(([,g])=>g.rec).length;
+
+  // ── Build pending assignments store ──────────────────────────────────────
+  if (!window._cwPending) window._cwPending = {};
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  let html = '';
+
+  // Header KPIs
+  html += `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
+    ${[
+      [uncatTxns.length.toLocaleString(), 'Uncategorized Txns', 'var(--neg)'],
+      [fmt(totalUncatAmt),                'Unclassified Spend', 'var(--gold)'],
+      [hasRecs+'/'+sortedPayees.length,   'Have Recommendations','var(--pos)'],
+      [highConf,                          'High-Confidence Recs','var(--river)'],
+    ].map(([v,l,c])=>`
+      <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:12px 14px;">
+        <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">${l}</div>
+        <div style="font-size:22px;font-weight:300;font-family:var(--fd);color:${c};line-height:1;">${v}</div>
+      </div>`).join('')}
+  </div>`;
+
+  if (!sortedPayees.length) {
+    html += `<div style="padding:48px;text-align:center;background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);">
+      <div style="font-size:32px;margin-bottom:10px;">✅</div>
+      <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px;">All transactions are categorized</div>
+      <div style="font-size:12px;color:var(--ink4);">No uncategorized transactions match the current filters.</div>
+    </div>`;
+    el.innerHTML = html;
+    return;
+  }
+
+  // Action bar
+  html += `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+    <button onclick="cwApplyAll()" style="background:var(--gold);color:#000;border:none;padding:7px 16px;border-radius:var(--r-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--fu);">Apply All Pending Mappings</button>
+    <button onclick="cwAcceptAllRecs()" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink2);padding:7px 14px;border-radius:var(--r-sm);font-size:12px;cursor:pointer;font-family:var(--fu);">Accept All Recommendations</button>
+    <button onclick="cwExportExcel()" style="background:var(--lift);border:1px solid var(--line2);color:var(--pos);padding:7px 14px;border-radius:var(--r-sm);font-size:12px;cursor:pointer;font-family:var(--fu);">↓ Export to Excel</button>
+    <span style="font-size:11px;color:var(--ink4);margin-left:auto;" id="cw-apply-count">${Object.keys(window._cwPending).length} pending</span>
+  </div>`;
+
+  // Guidance blurb
+  html += `<div style="background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15);border-radius:var(--r-md);padding:11px 14px;margin-bottom:12px;font-size:11px;color:var(--ink3);line-height:1.65;">
+    <strong style="color:var(--ink2);">How to use:</strong>
+    Each row is a payee with uncategorized transactions. The <span style="color:var(--pos);">recommendation column</span> shows the best matching Quicken category based on your other categorized transactions with the same payee.
+    Click <strong>Accept</strong> to stage a mapping, or type a category manually. When ready, click <strong>Apply All Pending</strong> to update the transactions in Forge — then <strong>Export to Excel</strong> to get a spreadsheet ready to paste into Quicken.
+    Forge categories (buckets) control how transactions appear in the Income Statement, Budget Pressure bar, and all dashboards — even without a Quicken category.
+  </div>`;
+
+  // Table
+  html += `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">
+    <div style="display:grid;grid-template-columns:1fr 80px 100px 1fr 80px 80px;gap:0;padding:7px 14px;background:var(--lift);border-bottom:1px solid var(--line);">
+      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">Payee</div>
+      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);text-align:right;">Txns</div>
+      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);text-align:right;">Total</div>
+      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--pos);">Recommended Category</div>
+      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">Confidence</div>
+      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">Action</div>
+    </div>`;
+
+  sortedPayees.forEach(([payee, grp], idx) => {
+    const rec        = grp.rec;
+    const pending    = window._cwPending[payee];
+    const confColor  = !rec ? 'var(--ink4)' : rec.confidence==='high' ? 'var(--pos)' : rec.confidence==='medium' ? 'var(--gold)' : 'var(--ink3)';
+    const confLabel  = !rec ? '—' : rec.confidence === 'high' ? '● High' : rec.confidence === 'medium' ? '◐ Med' : '○ Low';
+    const isLast     = idx === sortedPayees.length - 1;
+    const rowBg      = pending ? 'rgba(45,212,191,.04)' : 'transparent';
+
+    html += `<div style="background:${rowBg};border-bottom:${isLast?'none':'1px solid rgba(255,255,255,.035)'};">
+      <!-- Main row -->
+      <div style="display:grid;grid-template-columns:1fr 80px 100px 1fr 80px 80px;gap:0;padding:9px 14px;align-items:center;cursor:pointer;" onclick="cwToggleDetail('cwd-${idx}')">
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${payee}</div>
+          <div style="font-size:10px;color:var(--ink4);margin-top:1px;">${grp.latest} · ${(grp.txns[0]?.account||'').slice(0,30)}</div>
+        </div>
+        <div style="font-size:12px;font-family:var(--fm);color:var(--ink3);text-align:right;">${grp.txns.length}</div>
+        <div style="font-size:13px;font-weight:500;font-family:var(--fd);color:var(--ink);text-align:right;">${fmt(grp.total)}</div>
+        <div style="font-size:11px;color:${rec?'var(--ink2)':'var(--ink4)'};">
+          ${pending
+            ? `<span style="color:var(--pos);font-weight:600;">✓ ${pending}</span>`
+            : (rec ? `<span style="font-family:var(--fm);">${rec.category || '—'}</span>` : '<span style="color:var(--ink4);">No recommendation</span>')}
+          ${rec && !pending ? `<div style="font-size:9px;color:var(--ink4);margin-top:2px;">${rec.match}</div>` : ''}
+        </div>
+        <div style="font-size:10px;color:${confColor};font-weight:600;font-family:var(--fm);">${confLabel}</div>
+        <div style="display:flex;gap:5px;">
+          ${rec && !pending ? `<button onclick="event.stopPropagation();cwAccept('${payee.replace(/'/g,"\\'").replace(/"/g,'\\"')}','${(rec.category||'').replace(/'/g,"\\'").replace(/"/g,'\\"')}')" style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(45,212,191,.1);border:1px solid rgba(45,212,191,.25);color:var(--pos);cursor:pointer;font-family:var(--fu);white-space:nowrap;">Accept</button>` : ''}
+          ${pending ? `<button onclick="event.stopPropagation();cwClear('${payee.replace(/'/g,"\\'").replace(/"/g,'\\"')}')" style="font-size:10px;padding:3px 8px;border-radius:4px;background:transparent;border:1px solid var(--line2);color:var(--ink4);cursor:pointer;font-family:var(--fu);">Clear</button>` : ''}
+        </div>
+      </div>
+
+      <!-- Expandable detail -->
+      <div id="cwd-${idx}" style="display:none;background:var(--lift);border-top:1px solid var(--line);">
+        <!-- Manual category assignment -->
+        <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--ink4);">Assign category:</span>
+          <input id="cw-input-${idx}" type="text" value="${pending || (rec?.category||'')}"
+            placeholder="e.g. Food & Dining:Restaurants"
+            style="flex:1;min-width:200px;max-width:360px;background:var(--float);border:1px solid var(--line2);border-radius:var(--r-sm);padding:6px 10px;font-size:12px;color:var(--ink);font-family:var(--fm);"
+            list="cw-qcat-list">
+          <button onclick="cwAccept('${payee.replace(/'/g,"\\'").replace(/"/g,'\\"')}', document.getElementById('cw-input-${idx}').value)"
+            style="background:var(--gold);color:#000;border:none;padding:6px 14px;border-radius:var(--r-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--fu);">Stage</button>
+          <span style="font-size:10px;color:var(--ink4);">← Forge bucket: <strong style="color:var(--ink3);">${(BUCKET_META[classifyTxn(grp.txns[0])]||{}).label||classifyTxn(grp.txns[0])}</strong></span>
+        </div>
+        <!-- Individual transactions -->
+        <div style="max-height:200px;overflow-y:auto;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead><tr>
+              <th style="padding:5px 14px;font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:left;border-bottom:1px solid var(--line);background:var(--lift);">Date</th>
+              <th style="padding:5px 14px;font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:left;border-bottom:1px solid var(--line);background:var(--lift);">Account</th>
+              <th style="padding:5px 14px;font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:left;border-bottom:1px solid var(--line);background:var(--lift);">Memo</th>
+              <th style="padding:5px 14px;font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;border-bottom:1px solid var(--line);background:var(--lift);">Amount</th>
+            </tr></thead>
+            <tbody>
+              ${grp.txns.slice(0,20).map((t,ti) => `<tr style="${ti%2?'background:rgba(255,255,255,.015)':''}">
+                <td style="padding:5px 14px;font-size:11px;font-family:var(--fm);color:var(--ink3);">${t.date}</td>
+                <td style="padding:5px 14px;font-size:11px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;">${(t.account||'').slice(0,28)}</td>
+                <td style="padding:5px 14px;font-size:11px;color:var(--ink4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;">${t.memo||'—'}</td>
+                <td style="padding:5px 14px;font-size:12px;font-family:var(--fm);color:var(--neg);text-align:right;">${fmt(Math.abs(t.amount))}</td>
+              </tr>`).join('')}
+              ${grp.txns.length > 20 ? `<tr><td colspan="4" style="padding:5px 14px;font-size:10px;color:var(--ink4);text-align:center;">+ ${grp.txns.length-20} more transactions</td></tr>` : ''}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  html += `</div>`;
+
+  // Quicken category datalist for autocomplete
+  const allQcats = [...new Set(sp.filter(t=>t.category).map(t=>t.category))].sort();
+  html += `<datalist id="cw-qcat-list">${allQcats.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">`).join('')}</datalist>`;
 
   el.innerHTML = html;
 }
 
+// ── Category Mapper helpers ──────────────────────────────────────────────────
+
+function cwToggleDetail(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function cwAccept(payee, category) {
+  if (!category || !category.trim()) return;
+  window._cwPending = window._cwPending || {};
+  window._cwPending[payee] = category.trim();
+  const cnt = document.getElementById('cw-apply-count');
+  if (cnt) cnt.textContent = Object.keys(window._cwPending).length + ' pending';
+  renderCrosswalk();
+}
+
+function cwClear(payee) {
+  if (window._cwPending) delete window._cwPending[payee];
+  const cnt = document.getElementById('cw-apply-count');
+  if (cnt) cnt.textContent = Object.keys(window._cwPending||{}).length + ' pending';
+  renderCrosswalk();
+}
+
+function cwAcceptAllRecs() {
+  window._cwPending = window._cwPending || {};
+  const sp = spendable(txns);
+  const isUncat = t => {
+    const cat = (t.category || '').trim();
+    if (!cat || /^uncategorized$/i.test(cat)) return true;
+    return classifyTxn(t) === 'other';
+  };
+  const catByPayee = {};
+  sp.filter(t => !isUncat(t)).forEach(t => {
+    const key = (t.payee || '').toLowerCase().trim();
+    if (!key) return;
+    if (!catByPayee[key]) catByPayee[key] = {};
+    const cat = t.category || '';
+    catByPayee[key][cat] = (catByPayee[key][cat] || 0) + 1;
+  });
+  const uncatPayees = [...new Set(sp.filter(isUncat).map(t=>(t.payee||'(no payee)').trim()))];
+  let accepted = 0;
+  uncatPayees.forEach(payee => {
+    if (window._cwPending[payee]) return; // already staged
+    const key = payee.toLowerCase().trim();
+    if (catByPayee[key]) {
+      const top = Object.entries(catByPayee[key]).sort((a,b)=>b[1]-a[1])[0];
+      if (top) { window._cwPending[payee] = top[0]; accepted++; }
+    }
+  });
+  toast('✓ Staged ' + accepted + ' high-confidence recommendations');
+  renderCrosswalk();
+}
+
+function cwApplyAll() {
+  const pending = window._cwPending || {};
+  const keys    = Object.keys(pending);
+  if (!keys.length) { toast('No pending mappings to apply'); return; }
+  let updated = 0;
+  txns.forEach(t => {
+    const payee = (t.payee || '(no payee)').trim();
+    if (pending[payee]) {
+      t.category = pending[payee];
+      updated++;
+    }
+  });
+  window._cwPending = {};
+  saveData();
+  toast('✓ Applied ' + updated + ' category assignments · data saved');
+  renderCrosswalk();
+}
+
+function cwExportExcel() {
+  const sp = spendable(txns);
+  const isUncat = t => {
+    const cat = (t.category || '').trim();
+    if (!cat || /^uncategorized$/i.test(cat)) return true;
+    return classifyTxn(t) === 'other';
+  };
+  const rows = sp.filter(isUncat);
+  if (!rows.length) { toast('No uncategorized transactions to export'); return; }
+
+  // Pending assignments
+  const pending = window._cwPending || {};
+
+  // Build CSV with BOM (opens cleanly in Excel)
+  const BOM = '\uFEFF';
+  const esc = v => '"' + String(v||'').replace(/"/g, '""') + '"';
+  const headers = ['Date','Payee','Amount','Account','Current Category','Forge Bucket','Recommended Category','Memo'];
+  const csvLines = [headers.map(esc).join(',')];
+
+  rows.sort((a,b) => a.payee?.localeCompare(b.payee||'')||0).forEach(t => {
+    const bk  = classifyTxn(t);
+    const rec = pending[(t.payee||'(no payee)').trim()] || '';
+    csvLines.push([
+      t.date, t.payee, t.amount, t.account,
+      t.category || '',
+      (BUCKET_META[bk]||{}).label || bk,
+      rec,
+      t.memo || '',
+    ].map(esc).join(','));
+  });
+
+  const csv  = BOM + csvLines.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'forge-uncategorized-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✓ Exported ' + rows.length + ' transactions (.csv — opens in Excel)');
+}
 
 
-// ════════════════════════════════════════════════════════════════════════════
-// REGISTER RECONCILIATION — ties P&L back to Quicken register per account/month
-// ════════════════════════════════════════════════════════════════════════════
 function renderReconcile() {
   const el = document.getElementById('reconContent');
   if (!el) return;
@@ -2023,7 +2260,7 @@ function renderReconcile() {
 
   // ── P&L Summary tie-out ────────────────────────────────────────────────────
   html += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:16px;">';
-  html += '<div style="font-family:var(--font-d);font-size:17px;font-weight:600;color:var(--ink);margin-bottom:14px;">P&L Tie-Out · '+monthName+'</div>';
+  html += '<div style="font-family:var(--font-d);font-size:16px;font-weight:600;color:var(--ink);margin-bottom:14px;">P&L Tie-Out · '+monthName+'</div>';
   html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;">';
 
   const tileStyle = 'padding:14px 16px;border-right:1px solid var(--line);';
@@ -2061,7 +2298,7 @@ function renderReconcile() {
 
   // ── Per-Account Register ───────────────────────────────────────────────────
   html += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px;">';
-  html += '<div style="font-family:var(--font-d);font-size:17px;font-weight:600;color:var(--ink);padding:16px 20px;border-bottom:1px solid var(--line);">Account Register</div>';
+  html += '<div style="font-family:var(--font-d);font-size:16px;font-weight:600;color:var(--ink);padding:16px 20px;border-bottom:1px solid var(--line);">Account Register</div>';
 
   accounts.forEach(acct => {
     const acctTxns    = monthTxns.filter(t => t.account === acct).sort((a,b)=>a.date.localeCompare(b.date));
@@ -2289,7 +2526,7 @@ function renderSettings() {
       padding:6px var(--sp4);border-top:1px solid rgba(255,255,255,.035);">
       <input type="text" id="set-member-emoji-${i}" value="${m.emoji||''}" maxlength="4"
         style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);
-               padding:4px;font-size:17px;text-align:center;width:100%;-webkit-appearance:none;">
+               padding:4px;font-size:16px;text-align:center;width:100%;-webkit-appearance:none;">
       <input type="text" id="set-member-name-${i}" value="${m.name||''}" placeholder="Name"
         style="background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);
                padding:6px var(--sp2);font-size:12px;color:var(--ink);width:100%;-webkit-appearance:none;">
@@ -2339,7 +2576,7 @@ function renderSettings() {
     grid-template-columns:44px 1fr 110px 110px auto;gap:6px;align-items:center;border-top:1px solid var(--line);">
     <input id="ng-icon" type="text" value="🎯" maxlength="4"
       style="background:var(--float);border:1px solid var(--line2);border-radius:var(--r-sm);
-             padding:4px;font-size:17px;text-align:center;width:100%;-webkit-appearance:none;">
+             padding:4px;font-size:16px;text-align:center;width:100%;-webkit-appearance:none;">
     <input id="ng-name" type="text" placeholder="Goal name"
       style="background:var(--float);border:1px solid var(--line2);border-radius:var(--r-sm);
              padding:6px var(--sp2);font-size:12px;color:var(--ink);width:100%;-webkit-appearance:none;">
@@ -2438,7 +2675,7 @@ function renderSettings() {
     const ov = accrualOverrides[b.key];
     const cur = ov || b.engine;
     accrualBody += `<div style="display:flex;align-items:center;gap:var(--sp2);padding:var(--sp2) var(--sp4);border-bottom:1px solid rgba(255,255,255,.035);">
-      <span style="font-size:15px;">${b.icon}</span>
+      <span style="font-size:14px;">${b.icon}</span>
       <div style="flex:1;font-size:11px;font-weight:500;color:var(--ink2);">${b.label}</div>
       ${seg(`acr-${b.key}`, ov||'default',
         [['default','Auto'],['fixed','Fixed'],['discretionary','Var'],['zero','Off']],
@@ -2626,7 +2863,12 @@ function renderSettings() {
   </div>`;
 
   // ── Account → Member Mapping ──────────────────────────────────────────────────
-  const accountOwners = (settings2 && settings2.accountOwners) || {};
+  // Read accountOwners directly from settings store (it's saved by updateAccountOwner)
+  let accountOwners = {};
+  try {
+    const _ao = JSON.parse(localStorage.getItem('forge_settings_v2') || '{}');
+    accountOwners = _ao.accountOwners || {};
+  } catch(e) {}
   const memberNames = familyProfile.members.map(m => m.name).filter(Boolean);
 
   let accountMapBody = `<div style="padding:10px 16px 8px;font-size:11px;color:var(--ink4);line-height:1.65;border-bottom:1px solid var(--line);">
@@ -2866,132 +3108,162 @@ function renderThermometer(containerId, selMonth) {
   const el = document.getElementById(containerId);
   if (!el) return;
   try {
-    const sp = operatingSpendable(txns);
-    if (!sp.length) { el.innerHTML = ''; return; }
-
+    // ── Data: all txns for the month (no transfer filter for income) ───────────
     const now          = new Date();
     const selOrDefault = selMonth || now.toISOString().slice(0,7);
-    const accrual      = buildAccrualEngine(selOrDefault, sp);
+    const allMonthTxns = txns.filter(t => t.date.startsWith(selOrDefault));
+    const sp           = operatingSpendable(txns).filter(t => t.date.startsWith(selOrDefault));
+    const accrual      = buildAccrualEngine(selOrDefault, operatingSpendable(txns));
     const isInFlight   = !!accrual;
-    const monthTxns    = sp.filter(t => t.date.startsWith(selOrDefault));
 
+    if (!sp.length && !allMonthTxns.length) { el.innerHTML = ''; return; }
+
+    // ── Income: paychecks + other income (ANY account, not just operating) ─────
+    // This captures deposits that hit savings directly (split paycheck, etc.)
+    const incTxns   = allMonthTxns.filter(t => t.amount > 0 && classifyTxn(t) === 'paycheck');
+    const otherInc  = allMonthTxns.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc' && !isCCCredit(t));
+    const rawIncome = incTxns.reduce((s,t)=>s+t.amount,0) + otherInc.reduce((s,t)=>s+t.amount,0);
+
+    // ── Auto-savings: [Bracket] category transfers to savings/investment accounts ─
+    const autoSaveTxns = allMonthTxns.filter(t => t.amount < 0 && (
+      (isTransfer(t) && classifyTxn(t) === 'auto_save') ||
+      classifyTxn(t) === 'auto_save'
+    ));
+    const autoSave = autoSaveTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
+
+    // Deployable = take-home after retirement/investment contributions
+    const income     = rawIncome;
+    const deployable = Math.max(income - autoSave, income * 0.1, 1);
+
+    // Normalize if accrual engine available
+    let normData = null;
+    if (accrual && accrual.normalizeIncome) {
+      try { normData = accrual.normalizeIncome(); } catch(e){}
+    }
+    const displayIncome = (normData && normData.normalizedIncome > 0 && normData.normalizedIncome < income * 1.8)
+      ? normData.normalizedIncome : income;
+    const displayDeploy = Math.max(displayIncome - autoSave, displayIncome * 0.1, 1);
+
+    // ── Expenses from operating txns ──────────────────────────────────────────
     const FIXED_BKS = ['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','cell','subscriptions'];
     const VAR_BKS   = ['restaurants','groceries','gas_car','transit','healthcare','entertainment','household','personal','clothing','travel','gifts','other'];
 
-    const fixedActual = monthTxns.filter(t=>FIXED_BKS.includes(classifyTxn(t))&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
-    const varActual   = monthTxns.filter(t=>VAR_BKS.includes(classifyTxn(t))&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+    const fixedActual = sp.filter(t=>FIXED_BKS.includes(classifyTxn(t))&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+    const varActual   = sp.filter(t=>VAR_BKS.includes(classifyTxn(t))&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
 
     let fixedProj = 0, varProj = 0;
-    if (isInFlight && accrual) {
+    if (isInFlight) {
       FIXED_BKS.forEach(bk => { fixedProj += accrual.accrueAmount(bk)||0; });
       VAR_BKS.forEach(bk   => { varProj   += accrual.accrueAmount(bk)||0; });
     }
 
     const fixedTotal = fixedActual + fixedProj;
     const varTotal   = varActual   + varProj;
+    const totalSpend = fixedTotal + varTotal;
+    const buffer     = displayDeploy - totalSpend;
+    const overflows  = buffer < 0;
 
-    let normData = null;
-    if (accrual && accrual.normalizeIncome) {
-      try { normData = accrual.normalizeIncome(); } catch(e){}
-    }
-    const rawInc      = monthTxns.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
-    const autoSaveAmt = monthTxns.filter(t=>classifyTxn(t)==='auto_save').reduce((s,t)=>s+Math.abs(t.amount),0);
-    const income      = (normData&&normData.normalizedIncome>0) ? normData.normalizedIncome : rawInc;
-    const deployable  = Math.max(income - autoSaveAmt, 1);
-    const totalSpend  = fixedTotal + varTotal;
-    const buffer      = deployable - totalSpend;
-    const overflows   = buffer < 0;
-    const savePct     = income>0 ? (autoSaveAmt/income*100) : 0;
-
-    // Width %s capped at 100 — bar NEVER overflows its container
-    const fixPct    = Math.min(fixedTotal/deployable*100, 100);
-    const varPct    = Math.min(varTotal/deployable*100,   Math.max(0, 100-fixPct));
-    const bufPct    = Math.max(0, 100 - fixPct - varPct);
-    const overPct   = overflows ? Math.min(Math.abs(buffer)/deployable*100, 25) : 0;
+    // ── Width % (capped at 100 — never escapes container) ────────────────────
+    const fixPct = Math.min(fixedTotal / displayDeploy * 100, 100);
+    const varPct = Math.min(varTotal   / displayDeploy * 100, Math.max(0, 100 - fixPct));
+    const bufPct = Math.max(0, 100 - fixPct - varPct);
+    const savePct= income > 0 ? (autoSave / income * 100) : 0;
 
     const fmtK = n => { const a=Math.abs(n||0); return a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a); };
-    const fmtP = n => (n>=0?'':'−')+Math.abs(Math.round(n))+'%';
 
     const [sy,sm]  = selOrDefault.split('-');
     const moLabel  = new Date(+sy, +sm-1, 1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
     const normNote = normData&&(normData.isThreePayMonth||normData.oneTimeTotal>0)
       ? (normData.isThreePayMonth?' · 3-pay normalized':'')+(normData.oneTimeTotal>0?' · '+fmtK(normData.oneTimeTotal)+' excl.':'') : '';
+    const isStr    = isInFlight ? ` · ${accrual.daysElapsed}d actual + ${accrual.daysRemaining}d projected` : ' · final';
 
-    const FIXED_C  = '#F87171';
-    const VAR_C    = '#F5A800';
-    const FREE_C   = '#2DD4BF';
-    const OVER_C   = '#FF3B3B';
-    const bufColor = overflows ? OVER_C : bufPct < 8 ? '#FBBF24' : FREE_C;
-
-    // Click handler — go to IS page
+    // ── Colors ────────────────────────────────────────────────────────────────
+    const FIXED_C = '#F87171';
+    const VAR_C   = '#F5A800';
+    const FREE_C  = '#2DD4BF';
+    const OVER_C  = '#FF3B3B';
+    const bufColor= overflows ? OVER_C : bufPct < 8 ? '#FBBF24' : FREE_C;
     const clickIS = "if(typeof showPage==='function')showPage('income')";
 
-    el.innerHTML = `<div style="padding:12px 16px;">
-      <!-- Title -->
-      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+    el.innerHTML = `
+    <div style="padding:14px 16px 12px;">
+
+      <!-- ── Header ─────────────────────────────────────────────────────── -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
         <div>
-          <div style="font-size:11px;font-weight:600;color:var(--ink2);">Budget Pressure &nbsp;<span style="font-size:10px;font-weight:400;color:var(--ink4);font-family:var(--fm);">${moLabel}${isInFlight?' · accrual projected':''}</span></div>
-          ${normNote ? `<div style="font-size:9px;color:var(--warn);font-family:var(--fm);margin-top:1px;">⚡ ${normNote.trim()}</div>` : ''}
+          <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:2px;">Budget Pressure
+            <span style="font-size:9px;font-weight:400;color:var(--ink4);font-family:var(--fm);margin-left:6px;">${moLabel}${isStr}</span>
+          </div>
+          <div style="font-size:10px;color:var(--ink4);line-height:1.5;">
+            How much of take-home pay is consumed by bills and spending.
+            <span style="color:var(--river);">Bar = 100% of deployable income.</span>
+            ${normNote ? `<span style="color:var(--warn);">⚡ ${normNote.trim()}</span>` : ''}
+          </div>
         </div>
-        <div style="text-align:right;">
-          <div style="font-size:20px;font-weight:300;font-family:var(--fd);color:${bufColor};line-height:1;">${overflows?'−':'+'}${fmtK(Math.abs(buffer))}</div>
-          <div style="font-size:10px;color:${bufColor};">${overflows?'over budget':'free to spend'}</div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:18px;font-weight:300;font-family:var(--fd);color:${bufColor};line-height:1;">${overflows?'−':'+'}${fmtK(Math.abs(buffer))}</div>
+          <div style="font-size:10px;color:${bufColor};">${overflows?'over budget':'remaining'}</div>
         </div>
       </div>
 
-      <!-- BAR — all widths % of container, no absolute overflow -->
-      <div style="margin-bottom:5px;">
-        <div style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--fm);color:var(--ink4);margin-bottom:3px;">
-          <span>Deployable income: ${fmtK(deployable)}</span>
-          <span style="color:var(--ink3);">${fmtK(totalSpend)} spent (${Math.round((fixPct+varPct))}%)</span>
-        </div>
-        <!-- Bar container: overflow:hidden so nothing escapes -->
-        <div style="position:relative;height:28px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--line);overflow:hidden;cursor:pointer;" onclick="${clickIS}" title="Click to view Income Statement">
-          <!-- Fixed segment -->
-          <div style="position:absolute;left:0;top:0;bottom:0;width:${fixPct.toFixed(1)}%;background:${FIXED_C};display:flex;align-items:center;justify-content:center;overflow:hidden;transition:width .4s;">
-            ${fixPct>12?`<span style="font-size:9px;font-weight:700;color:rgba(255,255,255,.9);font-family:var(--fm);white-space:nowrap;">${fmtK(fixedTotal)}</span>`:''}
+      <!-- ── Income context row ────────────────────────────────────────── -->
+      <div style="display:flex;gap:8px;margin-bottom:8px;font-size:11px;color:var(--ink4);flex-wrap:wrap;align-items:center;">
+        <span><span style="color:var(--pos);font-weight:600;font-family:var(--fm);">${fmtK(income)}</span> gross income</span>
+        <span>−</span>
+        <span><span style="color:var(--river);font-weight:600;font-family:var(--fm);">${fmtK(autoSave)}</span> auto-save (${Math.round(savePct)}%)</span>
+        <span>=</span>
+        <span><span style="color:var(--ink);font-weight:600;font-family:var(--fm);">${fmtK(displayDeploy)}</span> deployable</span>
+        ${normNote ? `<span style="color:var(--warn);font-family:var(--fm);font-size:10px;">⚡ normalized</span>` : ''}
+      </div>
+
+      <!-- ── The bar ───────────────────────────────────────────────────── -->
+      <div style="margin-bottom:6px;">
+        <div style="position:relative;height:26px;border-radius:5px;background:rgba(255,255,255,.04);border:1px solid var(--line);overflow:hidden;cursor:pointer;" onclick="${clickIS}" title="Click → Income Statement detail">
+          <!-- Fixed -->
+          <div style="position:absolute;left:0;top:0;bottom:0;width:${fixPct.toFixed(1)}%;background:${FIXED_C};display:flex;align-items:center;justify-content:center;overflow:hidden;">
+            ${fixPct>12 ? `<span style="font-size:9px;font-weight:700;color:rgba(255,255,255,.92);font-family:var(--fm);white-space:nowrap;">${fmtK(fixedTotal)}</span>` : ''}
           </div>
-          <!-- Variable segment -->
-          <div style="position:absolute;left:${fixPct.toFixed(1)}%;top:0;bottom:0;width:${varPct.toFixed(1)}%;background:${VAR_C};display:flex;align-items:center;justify-content:center;overflow:hidden;transition:width .4s left .4s;">
-            ${varPct>12?`<span style="font-size:9px;font-weight:700;color:rgba(0,0,0,.75);font-family:var(--fm);white-space:nowrap;">${fmtK(varTotal)}</span>`:''}
+          <!-- Variable -->
+          <div style="position:absolute;left:${fixPct.toFixed(1)}%;top:0;bottom:0;width:${varPct.toFixed(1)}%;background:${VAR_C};display:flex;align-items:center;justify-content:center;overflow:hidden;">
+            ${varPct>10 ? `<span style="font-size:9px;font-weight:700;color:rgba(0,0,0,.75);font-family:var(--fm);white-space:nowrap;">${fmtK(varTotal)}</span>` : ''}
           </div>
-          <!-- Free buffer -->
-          ${bufPct>2&&!overflows?`<div style="position:absolute;right:0;top:0;bottom:0;width:${bufPct.toFixed(1)}%;background:rgba(45,212,191,.15);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;overflow:hidden;"><span style="font-size:9px;font-weight:600;color:${FREE_C};font-family:var(--fm);white-space:nowrap;">${fmtK(buffer)}</span></div>`:''}
-          <!-- Overflow indicator — inside bar, right edge glows -->
-          ${overflows?`<div style="position:absolute;right:0;top:0;bottom:0;width:6px;background:${OVER_C};box-shadow:-2px 0 8px ${OVER_C};"></div>`:''}
-          <!-- Budget lid tick -->
-          <div style="position:absolute;right:0;top:-2px;bottom:-2px;width:2px;background:rgba(255,255,255,.3);border-radius:1px;"></div>
+          <!-- Buffer -->
+          ${bufPct>3 && !overflows ? `<div style="position:absolute;right:0;top:0;bottom:0;width:${bufPct.toFixed(1)}%;background:rgba(45,212,191,.15);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;overflow:hidden;"><span style="font-size:9px;font-weight:600;color:${FREE_C};font-family:var(--fm);white-space:nowrap;">${fmtK(buffer)}</span></div>` : ''}
+          <!-- Overflow glow -->
+          ${overflows ? `<div style="position:absolute;right:0;top:0;bottom:0;width:5px;background:${OVER_C};box-shadow:-3px 0 10px ${OVER_C};"></div>` : ''}
         </div>
-        <!-- Segment labels -->
-        <div style="display:flex;gap:12px;margin-top:4px;font-size:9px;font-family:var(--fm);flex-wrap:wrap;">
-          <span style="color:${FIXED_C};">■ Fixed ${fmtP(fixPct)}</span>
-          <span style="color:${VAR_C};">■ Variable ${fmtP(varPct)}</span>
-          ${!overflows?`<span style="color:${bufColor};">■ Free ${fmtP(bufPct)}</span>`:`<span style="color:${OVER_C};">▲ Over ${fmtK(Math.abs(buffer))}</span>`}
-          <span style="margin-left:auto;cursor:pointer;color:var(--river);text-decoration:underline;" onclick="${clickIS}">Detail →</span>
+        <!-- Legend -->
+        <div style="display:flex;gap:10px;margin-top:4px;font-size:10px;font-family:var(--fm);flex-wrap:wrap;align-items:center;">
+          <span style="color:${FIXED_C};">■ Fixed ${Math.round(fixPct)}%</span>
+          <span style="color:${VAR_C};">■ Variable ${Math.round(varPct)}%</span>
+          <span style="color:${bufColor};">${overflows ? '▲ Over' : '■ Free'} ${Math.abs(Math.round(bufPct))}%</span>
+          <span style="margin-left:auto;cursor:pointer;color:var(--river);font-size:10px;" onclick="${clickIS}">View detail →</span>
         </div>
       </div>
 
-      <!-- 5-metric tiles -->
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:8px;">
+      <!-- ── 5 metric tiles ──────────────────────────────────────────────── -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;">
         ${[
-          ['Save',     fmtK(autoSaveAmt), fmtP(savePct)+' gross',                              'var(--river)', 'rgba(96,165,250,.3)'],
-          ['Fixed',    fmtK(fixedTotal),  isInFlight&&fixedProj>0?fmtK(fixedProj)+' due':'obligations', FIXED_C,'rgba(248,113,113,.3)'],
-          ['Variable', fmtK(varTotal),    isInFlight&&varProj>0?'+'+fmtK(varProj)+' proj':'spending',    VAR_C,  'rgba(245,168,0,.3)'],
-          ['Spent',    fmtK(totalSpend),  fmtP(fixPct+varPct)+' of budget',                    'var(--ink2)','rgba(255,255,255,.12)'],
-          [overflows?'Over':'Buffer', (overflows?'−':'+')+(fmtK(Math.abs(buffer))), overflows?'trim variable':'safe to spend', bufColor, overflows?'rgba(255,59,59,.3)':'rgba(45,212,191,.2)'],
-        ].map(([lbl,val,sub,col,border])=>`
-          <div style="background:rgba(255,255,255,.03);border-radius:5px;padding:6px 8px;border-top:2px solid ${border};cursor:pointer;" onclick="${clickIS}">
-            <div style="font-size:8px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">${lbl}</div>
-            <div style="font-size:14px;font-weight:300;font-family:var(--fd);color:${col};line-height:1;margin-bottom:1px;">${val}</div>
-            <div style="font-size:9px;color:var(--ink4);">${sub}</div>
+          ['Income',   fmtK(income),      income===displayIncome?'gross pay':'normalized',  'var(--pos)',   'rgba(45,212,191,.3)'],
+          ['Saved',    fmtK(autoSave),     Math.round(savePct)+'% of gross · to savings',   'var(--river)', 'rgba(96,165,250,.3)'],
+          ['Fixed',    fmtK(fixedTotal),   isInFlight&&fixedProj>0?fmtK(fixedProj)+' due':'bills & subs', FIXED_C,'rgba(248,113,113,.3)'],
+          ['Variable', fmtK(varTotal),     isInFlight&&varProj>0?'+'+fmtK(varProj)+' proj':'discretionary', VAR_C,'rgba(245,168,0,.3)'],
+          [overflows?'Over':'Buffer', (overflows?'−':'+')+fmtK(Math.abs(buffer)), overflows?'trim spending':'to allocate', bufColor, overflows?'rgba(255,59,59,.25)':'rgba(45,212,191,.2)'],
+        ].map(([lbl,val,sub,col,bdr])=>`
+          <div style="background:rgba(255,255,255,.03);border-radius:5px;padding:7px 8px;border-top:2px solid ${bdr};cursor:pointer;" onclick="${clickIS}">
+            <div style="font-size:9px;font-family:var(--fm);letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">${lbl}</div>
+            <div style="font-size:14px;font-weight:300;font-family:var(--fd);color:${col};line-height:1;margin-bottom:2px;">${val}</div>
+            <div style="font-size:9px;color:var(--ink4);line-height:1.3;">${sub}</div>
           </div>`).join('')}
       </div>
+
     </div>`;
   } catch(e) {
     console.warn('[Thermometer] render error:', e);
     el.innerHTML = '';
   }
 }
+
 
 
 async function syncPush() {
@@ -3776,7 +4048,7 @@ function renderFinancials() {
   const kpiCard = (label, value, sub, color='var(--gold)') => `
     <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;">
       <div style="font-family:var(--font-m);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">${label}</div>
-      <div style="font-size:26px;font-weight:300;color:${color};font-family:var(--font-d);letter-spacing:-.02em;">${value}</div>
+      <div style="font-size:24px;font-weight:300;color:${color};font-family:var(--font-d);letter-spacing:-.02em;">${value}</div>
       <div style="font-size:11px;color:var(--ink4);margin-top:4px;">${sub}</div>
     </div>`;
 
@@ -3883,6 +4155,7 @@ function setCatRange(r, btn) {
 // ════════════════════════════════════════════════
 function renderDashboard() {
   try {
+  if (!txns.length) return;
 
   const filtered = spendable(txns).filter(t => inRange(t, range));
   const inc = filtered.filter(t => t.amount > 0).reduce((s,t) => s+t.amount, 0);
@@ -3972,6 +4245,7 @@ function renderDashboard() {
 // ════════════════════════════════════════════════
 function renderCashFlow() {
   try {
+  if (!txns.length) return;
 
   let src = spendable(txns);
 
@@ -4052,6 +4326,7 @@ function renderCashFlow() {
 // ════════════════════════════════════════════════
 function renderCategories() {
   try {
+  if (!txns.length) return;
 
   const filtered = spendable(txns).filter(t => inRange(t, catRange) && t.amount < 0);
   const buckets = {};
@@ -4319,7 +4594,7 @@ function renderDetailLens(sourceKey, containerEl) {
   html += `<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
     <div style="font-size:28px;">${info.icon}</div>
     <div style="flex:1;">
-      <div style="font-size:15px;font-weight:700;color:${info.color};">${info.label} — Unmasked</div>
+      <div style="font-size:14px;font-weight:700;color:${info.color};">${info.label} — Unmasked</div>
       <div style="font-size:11px;color:var(--ink4);">${info.hint}</div>
       <div style="font-size:11px;color:var(--ink4);margin-top:2px;">${dateRange} · ${itemCount} items · ${bucketEntries.length} categories</div>
     </div>
@@ -4411,7 +4686,7 @@ function renderUploadStatus() {
   <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
     <div>
       <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Data Range</div>
-      <div style="font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-.01em;">${fmtDate(earliest)} <span style="color:var(--ink4);font-weight:400;">→</span> ${fmtDate(latest)}</div>
+      <div style="font-size:14px;font-weight:600;color:var(--ink);letter-spacing:-.01em;">${fmtDate(earliest)} <span style="color:var(--ink4);font-weight:400;">→</span> ${fmtDate(latest)}</div>
     </div>
     <div style="width:1px;height:32px;background:var(--line);flex-shrink:0;"></div>
     <div>
@@ -4708,7 +4983,7 @@ function renderValidation() {
   // ── Health summary banner ──────────────────────────────────────
   out += `<div style="display:grid;grid-template-columns:auto 1fr;gap:0;background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">
     <div style="padding:24px 28px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:140px;">
-      <div style="font-size:52px;font-weight:700;color:${healthColor};line-height:1;font-family:var(--font-d);">${healthScore}</div>
+      <div style="font-size:48px;font-weight:700;color:${healthColor};line-height:1;font-family:var(--font-d);">${healthScore}</div>
       <div style="font-size:11px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:${healthColor};margin-top:4px;">${healthLabel}</div>
       <div style="font-size:10px;color:var(--ink4);margin-top:2px;">Data Quality Score</div>
     </div>
@@ -7697,10 +7972,10 @@ function renderCreditFlow() {
 
     // Card header
     out += '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;">';
-    out += '<div><div style="font-size:15px;font-weight:600;color:var(--ink);">'+p.acct+'</div>';
+    out += '<div><div style="font-size:14px;font-weight:600;color:var(--ink);">'+p.acct+'</div>';
     out += '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">'+p.chargeCount+' charges in last 30 days</div></div>';
     out += '<div style="text-align:right;"><div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">30-Day Velocity</div>';
-    out += '<div style="font-size:30px;font-weight:300;font-family:var(--font-d);letter-spacing:-.025em;color:'+color+';">'+fmt(p.vel30)+'</div></div>';
+    out += '<div style="font-size:32px;font-weight:300;font-family:var(--font-d);letter-spacing:-.025em;color:'+color+';">'+fmt(p.vel30)+'</div></div>';
     out += '</div>';
 
     // Projection details
@@ -8169,7 +8444,7 @@ function renderBalanceSheet() {
   }
 
   const GROUP_LABELS = {
-    current:'Cash & Checking', savings:'Savings', investment:'Investments & Retirement',
+    current:'Cash & Checking', savings:'Savings', investment:'Brokerage & Non-Retirement',
     property:'Real Property', retirement:'Retirement Accounts', education:'Education (529)',
     mortgage:'Mortgage', auto:'Auto Loan', student:'Student Loans', Other:'Other Assets'
   };
@@ -8218,7 +8493,7 @@ function renderBalanceSheet() {
     out += '<div style="background:var(--float);border:1px solid '+accentBorder[ki]+';border-radius:var(--r-lg);padding:18px 20px;position:relative;overflow:hidden;">';
     out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:'+c+';opacity:.5;border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
     out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">'+l+'</div>';
-    out += '<div style="font-size:26px;font-weight:700;color:'+c+';letter-spacing:-.02em;line-height:1;font-family:var(--font-d);">'+v+'</div>';
+    out += '<div style="font-size:24px;font-weight:700;color:'+c+';letter-spacing:-.02em;line-height:1;font-family:var(--font-d);">'+v+'</div>';
     out += '<div style="font-size:11px;color:var(--ink4);margin-top:5px;font-family:var(--font-ui);">'+s+'</div></div>';
   });
   out += '</div>';
@@ -8251,7 +8526,7 @@ function renderBalanceSheet() {
   kpis2.forEach(([l,v,c,s]) => {
     out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;">';
     out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">'+l+'</div>';
-    out += '<div style="font-size:30px;font-weight:300;font-family:var(--font-d);letter-spacing:-.025em;color:'+c+';">'+v+'</div>';
+    out += '<div style="font-size:32px;font-weight:300;font-family:var(--font-d);letter-spacing:-.025em;color:'+c+';">'+v+'</div>';
     out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+s+'</div></div>';
   });
   out += '</div>';
@@ -8271,7 +8546,7 @@ function renderBalanceSheet() {
   kpis3.forEach(([l,v,c,s]) => {
     out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;">';
     out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">'+l+'</div>';
-    out += '<div style="font-size:30px;font-weight:300;font-family:var(--font-d);letter-spacing:-.025em;color:'+c+';">'+v+'</div>';
+    out += '<div style="font-size:32px;font-weight:300;font-family:var(--font-d);letter-spacing:-.025em;color:'+c+';">'+v+'</div>';
     out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+s+'</div></div>';
   });
   out += '</div>';
@@ -8284,7 +8559,7 @@ function renderBalanceSheet() {
   out += '</div>';
   out += hdrRow();
 
-  const assetSubOrder = ['current','savings','investment','property','Other'];
+  const assetSubOrder = ['current','savings','investment','retirement','education','property','Other'];
   let prevAssets = 0;
   assetSubOrder.forEach(sub => {
     const entries = assetGroups[sub];
@@ -8299,7 +8574,7 @@ function renderBalanceSheet() {
   });
 
   out += '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:11px 16px;background:rgba(45,212,191,.04);border-top:2px solid rgba(45,212,191,.2);">';
-  out += '<div style="font-size:15px;font-weight:700;font-family:var(--font-m);color:var(--positive);">TOTAL ASSETS</div>';
+  out += '<div style="font-size:14px;font-weight:700;font-family:var(--font-m);color:var(--positive);">TOTAL ASSETS</div>';
   out += '<div style="text-align:right;font-family:var(--font-m);font-size:14px;font-weight:700;color:var(--positive);">'+fmt(totalAssets)+'</div>';
   if (hasCompare) {
     const chg = totalAssets - totalPriorAssets;
@@ -8352,7 +8627,7 @@ function renderBalanceSheet() {
   });
 
   out += '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:11px 16px;background:rgba(248,113,113,.04);border-top:2px solid rgba(248,113,113,.2);">';
-  out += '<div style="font-size:15px;font-weight:700;font-family:var(--font-m);color:var(--negative);">TOTAL LIABILITIES</div>';
+  out += '<div style="font-size:14px;font-weight:700;font-family:var(--font-m);color:var(--negative);">TOTAL LIABILITIES</div>';
   out += '<div style="text-align:right;font-family:var(--font-m);font-size:14px;font-weight:700;color:var(--negative);">'+fmt(totalLiabs)+'</div>';
   if (hasCompare) {
     const chg = totalLiabs - totalPriorLiabs;
@@ -8366,13 +8641,13 @@ function renderBalanceSheet() {
   const nwColor = netWorth >= 0 ? 'var(--positive)' : 'var(--negative)';
   out += '<div style="background:var(--float);border:1px solid '+(netWorth>=0?'rgba(45,212,191,.3)':'rgba(248,113,113,.3)')+';border-radius:var(--r-lg);overflow:hidden;">';
   out += '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:14px 16px;background:'+(netWorth>=0?'rgba(45,212,191,.06)':'rgba(248,113,113,.06)')+'">';
-  out += '<div style="font-size:15px;font-weight:700;color:'+nwColor+';">NET WORTH</div>';
+  out += '<div style="font-size:14px;font-weight:700;color:'+nwColor+';">NET WORTH</div>';
   out += '<div style="text-align:right;font-family:var(--font-m);font-size:16px;font-weight:700;color:'+nwColor+';">'+fmt(netWorth)+'</div>';
   if (hasCompare) {
     const nwChg = nwChange || 0;
     const nwChgColor = nwChg >= 0 ? 'var(--positive)' : 'var(--negative)';
     out += '<div style="text-align:right;font-family:var(--font-m);font-size:13px;color:var(--ink4);">'+fmt(priorNetWorth)+'</div>';
-    out += '<div style="text-align:right;font-family:var(--font-m);font-size:15px;font-weight:700;color:'+nwChgColor+';">'+(nwChg>=0?'+':'')+fmt(nwChg)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--font-m);font-size:14px;font-weight:700;color:'+nwChgColor+';">'+(nwChg>=0?'+':'')+fmt(nwChg)+'</div>';
     out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;color:'+nwChgColor+';">'+(nwChangePct!==null?(nwChangePct>=0?'+':'')+nwChangePct.toFixed(1)+'%':'—')+'</div>';
   } else { out += '<div></div>'; }
   out += '</div>';
@@ -8457,7 +8732,7 @@ function renderBudget() {
   ].forEach(([l,v,c,s])=>{
     out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;">';
     out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">'+l+'</div>';
-    out += '<div style="font-size:30px;font-weight:300;font-family:var(--font-d);letter-spacing:-.025em;color:'+c+';">'+v+'</div>';
+    out += '<div style="font-size:32px;font-weight:300;font-family:var(--font-d);letter-spacing:-.025em;color:'+c+';">'+v+'</div>';
     out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+s+'</div></div>';
   });
   out += '</div>';

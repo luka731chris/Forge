@@ -45,6 +45,10 @@
   --positive: #2DD4BF;
   --negative: #F87171;
   --river:    #60A5FA;
+  /* Short aliases */
+  --pos:  var(--positive);
+  --neg:  var(--negative);
+  --warn: #FBBF24;
 
   /* Ink */
   --ink:  #EEEAE4;
@@ -57,6 +61,10 @@
   --font-ui: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-m:  'Fira Code', 'JetBrains Mono', monospace;
   --mono:    'Fira Code', 'JetBrains Mono', monospace;
+  /* Short aliases — used by ported desktop components */
+  --fd:  var(--font-d);
+  --fu:  var(--font-ui);
+  --fm:  var(--font-m);
 
   /* Legacy aliases — keep for ported components */
   --card:     #1A1A1D;
@@ -268,7 +276,7 @@ body {
 .chip {
   padding: 5px 12px;
   border-radius: var(--r-sm);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   border: 1px solid;
   font-family: var(--fu);
@@ -331,7 +339,7 @@ body {
 }
 .kpi-val {
   font-family: var(--fd);
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 300;
   color: var(--ink);
   line-height: 1;
@@ -339,7 +347,7 @@ body {
   letter-spacing: -.01em;
 }
 .kpi-sub   { font-size: 11px; color: var(--ink4); font-family: var(--fu); }
-.kpi-delta { font-size: 11.5px; font-weight: 500; margin-top: 4px; font-family: var(--fu); }
+.kpi-delta { font-size: 12px; font-weight: 500; margin-top: 4px; font-family: var(--fu); }
 .up  { color: var(--negative); }
 .dn  { color: var(--positive); }
 .pos { color: var(--positive); }
@@ -378,11 +386,11 @@ body {
 .cat-row:last-child { border-bottom: none; }
 .cat-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .cat-info { flex: 1; min-width: 0; }
-.cat-name { font-weight: 500; font-size: 13.5px; color: var(--ink); font-family: var(--fu); }
+.cat-name { font-weight: 500; font-size: 14px; color: var(--ink); font-family: var(--fu); }
 .cat-pct  { font-size: 11px; color: var(--ink4); margin-top: 1px; }
 .cat-bar-bg   { height: 3px; background: var(--line2); border-radius: 2px; overflow: hidden; flex: 1; max-width: 72px; }
 .cat-bar-fill { height: 100%; border-radius: 2px; transition: width .5s var(--ease); }
-.cat-amt  { font-family: var(--fm); font-size: 12.5px; font-weight: 500; color: var(--ink); text-align: right; flex-shrink: 0; min-width: 68px; }
+.cat-amt  { font-family: var(--fm); font-size: 13px; font-weight: 500; color: var(--ink); text-align: right; flex-shrink: 0; min-width: 68px; }
 
 /* ── Life Stage Banner ─────────────────────────────────────── */
 .life-stage-banner {
@@ -413,8 +421,8 @@ body {
 .alert-emoji   { font-size: 20px; flex-shrink: 0; line-height: 1.2; }
 .alert-content { flex: 1; min-width: 0; }
 .alert-title   { font-weight: 600; font-size: 13px; color: var(--ink); margin-bottom: 4px; line-height: 1.35; font-family: var(--fu); }
-.alert-body    { font-size: 12.5px; color: var(--ink2); line-height: 1.6; font-family: var(--fu); }
-.alert-action  { margin-top: 7px; font-size: 11.5px; font-weight: 500; color: var(--river); }
+.alert-body    { font-size: 13px; color: var(--ink2); line-height: 1.6; font-family: var(--fu); }
+.alert-action  { margin-top: 7px; font-size: 12px; font-weight: 500; color: var(--river); }
 
 /* ── Net Worth (Amz tab) ───────────────────────────────────── */
 .amz-hero {
@@ -432,18 +440,18 @@ body {
 .amz-stat-val { font-family: var(--fd); font-size: 20px; font-weight: 300; color: var(--ink); letter-spacing: -.01em; }
 .amz-filters { display: flex; gap: 8px; padding: 11px 20px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); }
 .amz-filters::-webkit-scrollbar { display: none; }
-.f-pill { flex-shrink: 0; padding: 6px 14px; border-radius: var(--r-sm); font-size: 11.5px; font-weight: 500; border: 1px solid var(--line2); background: var(--float); color: var(--ink4); cursor: pointer; white-space: nowrap; transition: all .13s; font-family: var(--fu); }
+.f-pill { flex-shrink: 0; padding: 6px 14px; border-radius: var(--r-sm); font-size: 12px; font-weight: 500; border: 1px solid var(--line2); background: var(--float); color: var(--ink4); cursor: pointer; white-space: nowrap; transition: all .13s; font-family: var(--fu); }
 .f-pill.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
 .amz-item { padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,.03); display: flex; gap: 12px; }
 .amz-item:last-child { border-bottom: none; }
-.amz-icon { width: 38px; height: 38px; border-radius: var(--r-sm); background: rgba(45,212,191,.07); border: 1px solid rgba(45,212,191,.14); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.amz-icon { width: 38px; height: 38px; border-radius: var(--r-sm); background: rgba(45,212,191,.07); border: 1px solid rgba(45,212,191,.14); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
 .amz-info { flex: 1; min-width: 0; }
 .amz-item-title { font-weight: 500; font-size: 13px; color: var(--ink); line-height: 1.4; margin-bottom: 5px; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; font-family: var(--fu); }
 .amz-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-.amz-date { font-size: 10.5px; color: var(--ink4); font-family: var(--fm); }
-.amz-cat  { font-size: 9.5px; padding: 2px 7px; border-radius: 12px; background: rgba(96,165,250,.08); color: var(--river); font-family: var(--fm); }
-.imp-hi   { background: rgba(248,113,113,.1); color: var(--negative); font-size: 9.5px; font-weight: 500; padding: 2px 7px; border-radius: 12px; font-family: var(--fm); }
-.imp-md   { background: var(--gold-dim); color: var(--gold); font-size: 9.5px; font-weight: 500; padding: 2px 7px; border-radius: 12px; font-family: var(--fm); }
+.amz-date { font-size: 11px; color: var(--ink4); font-family: var(--fm); }
+.amz-cat  { font-size: 10px; padding: 2px 7px; border-radius: 12px; background: rgba(96,165,250,.08); color: var(--river); font-family: var(--fm); }
+.imp-hi   { background: rgba(248,113,113,.1); color: var(--negative); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 12px; font-family: var(--fm); }
+.imp-md   { background: var(--gold-dim); color: var(--gold); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 12px; font-family: var(--fm); }
 .amz-price { font-family: var(--fm); font-size: 14px; font-weight: 500; color: var(--positive); margin-left: auto; flex-shrink: 0; }
 
 /* ── Analytics Cards ───────────────────────────────────────── */
@@ -470,7 +478,7 @@ body {
 }
 .p-ana-dim-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 .p-dim-chip {
-  font-size: 10.5px; padding: 5px 10px; border-radius: 16px;
+  font-size: 11px; padding: 5px 10px; border-radius: 16px;
   border: 1px solid var(--line2); background: var(--lift);
   color: var(--ink4); cursor: pointer; font-family: var(--fm);
   transition: all .13s;
@@ -480,7 +488,7 @@ body {
 .p-insight-row { display: flex; gap: 8px; margin-top: 10px; }
 .p-insight { flex: 1; background: var(--lift); border-radius: var(--r-sm); padding: 8px 10px; text-align: center; }
 .p-insight-lbl { font-size: 9px; color: var(--ink4); font-family: var(--fm); letter-spacing: .08em; text-transform: uppercase; }
-.p-insight-val { font-size: 15px; font-weight: 300; font-family: var(--fd); color: var(--ink); margin-top: 2px; }
+.p-insight-val { font-size: 14px; font-weight: 300; font-family: var(--fd); color: var(--ink); margin-top: 2px; }
 
 /* ── Chat ──────────────────────────────────────────────────── */
 .chat-wrap { display: flex; flex-direction: column; height: 100%; }
@@ -497,16 +505,16 @@ body {
   background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
 }
 .chat-title { font-family: var(--fd); font-size: 28px; font-weight: 400; color: var(--ink); letter-spacing: -.01em; }
-.chat-sub   { font-size: 10.5px; color: var(--ink4); margin-top: 2px; font-family: var(--fm); letter-spacing: .05em; }
+.chat-sub   { font-size: 11px; color: var(--ink4); margin-top: 2px; font-family: var(--fm); letter-spacing: .05em; }
 .chat-status { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
 .status-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--positive); box-shadow: 0 0 6px var(--positive); }
-.status-txt  { font-size: 10.5px; color: var(--positive); font-weight: 500; font-family: var(--fm); letter-spacing: .04em; }
+.status-txt  { font-size: 11px; color: var(--positive); font-weight: 500; font-family: var(--fm); letter-spacing: .04em; }
 .chat-msgs {
   flex: 1; overflow-y: auto; padding: 16px 16px 8px;
   display: flex; flex-direction: column; gap: 12px;
   -webkit-overflow-scrolling: touch; min-height: 0;
 }
-.bubble { max-width: 86%; border-radius: var(--r-lg); padding: 12px 16px; font-size: 13.5px; line-height: 1.6; font-family: var(--fu); }
+.bubble { max-width: 86%; border-radius: var(--r-lg); padding: 12px 16px; font-size: 14px; line-height: 1.6; font-family: var(--fu); }
 .bubble-u { align-self: flex-end; background: var(--gold); color: #000; font-weight: 600; border-bottom-right-radius: var(--r-sm); }
 .bubble-a { align-self: flex-start; background: var(--float); color: var(--ink); border-bottom-left-radius: var(--r-sm); border: 1px solid var(--line); }
 .sid-lbl { font-family: var(--fm); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); margin-bottom: 7px; display: flex; align-items: center; gap: 6px; }
@@ -530,7 +538,7 @@ body {
 
 /* ── Empty States ──────────────────────────────────────────── */
 .empty-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; min-height: 52vh; text-align: center; }
-.empty-icon  { font-size: 48px; margin-bottom: 14px; }
+.empty-icon  { font-size: 40px; margin-bottom: 14px; }
 .empty-title { font-family: var(--fd); font-size: 24px; font-weight: 400; color: var(--ink); margin-bottom: 8px; letter-spacing: -.01em; }
 .empty-sub   { font-size: 13px; color: var(--ink4); line-height: 1.6; font-family: var(--fu); }
 .data-note   { margin: 14px; padding: 14px 16px; background: var(--gold-dim); border: 1px solid var(--gold-line); border-radius: var(--r-lg); font-size: 12px; color: var(--ink4); line-height: 1.6; }
@@ -545,7 +553,7 @@ body {
   color: #000;
   padding: 12px 18px;
   border-radius: var(--r-sm);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
   text-align: center;
   box-shadow: 0 4px 24px rgba(245,168,0,.3);
@@ -567,7 +575,7 @@ body {
   border-left: 3px solid var(--gold);
   border-radius: var(--r-sm);
   padding: 6px 12px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-family: var(--fm);
   color: var(--ink);
   pointer-events: none;
@@ -623,22 +631,22 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
 
   <!-- Mode: setup (first time) or unlock -->
   <div id="lock-setup" style="display:none;width:100%;max-width:320px;text-align:center;">
-    <div style="font-size:15px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:6px;">Create your Forge PIN</div>
+    <div style="font-size:14px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:6px;">Create your Forge PIN</div>
     <div style="font-size:12px;color:var(--ink4,#524E4A);margin-bottom:24px;line-height:1.6;">
       Your financial data will be encrypted locally.<br>Recovery: clear &amp; re-pull from Cloudflare.
     </div>
     <input id="lock-pass-new" type="password" placeholder="Create passphrase" autocomplete="new-password"
       style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
-             padding:14px 16px;font-size:17px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
+             padding:14px 16px;font-size:16px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
              text-align:center;letter-spacing:.1em;outline:none;-webkit-appearance:none;">
     <input id="lock-pass-confirm" type="password" placeholder="Confirm passphrase" autocomplete="new-password"
       style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
-             padding:14px 16px;font-size:17px;color:var(--ink,#EEEAE4);margin-bottom:16px;box-sizing:border-box;
+             padding:14px 16px;font-size:16px;color:var(--ink,#EEEAE4);margin-bottom:16px;box-sizing:border-box;
              text-align:center;letter-spacing:.1em;outline:none;-webkit-appearance:none;">
     <div id="lock-setup-err" style="color:#F87171;font-size:12px;margin-bottom:10px;min-height:16px;"></div>
     <button onclick="forgeSetupPIN()"
       style="width:100%;background:var(--gold,#F5A800);color:#000;border:none;border-radius:8px;
-             padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
+             padding:15px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
       Create PIN &amp; Encrypt Data
     </button>
     <div style="margin-top:12px;font-size:11px;color:var(--ink4,#524E4A);line-height:1.6;">
@@ -648,16 +656,16 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
   </div>
 
   <div id="lock-unlock" style="display:none;width:100%;max-width:320px;text-align:center;">
-    <div style="font-size:15px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:20px;">Enter your passphrase</div>
+    <div style="font-size:14px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:20px;">Enter your passphrase</div>
     <input id="lock-pass" type="password" placeholder="Passphrase" autocomplete="current-password"
       style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
-             padding:14px 16px;font-size:17px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
+             padding:14px 16px;font-size:16px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
              text-align:center;letter-spacing:.1em;outline:none;-webkit-appearance:none;"
       onkeydown="if(event.key==='Enter')forgeUnlock()">
     <div id="lock-err" style="color:#F87171;font-size:12px;margin-bottom:10px;min-height:16px;"></div>
     <button id="lock-btn" onclick="forgeUnlock()"
       style="width:100%;background:var(--gold,#F5A800);color:#000;border:none;border-radius:8px;
-             padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">
+             padding:15px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">
       Unlock Forge
     </button>
     <button id="lock-bio-btn" style="display:none;width:100%;background:transparent;
@@ -710,7 +718,8 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
       </div>
       <select id="plMonth" onchange="renderPulsePL()" style="font-size:11px;padding:4px 8px;background:var(--lift);color:var(--ink);border:1px solid var(--line2);border-radius:5px;"></select>
     </div>
-    <div id="pl-out" style="padding:0 0 100px;"></div>
+    <div id="pulseThermo"></div>
+<div id="pl-out" style="padding:0 0 100px;"></div>
   </div>
 
   <!-- ══ AMAZON WATCHLIST ══ -->
@@ -2548,6 +2557,21 @@ function go(tab) {
 // ════════════════════════════════════════════════════════════════════════════
 // PULSE SETTINGS
 // ════════════════════════════════════════════════════════════════════════════
+
+function updateAccountOwner(sel) {
+  const acct  = sel.getAttribute('data-acct');
+  const owner = sel.value;
+  if (!acct) return;
+  const s = JSON.parse(localStorage.getItem('forge_settings_v2')||'{}');
+  if (!s.accountOwners) s.accountOwners = {};
+  if (owner) s.accountOwners[acct] = owner;
+  else delete s.accountOwners[acct];
+  localStorage.setItem('forge_settings_v2', JSON.stringify(s));
+  sel.style.color = owner ? 'var(--ink)' : 'var(--ink4)';
+  pulseToast('✓ ' + acct.slice(0,20) + (owner?' → '+owner:' → Shared'));
+}
+
+
 function renderPulseSettings() {
   const el = document.getElementById('pulse-settings-out');
   if (!el) return;
@@ -2670,7 +2694,7 @@ function renderPulseSettings() {
         <span style="color:var(--ink2);">${ft.icon} ${ft.label}</span>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:11.5px;font-family:var(--fm);color:var(--ink3);">${thru ? thru.slice(0,10) : '—'}</div>
+        <div style="font-size:12px;font-family:var(--fm);color:var(--ink3);">${thru ? thru.slice(0,10) : '—'}</div>
         <div style="font-size:10px;margin-top:1px;">${freshLabel(days)}</div>
       </div>
     </div>`;
@@ -2772,12 +2796,43 @@ function renderPulseSettings() {
     </div>`;
   }
 
-  el.innerHTML =
-    `<div style='display:flex;align-items:center;gap:10px;padding:8px 14px 14px;'><svg width="22" height="13" viewBox="0 0 680 280" fill="none" style="display:inline-block;vertical-align:middle;flex-shrink:0;"><path d="M 680 10 C 548 10 422 30 338 58 C 270 82 210 112 170 145" stroke="#7EAFD6" stroke-width="48" stroke-linecap="round"/><path d="M 680 272 C 555 272 448 248 368 215 C 298 186 232 162 170 154" stroke="#7EAFD6" stroke-width="44" stroke-linecap="round"/><path d="M 170 149 C 148 142 118 120 92 92 C 66 64 44 40 8 22" stroke="#F5A800" stroke-width="42" stroke-linecap="round"/><circle cx="170" cy="149" r="26" fill="#F5A800"/></svg><div><div style='font-size:15px;font-weight:700;letter-spacing:.04em;color:var(--ink);'>LUKA<span style='color:var(--gold);font-weight:400;'>LAB</span></div><div style='font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);font-family:var(--fm);margin-top:2px;'>AI Creative Lab</div></div></div>` +
+
+  // ── Account → Member Mapping ──────────────────────────────────────────────
+  let acctOwners2 = {};
+  try {
+    const _raw = localStorage.getItem('forge_settings_v2') || localStorage.getItem('forge_settings_v1') || '{}';
+    acctOwners2 = JSON.parse(_raw).accountOwners || {};
+  } catch(e) {}
+  const ledgerRaw2   = localStorage.getItem('forge_prod_v1') || localStorage.getItem('ledger_v3');
+  const allAccounts  = ledgerRaw2 ? (JSON.parse(ledgerRaw2)?.accounts || []) : [];
+  const memberNames2 = (settings2?.familyProfile?.members || [{name:'Chris'},{name:'Kira'},{name:'Sam'},{name:'Whitney'},{name:'Will'}]).map(m=>m.name).filter(Boolean);
+
+  let acctMapBody = '';
+  if (!allAccounts.length) {
+    acctMapBody = '<div style="padding:16px 14px;font-size:12px;color:var(--ink4);">Pull from cloud to see your accounts here.</div>';
+  } else {
+    acctMapBody = '<div style="font-size:11px;color:var(--ink4);line-height:1.65;padding:10px 14px 8px;border-bottom:1px solid var(--line);">Assign accounts to family members so Forge can show per-person spending breakdowns.</div>';
+    allAccounts.forEach((acct,i) => {
+      const owner = acctOwners2[acct] || '';
+      acctMapBody += `<div style="padding:10px 14px;${i<allAccounts.length-1?'border-bottom:1px solid rgba(255,255,255,.04)':''}">
+        <div style="font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${acct}</div>
+        <select data-acct="${acct}" onchange="updateAccountOwner(this)"
+          style="width:100%;background:var(--lift);border:1px solid var(--line2);border-radius:var(--r-sm);padding:8px 10px;font-size:14px;color:${owner?'var(--ink)':'var(--ink4)'};">
+          <option value="">— Shared / unassigned</option>
+          ${memberNames2.map(n=>`<option value="${n}"${owner===n?' selected':''}>${n}</option>`).join('')}
+        </select>
+      </div>`;
+    });
+  }
+
+
+    el.innerHTML =
+    `<div style='display:flex;align-items:center;gap:10px;padding:8px 14px 14px;'><svg width="22" height="13" viewBox="0 0 680 280" fill="none" style="display:inline-block;vertical-align:middle;flex-shrink:0;"><path d="M 680 10 C 548 10 422 30 338 58 C 270 82 210 112 170 145" stroke="#7EAFD6" stroke-width="48" stroke-linecap="round"/><path d="M 680 272 C 555 272 448 248 368 215 C 298 186 232 162 170 154" stroke="#7EAFD6" stroke-width="44" stroke-linecap="round"/><path d="M 170 149 C 148 142 118 120 92 92 C 66 64 44 40 8 22" stroke="#F5A800" stroke-width="42" stroke-linecap="round"/><circle cx="170" cy="149" r="26" fill="#F5A800"/></svg><div><div style='font-size:14px;font-weight:700;letter-spacing:.04em;color:var(--ink);'>LUKA<span style='color:var(--gold);font-weight:400;'>LAB</span></div><div style='font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);font-family:var(--fm);margin-top:2px;'>AI Creative Lab</div></div></div>` +
     sec('Sync & Data',   '☁️',  syncBody)  +
     sec('Cloud Config',  '🔗',  cloudBody) +
     sec('Family',        '👨‍👩‍👧‍👦', familyBody) +
     sec('Display',       '🎨',  displayBody) +
+    sec('Accounts',      '→',   acctMapBody) +
     sec('Security',      '🔒',  secBody)   +
     sec('Storage',       '💾',  dataBody) +
     `<div style="height:24px;"></div>`;
@@ -3017,7 +3072,7 @@ function renderSnapshot() {
 
 // ════════════════════════════════════════════
 // THE FURNACE — ALERTS
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 function buildAlerts() {
   const alerts = [];
   if (!txns.length) return alerts;
@@ -3144,9 +3199,8 @@ function renderAlerts() {
 
 // ════════════════════════════════════════════
 // DETAIL LENS
-// ════════════════════════════════════════════
-function renderAmazon() {
-  const el = document.getElementById('amz-out');
+// ═══════════════════════════════════════════
+function renderAmazon() {const el = document.getElementById('amz-out');
   if (!amzItems.length) { el.innerHTML = emptyHTML('amazon'); return; }
   const n=new Date();
   const total=amzItems.reduce((s,i)=>s+i.total,0);
@@ -3173,7 +3227,7 @@ function renderAmazon() {
       <div class="amz-stat"><div class="amz-stat-lbl">Monthly avg</div><div class="amz-stat-val">${fmtK(total/mos)}</div></div>
       <div class="amz-stat"><div class="amz-stat-lbl">Flagged</div><div class="amz-stat-val" style="color:var(--gold);">${amzItems.filter(i=>impulse(i)>=amzThreshold).length}</div></div>
     </div>
-    ${(()=>{const pp=[...new Set(amzItems.map(i=>i.purchaser).filter(Boolean))];return pp.length?`<div style="display:flex;gap:8px;padding:10px 14px;background:var(--lift);border-top:1px solid var(--line);flex-wrap:wrap;">${pp.map(p=>{const pt=amzItems.filter(i=>i.purchaser===p).reduce((s,i)=>s+i.total,0);const mtdP=rec.filter(i=>i.purchaser===p).reduce((s,i)=>s+i.total,0);return`<div style="flex:1;min-width:120px;background:var(--float);border-radius:var(--r-sm);padding:8px 10px;"><div style="font-size:10px;color:var(--ink4);margin-bottom:2px;">👤 ${p}</div><div style="font-size:15px;font-weight:600;color:var(--ink);">${fmtK(pt)}</div><div style="font-size:10px;color:var(--ink4);">this month: ${fmt(mtdP)}</div></div>`;}).join('')}</div>`:'';})()}
+    ${(()=>{const pp=[...new Set(amzItems.map(i=>i.purchaser).filter(Boolean))];return pp.length?`<div style="display:flex;gap:8px;padding:10px 14px;background:var(--lift);border-top:1px solid var(--line);flex-wrap:wrap;">${pp.map(p=>{const pt=amzItems.filter(i=>i.purchaser===p).reduce((s,i)=>s+i.total,0);const mtdP=rec.filter(i=>i.purchaser===p).reduce((s,i)=>s+i.total,0);return`<div style="flex:1;min-width:120px;background:var(--float);border-radius:var(--r-sm);padding:8px 10px;"><div style="font-size:10px;color:var(--ink4);margin-bottom:2px;">👤 ${p}</div><div style="font-size:14px;font-weight:600;color:var(--ink);">${fmtK(pt)}</div><div style="font-size:10px;color:var(--ink4);">this month: ${fmt(mtdP)}</div></div>`;}).join('')}</div>`:'';})()}
     <div class="amz-filters">
       <div class="f-pill${amzF==='all'?' active':''}"    onclick="setAF('all',this)">All Items</div>
       <div class="f-pill${amzF==='recent'?' active':''}" onclick="setAF('recent',this)">Recent</div>
@@ -3196,7 +3250,6 @@ function renderAmazon() {
     </div>
     <div style="height:20px;"></div>`;
 }
-
 function setAF(f, btn) { amzF=f; renderAmazon(); }
 
 // ════════════════════════════════════════════
@@ -3700,7 +3753,7 @@ function renderPulseNW() {
       <!-- Net Worth hero -->
       <div style="background:linear-gradient(135deg,#0F0E09,var(--void));border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;margin-bottom:20px;">
         <div style="font-size:9px;font-family:var(--fm);letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Net Worth</div>
-        <div style="font-size:36px;font-weight:700;color:${nwColor};font-family:var(--fm);letter-spacing:-.02em;">${netWorth>=0?'+':''}${fmtK(netWorth)}</div>
+        <div style="font-size:32px;font-weight:700;color:${nwColor};font-family:var(--fm);letter-spacing:-.02em;">${netWorth>=0?'+':''}${fmtK(netWorth)}</div>
         ${nwChg !== null ? `<div style="font-size:12px;color:${nwChg>=0?'var(--positive)':'var(--negative)'};margin-top:4px;">${nwChg>=0?'↑':'↓'}${Math.abs(nwChg).toFixed(1)}% vs comparison period</div>` : ''}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;">
           <div>
@@ -3760,8 +3813,7 @@ function renderPulseAnalytics() {
   renderPulseSavRate();
 }
 
-function renderPulseCategories() {
-  const el = document.getElementById('p-cat-chart');
+function renderPulseCategories() {const el = document.getElementById('p-cat-chart');
   if (!el) return;
   const since = getPulseSince(pCatRange);
   const cats = {};
@@ -3806,7 +3858,6 @@ function renderPulseCategories() {
     {lbl:'Amount',val:fmtK(sorted[0][1])},
   ].map(i=>`<div class="p-insight"><div class="p-insight-lbl">${i.lbl}</div><div class="p-insight-val">${i.val}</div></div>`).join('');
 }
-
 function renderPulseTrend() {
   const el = document.getElementById('p-trend-chart');
   if (!el) return;
@@ -4316,234 +4367,164 @@ function renderPulseDetailLens(sourceKey) {
 function renderThermometer(containerId, selMonth) {
   const el = document.getElementById(containerId);
   if (!el) return;
+  try {
+    // ── Data: all txns for the month (no transfer filter for income) ───────────
+    const now          = new Date();
+    const selOrDefault = selMonth || now.toISOString().slice(0,7);
+    const allMonthTxns = txns.filter(t => t.date.startsWith(selOrDefault));
+    const sp           = operatingSpendable(txns).filter(t => t.date.startsWith(selOrDefault));
+    const accrual      = buildAccrualEngine(selOrDefault, operatingSpendable(txns));
+    const isInFlight   = !!accrual;
 
-  const sp = operatingSpendable(txns);
-  if (!sp.length) { el.innerHTML = ''; return; }
+    if (!sp.length && !allMonthTxns.length) { el.innerHTML = ''; return; }
 
-  // ── Data ──────────────────────────────────────────────────────────────────
-  const now          = new Date();
-  const selOrDefault = selMonth || now.toISOString().slice(0,7);
-  const accrual      = buildAccrualEngine(selOrDefault, sp);
-  const isInFlight   = !!accrual;
-  const monthTxns    = sp.filter(t => t.date.startsWith(selOrDefault));
+    // ── Income: paychecks + other income (ANY account, not just operating) ─────
+    // This captures deposits that hit savings directly (split paycheck, etc.)
+    const incTxns   = allMonthTxns.filter(t => t.amount > 0 && classifyTxn(t) === 'paycheck');
+    const otherInc  = allMonthTxns.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc' && !isCCCredit(t));
+    const rawIncome = incTxns.reduce((s,t)=>s+t.amount,0) + otherInc.reduce((s,t)=>s+t.amount,0);
 
-  // Buckets
-  const FIXED_BKS = ['mortgage','car','insurance','education','childcare',
-                     'electric','gas_util','water','internet','cell','subscriptions'];
-  const VAR_BKS   = ['restaurants','groceries','gas_car','transit','healthcare',
-                     'entertainment','household','personal','clothing','travel','gifts','other'];
+    // ── Auto-savings: [Bracket] category transfers to savings/investment accounts ─
+    const autoSaveTxns = allMonthTxns.filter(t => t.amount < 0 && (
+      (isTransfer(t) && classifyTxn(t) === 'auto_save') ||
+      classifyTxn(t) === 'auto_save'
+    ));
+    const autoSave = autoSaveTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
 
-  const fixedActual = monthTxns.filter(t=>FIXED_BKS.includes(classifyTxn(t))&&t.amount<0)
-                                .reduce((s,t)=>s+Math.abs(t.amount),0);
-  const varActual   = monthTxns.filter(t=>VAR_BKS.includes(classifyTxn(t))&&t.amount<0)
-                                .reduce((s,t)=>s+Math.abs(t.amount),0);
+    // Deployable = take-home after retirement/investment contributions
+    const income     = rawIncome;
+    const deployable = Math.max(income - autoSave, income * 0.1, 1);
 
-  let fixedProj = 0, varProj = 0;
-  if (isInFlight && accrual) {
-    FIXED_BKS.forEach(bk => { fixedProj += accrual.accrueAmount(bk) || 0; });
-    VAR_BKS.forEach(bk   => { varProj   += accrual.accrueAmount(bk) || 0; });
+    // Normalize if accrual engine available
+    let normData = null;
+    if (accrual && accrual.normalizeIncome) {
+      try { normData = accrual.normalizeIncome(); } catch(e){}
+    }
+    const displayIncome = (normData && normData.normalizedIncome > 0 && normData.normalizedIncome < income * 1.8)
+      ? normData.normalizedIncome : income;
+    const displayDeploy = Math.max(displayIncome - autoSave, displayIncome * 0.1, 1);
+
+    // ── Expenses from operating txns ──────────────────────────────────────────
+    const FIXED_BKS = ['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','cell','subscriptions'];
+    const VAR_BKS   = ['restaurants','groceries','gas_car','transit','healthcare','entertainment','household','personal','clothing','travel','gifts','other'];
+
+    const fixedActual = sp.filter(t=>FIXED_BKS.includes(classifyTxn(t))&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+    const varActual   = sp.filter(t=>VAR_BKS.includes(classifyTxn(t))&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+
+    let fixedProj = 0, varProj = 0;
+    if (isInFlight) {
+      FIXED_BKS.forEach(bk => { fixedProj += accrual.accrueAmount(bk)||0; });
+      VAR_BKS.forEach(bk   => { varProj   += accrual.accrueAmount(bk)||0; });
+    }
+
+    const fixedTotal = fixedActual + fixedProj;
+    const varTotal   = varActual   + varProj;
+    const totalSpend = fixedTotal + varTotal;
+    const buffer     = displayDeploy - totalSpend;
+    const overflows  = buffer < 0;
+
+    // ── Width % (capped at 100 — never escapes container) ────────────────────
+    const fixPct = Math.min(fixedTotal / displayDeploy * 100, 100);
+    const varPct = Math.min(varTotal   / displayDeploy * 100, Math.max(0, 100 - fixPct));
+    const bufPct = Math.max(0, 100 - fixPct - varPct);
+    const savePct= income > 0 ? (autoSave / income * 100) : 0;
+
+    const fmtK = n => { const a=Math.abs(n||0); return a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a); };
+
+    const [sy,sm]  = selOrDefault.split('-');
+    const moLabel  = new Date(+sy, +sm-1, 1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
+    const normNote = normData&&(normData.isThreePayMonth||normData.oneTimeTotal>0)
+      ? (normData.isThreePayMonth?' · 3-pay normalized':'')+(normData.oneTimeTotal>0?' · '+fmtK(normData.oneTimeTotal)+' excl.':'') : '';
+    const isStr    = isInFlight ? ` · ${accrual.daysElapsed}d actual + ${accrual.daysRemaining}d projected` : ' · final';
+
+    // ── Colors ────────────────────────────────────────────────────────────────
+    const FIXED_C = '#F87171';
+    const VAR_C   = '#F5A800';
+    const FREE_C  = '#2DD4BF';
+    const OVER_C  = '#FF3B3B';
+    const bufColor= overflows ? OVER_C : bufPct < 8 ? '#FBBF24' : FREE_C;
+    const clickIS = "if(typeof showPage==='function')showPage('income')";
+
+    el.innerHTML = `
+    <div style="padding:14px 16px 12px;">
+
+      <!-- ── Header ─────────────────────────────────────────────────────── -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:2px;">Budget Pressure
+            <span style="font-size:9px;font-weight:400;color:var(--ink4);font-family:var(--fm);margin-left:6px;">${moLabel}${isStr}</span>
+          </div>
+          <div style="font-size:10px;color:var(--ink4);line-height:1.5;">
+            How much of take-home pay is consumed by bills and spending.
+            <span style="color:var(--river);">Bar = 100% of deployable income.</span>
+            ${normNote ? `<span style="color:var(--warn);">⚡ ${normNote.trim()}</span>` : ''}
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:18px;font-weight:300;font-family:var(--fd);color:${bufColor};line-height:1;">${overflows?'−':'+'}${fmtK(Math.abs(buffer))}</div>
+          <div style="font-size:10px;color:${bufColor};">${overflows?'over budget':'remaining'}</div>
+        </div>
+      </div>
+
+      <!-- ── Income context row ────────────────────────────────────────── -->
+      <div style="display:flex;gap:8px;margin-bottom:8px;font-size:11px;color:var(--ink4);flex-wrap:wrap;align-items:center;">
+        <span><span style="color:var(--pos);font-weight:600;font-family:var(--fm);">${fmtK(income)}</span> gross income</span>
+        <span>−</span>
+        <span><span style="color:var(--river);font-weight:600;font-family:var(--fm);">${fmtK(autoSave)}</span> auto-save (${Math.round(savePct)}%)</span>
+        <span>=</span>
+        <span><span style="color:var(--ink);font-weight:600;font-family:var(--fm);">${fmtK(displayDeploy)}</span> deployable</span>
+        ${normNote ? `<span style="color:var(--warn);font-family:var(--fm);font-size:10px;">⚡ normalized</span>` : ''}
+      </div>
+
+      <!-- ── The bar ───────────────────────────────────────────────────── -->
+      <div style="margin-bottom:6px;">
+        <div style="position:relative;height:26px;border-radius:5px;background:rgba(255,255,255,.04);border:1px solid var(--line);overflow:hidden;cursor:pointer;" onclick="${clickIS}" title="Click → Income Statement detail">
+          <!-- Fixed -->
+          <div style="position:absolute;left:0;top:0;bottom:0;width:${fixPct.toFixed(1)}%;background:${FIXED_C};display:flex;align-items:center;justify-content:center;overflow:hidden;">
+            ${fixPct>12 ? `<span style="font-size:9px;font-weight:700;color:rgba(255,255,255,.92);font-family:var(--fm);white-space:nowrap;">${fmtK(fixedTotal)}</span>` : ''}
+          </div>
+          <!-- Variable -->
+          <div style="position:absolute;left:${fixPct.toFixed(1)}%;top:0;bottom:0;width:${varPct.toFixed(1)}%;background:${VAR_C};display:flex;align-items:center;justify-content:center;overflow:hidden;">
+            ${varPct>10 ? `<span style="font-size:9px;font-weight:700;color:rgba(0,0,0,.75);font-family:var(--fm);white-space:nowrap;">${fmtK(varTotal)}</span>` : ''}
+          </div>
+          <!-- Buffer -->
+          ${bufPct>3 && !overflows ? `<div style="position:absolute;right:0;top:0;bottom:0;width:${bufPct.toFixed(1)}%;background:rgba(45,212,191,.15);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;overflow:hidden;"><span style="font-size:9px;font-weight:600;color:${FREE_C};font-family:var(--fm);white-space:nowrap;">${fmtK(buffer)}</span></div>` : ''}
+          <!-- Overflow glow -->
+          ${overflows ? `<div style="position:absolute;right:0;top:0;bottom:0;width:5px;background:${OVER_C};box-shadow:-3px 0 10px ${OVER_C};"></div>` : ''}
+        </div>
+        <!-- Legend -->
+        <div style="display:flex;gap:10px;margin-top:4px;font-size:10px;font-family:var(--fm);flex-wrap:wrap;align-items:center;">
+          <span style="color:${FIXED_C};">■ Fixed ${Math.round(fixPct)}%</span>
+          <span style="color:${VAR_C};">■ Variable ${Math.round(varPct)}%</span>
+          <span style="color:${bufColor};">${overflows ? '▲ Over' : '■ Free'} ${Math.abs(Math.round(bufPct))}%</span>
+          <span style="margin-left:auto;cursor:pointer;color:var(--river);font-size:10px;" onclick="${clickIS}">View detail →</span>
+        </div>
+      </div>
+
+      <!-- ── 5 metric tiles ──────────────────────────────────────────────── -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;">
+        ${[
+          ['Income',   fmtK(income),      income===displayIncome?'gross pay':'normalized',  'var(--pos)',   'rgba(45,212,191,.3)'],
+          ['Saved',    fmtK(autoSave),     Math.round(savePct)+'% of gross · to savings',   'var(--river)', 'rgba(96,165,250,.3)'],
+          ['Fixed',    fmtK(fixedTotal),   isInFlight&&fixedProj>0?fmtK(fixedProj)+' due':'bills & subs', FIXED_C,'rgba(248,113,113,.3)'],
+          ['Variable', fmtK(varTotal),     isInFlight&&varProj>0?'+'+fmtK(varProj)+' proj':'discretionary', VAR_C,'rgba(245,168,0,.3)'],
+          [overflows?'Over':'Buffer', (overflows?'−':'+')+fmtK(Math.abs(buffer)), overflows?'trim spending':'to allocate', bufColor, overflows?'rgba(255,59,59,.25)':'rgba(45,212,191,.2)'],
+        ].map(([lbl,val,sub,col,bdr])=>`
+          <div style="background:rgba(255,255,255,.03);border-radius:5px;padding:7px 8px;border-top:2px solid ${bdr};cursor:pointer;" onclick="${clickIS}">
+            <div style="font-size:9px;font-family:var(--fm);letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">${lbl}</div>
+            <div style="font-size:14px;font-weight:300;font-family:var(--fd);color:${col};line-height:1;margin-bottom:2px;">${val}</div>
+            <div style="font-size:9px;color:var(--ink4);line-height:1.3;">${sub}</div>
+          </div>`).join('')}
+      </div>
+
+    </div>`;
+  } catch(e) {
+    console.warn('[Thermometer] render error:', e);
+    el.innerHTML = '';
   }
-
-  const fixedTotal = fixedActual + fixedProj;
-  const varTotal   = varActual   + varProj;
-
-  // Normalized income
-  let normData = null;
-  if (accrual && accrual.normalizeIncome) {
-    try { normData = accrual.normalizeIncome(); } catch(e) {}
-  }
-  const rawInc     = monthTxns.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
-  const autoSaveAmt= monthTxns.filter(t=>classifyTxn(t)==='auto_save').reduce((s,t)=>s+Math.abs(t.amount),0);
-  const income     = (normData && normData.normalizedIncome > 0)
-                     ? normData.normalizedIncome
-                     : rawInc;
-  const deployable = Math.max(income - autoSaveAmt, 1);   // post-savings available
-  const totalSpend = fixedTotal + varTotal;
-  const buffer     = deployable - totalSpend;
-  const overflows  = buffer < 0;
-  const savePct    = income > 0 ? (autoSaveAmt / income * 100) : 0;
-  const fixedPct   = deployable > 0 ? Math.min(fixedTotal / deployable * 100, 999) : 0;
-  const varPct     = deployable > 0 ? Math.min(varTotal   / deployable * 100, 999) : 0;
-  const bufferPct  = Math.max(100 - fixedPct - varPct, -999);
-
-  // Visual widths (cap total at 120% so overflow is still visible)
-  const scale     = Math.max(deployable, totalSpend * 0.9);
-  const fixW      = Math.min(fixedTotal / scale * 100, 100);
-  const varW      = Math.min(varTotal   / scale * 100, Math.max(0, 100 - fixW));
-  const overW     = overflows ? Math.min(Math.abs(buffer) / scale * 100, 30) : 0;
-
-  // Formatting
-  const fmtK = n => {
-    const a = Math.abs(n||0);
-    return a>=1000 ? '$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K' : '$'+Math.round(a);
-  };
-  const fmtPct = n => (n>=0?'':'−')+Math.abs(Math.round(n))+'%';
-
-  // Month label
-  const [sy,sm] = selOrDefault.split('-');
-  const moLabel = new Date(+sy, +sm-1, 1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
-  const normNote = normData && (normData.isThreePayMonth || normData.oneTimeTotal>0)
-    ? (normData.isThreePayMonth ? ' · 3-pay mo normalized' : '')
-      + (normData.oneTimeTotal>0 ? ` · ${fmtK(normData.oneTimeTotal)} one-time excl.` : '')
-    : '';
-
-  // ── Colors ────────────────────────────────────────────────────────────────
-  const C = {
-    fixed:  '#F87171',   // var(--neg)
-    var:    '#F5A800',   // var(--gold)
-    free:   '#2DD4BF',   // var(--pos)
-    over:   '#FF3B3B',
-    bg:     'var(--float)',
-    ink:    'var(--ink)',
-    ink2:   'var(--ink2)',
-    ink3:   'var(--ink3)',
-    ink4:   'var(--ink4)',
-  };
-  const bufferColor = overflows ? C.over : bufferPct < 8 ? '#FBBF24' : C.free;
-
-  // ── HTML ──────────────────────────────────────────────────────────────────
-  el.innerHTML = `<div style="padding:14px 18px;">
-
-    <!-- Title row -->
-    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
-      <div>
-        <div style="font-size:11px;font-weight:700;color:var(--ink2);letter-spacing:.01em;">Budget Pressure</div>
-        <div style="font-size:10px;color:var(--ink4);font-family:var(--fm);margin-top:1px;">${moLabel}${isInFlight?' · actuals + projected':''}${normNote}</div>
-      </div>
-      <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:22px;font-weight:300;font-family:var(--fd);color:${bufferColor};line-height:1;">${overflows?'−':'+'} ${fmtK(Math.abs(buffer))}</div>
-        <div style="font-size:10px;color:${bufferColor};margin-top:1px;">${overflows?'over budget':'remaining budget'}</div>
-      </div>
-    </div>
-
-    <!-- ── Main pressure bar ─────────────────────────────────────────────── -->
-    <div style="position:relative;margin-bottom:6px;">
-
-      <!-- Income "capacity" label -->
-      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4px;">
-        <span style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Deployable income</span>
-        <span style="font-size:11px;font-weight:600;font-family:var(--fm);color:var(--ink2);">${fmtK(deployable)}</span>
-      </div>
-
-      <!-- Bar track -->
-      <div style="position:relative;height:32px;border-radius:8px;background:rgba(255,255,255,.05);overflow:visible;border:1px solid var(--line);">
-
-        <!-- Fixed segment -->
-        <div title="Fixed obligations: ${fmtK(fixedTotal)}"
-          style="position:absolute;left:0;top:0;bottom:0;width:${fixW.toFixed(2)}%;
-                 background:${C.fixed};border-radius:${varW<0.5?'8px':fixW>=99.5?'8px':'8px 0 0 8px'};
-                 display:flex;align-items:center;justify-content:center;
-                 font-size:10px;font-weight:700;color:rgba(255,255,255,.9);font-family:var(--fm);
-                 white-space:nowrap;overflow:hidden;padding:0 6px;
-                 transition:width .5s ease;">
-          ${fixW > 12 ? fmtK(fixedTotal) : ''}
-        </div>
-
-        <!-- Variable segment -->
-        <div title="Variable spending: ${fmtK(varTotal)}"
-          style="position:absolute;left:${fixW.toFixed(2)}%;top:0;bottom:0;width:${varW.toFixed(2)}%;
-                 background:${C.var};border-radius:${fixW>=99.5?'8px':varW<0.5?'0':varW+fixW>=99.5?'0 8px 8px 0':'0'};
-                 display:flex;align-items:center;justify-content:center;
-                 font-size:10px;font-weight:700;color:rgba(0,0,0,.7);font-family:var(--fm);
-                 white-space:nowrap;overflow:hidden;padding:0 6px;
-                 transition:width .5s ease;">
-          ${varW > 12 ? fmtK(varTotal) : ''}
-        </div>
-
-        <!-- Overflow burst (if over budget) -->
-        ${overflows ? `
-        <div style="position:absolute;right:-${Math.min(overW,28).toFixed(1)}%;top:-6px;bottom:-6px;
-                    width:${Math.min(overW,28).toFixed(1)}%;
-                    background:linear-gradient(to right, ${C.over}CC, ${C.over}44);
-                    border-radius:0 8px 8px 0;
-                    display:flex;align-items:center;justify-content:center;padding-left:6px;">
-          <span style="font-size:9px;font-weight:700;color:${C.over};font-family:var(--fm);white-space:nowrap;">+${fmtK(Math.abs(buffer))}</span>
-        </div>` : ''}
-
-        <!-- Free buffer end-cap (if not overflowing) -->
-        ${!overflows && bufferPct > 4 ? `
-        <div style="position:absolute;right:0;top:0;bottom:0;width:${Math.min(bufferPct,100).toFixed(1)}%;
-                    background:rgba(45,212,191,.12);border-radius:0 8px 8px 0;
-                    display:flex;align-items:center;justify-content:flex-end;padding:0 8px;">
-          <span style="font-size:10px;font-weight:600;color:${C.free};font-family:var(--fm);">${fmtK(buffer)}</span>
-        </div>` : ''}
-
-        <!-- Budget limit tick (right edge = income) -->
-        <div style="position:absolute;right:0;top:-5px;bottom:-5px;width:2px;
-                    background:var(--ink3);border-radius:1px;"></div>
-
-      </div><!-- /bar track -->
-
-      <!-- Segment labels below bar -->
-      <div style="display:flex;gap:0;margin-top:5px;font-size:9px;font-family:var(--fm);">
-        <div style="flex:${fixW.toFixed(1)};color:${C.fixed};font-weight:600;overflow:hidden;white-space:nowrap;min-width:0;padding-right:4px;">
-          ${fixW > 8 ? '■ Fixed' : ''}
-        </div>
-        <div style="flex:${varW.toFixed(1)};color:${C.var};font-weight:600;overflow:hidden;white-space:nowrap;min-width:0;padding-right:4px;">
-          ${varW > 8 ? '■ Variable' : ''}
-        </div>
-        <div style="flex:${Math.max(0,100-fixW-varW).toFixed(1)};color:${bufferColor};font-weight:600;overflow:hidden;white-space:nowrap;min-width:0;text-align:right;">
-          ${!overflows && bufferPct>4 ? '■ Free' : ''}
-        </div>
-      </div>
-
-    </div><!-- /bar wrapper -->
-
-    <!-- ── 5-metric summary strip ─────────────────────────────────────────── -->
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:12px;">
-
-      <!-- Auto-Save -->
-      <div style="background:rgba(255,255,255,.04);border-radius:6px;padding:8px 10px;border-top:2px solid rgba(96,165,250,.5);">
-        <div style="font-size:9px;font-family:var(--fm);color:var(--ink4);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;">Save</div>
-        <div style="font-size:15px;font-weight:300;font-family:var(--fd);color:var(--river);line-height:1;">${fmtK(autoSaveAmt)}</div>
-        <div style="font-size:9px;color:var(--ink4);margin-top:2px;">${fmtPct(savePct)} gross</div>
-      </div>
-
-      <!-- Fixed -->
-      <div style="background:rgba(255,255,255,.04);border-radius:6px;padding:8px 10px;border-top:2px solid ${C.fixed};">
-        <div style="font-size:9px;font-family:var(--fm);color:var(--ink4);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;">Fixed</div>
-        <div style="font-size:15px;font-weight:300;font-family:var(--fd);color:${C.fixed};line-height:1;">${fmtK(fixedTotal)}</div>
-        <div style="font-size:9px;color:var(--ink4);margin-top:2px;">${fmtPct(fixedPct)} budget${isInFlight&&fixedProj>0?'<br><span style="color:'+C.fixed+';">'+fmtK(fixedProj)+' due</span>':''}</div>
-      </div>
-
-      <!-- Variable -->
-      <div style="background:rgba(255,255,255,.04);border-radius:6px;padding:8px 10px;border-top:2px solid ${C.var};">
-        <div style="font-size:9px;font-family:var(--fm);color:var(--ink4);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;">Variable</div>
-        <div style="font-size:15px;font-weight:300;font-family:var(--fd);color:${C.var};line-height:1;">${fmtK(varTotal)}</div>
-        <div style="font-size:9px;color:var(--ink4);margin-top:2px;">${fmtPct(varPct)} budget${isInFlight&&varProj>0&&accrual?.daysRemaining?'<br><span style="color:'+C.var+';">+'+fmtK(varProj)+' proj</span>':''}</div>
-      </div>
-
-      <!-- Fixed+Var total -->
-      <div style="background:rgba(255,255,255,.04);border-radius:6px;padding:8px 10px;border-top:2px solid var(--line2);">
-        <div style="font-size:9px;font-family:var(--fm);color:var(--ink4);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;">Spent</div>
-        <div style="font-size:15px;font-weight:300;font-family:var(--fd);color:var(--ink);line-height:1;">${fmtK(totalSpend)}</div>
-        <div style="font-size:9px;color:var(--ink4);margin-top:2px;">${fmtPct(fixedPct+varPct)} of budget</div>
-      </div>
-
-      <!-- Buffer / Overspend -->
-      <div style="background:rgba(255,255,255,.04);border-radius:6px;padding:8px 10px;border-top:2px solid ${bufferColor};">
-        <div style="font-size:9px;font-family:var(--fm);color:var(--ink4);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;">${overflows?'Over':'Buffer'}</div>
-        <div style="font-size:15px;font-weight:300;font-family:var(--fd);color:${bufferColor};line-height:1;">${overflows?'−':''}${fmtK(Math.abs(buffer))}</div>
-        <div style="font-size:9px;color:${bufferColor};margin-top:2px;font-weight:600;">${overflows?'Trim variable spending':'Safe to spend'}</div>
-      </div>
-
-    </div><!-- /metric strip -->
-
-    <!-- Quick legend row — for the 10-year-old -->
-    <div style="display:flex;align-items:center;gap:14px;margin-top:10px;padding-top:10px;
-                border-top:1px solid rgba(255,255,255,.05);flex-wrap:wrap;">
-      <span style="font-size:10px;color:var(--ink4);">
-        <span style="color:${C.fixed};font-weight:600;">■ Fixed</span> bills you can't skip (mortgage, utilities, subscriptions)
-      </span>
-      <span style="font-size:10px;color:var(--ink4);">
-        <span style="color:${C.var};font-weight:600;">■ Variable</span> spending you control (dining, shopping, fun)
-      </span>
-      ${isInFlight ? `<span style="font-size:10px;color:var(--ink4);">Dashed = projected remainder</span>` : ''}
-      <span style="margin-left:auto;"><button onclick="showPage('income')" style="font-size:10px;color:var(--river);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;font-family:var(--fm);">Detail →</button></span>
-    </div>
-
-  </div><!-- /padding wrapper -->`;
 }
+
+
 
 
 
@@ -4569,6 +4550,9 @@ function renderPulsePL(drillSection) {
     });
   }
   const selMonth = moSel ? (moSel.value || months[0]) : months[0];
+  try {
+    if (typeof renderThermometer === 'function') renderThermometer('pulseThermo', selMonth);
+  } catch(e) {}
 
   if (drillSection) {
     const secTxns = sp.filter(t => classifyTxn(t) === drillSection.key && t.date.startsWith(selMonth));
@@ -4884,13 +4868,13 @@ function renderPulsePL(drillSection) {
     const projCol        = projNet>=0?'var(--positive)':'var(--negative)';
     out += '<div style="background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.25);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">';
     out += '<div><div style="font-size:8px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--river);opacity:.8;margin-bottom:2px;">MTD</div>';
-    out += '<div style="font-size:15px;font-weight:700;color:var(--ink);font-family:var(--fm);">'+daysElapsed+' / '+daysInMonth+'d</div>';
+    out += '<div style="font-size:14px;font-weight:700;color:var(--ink);font-family:var(--fm);">'+daysElapsed+' / '+daysInMonth+'d</div>';
     out += '<div style="font-size:9px;color:var(--ink4);">'+daysRemain+' left</div></div>';
     out += '<div><div style="font-size:8px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--river);opacity:.8;margin-bottom:2px;">Accrued</div>';
-    out += '<div style="font-size:15px;font-weight:700;color:var(--river);font-family:var(--fm);">'+fmtK(totalAccrued)+'</div>';
+    out += '<div style="font-size:14px;font-weight:700;color:var(--river);font-family:var(--fm);">'+fmtK(totalAccrued)+'</div>';
     out += '<div style="font-size:9px;color:var(--ink4);">excl. one-time</div></div>';
     out += '<div><div style="font-size:8px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:'+projCol+';opacity:.8;margin-bottom:2px;">Proj. Net</div>';
-    out += '<div style="font-size:15px;font-weight:700;color:'+projCol+';font-family:var(--fm);">'+(projNet>=0?'+':'')+fmtK(projNet)+'</div>';
+    out += '<div style="font-size:14px;font-weight:700;color:'+projCol+';font-family:var(--fm);">'+(projNet>=0?'+':'')+fmtK(projNet)+'</div>';
     out += '<div style="font-size:9px;color:var(--ink4);">full month est.</div></div>';
     out += '</div>';
   }
