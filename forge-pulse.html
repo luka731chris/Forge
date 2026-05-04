@@ -637,16 +637,22 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
     <div style="font-size:12px;color:var(--ink4,#524E4A);margin-bottom:24px;line-height:1.6;">
       Your financial data will be encrypted locally.<br>Recovery: clear &amp; re-pull from Cloudflare.
     </div>
-    <input id="lock-pass-new" type="password" placeholder="Create passphrase" autocomplete="off" data-lpignore="true"
+    <input id="lock-pass-new" type="text" inputmode="text" placeholder="Create passphrase"
+      autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false"
+      data-lpignore="true" data-1p-ignore="true"
       style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
              padding:14px 16px;font-size:16px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
-             text-align:center;letter-spacing:.1em;outline:none;-webkit-appearance:none;">
-    <input id="lock-pass-confirm" type="password" placeholder="Confirm passphrase" autocomplete="off" data-lpignore="true"
+             text-align:center;letter-spacing:.18em;outline:none;-webkit-appearance:none;
+             -webkit-text-security:disc;">
+    <input id="lock-pass-confirm" type="text" inputmode="text" placeholder="Confirm passphrase"
+      autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false"
+      data-lpignore="true" data-1p-ignore="true"
       style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
              padding:14px 16px;font-size:16px;color:var(--ink,#EEEAE4);margin-bottom:16px;box-sizing:border-box;
-             text-align:center;letter-spacing:.1em;outline:none;-webkit-appearance:none;">
+             text-align:center;letter-spacing:.18em;outline:none;-webkit-appearance:none;
+             -webkit-text-security:disc;">
     <div id="lock-setup-err" style="color:#F87171;font-size:12px;margin-bottom:10px;min-height:16px;"></div>
-    <button onclick="forgeSetupPIN()"
+    <button onclick="document.getElementById('lock-pass-new').blur();document.getElementById('lock-pass-confirm').blur();forgeSetupPIN();"
       style="width:100%;background:var(--gold,#F5A800);color:#000;border:none;border-radius:8px;
              padding:15px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
       Create PIN &amp; Encrypt Data
@@ -679,13 +685,16 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
 
   <div id="lock-unlock" style="display:none;width:100%;max-width:320px;text-align:center;">
     <div style="font-size:14px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:20px;">Enter your passphrase</div>
-    <input id="lock-pass" type="password" placeholder="Passphrase" autocomplete="off" data-lpignore="true" data-1p-ignore="true"
+    <input id="lock-pass" type="text" inputmode="text" placeholder="Passphrase"
+      autocomplete="current-password" autocorrect="off" autocapitalize="off" spellcheck="false"
+      data-lpignore="true" data-1p-ignore="true"
       style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
              padding:14px 16px;font-size:16px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
-             text-align:center;letter-spacing:.1em;outline:none;-webkit-appearance:none;"
+             text-align:center;letter-spacing:.18em;outline:none;-webkit-appearance:none;
+             -webkit-text-security:disc;"
       onkeydown="if(event.key==='Enter')forgeUnlock()">
     <div id="lock-err" style="color:#F87171;font-size:12px;margin-bottom:10px;min-height:16px;"></div>
-    <button id="lock-btn" onclick="forgeUnlock()"
+    <button id="lock-btn" onclick="document.getElementById('lock-pass').blur();forgeUnlock();"
       style="width:100%;background:var(--gold,#F5A800);color:#000;border:none;border-radius:8px;
              padding:15px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">
       Unlock Forge
