@@ -2325,6 +2325,31 @@ function getFileRegistry() {
 }
 
 
+// isNonOperatingCredit — returns true for credits that are NOT liquid operating income:
+//   HSA distributions (spending your own HSA savings, not new income)
+//   Investment account dividends/distributions (non-cash until withdrawn)
+//   Savings account interest (negligible, distorts normalized income)
+//   Credit card refunds/credits (reduce prior expense, not new income)
+//   Any transfer FROM an investment/HSA account (already in auto_save bucket)
+function isNonOperatingCredit(t) {
+  if (!t || t.amount <= 0) return false;
+  const cat = (t.category || '').toLowerCase();
+  const pay = (t.payee  || '').toLowerCase();
+  const acct= (t.account|| '').toLowerCase();
+  // CC credits / refunds
+  if (typeof isCCCredit === 'function' && isCCCredit(t)) return true;
+  // HSA distribution (category or account signals HSA)
+  if (/hsa|health saving/i.test(cat) || /hsa|health saving/i.test(acct)) return true;
+  // Investment dividends / distributions — still in investment account
+  if (/dividend|distribution|reinvest|capital gain/i.test(cat)) return true;
+  if (/interest inc|bank interest|savings interest/i.test(cat)) return true;
+  // Transfers FROM savings/investment → checking (already tracked as asset)
+  const srcType = typeof detectAcctType === 'function' ? detectAcctType(acct) : '';
+  if (srcType === 'investment' || srcType === 'retirement') return true;
+  return false;
+}
+
+
 function classifyTxn(t) {
   const cat  = (t.category || '').toLowerCase().trim();
   const pay  = (t.payee    || '').toLowerCase().trim();
@@ -5358,33 +5383,20 @@ async function forgeSetupPIN() {
   if (p1.length < 4) { if(err) err.textContent = 'Minimum 4 characters.'; return; }
   if (p1 !== p2)     { if(err) err.textContent = 'Passphrases do not match.'; return; }
   if (err) err.textContent = '';
-  _lockSpinner(true, 'Encrypting data…');
+  _lockSpinner(true, 'Encrypting your data…');
   try {
     await FORGE_AUTH.setup(p1);
     _lockSpinner(false);
-
-    // Store passphrase temporarily for biometric registration
-    // (biometric must be triggered by a DIRECT user gesture — a button tap, not a dialog)
+    // Store temporarily so Settings can offer Face ID setup after app loads
+    // Face ID setup happens INSIDE the app, not on the lock screen — no more blocking
     window._forgeTmpPass = p1;
-
-    // Check if biometric is available and not yet registered
-    const bioAvailable = await FORGE_AUTH.isBiometricAvailable();
-    if (bioAvailable && !FORGE_AUTH.hasWebAuthn()) {
-      // Show Face ID offer section — direct button tap required for WebAuthn
-      const bioSection = document.getElementById('lock-bio-offer');
-      if (bioSection) {
-        bioSection.style.display = 'block';
-        // Hide the main setup form
-        const setupDiv = document.getElementById('lock-setup');
-        if (setupDiv) setupDiv.style.display = 'none';
-        return; // Wait for user to tap Enable Face ID or Skip
-      }
-    }
-    // No biometric or offer section missing — proceed to unlock
+    window._forgeNewSetup = true;  // flag: show Face ID prompt in Settings after load
+    // Always proceed immediately — user is never gated by biometric setup
     forgePostUnlock();
   } catch(e) {
     _lockSpinner(false);
-    if (err) err.textContent = 'Setup failed: ' + e.message;
+    if (err) err.textContent = 'Setup failed: ' + (e.message || String(e));
+    console.error('[Auth] setup failed:', e);
   }
 }
 

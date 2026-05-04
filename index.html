@@ -1444,7 +1444,7 @@ select:focus { border-color: var(--gold); }
     <div id="plannerContent"></div>
   </div>
 
-  <div id="page-settings" class="page">
+  <div id="page-settings" class="page" style="height:100%;overflow-y:auto;">
   <div class="page-hdr">
     <div>
       <div class="page-title">Settings &amp; Customizations</div>
@@ -1963,22 +1963,33 @@ function renderCrosswalk() {
     <span style="font-size:11px;color:var(--ink4);margin-left:auto;" id="cw-apply-count">${Object.keys(window._cwPending).length} pending</span>
   </div>`;
 
-  // Guidance blurb
-  html += `<div style="background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15);border-radius:var(--r-md);padding:11px 14px;margin-bottom:12px;font-size:11px;color:var(--ink3);line-height:1.65;">
-    <strong style="color:var(--ink2);">How to use:</strong>
-    Each row is a payee with uncategorized transactions. The <span style="color:var(--pos);">recommendation column</span> shows the best matching Quicken category based on your other categorized transactions with the same payee.
-    Click <strong>Accept</strong> to stage a mapping, or type a category manually. When ready, click <strong>Apply All Pending</strong> to update the transactions in Forge — then <strong>Export to Excel</strong> to get a spreadsheet ready to paste into Quicken.
-    Forge categories (buckets) control how transactions appear in the Income Statement, Budget Pressure bar, and all dashboards — even without a Quicken category.
+  // Guidance blurb — two-column: Forge bucket (immediate) vs Quicken cat (source fix)
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+    <div style="background:rgba(52,217,195,.05);border:1px solid rgba(52,217,195,.18);border-radius:var(--r-md);padding:12px 14px;">
+      <div style="font-size:11px;font-weight:700;color:var(--pos);margin-bottom:5px;">① Assign a Forge Bucket <span style="font-weight:400;color:var(--ink4);">(fixes dashboards now)</span></div>
+      <div style="font-size:11px;color:var(--ink3);line-height:1.65;">
+        Each payee row shows Forge's recommended bucket — the spending category used in the Budget Pressure bar, Income Statement, and all charts.
+        Click <strong>Accept</strong> to stage, then <strong>Apply All Pending</strong> to apply immediately.
+        No re-import needed.
+      </div>
+    </div>
+    <div style="background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.18);border-radius:var(--r-md);padding:12px 14px;">
+      <div style="font-size:11px;font-weight:700;color:var(--river);margin-bottom:5px;">② Fix in Quicken <span style="font-weight:400;color:var(--ink4);">(permanent source fix)</span></div>
+      <div style="font-size:11px;color:var(--ink3);line-height:1.65;">
+        The <span style="color:var(--river);">Quicken Category</span> column shows what category to assign in Quicken so future exports are already correct.
+        Click <strong>↓ Export to Excel</strong> → open in Excel → use as a lookup to fix categories in Quicken → re-export → re-import to Forge.
+      </div>
+    </div>
   </div>`;
 
   // Table
   html += `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">
-    <div style="display:grid;grid-template-columns:1fr 80px 100px 1fr 80px 80px;gap:0;padding:7px 14px;background:var(--lift);border-bottom:1px solid var(--line);">
+    <div style="display:grid;grid-template-columns:1fr 60px 90px 120px 1fr 90px;gap:0;padding:7px 14px;background:var(--lift);border-bottom:1px solid var(--line);">
       <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">Payee</div>
       <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);text-align:right;">Txns</div>
-      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);text-align:right;">Total</div>
-      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--pos);">Recommended Category</div>
-      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">Confidence</div>
+      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);text-align:right;">Amount</div>
+      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--pos);">① Forge Bucket</div>
+      <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--river);">② Quicken Category to Fix</div>
       <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">Action</div>
     </div>`;
 
@@ -4317,7 +4328,7 @@ function renderFinancials() {
   const el = document.getElementById('financialsContent');
   if (!el) return;
 
-  const sp = spendable(txns);
+  const sp = operatingSpendable(txns);
   if (!sp.length) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">Import data to view financial statements.</div>'; return; }
 
   // Year selector
@@ -6950,6 +6961,32 @@ const KW_MAP = [
 ];
 
 
+
+// isNonOperatingCredit — returns true for credits that are NOT liquid operating income:
+//   HSA distributions (spending your own HSA savings, not new income)
+//   Investment account dividends/distributions (non-cash until withdrawn)
+//   Savings account interest (negligible, distorts normalized income)
+//   Credit card refunds/credits (reduce prior expense, not new income)
+//   Any transfer FROM an investment/HSA account (already in auto_save bucket)
+function isNonOperatingCredit(t) {
+  if (!t || t.amount <= 0) return false;
+  const cat = (t.category || '').toLowerCase();
+  const pay = (t.payee  || '').toLowerCase();
+  const acct= (t.account|| '').toLowerCase();
+  // CC credits / refunds
+  if (typeof isCCCredit === 'function' && isCCCredit(t)) return true;
+  // HSA distribution (category or account signals HSA)
+  if (/hsa|health saving/i.test(cat) || /hsa|health saving/i.test(acct)) return true;
+  // Investment dividends / distributions — still in investment account
+  if (/dividend|distribution|reinvest|capital gain/i.test(cat)) return true;
+  if (/interest inc|bank interest|savings interest/i.test(cat)) return true;
+  // Transfers FROM savings/investment → checking (already tracked as asset)
+  const srcType = typeof detectAcctType === 'function' ? detectAcctType(acct) : '';
+  if (srcType === 'investment' || srcType === 'retirement') return true;
+  return false;
+}
+
+
 function classifyTxn(t) {
   const cat  = (t.category || '').toLowerCase().trim();
   const pay  = (t.payee    || '').toLowerCase().trim();
@@ -7557,7 +7594,7 @@ function buildAccrualEngine(selMonth, sp) {
   // Returns { normalizedIncome, rawIncome, extraPaycheck, bonusItems, oneTimeItems, ... }
   function normalizeIncome() {
     const incTxns    = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'paycheck');
-    const otherIncAll= sp.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc' && !isCCCredit(t));
+    const otherIncAll= sp.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc' && !isNonOperatingCredit(t));
     const curPayTxns = curByBucket['paycheck']  || [];
     const curOthTxns = curByBucket['other_inc'] || [];
     const curAutoSave= (curByBucket['auto_save']||[]).reduce((s,t)=>s+Math.abs(t.amount), 0);
@@ -8760,12 +8797,25 @@ function renderBalanceSheet() {
     }
   });
 
-  // Extra NW accounts not in BS_ACCOUNTS
+  // Extra NW accounts not in BS_ACCOUNTS — auto-classify by name pattern
   const bsNames = new Set(Object.keys(BS_ACCOUNTS));
+  function _guessSub(name) {
+    const n = name.toLowerCase();
+    if (/401k|403b|ira|roth|retirement|pension|empower|fidelity ret|vanguard ret|principl|401\(k\)/i.test(name)) return { sub:'retirement', icon:'🔒', label:name };
+    if (/529|college|education/i.test(name)) return { sub:'education', icon:'🎓', label:name };
+    if (/hsa|health saving/i.test(name)) return { sub:'savings', icon:'💊', label:name };
+    if (/brokerage|invest|stock|schwab|etrade|robinhood|vanguard|fidelity|merrill/i.test(name)) return { sub:'investment', icon:'📈', label:name };
+    if (/savings|save|marcus|ally|high.?yield|money.?market/i.test(name)) return { sub:'savings', icon:'🏦', label:name };
+    if (/mortgage|home loan|house/i.test(name)) return { sub:'mortgage', icon:'🏠', label:name };
+    if (/property|real estate|house|home/i.test(name)) return { sub:'property', icon:'🏠', label:name };
+    if (/car|auto|vehicle|truck/i.test(name)) return { sub:'auto', icon:'🚗', label:name };
+    return { sub:'Other', icon:'📋', label:name };
+  }
   Object.entries(netWorthOverrides).filter(([n]) => !bsNames.has(n)).forEach(([name, nw]) => {
     if (nw.value > 0) {
-      if (!assetGroups['Other']) assetGroups['Other'] = [];
-      assetGroups['Other'].push({ acct:name, meta:{icon:'📋',label:name,sub:'Other',class:'asset'}, amt:nw.value, prior:null, change:null, changePct:null, flags:[{type:'ok',text:'✓ NW report'}], last:nw.date });
+      const guess = _guessSub(name);
+      if (!assetGroups[guess.sub]) assetGroups[guess.sub] = [];
+      assetGroups[guess.sub].push({ acct:name, meta:{icon:guess.icon, label:name, sub:guess.sub, class:'asset'}, amt:nw.value, prior:null, change:null, changePct:null, flags:[{type:'ok',text:'✓ NW report'}], last:nw.date });
       totalAssets += nw.value;
     }
   });
