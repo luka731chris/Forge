@@ -1704,20 +1704,39 @@ function isTransfer(t) {
   if (t.isTransfer) return true;
   const cat = (t.category || '').trim();
   const pay = (t.payee   || '').trim().toLowerCase();
+
+  // 1. Quicken bracket-category format [AccountName] = always a transfer
   if (/^\[.*\]$/.test(cat)) return true;
-  if (/^transfer$/i.test(cat)) return true;
-  if (/^(credit card payment|cc payment|card payment)$/i.test(cat)) return true;
-  // Apple Card: transfer only if detail data is loaded for that month
-  if (/^(apple card|apple card payment)$/i.test(cat)) {
+
+  // 2. Explicit transfer / CC payment categories
+  if (/^(transfer|credit card payment|cc payment|card payment|online payment|payment thank you)$/i.test(cat)) return true;
+
+  // 3. Apple Card: treat as transfer when we have Apple Card detail for that month
+  //    This means the lump-sum CC payment is replaced by individual Apple Card txns
+  if (/apple card/i.test(cat) || /apple card/i.test(pay)) {
     const txnMonth = (t.date || '').slice(0, 7);
-    const hasAppleDetail = (typeof txns !== 'undefined' ? txns : [])
-      .some(d => d._source === 'apple_card' && (d.date||'').slice(0,7) === txnMonth);
-    return hasAppleDetail;
+    const sp = typeof txns !== 'undefined' ? txns : [];
+    const hasDetail = sp.some(d => d._source === 'apple_card' && (d.date||'').slice(0,7) === txnMonth);
+    if (hasDetail) return true; // detail loaded → payment is a transfer
+    // No detail → fall through (payment stays as expense so you know to upload detail)
   }
-  if (/^(apple card|visa payment|mastercard payment|amex payment|discover payment|citi payment|chase payment|capital one payment)$/i.test(pay) && t.amount < 0) return true;
+
+  // 4. Payee-based CC payment detection (negative amounts only)
+  if (t.amount < 0) {
+    if (/^(apple card payment|visa payment|mastercard payment|amex payment|american express payment|discover payment|citi payment|citibank payment|chase payment|capital one payment|barclays payment|synchrony payment|wells fargo payment|bank of america payment|us bank payment|usaa payment)$/i.test(pay)) return true;
+    // Generic "payment" payees on known CC account names
+    const acct = (t.account || '').toLowerCase();
+    if (/credit|visa|mastercard|amex|discover|sapphire|freedom|venture|platinum|rewards|card/i.test(acct) && /payment/i.test(pay)) return true;
+  }
+
+  // 5. Venmo / Zelle / PayPal transfers between own accounts
+  if (/^(venmo|zelle|paypal transfer|apple cash|google pay transfer)$/i.test(cat)) return true;
+
   return false;
 }
 
+// CC credits / returns: positive amounts on CC accounts that offset expenses,
+// not household income. Genuine income (paycheck, cashback tagged as income) is preserved.
 function isCCCredit(t) {
   if (t.amount <= 0) return false;
   if (typeof isCreditAcct !== 'function' || !isCreditAcct(t.account)) return false;
@@ -4574,13 +4593,12 @@ function renderThermometer(containerId, selMonth) {
     const OVER_C     = '#FF3B3B';
     const clickIS    = "if(typeof showPage==='function')showPage('income')";
 
-    // Scale: the bar represents max(deployable, totalSpend)*1.05 so overage is visible
     const barScale   = Math.max(deployable, totalSpend) * (overflows ? 1.08 : 1.0);
     const fixW       = Math.min(fixedTotal  / barScale * 100, 100);
     const varW       = Math.min(varTotal    / barScale * 100, Math.max(0, 100 - fixW));
-    const incLine    = Math.min(deployable  / barScale * 100, 100); // income limit line position
+    const incLine    = Math.min(deployable  / barScale * 100, 100);
     const bufW       = !overflows ? Math.max(0, incLine - fixW - varW) : 0;
-    const overW      = overflows ? Math.min((Math.abs(buffer)) / barScale * 100, 100 - fixW - varW) : 0;
+    const overW      = overflows  ? Math.min((Math.abs(buffer)) / barScale * 100, 100 - fixW - varW) : 0;
 
     const fmtK = n => { const a=Math.abs(n||0); return a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a); };
     const [sy,sm] = sel.split('-');
@@ -4591,114 +4609,128 @@ function renderThermometer(containerId, selMonth) {
     if (normData?.isThreePayMonth) notes.push('3-pay mo normalized');
     if ((normData?.bonusExclusion||0) > 100) notes.push(fmtK(normData.bonusExclusion)+' bonus excl.');
     if ((normData?.oneTimeTotal||0) > 100) notes.push(fmtK(normData.oneTimeTotal)+' one-time excl.');
-    if (earlyMonth) notes.push('income projected from history');
+    if (earlyMonth) notes.push('income from history');
     const noteStr = notes.join(' · ');
 
-    el.innerHTML = `<div style="padding:14px 16px 12px;">
+    el.innerHTML = `<div style="padding:16px 18px 14px;">
 
-      <!-- Title + hero amount -->
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+      <!-- ── Header + hero number ─────────────────────────────────── -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
         <div>
-          <div style="font-size:13px;font-weight:700;color:var(--ink);">Budget Pressure</div>
-          <div style="font-size:10px;color:var(--ink4);font-family:var(--fm);margin-top:2px;">${moLbl}${noteStr?' · '+noteStr:''}</div>
+          <div style="font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.01em;">Budget Pressure</div>
+          <div style="font-size:10px;color:var(--ink4);font-family:var(--fm);margin-top:3px;">${moLbl}${noteStr?' · '+noteStr:''}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
-          <div style="font-size:26px;font-weight:300;font-family:var(--fd);color:${bufColor};line-height:1;">${overflows?'−':'+'}${fmtK(Math.abs(buffer))}</div>
-          <div style="font-size:11px;color:${bufColor};font-weight:600;">${overflows ? 'over budget — action needed' : bufW < 1 ? 'break-even' : 'net positive'}</div>
+          <div style="font-size:30px;font-weight:300;font-family:var(--fd);color:${bufColor};line-height:1;letter-spacing:-.02em;text-shadow:0 2px 12px ${bufColor}55;">${overflows?'−':'+'}${fmtK(Math.abs(buffer))}</div>
+          <div style="font-size:11px;font-weight:600;color:${bufColor};letter-spacing:.04em;">${overflows?'OVER BUDGET':'REMAINING'}</div>
         </div>
       </div>
 
-      <!-- Income equation -->
-      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:11px;color:var(--ink4);margin-bottom:10px;padding:7px 10px;background:rgba(255,255,255,.025);border-radius:6px;">
-        <span style="color:var(--pos);font-weight:700;font-family:var(--fm);">${fmtK(income)}</span>
+      <!-- ── Income equation ──────────────────────────────────────── -->
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--ink4);margin-bottom:12px;padding:8px 12px;background:rgba(255,255,255,.028);border-radius:8px;border:1px solid rgba(255,255,255,.06);">
+        <span style="color:var(--pos);font-weight:700;font-family:var(--fm);font-size:13px;">${fmtK(income)}</span>
         <span>take-home${earlyMonth?' (est.)':''}</span>
-        ${autoSave > 0 ? `<span> − </span><span style="color:var(--river);font-weight:700;font-family:var(--fm);">${fmtK(autoSave)}</span><span>auto-save (${Math.round(savePct)}%)</span>` : ''}
-        <span> = </span>
-        <span style="color:var(--ink);font-weight:700;font-family:var(--fm);">${fmtK(deployable)}</span>
-        <span>deployable</span>
-        <span style="margin-left:auto;cursor:pointer;color:var(--river);" onclick="${clickIS}">Full P&amp;L →</span>
+        ${autoSave > 0 ? `<span style="color:var(--ink4);">−</span><span style="color:var(--river);font-weight:700;font-family:var(--fm);font-size:13px;">${fmtK(autoSave)}</span><span>auto-save (${Math.round(savePct)}%)</span>` : ''}
+        <span style="color:var(--ink4);">=</span>
+        <span style="color:var(--ink);font-weight:700;font-family:var(--fm);font-size:13px;">${fmtK(deployable)}</span>
+        <span style="color:var(--ink3);">deployable</span>
+        <span style="margin-left:auto;cursor:pointer;color:var(--river);font-size:11px;" onclick="${clickIS}">Full P&amp;L →</span>
       </div>
 
-      <!-- ════════════════════════════════════════════════════════
-           THE BAR — SVG for crisp hatching patterns
-           Bar width = barScale (stretches past income line when over budget)
-      ═══════════════════════════════════════════════════════════ -->
-      <div style="position:relative;margin-bottom:8px;">
-
-        <!-- Income line label above bar -->
-        <div style="position:absolute;left:${incLine.toFixed(1)}%;top:-17px;transform:translateX(-50%);font-size:9px;font-family:var(--fm);color:var(--ink3);white-space:nowrap;letter-spacing:.04em;">
-          ${fmtK(deployable)} limit
+      <!-- ── The bar — SVG with 3D depth effect ──────────────────── -->
+      <div style="margin-bottom:14px;">
+        <!-- Limit label above bar -->
+        <div style="position:relative;height:18px;margin-bottom:0;">
+          <div style="position:absolute;left:${incLine.toFixed(1)}%;transform:translateX(-50%);font-size:9px;font-family:var(--fm);color:rgba(255,255,255,.5);white-space:nowrap;letter-spacing:.06em;">◀ ${fmtK(deployable)}</div>
         </div>
 
-        <!-- Bar container — height 36px for presence -->
-        <div style="position:relative;height:36px;border-radius:6px;overflow:hidden;border:1px solid var(--line);">
+        <!-- Bar container with drop shadow for depth -->
+        <div style="position:relative;height:40px;border-radius:8px;overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08),inset 0 -1px 0 rgba(0,0,0,.4);cursor:pointer;border:1px solid rgba(255,255,255,.06);" onclick="${clickIS}">
 
-          <svg width="100%" height="36" preserveAspectRatio="none" style="position:absolute;inset:0;">
+          <svg width="100%" height="40" preserveAspectRatio="none" style="position:absolute;inset:0;">
             <defs>
-              <!-- Diagonal warning hatch for overage -->
-              <pattern id="hatch-over" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(-45)">
-                <rect width="10" height="10" fill="${OVER_C}" opacity=".18"/>
-                <line x1="0" y1="0" x2="0" y2="10" stroke="${OVER_C}" stroke-width="4" opacity=".7"/>
+              <!-- Highlight gradient for 3D top-lit feel -->
+              <linearGradient id="g-top" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stop-color="rgba(255,255,255,.18)"/>
+                <stop offset="40%"  stop-color="rgba(255,255,255,.0)"/>
+                <stop offset="100%" stop-color="rgba(0,0,0,.25)"/>
+              </linearGradient>
+              <!-- Fixed: warm red gradient -->
+              <linearGradient id="g-fix" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#FF9494"/>
+                <stop offset="100%" stop-color="#C94444"/>
+              </linearGradient>
+              <!-- Variable: gold gradient -->
+              <linearGradient id="g-var" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#FFCA40"/>
+                <stop offset="100%" stop-color="#C07A00"/>
+              </linearGradient>
+              <!-- Buffer diagonal stripes -->
+              <pattern id="g-buf" patternUnits="userSpaceOnUse" width="14" height="14" patternTransform="rotate(45)">
+                <rect width="14" height="14" fill="rgba(52,217,195,.08)"/>
+                <line x1="0" y1="0" x2="0" y2="14" stroke="rgba(52,217,195,.55)" stroke-width="4"/>
               </pattern>
-              <!-- Diagonal celebration fill for buffer -->
-              <pattern id="hatch-save" patternUnits="userSpaceOnUse" width="12" height="12" patternTransform="rotate(45)">
-                <rect width="12" height="12" fill="${SAVE_C}" opacity=".08"/>
-                <line x1="0" y1="0" x2="0" y2="12" stroke="${SAVE_C}" stroke-width="3.5" opacity=".55"/>
+              <!-- Overage hatching -->
+              <pattern id="g-ov" patternUnits="userSpaceOnUse" width="12" height="12" patternTransform="rotate(-45)">
+                <rect width="12" height="12" fill="rgba(255,59,59,.14)"/>
+                <line x1="0" y1="0" x2="0" y2="12" stroke="rgba(255,59,59,.7)" stroke-width="4"/>
               </pattern>
             </defs>
 
             <!-- Background track -->
-            <rect x="0" y="0" width="100%" height="36" fill="rgba(255,255,255,.03)"/>
+            <rect x="0" y="0" width="100%" height="40" fill="rgba(255,255,255,.04)"/>
 
-            <!-- Fixed bills — solid red -->
-            <rect x="0" y="0" width="${fixW.toFixed(2)}%" height="36" fill="${FIXED_C}"/>
-            ${fixW > 14 ? `<text x="${(fixW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" font-weight="700" fill="rgba(255,255,255,.92)">${fmtK(fixedTotal)}</text>` : ''}
+            <!-- Fixed — 3D gradient fill -->
+            <rect x="0" y="0" width="${fixW.toFixed(2)}%" height="40" fill="url(#g-fix)"/>
+            <!-- Fixed label (inside bar if wide enough) -->
+            ${fixW > 16 ? `<text x="${(fixW/2).toFixed(1)}%" y="15" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="800" fill="rgba(255,255,255,.95)" letter-spacing="0.5">FIXED</text>
+            <text x="${(fixW/2).toFixed(1)}%" y="30" text-anchor="middle" font-family="'Courier New',monospace" font-size="12" font-weight="700" fill="rgba(255,255,255,.92)">${fmtK(fixedTotal)}</text>` : ''}
 
-            <!-- Variable spending — solid gold -->
-            <rect x="${fixW.toFixed(2)}%" y="0" width="${varW.toFixed(2)}%" height="36" fill="${VAR_C}"/>
-            ${varW > 12 ? `<text x="${(fixW + varW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" font-weight="700" fill="rgba(0,0,0,.78)">${fmtK(varTotal)}</text>` : ''}
+            <!-- Variable — gold gradient fill -->
+            <rect x="${fixW.toFixed(2)}%" y="0" width="${varW.toFixed(2)}%" height="40" fill="url(#g-var)"/>
+            ${varW > 14 ? `<text x="${(fixW + varW/2).toFixed(1)}%" y="15" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="800" fill="rgba(0,0,0,.75)" letter-spacing="0.5">VARIABLE</text>
+            <text x="${(fixW + varW/2).toFixed(1)}%" y="30" text-anchor="middle" font-family="'Courier New',monospace" font-size="12" font-weight="700" fill="rgba(0,0,0,.75)">${fmtK(varTotal)}</text>` : ''}
 
-            <!-- Buffer zone — diagonal celebration stripes -->
-            ${!overflows && bufW > 1 ? `
-            <rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${bufW.toFixed(2)}%" height="36" fill="url(#hatch-save)"/>
-            ${bufW > 10 ? `<text x="${(fixW+varW+bufW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" font-weight="700" fill="${SAVE_C}">${fmtK(buffer)}</text>` : ''}` : ''}
+            <!-- Buffer stripes -->
+            ${!overflows && bufW > 0.5 ? `<rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${bufW.toFixed(2)}%" height="40" fill="url(#g-buf)"/>
+            ${bufW > 10 ? `<text x="${(fixW+varW+bufW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="'Courier New',monospace" font-size="11" font-weight="700" fill="rgba(52,217,195,.85)">${fmtK(buffer)}</text>` : ''}` : ''}
 
-            <!-- Overage zone — diagonal warning hatching (beyond income line) -->
-            ${overflows ? `
-            <rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${overW.toFixed(2)}%" height="36" fill="url(#hatch-over)"/>
-            ${overW > 8 ? `<text x="${(fixW+varW+overW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" font-weight="700" fill="${OVER_C}">−${fmtK(Math.abs(buffer))}</text>` : ''}` : ''}
+            <!-- Overage hatching -->
+            ${overflows ? `<rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${overW.toFixed(2)}%" height="40" fill="url(#g-ov)"/>
+            ${overW > 6 ? `<text x="${(fixW+varW+overW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="'Courier New',monospace" font-size="11" font-weight="700" fill="${OVER_C}">-${fmtK(Math.abs(buffer))}</text>` : ''}` : ''}
 
-            <!-- Income limit line — strong vertical marker -->
-            <rect x="${(incLine - 0.4).toFixed(2)}%" y="0" width="1.2" height="36" fill="rgba(255,255,255,.55)"/>
-            <!-- Tick marks top/bottom for emphasis -->
-            <rect x="${(incLine - 0.8).toFixed(2)}%" y="0" width="2.2" height="4" fill="rgba(255,255,255,.8)"/>
-            <rect x="${(incLine - 0.8).toFixed(2)}%" y="32" width="2.2" height="4" fill="rgba(255,255,255,.8)"/>
+            <!-- Global top-lit highlight overlay -->
+            <rect x="0" y="0" width="100%" height="40" fill="url(#g-top)"/>
 
+            <!-- Income limit line — strong vertical marker with glow -->
+            <rect x="${(incLine-0.5).toFixed(2)}%" y="0" width="2" height="40" fill="rgba(255,255,255,.7)"/>
+            <rect x="${(incLine-1).toFixed(2)}%" y="0" width="4" height="40" fill="rgba(255,255,255,.15)"/>
           </svg>
         </div>
 
         <!-- Legend row -->
-        <div style="display:flex;gap:10px;margin-top:5px;font-size:10px;font-family:var(--fm);flex-wrap:wrap;align-items:center;">
-          <span style="color:${FIXED_C};">▬ Fixed ${Math.round(fixedTotal/deployable*100)}%</span>
-          <span style="color:${VAR_C};">▬ Variable ${Math.round(varTotal/deployable*100)}%</span>
-          ${!overflows ? `<span style="color:${SAVE_C};">╱╱ Free ${Math.round(buffer/deployable*100)}% → savings or planned spend</span>` :
-                         `<span style="color:${OVER_C};">╱╱ Over by ${fmtK(Math.abs(buffer))} — trim discretionary</span>`}
+        <div style="display:flex;gap:14px;margin-top:6px;font-size:10px;font-family:var(--fm);flex-wrap:wrap;align-items:center;padding:0 2px;">
+          <span style="color:#F87171;font-weight:600;">■ Fixed ${Math.round(fixedTotal/deployable*100)}%</span>
+          <span style="color:#F5A800;font-weight:600;">■ Variable ${Math.round(varTotal/deployable*100)}%</span>
+          <span style="color:${bufColor};font-weight:600;">${overflows ? '╱╱ Over '+ Math.round(Math.abs(buffer)/deployable*100)+'%' : '╱╱ Free '+Math.round(buffer/deployable*100)+'%'}</span>
+          ${isInFlight && fixedAccrued > 0 ? `<span style="color:var(--ink4);">${fmtK(fixedAccrued)} fixed still due</span>` : ''}
+          ${isInFlight && varAccrued > 0 ? `<span style="color:var(--ink4);">+${fmtK(varAccrued)} var projected</span>` : ''}
         </div>
       </div>
 
-      <!-- 5 metric tiles -->
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:8px;">
+      <!-- ── 5 KPI tiles with depth ────────────────────────────────── -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
         ${[
-          ['Take-Home',  fmtK(income),       earlyMonth?'projected (historical)':'net deposits', 'var(--pos)',   'rgba(52,217,195,.3)'],
-          ['Auto-Save',  fmtK(autoSave),      Math.round(savePct)+'% to savings first', 'var(--river)', 'rgba(96,165,250,.3)'],
-          ['Fixed',      fmtK(fixedTotal),    isInFlight&&fixedAccrued>0?fmtK(fixedAccrued)+' still due':'all charged', FIXED_C, 'rgba(248,113,113,.3)'],
-          ['Variable',   fmtK(varTotal),      isInFlight&&varAccrued>0?'+'+fmtK(varAccrued)+' on pace':'actual spend', VAR_C, 'rgba(245,168,0,.3)'],
-          [overflows?'Over':'Surplus', (overflows?'−':'+')+fmtK(Math.abs(buffer)), overflows?'reduce discretionary':'adds to net worth', bufColor, overflows?'rgba(255,59,59,.25)':'rgba(52,217,195,.2)'],
-        ].map(([lbl,val,sub,col,bdr]) => `
-          <div style="background:rgba(255,255,255,.03);border-radius:5px;padding:8px;border-top:2px solid ${bdr};cursor:pointer;" onclick="${clickIS}">
-            <div style="font-size:9px;font-family:var(--fm);letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">${lbl}</div>
-            <div style="font-size:16px;font-weight:300;font-family:var(--fd);color:${col};line-height:1;margin-bottom:2px;">${val}</div>
-            <div style="font-size:10px;color:var(--ink4);">${sub}</div>
+          ['TAKE-HOME',  fmtK(income),       earlyMonth?'projected':'net deposits',        'var(--pos)',   '#34D9C3', 'rgba(52,217,195,.18)'],
+          ['AUTO-SAVE',  fmtK(autoSave),      Math.round(savePct)+'% to savings',          'var(--river)', '#60A5FA', 'rgba(96,165,250,.18)'],
+          ['FIXED',      fmtK(fixedTotal),    isInFlight&&fixedAccrued>0?fmtK(fixedAccrued)+' due':'obligations', '#F87171', '#F87171', 'rgba(248,113,113,.2)'],
+          ['VARIABLE',   fmtK(varTotal),      isInFlight&&varAccrued>0?'+'+fmtK(varAccrued)+' proj':'discretionary', '#F5A800', '#F5A800', 'rgba(245,168,0,.2)'],
+          [overflows?'OVER':'BUFFER', (overflows?'−':'+')+fmtK(Math.abs(buffer)), overflows?'reduce spend':'free to allocate', bufColor, bufColor, overflows?'rgba(255,59,59,.22)':'rgba(52,217,195,.18)'],
+        ].map(([lbl,val,sub,col,glowCol,bdr]) => `
+          <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px 8px 8px;border-top:3px solid ${bdr};box-shadow:0 2px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);cursor:pointer;" onclick="${clickIS}">
+            <div style="font-size:8px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;font-weight:700;">${lbl}</div>
+            <div style="font-size:20px;font-weight:700;font-family:var(--fd);color:${col};line-height:1;margin-bottom:4px;letter-spacing:-.02em;text-shadow:0 1px 8px ${glowCol}66;">${val}</div>
+            <div style="font-size:9px;color:var(--ink4);line-height:1.4;font-family:var(--fm);">${sub}</div>
           </div>`).join('')}
       </div>
 
@@ -4708,6 +4740,7 @@ function renderThermometer(containerId, selMonth) {
     el.innerHTML = '';
   }
 }
+
 
 
 
