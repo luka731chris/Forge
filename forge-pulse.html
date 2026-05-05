@@ -632,30 +632,15 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
   </div>
 
   <!-- Mode: setup (first time) or unlock -->
-  <!-- Honeypot inputs: trick iOS credential heuristic so it never fires on the real fields -->
-  <input type="text" name="username_x" style="position:absolute;opacity:0;pointer-events:none;height:0;width:0;z-index:-1;" tabindex="-1" aria-hidden="true" autocomplete="username">
-  <input type="text" name="password_x" style="position:absolute;opacity:0;pointer-events:none;height:0;width:0;z-index:-1;" tabindex="-1" aria-hidden="true" autocomplete="current-password">
   <div id="lock-setup" style="display:none;width:100%;max-width:320px;text-align:center;">
     <div style="font-size:14px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:6px;">Create your Forge PIN</div>
     <div style="font-size:12px;color:var(--ink4,#524E4A);margin-bottom:24px;line-height:1.6;">
       Your financial data will be encrypted locally.<br>Recovery: clear &amp; re-pull from Cloudflare.
     </div>
-    <input id="lock-pass-new" type="text" inputmode="text" placeholder="Create passphrase"
-      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-      data-lpignore="true" data-1p-ignore="true" data-form-type="other"
-      style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
-             padding:14px 16px;font-size:16px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
-             text-align:center;letter-spacing:.18em;outline:none;-webkit-appearance:none;
-             -webkit-text-security:disc;">
-    <input id="lock-pass-confirm" type="text" inputmode="text" placeholder="Confirm passphrase"
-      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-      data-lpignore="true" data-1p-ignore="true" data-form-type="other"
-      style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
-             padding:14px 16px;font-size:16px;color:var(--ink,#EEEAE4);margin-bottom:16px;box-sizing:border-box;
-             text-align:center;letter-spacing:.18em;outline:none;-webkit-appearance:none;
-             -webkit-text-security:disc;">
+    <div id="lock-pass-new-wrap" style="margin-bottom:10px;"></div>
+    <div id="lock-pass-confirm-wrap" style="margin-bottom:16px;"></div>
     <div id="lock-setup-err" style="color:#F87171;font-size:12px;margin-bottom:10px;min-height:16px;"></div>
-    <button onclick="document.getElementById('lock-pass-new').blur();document.getElementById('lock-pass-confirm').blur();forgeSetupPIN();"
+    <button onclick="forgeSetupPIN()"
       style="width:100%;background:var(--gold,#F5A800);color:#000;border:none;border-radius:8px;
              padding:15px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
       Create PIN &amp; Encrypt Data
@@ -688,16 +673,9 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
 
   <div id="lock-unlock" style="display:none;width:100%;max-width:320px;text-align:center;">
     <div style="font-size:14px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:20px;">Enter your passphrase</div>
-    <input id="lock-pass" type="text" inputmode="text" placeholder="Passphrase"
-      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-      data-lpignore="true" data-1p-ignore="true" data-form-type="other"
-      style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
-             padding:14px 16px;font-size:16px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
-             text-align:center;letter-spacing:.18em;outline:none;-webkit-appearance:none;
-             -webkit-text-security:disc;"
-      onkeydown="if(event.key==='Enter')forgeUnlock()">
+    <div id="lock-pass-wrap" style="margin-bottom:10px;"></div>
     <div id="lock-err" style="color:#F87171;font-size:12px;margin-bottom:10px;min-height:16px;"></div>
-    <button id="lock-btn" onclick="document.getElementById('lock-pass').blur();forgeUnlock();"
+    <button id="lock-btn" onclick="forgeUnlock()"
       style="width:100%;background:var(--gold,#F5A800);color:#000;border:none;border-radius:8px;
              padding:15px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">
       Unlock Forge
@@ -5369,23 +5347,79 @@ function _lockSpinner(show,label) {
   if(lbl&&label)lbl.textContent=label;
 }
 
+// ── _injectInput ─────────────────────────────────────────────────────────────
+// Creates a passphrase input entirely in JS so iOS's credential scanner
+// (which runs at HTML parse time) never sees it. No autocomplete attribute
+// is set at all — omitting the attribute entirely is more reliable than "off".
+function _injectInput(id, placeholder, mb, onEnter) {
+  const wrap = document.getElementById(id + '-wrap');
+  if (!wrap || document.getElementById(id)) return; // already injected
+  const inp = document.createElement('input');
+  inp.id          = id;
+  inp.type        = 'text';            // NOT password — avoids credential manager
+  inp.placeholder = placeholder;
+  // -webkit-text-security:disc renders dots without being a password field
+  inp.style.cssText = [
+    'width:100%','box-sizing:border-box',
+    'background:#141416','color:#EEEAE4',
+    'border:1px solid #2D2D33','border-radius:8px',
+    'padding:14px 16px','font-size:16px',
+    'text-align:center','letter-spacing:.18em',
+    'outline:none','-webkit-appearance:none',
+    '-webkit-text-security:disc',
+    'margin:0','display:block',
+    `margin-bottom:${mb}`,
+  ].join(';');
+  // Explicitly NO autocomplete, autocorrect, autocapitalize — omitting is better than "off"
+  inp.setAttribute('autocorrect',   'off');
+  inp.setAttribute('autocapitalize','off');
+  inp.setAttribute('spellcheck',    'false');
+  inp.setAttribute('inputmode',     'text');
+  // Kill any credential save attempt at the input level
+  inp.addEventListener('focus', () => { inp.setAttribute('readonly', ''); setTimeout(() => inp.removeAttribute('readonly'), 80); });
+  if (onEnter) inp.addEventListener('keydown', e => { if (e.key === 'Enter') onEnter(); });
+  wrap.appendChild(inp);
+  return inp;
+}
+
 async function forgeInitAuth() {
   _lockShow();
-  const setup=document.getElementById('lock-setup'), unlock=document.getElementById('lock-unlock');
+  const setup  = document.getElementById('lock-setup');
+  const unlock = document.getElementById('lock-unlock');
+
   if (!FORGE_AUTH.isSetup()) {
-    if(setup)setup.style.display='block';
-    if(unlock)unlock.style.display='none';
+    // First time — show setup, inject inputs now (post-parse, scanner already ran)
+    if (setup)  setup.style.display  = 'block';
+    if (unlock) unlock.style.display = 'none';
+    setTimeout(() => {
+      _injectInput('lock-pass-new',     'Create passphrase',  '10px');
+      _injectInput('lock-pass-confirm', 'Confirm passphrase', '16px');
+      const inp = document.getElementById('lock-pass-new');
+      if (inp) inp.focus();
+    }, 50);
     return;
   }
-  if(setup)setup.style.display='none';
-  if(unlock)unlock.style.display='block';
+
+  // Returning user — show unlock screen
+  if (setup)  setup.style.display  = 'none';
+  if (unlock) unlock.style.display = 'block';
+  setTimeout(() => {
+    _injectInput('lock-pass', 'Passphrase', '10px', forgeUnlock);
+    const inp = document.getElementById('lock-pass');
+    if (inp) inp.focus();
+  }, 50);
+
   if (FORGE_AUTH.hasWebAuthn()) {
-    const bioBtn=document.getElementById('lock-bio-btn');
-    if(bioBtn)bioBtn.style.display='block';
-    const biometric=await FORGE_AUTH.isBiometricAvailable();
-    if(biometric) setTimeout(async()=>{ const ok=await FORGE_AUTH.unlockWithBiometric(); if(ok)forgePostUnlock(); },300);
+    const bioBtn = document.getElementById('lock-bio-btn');
+    if (bioBtn) bioBtn.style.display = 'block';
+    const biometric = await FORGE_AUTH.isBiometricAvailable();
+    if (biometric) {
+      setTimeout(async () => {
+        const ok = await FORGE_AUTH.unlockWithBiometric();
+        if (ok) forgePostUnlock();
+      }, 300);
+    }
   }
-  setTimeout(()=>{ const p=document.getElementById('lock-pass'); if(p)p.focus(); },100);
 }
 
 async function forgeSetupPIN() {
