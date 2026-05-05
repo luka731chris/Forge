@@ -632,21 +632,24 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
   </div>
 
   <!-- Mode: setup (first time) or unlock -->
+  <!-- Honeypot inputs: trick iOS credential heuristic so it never fires on the real fields -->
+  <input type="text" name="username_x" style="position:absolute;opacity:0;pointer-events:none;height:0;width:0;z-index:-1;" tabindex="-1" aria-hidden="true" autocomplete="username">
+  <input type="text" name="password_x" style="position:absolute;opacity:0;pointer-events:none;height:0;width:0;z-index:-1;" tabindex="-1" aria-hidden="true" autocomplete="current-password">
   <div id="lock-setup" style="display:none;width:100%;max-width:320px;text-align:center;">
     <div style="font-size:14px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:6px;">Create your Forge PIN</div>
     <div style="font-size:12px;color:var(--ink4,#524E4A);margin-bottom:24px;line-height:1.6;">
       Your financial data will be encrypted locally.<br>Recovery: clear &amp; re-pull from Cloudflare.
     </div>
     <input id="lock-pass-new" type="text" inputmode="text" placeholder="Create passphrase"
-      autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false"
-      data-lpignore="true" data-1p-ignore="true"
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      data-lpignore="true" data-1p-ignore="true" data-form-type="other"
       style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
              padding:14px 16px;font-size:16px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
              text-align:center;letter-spacing:.18em;outline:none;-webkit-appearance:none;
              -webkit-text-security:disc;">
     <input id="lock-pass-confirm" type="text" inputmode="text" placeholder="Confirm passphrase"
-      autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false"
-      data-lpignore="true" data-1p-ignore="true"
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      data-lpignore="true" data-1p-ignore="true" data-form-type="other"
       style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
              padding:14px 16px;font-size:16px;color:var(--ink,#EEEAE4);margin-bottom:16px;box-sizing:border-box;
              text-align:center;letter-spacing:.18em;outline:none;-webkit-appearance:none;
@@ -686,8 +689,8 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
   <div id="lock-unlock" style="display:none;width:100%;max-width:320px;text-align:center;">
     <div style="font-size:14px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:20px;">Enter your passphrase</div>
     <input id="lock-pass" type="text" inputmode="text" placeholder="Passphrase"
-      autocomplete="current-password" autocorrect="off" autocapitalize="off" spellcheck="false"
-      data-lpignore="true" data-1p-ignore="true"
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      data-lpignore="true" data-1p-ignore="true" data-form-type="other"
       style="width:100%;background:var(--lift,#141416);border:1px solid var(--line2,#2D2D33);border-radius:8px;
              padding:14px 16px;font-size:16px;color:var(--ink,#EEEAE4);margin-bottom:10px;box-sizing:border-box;
              text-align:center;letter-spacing:.18em;outline:none;-webkit-appearance:none;
