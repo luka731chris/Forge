@@ -1735,6 +1735,7 @@ function isTransfer(t) {
   return false;
 }
 
+
 // CC credits / returns: positive amounts on CC accounts that offset expenses,
 // not household income. Genuine income (paycheck, cashback tagged as income) is preserved.
 function isCCCredit(t) {
@@ -2342,21 +2343,39 @@ function getFileRegistry() {
 //   Any transfer FROM an investment/HSA account (already in auto_save bucket)
 function isNonOperatingCredit(t) {
   if (!t || t.amount <= 0) return false;
-  const cat = (t.category || '').toLowerCase();
-  const pay = (t.payee  || '').toLowerCase();
-  const acct= (t.account|| '').toLowerCase();
-  // CC credits / refunds
+  const cat  = (t.category || '').toLowerCase().trim();
+  const pay  = (t.payee    || '').toLowerCase().trim();
+  const acct = (t.account  || '').toLowerCase().trim();
+
+  // 1. CC credits / refunds (positive amounts on CC accounts)
   if (typeof isCCCredit === 'function' && isCCCredit(t)) return true;
-  // HSA distribution (category or account signals HSA)
-  if (/hsa|health saving/i.test(cat) || /hsa|health saving/i.test(acct)) return true;
-  // Investment dividends / distributions — still in investment account
-  if (/dividend|distribution|reinvest|capital gain/i.test(cat)) return true;
-  if (/interest inc|bank interest|savings interest/i.test(cat)) return true;
-  // Transfers FROM savings/investment → checking (already tracked as asset)
+
+  // 2. HSA distributions — spending your own HSA savings, not new income
+  if (/hsa|health.?sav/i.test(cat) || /hsa|health.?sav/i.test(acct)) return true;
+
+  // 3. Investment dividends, capital gains, distributions — unrealized / reinvested
+  if (/dividend|reinvest|capital.?gain|distribution/i.test(cat)) return true;
+
+  // 4. Interest income from savings/investment accounts — not operating income
+  if (/interest.?(inc|earned|paid)|bank.?interest|savings.?interest/i.test(cat)) return true;
+
+  // 5. Investment account credits — brokerage, retirement, 529 account positive flows
   const srcType = typeof detectAcctType === 'function' ? detectAcctType(acct) : '';
-  if (srcType === 'investment' || srcType === 'retirement') return true;
+  if (srcType === 'investment' || srcType === 'retirement' || srcType === 'education') return true;
+
+  // 6. Paycheck-adjacent but not operational: tax refunds, IRS deposits (large one-time)
+  // Handled by normalizeIncome oneTimeItems detection — not excluded here at the filter level
+
+  // 7. Transfers INTO checking from savings (show as income in cash basis, but not operational)
+  // These are caught by isTransfer() bracket-category detection
+
+  // 8. Credit card payment credits / thank-you credits from card companies
+  if (/credit card.*(payment|credit|reward|thank)/i.test(cat)) return true;
+  if (/(payment thank you|account adjustment|balance adjustment)/i.test(cat)) return true;
+
   return false;
 }
+
 
 
 function classifyTxn(t) {
@@ -4617,7 +4636,7 @@ function renderThermometer(containerId, selMonth) {
       <!-- ── Header + hero number ─────────────────────────────────── -->
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
         <div>
-          <div style="font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.01em;">Budget Pressure</div>
+          <div style="font-size:17px;font-weight:700;color:var(--ink);letter-spacing:-.01em;">Budget Pressure</div>
           <div style="font-size:10px;color:var(--ink4);font-family:var(--fm);margin-top:3px;">${moLbl}${noteStr?' · '+noteStr:''}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
@@ -4627,12 +4646,12 @@ function renderThermometer(containerId, selMonth) {
       </div>
 
       <!-- ── Income equation ──────────────────────────────────────── -->
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--ink4);margin-bottom:12px;padding:8px 12px;background:rgba(255,255,255,.028);border-radius:8px;border:1px solid rgba(255,255,255,.06);">
-        <span style="color:var(--pos);font-weight:700;font-family:var(--fm);font-size:13px;">${fmtK(income)}</span>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--ink4);margin-bottom:12px;padding:8px 12px;background:rgba(255,255,255,.028);border-radius:8px;border:1px solid rgba(255,255,255,.06);">
+        <span style="color:var(--pos);font-weight:700;font-family:var(--fm);font-size:14px;font-weight:700;">${fmtK(income)}</span>
         <span>take-home${earlyMonth?' (est.)':''}</span>
-        ${autoSave > 0 ? `<span style="color:var(--ink4);">−</span><span style="color:var(--river);font-weight:700;font-family:var(--fm);font-size:13px;">${fmtK(autoSave)}</span><span>auto-save (${Math.round(savePct)}%)</span>` : ''}
+        ${autoSave > 0 ? `<span style="color:var(--ink4);">−</span><span style="color:var(--river);font-weight:700;font-family:var(--fm);font-size:14px;font-weight:700;">${fmtK(autoSave)}</span><span>auto-save (${Math.round(savePct)}%)</span>` : ''}
         <span style="color:var(--ink4);">=</span>
-        <span style="color:var(--ink);font-weight:700;font-family:var(--fm);font-size:13px;">${fmtK(deployable)}</span>
+        <span style="color:var(--ink);font-weight:700;font-family:var(--fm);font-size:14px;font-weight:700;">${fmtK(deployable)}</span>
         <span style="color:var(--ink3);">deployable</span>
         <span style="margin-left:auto;cursor:pointer;color:var(--river);font-size:11px;" onclick="${clickIS}">Full P&amp;L →</span>
       </div>
@@ -4683,21 +4702,21 @@ function renderThermometer(containerId, selMonth) {
             <!-- Fixed — 3D gradient fill -->
             <rect x="0" y="0" width="${fixW.toFixed(2)}%" height="40" fill="url(#g-fix)"/>
             <!-- Fixed label (inside bar if wide enough) -->
-            ${fixW > 16 ? `<text x="${(fixW/2).toFixed(1)}%" y="15" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="800" fill="rgba(255,255,255,.95)" letter-spacing="0.5">FIXED</text>
-            <text x="${(fixW/2).toFixed(1)}%" y="30" text-anchor="middle" font-family="'Courier New',monospace" font-size="12" font-weight="700" fill="rgba(255,255,255,.92)">${fmtK(fixedTotal)}</text>` : ''}
+            ${fixW > 16 ? `<text x="${(fixW/2).toFixed(1)}%" y="15" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="800" fill="rgba(255,255,255,.95)" letter-spacing="0.5">FIXED</text>
+            <text x="${(fixW/2).toFixed(1)}%" y="30" text-anchor="middle" font-family="'Courier New',monospace" font-size="14" font-weight="700" fill="rgba(255,255,255,.92)">${fmtK(fixedTotal)}</text>` : ''}
 
             <!-- Variable — gold gradient fill -->
             <rect x="${fixW.toFixed(2)}%" y="0" width="${varW.toFixed(2)}%" height="40" fill="url(#g-var)"/>
-            ${varW > 14 ? `<text x="${(fixW + varW/2).toFixed(1)}%" y="15" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="800" fill="rgba(0,0,0,.75)" letter-spacing="0.5">VARIABLE</text>
-            <text x="${(fixW + varW/2).toFixed(1)}%" y="30" text-anchor="middle" font-family="'Courier New',monospace" font-size="12" font-weight="700" fill="rgba(0,0,0,.75)">${fmtK(varTotal)}</text>` : ''}
+            ${varW > 14 ? `<text x="${(fixW + varW/2).toFixed(1)}%" y="15" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="800" fill="rgba(0,0,0,.75)" letter-spacing="0.5">VARIABLE</text>
+            <text x="${(fixW + varW/2).toFixed(1)}%" y="30" text-anchor="middle" font-family="'Courier New',monospace" font-size="14" font-weight="700" fill="rgba(0,0,0,.75)">${fmtK(varTotal)}</text>` : ''}
 
             <!-- Buffer stripes -->
             ${!overflows && bufW > 0.5 ? `<rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${bufW.toFixed(2)}%" height="40" fill="url(#g-buf)"/>
-            ${bufW > 10 ? `<text x="${(fixW+varW+bufW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="'Courier New',monospace" font-size="11" font-weight="700" fill="rgba(52,217,195,.85)">${fmtK(buffer)}</text>` : ''}` : ''}
+            ${bufW > 10 ? `<text x="${(fixW+varW+bufW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="'Courier New',monospace" font-size="13" font-weight="700" fill="rgba(52,217,195,.85)">${fmtK(buffer)}</text>` : ''}` : ''}
 
             <!-- Overage hatching -->
             ${overflows ? `<rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${overW.toFixed(2)}%" height="40" fill="url(#g-ov)"/>
-            ${overW > 6 ? `<text x="${(fixW+varW+overW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="'Courier New',monospace" font-size="11" font-weight="700" fill="${OVER_C}">-${fmtK(Math.abs(buffer))}</text>` : ''}` : ''}
+            ${overW > 6 ? `<text x="${(fixW+varW+overW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="'Courier New',monospace" font-size="13" font-weight="700" fill="${OVER_C}">-${fmtK(Math.abs(buffer))}</text>` : ''}` : ''}
 
             <!-- Global top-lit highlight overlay -->
             <rect x="0" y="0" width="100%" height="40" fill="url(#g-top)"/>
@@ -4709,7 +4728,7 @@ function renderThermometer(containerId, selMonth) {
         </div>
 
         <!-- Legend row -->
-        <div style="display:flex;gap:14px;margin-top:6px;font-size:10px;font-family:var(--fm);flex-wrap:wrap;align-items:center;padding:0 2px;">
+        <div style="display:flex;gap:14px;margin-top:6px;font-size:12px;font-family:var(--fm);flex-wrap:wrap;align-items:center;padding:0 2px;">
           <span style="color:#F87171;font-weight:600;">■ Fixed ${Math.round(fixedTotal/deployable*100)}%</span>
           <span style="color:#F5A800;font-weight:600;">■ Variable ${Math.round(varTotal/deployable*100)}%</span>
           <span style="color:${bufColor};font-weight:600;">${overflows ? '╱╱ Over '+ Math.round(Math.abs(buffer)/deployable*100)+'%' : '╱╱ Free '+Math.round(buffer/deployable*100)+'%'}</span>
@@ -4728,9 +4747,9 @@ function renderThermometer(containerId, selMonth) {
           [overflows?'OVER':'BUFFER', (overflows?'−':'+')+fmtK(Math.abs(buffer)), overflows?'reduce spend':'free to allocate', bufColor, bufColor, overflows?'rgba(255,59,59,.22)':'rgba(52,217,195,.18)'],
         ].map(([lbl,val,sub,col,glowCol,bdr]) => `
           <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px 8px 8px;border-top:3px solid ${bdr};box-shadow:0 2px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);cursor:pointer;" onclick="${clickIS}">
-            <div style="font-size:8px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;font-weight:700;">${lbl}</div>
-            <div style="font-size:20px;font-weight:700;font-family:var(--fd);color:${col};line-height:1;margin-bottom:4px;letter-spacing:-.02em;text-shadow:0 1px 8px ${glowCol}66;">${val}</div>
-            <div style="font-size:9px;color:var(--ink4);line-height:1.4;font-family:var(--fm);">${sub}</div>
+            <div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;font-weight:700;">${lbl}</div>
+            <div style="font-size:22px;font-weight:700;font-family:var(--fd);color:${col};line-height:1;margin-bottom:4px;letter-spacing:-.02em;text-shadow:0 1px 8px ${glowCol}66;">${val}</div>
+            <div style="font-size:11px;color:var(--ink4);line-height:1.4;font-family:var(--fm);">${sub}</div>
           </div>`).join('')}
       </div>
 
@@ -4740,6 +4759,7 @@ function renderThermometer(containerId, selMonth) {
     el.innerHTML = '';
   }
 }
+
 
 
 
