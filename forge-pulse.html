@@ -1736,6 +1736,7 @@ function isTransfer(t) {
 }
 
 
+
 // CC credits / returns: positive amounts on CC accounts that offset expenses,
 // not household income. Genuine income (paycheck, cashback tagged as income) is preserved.
 function isCCCredit(t) {
@@ -1957,7 +1958,7 @@ function svgLine(elId, labels, datasets) {
 }
 
 
-function svgHBar(elId, labels, values, colors) {
+function svgHBar(elId, labels, values, colors, bucketKeys) {
   const el = document.getElementById(elId);
   if (!el) return;
   if (!labels.length) { el.innerHTML = '<div style="padding:20px;color:var(--ink4);font-size:12px;">No data</div>'; return; }
@@ -1977,7 +1978,8 @@ function svgHBar(elId, labels, values, colors) {
     const lShort= String(lbl).length > 20 ? String(lbl).slice(0,19)+'…' : String(lbl);
     const tip   = `${lbl}: ${valS}`;
     rows += `<text x="${PAD.l-10}" y="${(y+rowH/2).toFixed(1)}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.7)" font-size="11" font-family="'DM Sans',sans-serif">${lShort}</text>`;
-    const catDrill = JSON.stringify({cat: String(lbl)}).replace(/"/g,'&quot;');
+    const drillKey = (bucketKeys && bucketKeys[i]) ? String(bucketKeys[i]) : String(lbl);
+    const catDrill = JSON.stringify({cat: drillKey}).replace(/"/g,'&quot;');
     rows += `<rect x="${PAD.l}" y="${(y+rowH*.18).toFixed(1)}" width="${bW}" height="${(rowH*.64).toFixed(1)}" rx="3" fill="${color}" opacity=".85"
       style="cursor:pointer;"
       data-tip="${tip.replace(/'/g,'&apos;').replace(/"/g,'&quot;')}"
@@ -1987,6 +1989,7 @@ function svgHBar(elId, labels, values, colors) {
   el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;">${rows}</svg>`;
   bindChartTips(el);
 }
+
 
 // ════════════════════════════════════════════════
 // CHART.JS DONUT (still using Chart.js — works fine)
@@ -2375,7 +2378,6 @@ function isNonOperatingCredit(t) {
 
   return false;
 }
-
 
 
 function classifyTxn(t) {
@@ -4700,13 +4702,17 @@ function renderThermometer(containerId, selMonth) {
             <rect x="0" y="0" width="100%" height="40" fill="rgba(255,255,255,.04)"/>
 
             <!-- Fixed — 3D gradient fill -->
-            <rect x="0" y="0" width="${fixW.toFixed(2)}%" height="40" fill="url(#g-fix)"/>
+            <rect x="0" y="0" width="${fixW.toFixed(2)}%" height="40" fill="url(#g-fix)"
+            style="cursor:pointer;"
+            data-thermo="${JSON.stringify({type:'fixed',bks:['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','cell','subscriptions']}).replace(/"/g,'&quot;')}"/>
             <!-- Fixed label (inside bar if wide enough) -->
             ${fixW > 16 ? `<text x="${(fixW/2).toFixed(1)}%" y="15" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="800" fill="rgba(255,255,255,.95)" letter-spacing="0.5">FIXED</text>
             <text x="${(fixW/2).toFixed(1)}%" y="30" text-anchor="middle" font-family="'Courier New',monospace" font-size="14" font-weight="700" fill="rgba(255,255,255,.92)">${fmtK(fixedTotal)}</text>` : ''}
 
             <!-- Variable — gold gradient fill -->
-            <rect x="${fixW.toFixed(2)}%" y="0" width="${varW.toFixed(2)}%" height="40" fill="url(#g-var)"/>
+            <rect x="${fixW.toFixed(2)}%" y="0" width="${varW.toFixed(2)}%" height="40" fill="url(#g-var)"
+            style="cursor:pointer;"
+            data-thermo="${JSON.stringify({type:'variable',bks:['restaurants','groceries','gas_car','transit','healthcare','entertainment','household','personal','clothing','travel','gifts','other']}).replace(/"/g,'&quot;')}"/>
             ${varW > 14 ? `<text x="${(fixW + varW/2).toFixed(1)}%" y="15" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="800" fill="rgba(0,0,0,.75)" letter-spacing="0.5">VARIABLE</text>
             <text x="${(fixW + varW/2).toFixed(1)}%" y="30" text-anchor="middle" font-family="'Courier New',monospace" font-size="14" font-weight="700" fill="rgba(0,0,0,.75)">${fmtK(varTotal)}</text>` : ''}
 
@@ -4754,11 +4760,29 @@ function renderThermometer(containerId, selMonth) {
       </div>
 
     </div>`;
+
+    // Bind breakdown tooltips on fixed/variable bar segments
+    el.querySelectorAll('[data-thermo]').forEach(rect => {
+      rect.addEventListener('mouseenter', function(e) {
+        try {
+          const d = JSON.parse(this.getAttribute('data-thermo'));
+          const lines = [(d.type === 'fixed' ? 'Fixed Expenses' : 'Variable Spending')];
+          d.bks.forEach(bk => {
+            const total = monthSp.filter(t=>classifyTxn(t)===bk&&t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0)
+                        + (isInFlight ? (accrual.accrueAmount(bk)||0) : 0);
+            if (total >= 1) lines.push('  '+(BUCKET_META[bk]||{label:bk}).label+': '+fmtK(total));
+          });
+          showChartTip(e, lines.join('\n'));
+        } catch(ex) {}
+      });
+      rect.addEventListener('mouseleave', hideChartTip);
+    });
   } catch(e) {
     console.warn('[Thermometer]', e);
     el.innerHTML = '';
   }
 }
+
 
 
 
