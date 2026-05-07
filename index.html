@@ -1137,11 +1137,14 @@ select:focus { border-color: var(--gold); }
       <div class="page-title">Cash Flow</div>
       <div class="page-sub">Monthly income and expense trends</div>
     </div>
-    <div class="filters">
-      <span class="filter-label">Account:</span>
-      <select id="cfAcct" onchange="renderCashFlow()"></select>
-      <span class="filter-label">Year:</span>
-      <select id="cfYear" onchange="renderCashFlow()"></select>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div class="range-tabs" id="cfRangeTabs">
+        <button class="rtab" onclick="setCfRange('3m',this)">3M</button>
+        <button class="rtab" onclick="setCfRange('6m',this)">6M</button>
+        <button class="rtab active" onclick="setCfRange('1y',this)">1Y</button>
+        <button class="rtab" onclick="setCfRange('all',this)">All</button>
+      </div>
+      <select id="cfAcct" onchange="renderCashFlow()" style="font-size:12px;padding:5px 10px;"></select>
     </div>
   </div>
   <div class="chart-card" style="margin-bottom:16px;">
@@ -2809,10 +2812,10 @@ function renderSettings() {
   </div>
 
   <!-- Header row -->
-  <div style="display:grid;grid-template-columns:28px 1fr 100px 90px 70px 80px;gap:0;padding:6px 16px;border-bottom:1px solid var(--line);background:var(--void);">
+  <div style="display:grid;grid-template-columns:28px 1fr 120px 90px 70px 80px;gap:0;padding:6px 16px;border-bottom:1px solid var(--line);background:var(--void);">
     <div></div>
     <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">Source</div>
-    <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);text-align:right;">Latest Txn</div>
+    <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);text-align:right;">Last Txn Date</div>
     <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);text-align:right;">Records</div>
     <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);text-align:center;">Status</div>
     <div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);text-align:right;">Uploaded</div>
@@ -2825,8 +2828,9 @@ function renderSettings() {
     const col    = dotColor(d);
     const stats  = srcStats(ft.sourceKey);
     const count  = stats ? stats.count.toLocaleString() : '—';
-    const latest = stats ? stats.latest : (thru ? thru.slice(0,7) : null);
-    const latestLbl = latest ? latest.slice(0,7) : '—';
+    const latest = stats ? stats.latest : (thru || null);
+    // Show full YYYY-MM-DD so user knows the exact start date for next upload
+    const latestLbl = latest ? latest.slice(0,10) : '—';
     const uploaded = reg?.importedAt ? reg.importedAt.slice(0,10) : '—';
     const isLoaded = !!stats;
     const rowBg = i%2===0 ? 'transparent' : 'rgba(255,255,255,.012)';
@@ -2834,13 +2838,16 @@ function renderSettings() {
     const statusDot = isLoaded
       ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d!==null&&d<=7?'var(--pos)':d!==null&&d<=30?'var(--gold)':'var(--neg)'};" title="${freshLbl(d)}"></span>`
       : `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;border:1px solid var(--line2);background:transparent;" title="Not loaded"></span>`;
-    dataBody += `<div style="display:grid;grid-template-columns:28px 1fr 100px 90px 70px 80px;gap:0;padding:8px 16px;border-bottom:${i<FILE_TYPES_S.length-1?'1px solid rgba(255,255,255,.032)':'none'};background:${rowBg};align-items:center;">
+    dataBody += `<div style="display:grid;grid-template-columns:28px 1fr 120px 90px 70px 80px;gap:0;padding:8px 16px;border-bottom:${i<FILE_TYPES_S.length-1?'1px solid rgba(255,255,255,.032)':'none'};background:${rowBg};align-items:center;">
       <span style="font-size:15px;">${ft.icon}</span>
       <div>
         <div style="font-size:12px;font-weight:500;color:${isLoaded?'var(--ink)':'var(--ink3)'};">${ft.label}</div>
         <div style="font-size:10px;color:var(--ink4);margin-top:1px;line-height:1.4;">${ft.desc}</div>
       </div>
-      <div style="font-size:12px;font-family:var(--fm);color:${latest?'var(--ink2)':'var(--ink4)'};text-align:right;">${latestLbl}</div>
+      <div style="text-align:right;">
+        <div style="font-size:12px;font-family:var(--fm);color:${latest?'var(--ink2)':'var(--ink4)'};">${latestLbl}</div>
+        ${latest ? `<div style="font-size:9px;color:var(--gold);font-family:var(--fm);margin-top:2px;">next from ${latest.slice(0,10)}</div>` : ''}
+      </div>
       <div style="font-size:12px;font-family:var(--fm);color:${isLoaded?'var(--ink2)':'var(--ink4)'};text-align:right;">${count}</div>
       <div style="text-align:center;">${statusDot}</div>
       <div style="font-size:10px;font-family:var(--fm);color:var(--ink4);text-align:right;">${uploaded}</div>
@@ -3508,6 +3515,7 @@ let netWorthOverrides = {};   // account name → { value, date, source } — cu
 let nwHistory         = {};   // dateKey → { acctName: value } — all snapshots for comparison
 let range    = '1y';
 let catRange = '1y';
+let cfRange  = '1y';
 let isSort      = { field: 'date', dir: 'desc' };  // Income Statement sort state
 let txnSort     = { field: 'date', dir: 'desc' };  // Transactions sort state
 let txnDrillCat = null;  // { bucket, label } — set by IS drill-through, sticky until cleared
@@ -4665,6 +4673,13 @@ function setCatRange(r, btn) {
   if (txns.length) renderCategories();
 }
 
+function setCfRange(r, btn) {
+  cfRange = r;
+  document.querySelectorAll('#cfRangeTabs .rtab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (txns.length) renderCashFlow();
+}
+
 // ════════════════════════════════════════════════
 // RENDER DASHBOARD
 // ════════════════════════════════════════════════
@@ -4764,21 +4779,19 @@ function renderCashFlow() {
 
   let src = spendable(txns);
 
-  // Populate filters on first call
+  // Populate account filter on first call
   const acctSel = document.getElementById('cfAcct');
-  const yrSel   = document.getElementById('cfYear');
-  if (acctSel.options.length <= 1) {
+  if (acctSel && acctSel.options.length <= 1) {
     acctSel.innerHTML = '<option value="all">All Accounts</option>' +
       [...new Set(src.map(t=>t.account))].sort().map(a=>`<option>${a}</option>`).join('');
-    const years = [...new Set(src.map(t=>t.date.slice(0,4)))].sort().reverse();
-    yrSel.innerHTML = '<option value="all">All Years</option>' +
-      years.map(y=>`<option>${y}</option>`).join('');
   }
 
-  const acct = acctSel.value;
-  const yr   = yrSel.value;
+  // Apply range filter (rolling window)
+  if (cfRange !== 'all') src = src.filter(t => new Date(t.date) >= rangeStart(cfRange));
+
+  // Apply account filter
+  const acct = acctSel ? acctSel.value : 'all';
   if (acct !== 'all') src = src.filter(t=>t.account===acct);
-  if (yr   !== 'all') src = src.filter(t=>t.date.startsWith(yr));
 
   const md  = monthlyData(src);
   const net = md.income.map((v,i) => v - md.expenses[i]);
