@@ -642,20 +642,19 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
 
   <!-- PIN pad — buttons only, no inputs, iOS credential manager cannot fire -->
   <div id="lock-pad" style="display:grid;grid-template-columns:repeat(3,72px);gap:10px;justify-content:center;">
-    <!-- Digits 1–9 -->
-    <button class="pin-btn" onclick="forgePinDigit('1')">1</button>
-    <button class="pin-btn" onclick="forgePinDigit('2')">2</button>
-    <button class="pin-btn" onclick="forgePinDigit('3')">3</button>
-    <button class="pin-btn" onclick="forgePinDigit('4')">4</button>
-    <button class="pin-btn" onclick="forgePinDigit('5')">5</button>
-    <button class="pin-btn" onclick="forgePinDigit('6')">6</button>
-    <button class="pin-btn" onclick="forgePinDigit('7')">7</button>
-    <button class="pin-btn" onclick="forgePinDigit('8')">8</button>
-    <button class="pin-btn" onclick="forgePinDigit('9')">9</button>
-    <!-- Bottom row: backspace, 0, confirm -->
-    <button class="pin-btn pin-btn-ghost" onclick="forgePinBack()">⌫</button>
-    <button class="pin-btn" onclick="forgePinDigit('0')">0</button>
-    <button class="pin-btn pin-btn-gold" id="lock-confirm-btn" onclick="forgePinConfirm()">✓</button>
+    <!-- Digits 1–9 — ontouchstart for zero-delay haptic; onclick fires the action -->
+    <button class="pin-btn" ontouchstart="_haptic('digit')" onclick="forgePinDigit('1')">1</button>
+    <button class="pin-btn" ontouchstart="_haptic('digit')" onclick="forgePinDigit('2')">2</button>
+    <button class="pin-btn" ontouchstart="_haptic('digit')" onclick="forgePinDigit('3')">3</button>
+    <button class="pin-btn" ontouchstart="_haptic('digit')" onclick="forgePinDigit('4')">4</button>
+    <button class="pin-btn" ontouchstart="_haptic('digit')" onclick="forgePinDigit('5')">5</button>
+    <button class="pin-btn" ontouchstart="_haptic('digit')" onclick="forgePinDigit('6')">6</button>
+    <button class="pin-btn" ontouchstart="_haptic('digit')" onclick="forgePinDigit('7')">7</button>
+    <button class="pin-btn" ontouchstart="_haptic('digit')" onclick="forgePinDigit('8')">8</button>
+    <button class="pin-btn" ontouchstart="_haptic('digit')" onclick="forgePinDigit('9')">9</button>
+    <button class="pin-btn pin-btn-ghost" ontouchstart="_haptic('back')" onclick="forgePinBack()">⌫</button>
+    <button class="pin-btn" ontouchstart="_haptic('digit')" onclick="forgePinDigit('0')">0</button>
+    <button class="pin-btn pin-btn-gold" id="lock-confirm-btn" ontouchstart="_haptic('digit')" onclick="forgePinConfirm()">✓</button>
   </div>
 
   <!-- Face ID button — shown only when WebAuthn is registered -->
@@ -691,23 +690,32 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
       font-family:var(--font-d,'Georgia,serif');
       cursor:pointer;
       -webkit-tap-highlight-color:transparent;
-      transition:background .12s;
+      touch-action:manipulation;
+      user-select:none;
+      -webkit-user-select:none;
+      transition:background .08s, transform .08s;
     }
-    .pin-btn:active { background:rgba(255,255,255,.15); }
+    .pin-btn:active { background:rgba(255,255,255,.18); transform:scale(.93); }
     .pin-btn-ghost { background:transparent;border-color:transparent;color:#7A7672;font-size:20px; }
     .pin-btn-gold  { background:var(--gold,#F5A800);border-color:var(--gold,#F5A800);color:#000;font-size:22px; }
     .pin-btn-gold:active { background:#d48f00; }
     .pin-dot {
-      width:14px;height:14px;border-radius:50%;
-      border:1.5px solid rgba(255,255,255,.25);
+      width:16px;height:16px;border-radius:50%;
+      border:2px solid rgba(255,255,255,.3);
       background:transparent;
-      transition:background .15s,border-color .15s;
+      transition:background .12s, border-color .12s, transform .12s;
     }
     .pin-dot.filled {
       background:var(--gold,#F5A800);
       border-color:var(--gold,#F5A800);
+      animation:pin-pop .18s ease-out;
     }
     .pin-dot.error { border-color:#F87171;background:#F87171; }
+    @keyframes pin-pop {
+      0%   { transform:scale(1);   }
+      45%  { transform:scale(1.5); }
+      100% { transform:scale(1);   }
+    }
   </style>
 </div>
 
@@ -5278,21 +5286,46 @@ const _PIN_LEN  = 6;    // 6-digit PIN
 function _pinDots() {
   const el = document.getElementById('lock-dots');
   if (!el) return;
-  el.innerHTML = Array.from({length: _PIN_LEN}, (_, i) =>
-    `<div class="pin-dot${i < _pinCurrent.length ? ' filled' : ''}"></div>`
-  ).join('');
+  // Ensure dots are pre-rendered (idempotent)
+  if (el.children.length !== _PIN_LEN) {
+    el.innerHTML = Array.from({length: _PIN_LEN}, () =>
+      '<div class="pin-dot"></div>'
+    ).join('');
+  }
+  // Toggle class on existing elements so CSS transition fires
+  Array.from(el.children).forEach((dot, i) => {
+    const should = i < _pinCurrent.length;
+    if (should && !dot.classList.contains('filled')) {
+      dot.classList.add('filled');
+    } else if (!should && dot.classList.contains('filled')) {
+      dot.classList.remove('filled');
+    }
+  });
+}
+
+function _haptic(type) {
+  // Haptic feedback: short for digit, double for error, long for success
+  try {
+    if (navigator.vibrate) {
+      if      (type === 'digit')   navigator.vibrate(8);
+      else if (type === 'back')    navigator.vibrate(5);
+      else if (type === 'error')   navigator.vibrate([30, 40, 30]);
+      else if (type === 'success') navigator.vibrate([15, 20, 60]);
+    }
+  } catch(e) {}
 }
 
 function _pinError(msg) {
   const el = document.getElementById('lock-err');
   if (el) el.textContent = msg;
+  _haptic('error');
   // Flash dots red briefly
   document.querySelectorAll('.pin-dot').forEach(d => {
     d.classList.add('error');
-    setTimeout(() => d.classList.remove('error'), 500);
+    setTimeout(() => d.classList.remove('error'), 600);
   });
   _pinCurrent = '';
-  setTimeout(_pinDots, 520);
+  setTimeout(_pinDots, 620);
 }
 
 function _pinClearErr() {
@@ -5305,9 +5338,9 @@ function forgePinDigit(d) {
   _pinCurrent += d;
   _pinDots();
   _pinClearErr();
-  // Auto-submit when all digits entered
   if (_pinCurrent.length === _PIN_LEN) {
-    setTimeout(forgePinConfirm, 80);
+    _haptic('success');
+    setTimeout(forgePinConfirm, 100);
   }
 }
 
