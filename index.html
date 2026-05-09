@@ -1316,7 +1316,12 @@ select:focus { border-color: var(--gold); }
       <div class="page-sub">Household P&amp;L · accrual basis · click any section to expand</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
-      <span style="font-size:11px;color:var(--ink4);font-family:var(--font-m);">Month:</span>
+      <div class="range-tabs" id="isTrendRangeTabs">
+        <button class="rtab active" onclick="setISTrendRange(6,this)">6M</button>
+        <button class="rtab" onclick="setISTrendRange(12,this)">12M</button>
+        <button class="rtab" onclick="setISTrendRange(24,this)">2Y</button>
+      </div>
+      <span style="font-size:11px;color:var(--ink4);font-family:var(--font-m);margin-left:8px;">Month:</span>
       <select id="isMonth" onchange="renderIncomeStatement()" style="font-size:12px;padding:5px 10px;"></select>
       <span style="font-size:11px;color:var(--ink4);font-family:var(--font-m);margin-left:8px;">Sort:</span>
       <select id="isSortField" onchange="isSort.field=this.value;renderIncomeStatement()" style="font-size:12px;padding:5px 10px;">
@@ -1328,6 +1333,8 @@ select:focus { border-color: var(--gold); }
     </div>
   </div>
   <div id="isThermo" style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;"></div>
+  <!-- Expense trend chart -->
+  <div id="isTrendWrap" style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;"></div>
   <div id="incomeStatement"></div>
 </div>
 
@@ -3200,23 +3207,54 @@ function buildMonthSummary(selMonth, sp) {
   // CC credits as offsets (reduces expense bucket)
   monthSp.filter(t => isCCCredit(t))
          .forEach(t => addToBkt(classifyTxn(t), Object.assign({}, t, { _isCCCredit: true })));
-  // Pre-committed savings: checking→savings transfers that occur on or near a paycheck date.
-  // This distinguishes biweekly auto-deposits from ad-hoc transfers.
-  // A transfer qualifies if: (a) destination is a savings account AND
-  // (b) a paycheck deposit exists within 4 days of the transfer date.
-  const paycheckDates = monthSp
-    .filter(t => classifyTxn(t) === 'paycheck' && t.amount > 0)
+  // ── Pre-committed savings detection ──────────────────────────────────────
+  // Two patterns:
+  // A) Checking→savings TRANSFER near payday (most common: automatic transfer on pay date)
+  // B) Employer SPLIT DIRECT DEPOSIT to savings (positive paycheck-classified income
+  //    in a savings account — employer routes part of paycheck directly to savings)
+
+  // Build payday set from checking-account paycheck deposits
+  const paycheckDatesC = monthSp
+    .filter(t => classifyTxn(t) === 'paycheck' && t.amount > 0
+                 && detectAcctType(t.account||'') === 'checking')
     .map(t => t.date);
+  // Also from savings-account paycheck deposits (split direct deposit)
+  const savingsPayDates = monthSp
+    .filter(t => classifyTxn(t) === 'paycheck' && t.amount > 0
+                 && detectAcctType(t.account||'') === 'savings')
+    .map(t => t.date);
+
+  // All payday dates = checking paychecks + savings direct deposits
+  const allPayDates = [...new Set([...paycheckDatesC, ...savingsPayDates])];
+
   function nearPaycheck(tDate) {
     const d0 = new Date(tDate);
-    return paycheckDates.some(pd => Math.abs(new Date(pd) - d0) <= 4 * 864e5);
+    return allPayDates.some(pd => Math.abs(new Date(pd) - d0) <= 4 * 864e5);
   }
+
+  // Pattern A: checking→savings transfers on or near payday
   monthXfers.forEach(t => {
     const dest = (t.category||'').replace(/^\[|\]$/g,'').trim();
     const typ  = detectAcctType(dest);
     if (typ === 'savings' && nearPaycheck(t.date)) {
       addToBkt('auto_save', Object.assign({}, t, { _xferTo: dest, amount: -Math.abs(t.amount) }));
     }
+  });
+
+  // Pattern B: employer split direct deposit (paycheck-classified income in savings account)
+  // These are already in monthSp as income — move them to auto_save bucket instead
+  savingsPayDates.forEach(pd => {
+    monthSp
+      .filter(t => t.date === pd && t.amount > 0
+                   && classifyTxn(t) === 'paycheck'
+                   && detectAcctType(t.account||'') === 'savings')
+      .forEach(t => {
+        addToBkt('auto_save', Object.assign({}, t, {
+          _xferTo: t.account,
+          _splitDeposit: true,
+          amount: -Math.abs(t.amount)
+        }));
+      });
   });
 
   // ── Accrual engine (same instance IS uses) ────────────────────────────
@@ -3240,11 +3278,11 @@ function buildMonthSummary(selMonth, sp) {
   const normalizedIncome   = (normData && normData.normalizedIncome > 0)
                              ? normData.normalizedIncome
                              : rawIncome;
-  const normalizedAutoSave = (normData && normData.curAutoSave > 0)
-                             ? normData.curAutoSave
-                             : rawAutoSave;
-  const deployable = Math.max(normalizedIncome - normalizedAutoSave,
-                              normalizedIncome * 0.05, 1);
+  // rawAutoSave is computed from monthXfers (actual transfers detected by nearPaycheck).
+  // normData.curAutoSave always = 0 because transfers are filtered out of spendable().
+  // Always use rawAutoSave — it's the ground truth from the live transfer data.
+  const normalizedAutoSave = rawAutoSave;
+  const deployable = Math.max(normalizedIncome - normalizedAutoSave, 1);
 
   // ── Fixed expense totals (actual + accrued, no double-counting) ───────
   // getFixedAccrual() already skips payees that have been charged this month.
@@ -3510,6 +3548,7 @@ let nwHistory         = {};   // dateKey → { acctName: value } — all snapsho
 let range    = '1y';
 let catRange = '1y';
 let cfRange  = '1y';
+let isTrendN = 6;
 let isSort      = { field: 'date', dir: 'desc' };  // Income Statement sort state
 let txnSort     = { field: 'date', dir: 'desc' };  // Transactions sort state
 let txnDrillCat = null;  // { bucket, label } — set by IS drill-through, sticky until cleared
@@ -4427,7 +4466,7 @@ function showPage(name) {
     if (name === 'cashflow'     && txns.length) renderCashFlow();
     if (name === 'categories'   && txns.length) renderCategories();
     if (name === 'transactions' && txns.length) renderTxns();
-    if (name === 'income'        && txns.length) renderIncomeStatement();
+    if (name === 'income'        && txns.length) { renderIncomeStatement(); try{renderISTrend();}catch(e){} }
     if (name === 'creditflow'    && txns.length) renderCreditFlow();
     if (name === 'validate'      ) renderValidation();
     if (name === 'budget'        ) renderBudget();
@@ -4689,6 +4728,13 @@ function setCatRange(r, btn) {
   document.querySelectorAll('#page-categories .rtab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   if (txns.length) renderCategories();
+}
+
+function setISTrendRange(n, btn) {
+  isTrendN = n;
+  document.querySelectorAll('#isTrendRangeTabs .rtab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderISTrend();
 }
 
 function setCfRange(r, btn) {
@@ -8173,6 +8219,241 @@ function buildAccrualEngine(selMonth, sp) {
 }
 
 
+
+// ══════════════════════════════════════════════════════════════════════════
+// renderISTrend — stacked bar trend: fixed (red) + variable (gold) by month
+//   with deployable income line overlay, category hover breakdown, click-to-IS
+// ══════════════════════════════════════════════════════════════════════════
+function renderISTrend() {
+  const el = document.getElementById('isTrendWrap');
+  if (!el) return;
+  if (!txns.length) { el.innerHTML = ''; return; }
+
+  const sp = operatingSpendable(txns);
+  const OPER = new Set(['checking','savings','credit']);
+  const opSp = sp.filter(t => OPER.has(detectAcctType(t.account||'')));
+
+  // Build month list (most recent N months, oldest→newest left→right)
+  const now  = new Date();
+  const mths = [];
+  for (let i = isTrendN - 1; i >= 0; i--) {
+    const d  = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const mo = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    mths.push(mo);
+  }
+
+  const FIXED_BKS = ['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','cell','subscriptions'];
+  const VAR_BKS   = ['restaurants','groceries','gas_car','transit','healthcare','entertainment','household','personal','clothing','travel','gifts','other'];
+
+  // Per-month data
+  const moData = mths.map(mo => {
+    const mSp = opSp.filter(t => t.date.startsWith(mo) && t.amount < 0);
+    const mIn = opSp.filter(t => t.date.startsWith(mo) && t.amount > 0 && classifyTxn(t)==='paycheck');
+
+    const fixedByBk = {}, varByBk = {};
+    let fixed = 0, variable = 0;
+    mSp.forEach(t => {
+      const bk = classifyTxn(t);
+      const amt = Math.abs(t.amount);
+      if (FIXED_BKS.includes(bk)) { fixed += amt; fixedByBk[bk] = (fixedByBk[bk]||0) + amt; }
+      else if (VAR_BKS.includes(bk)) { variable += amt; varByBk[bk] = (varByBk[bk]||0) + amt; }
+    });
+
+    // Auto-saves: transfers to savings near payday
+    const mXf = txns.filter(t => t.date.startsWith(mo) && isTransfer(t) && t.amount < 0);
+    const mPay = opSp.filter(t => t.date.startsWith(mo) && t.amount > 0 && classifyTxn(t)==='paycheck');
+    const payDays = [...new Set(mPay.map(t => t.date))];
+    let autoSave = 0;
+    mXf.forEach(t => {
+      const dest = (t.category||'').replace(/^\[|\]$/g,'').trim();
+      if (detectAcctType(dest)==='savings') {
+        const d0 = new Date(t.date);
+        if (payDays.some(pd => Math.abs(new Date(pd)-d0) <= 4*864e5)) autoSave += Math.abs(t.amount);
+      }
+    });
+    // Split direct deposits to savings
+    opSp.filter(t => t.date.startsWith(mo) && t.amount > 0 && classifyTxn(t)==='paycheck' && detectAcctType(t.account||'')==='savings')
+        .forEach(t => autoSave += t.amount);
+
+    const income   = mIn.reduce((s,t)=>s+t.amount, 0);
+    const deployable = Math.max(income - autoSave, 0);
+
+    return { mo, fixed, variable, income, deployable, autoSave, fixedByBk, varByBk };
+  });
+
+  const maxY = Math.max(...moData.map(d => Math.max(d.fixed+d.variable, d.deployable)), 1);
+
+  // Layout
+  const W = 600, H = 200, PAD = { t:12, b:36, l:44, r:12 };
+  const innerW = W - PAD.l - PAD.r;
+  const innerH = H - PAD.t - PAD.b;
+  const barW   = Math.floor((innerW / mths.length) * 0.72);
+  const gap    = (innerW - barW * mths.length) / mths.length;
+  const xOf    = i => PAD.l + i * (barW + gap) + gap / 2;
+  const yOf    = v => PAD.t + innerH - (v / maxY) * innerH;
+  const fmtK   = v => v >= 1000 ? '$'+(v/1000).toFixed(1).replace(/\.0$/,'')+'K' : '$'+Math.round(v);
+
+  const isCur  = mo => mo === (now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
+  const moLbl  = mo => { const [y,m]=mo.split('-'); return new Date(y,m-1,1).toLocaleDateString('en-US',{month:'short'}); };
+
+  // Y-axis ticks
+  const yTicks = 4;
+  let axisSvg = '';
+  for (let i = 0; i <= yTicks; i++) {
+    const v = (maxY / yTicks) * i;
+    const y = yOf(v);
+    axisSvg += `<line x1="${PAD.l-4}" y1="${y.toFixed(1)}" x2="${W-PAD.r}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,.06)" stroke-width="1"/>`;
+    axisSvg += `<text x="${PAD.l-6}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="9" fill="rgba(255,255,255,.4)" font-family="monospace">${fmtK(v)}</text>`;
+  }
+
+  // Bars + income line points
+  let barsSvg = '', linePts = [], lineAreaPts = [];
+  moData.forEach((d, i) => {
+    const x     = xOf(i);
+    const fixH  = (d.fixed    / maxY) * innerH;
+    const varH  = (d.variable / maxY) * innerH;
+    const totalH= fixH + varH;
+    const baseY = PAD.t + innerH;
+    const cur   = isCur(d.mo);
+
+    // Bar background (current month highlight)
+    if (cur) barsSvg += `<rect x="${(x-1).toFixed(1)}" y="${PAD.t}" width="${(barW+2).toFixed(1)}" height="${innerH}" fill="rgba(255,255,255,.04)" rx="2"/>`;
+
+    // Variable segment (gold, top)
+    if (varH > 0.5) barsSvg += `<rect class="is-trend-bar" data-mo="${d.mo}" data-seg="var"
+      x="${x.toFixed(1)}" y="${(baseY-totalH).toFixed(1)}" width="${barW}" height="${varH.toFixed(1)}"
+      fill="url(#isTrendGold)" rx="2" style="cursor:pointer;"/>`;
+
+    // Fixed segment (red, bottom)
+    if (fixH > 0.5) barsSvg += `<rect class="is-trend-bar" data-mo="${d.mo}" data-seg="fix"
+      x="${x.toFixed(1)}" y="${(baseY-fixH).toFixed(1)}" width="${barW}" height="${fixH.toFixed(1)}"
+      fill="url(#isTrendRed)" rx="2" style="cursor:pointer;"/>`;
+
+    // Month label
+    const lblY = H - PAD.b + 13;
+    barsSvg += `<text x="${(x+barW/2).toFixed(1)}" y="${lblY}" text-anchor="middle" font-size="9" fill="${cur?'rgba(245,168,0,.9)':'rgba(255,255,255,.4)'}" font-family="monospace">${moLbl(d.mo)}</text>`;
+    if (cur) barsSvg += `<text x="${(x+barW/2).toFixed(1)}" y="${lblY+9}" text-anchor="middle" font-size="7" fill="rgba(245,168,0,.7)" font-family="monospace">▲</text>`;
+
+    // Income line
+    if (d.deployable > 0) {
+      const lx = x + barW / 2;
+      const ly = yOf(d.deployable);
+      linePts.push(`${lx.toFixed(1)},${ly.toFixed(1)}`);
+      lineAreaPts.push(`${lx.toFixed(1)},${ly.toFixed(1)}`);
+    }
+  });
+
+  // Close area path for income line fill
+  const lastD = moData[moData.length-1];
+  const firstD = moData.find(d=>d.deployable>0);
+  let lineAreaSvg = '';
+  if (linePts.length >= 2) {
+    const areaPath = `M${lineAreaPts[0]} L${lineAreaPts.join(' L')} L${(xOf(mths.length-1)+barW/2).toFixed(1)},${(PAD.t+innerH)} L${(xOf(0)+barW/2).toFixed(1)},${(PAD.t+innerH)} Z`;
+    lineAreaSvg = `<path d="${areaPath}" fill="rgba(52,217,195,.07)"/>
+    <polyline points="${linePts.join(' ')}" fill="none" stroke="#34D9C3" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    linePts.forEach(pt => {
+      const [px,py] = pt.split(',');
+      lineAreaSvg += `<circle cx="${px}" cy="${py}" r="3" fill="#34D9C3" stroke="rgba(0,0,0,.5)" stroke-width="1"/>`;
+    });
+  }
+
+  const svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+    <defs>
+      <linearGradient id="isTrendRed" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#FF9494"/><stop offset="100%" stop-color="#C94444"/>
+      </linearGradient>
+      <linearGradient id="isTrendGold" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#FFCA40"/><stop offset="100%" stop-color="#C07A00"/>
+      </linearGradient>
+    </defs>
+    ${axisSvg}
+    ${lineAreaSvg}
+    ${barsSvg}
+  </svg>`;
+
+  // Summary stats
+  const avgFixed  = moData.reduce((s,d)=>s+d.fixed,0)/mths.length;
+  const avgVar    = moData.reduce((s,d)=>s+d.variable,0)/mths.length;
+  const avgIncome = moData.reduce((s,d)=>s+d.deployable,0)/mths.length;
+
+  el.innerHTML = `
+  <div style="padding:10px 14px 6px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.06);">
+    <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">${isTrendN}-Month Expense Trend</div>
+    <div style="display:flex;gap:12px;font-size:11px;font-family:var(--fm);margin-left:auto;">
+      <span style="color:#F87171;">■ Fixed avg ${fmtK(avgFixed)}/mo</span>
+      <span style="color:#F5A800;">■ Variable avg ${fmtK(avgVar)}/mo</span>
+      <span style="color:#34D9C3;">── Deployable avg ${fmtK(avgIncome)}/mo</span>
+    </div>
+  </div>
+  <div style="padding:8px 8px 4px;position:relative;" id="isTrendChartArea">
+    ${svg}
+    <div id="isTrendTip" style="display:none;position:absolute;background:rgba(18,18,20,.95);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 12px;font-size:11px;font-family:var(--fm);min-width:160px;pointer-events:none;z-index:99;"></div>
+  </div>`;
+
+  // Bind events
+  el.querySelectorAll('.is-trend-bar').forEach(rect => {
+    rect.addEventListener('mouseenter', function(e) {
+      const mo  = this.dataset.mo;
+      const d   = moData.find(x=>x.mo===mo);
+      if (!d) return;
+      const tip = document.getElementById('isTrendTip');
+      if (!tip) return;
+      const [yr,m] = mo.split('-');
+      const moName = new Date(yr,m-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+
+      // Build category breakdown
+      const fixLines = Object.entries(d.fixedByBk).sort((a,b)=>b[1]-a[1])
+        .map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:#C8C4BE;">${(window.BUCKET_META&&BUCKET_META[k])?BUCKET_META[k].label:k}</span><span style="color:#F87171;">${fmtK(v)}</span></div>`).join('');
+      const varLines = Object.entries(d.varByBk).sort((a,b)=>b[1]-a[1])
+        .map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:#C8C4BE;">${(window.BUCKET_META&&BUCKET_META[k])?BUCKET_META[k].label:k}</span><span style="color:#F5A800;">${fmtK(v)}</span></div>`).join('');
+
+      tip.innerHTML = `
+        <div style="font-weight:700;color:#EEEAE4;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:5px;">${moName}</div>
+        <div style="margin-bottom:6px;">
+          <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#6B6560;margin-bottom:3px;">FIXED — ${fmtK(d.fixed)}</div>
+          ${fixLines||'<span style="color:#6B6560;">—</span>'}
+        </div>
+        <div style="margin-bottom:6px;">
+          <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#6B6560;margin-bottom:3px;">VARIABLE — ${fmtK(d.variable)}</div>
+          ${varLines||'<span style="color:#6B6560;">—</span>'}
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,.08);padding-top:5px;margin-top:4px;">
+          <div style="display:flex;justify-content:space-between;"><span style="color:#34D9C3;">Deployable</span><span style="color:#34D9C3;">${fmtK(d.deployable)}</span></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:#6B6560;">Total spend</span><span style="color:#6B6560;">${fmtK(d.fixed+d.variable)}</span></div>
+          ${d.fixed+d.variable>d.deployable
+            ? `<div style="color:#F87171;margin-top:3px;font-size:10px;">⛔ Over by ${fmtK(d.fixed+d.variable-d.deployable)}</div>`
+            : `<div style="color:#34D9C3;margin-top:3px;font-size:10px;">✅ Surplus ${fmtK(d.deployable-d.fixed-d.variable)}</div>`}
+        </div>
+        <div style="margin-top:6px;font-size:10px;color:#60A5FA;cursor:pointer;">Click to open ${moName} IS →</div>`;
+
+      // Position tooltip
+      const chartRect = document.getElementById('isTrendChartArea').getBoundingClientRect();
+      const barRect   = this.getBoundingClientRect();
+      const tipX = Math.min(barRect.left - chartRect.left + 10, chartRect.width - 180);
+      tip.style.left   = Math.max(0, tipX) + 'px';
+      tip.style.top    = '10px';
+      tip.style.display= 'block';
+    });
+
+    rect.addEventListener('mouseleave', function() {
+      const tip = document.getElementById('isTrendTip');
+      if (tip) tip.style.display = 'none';
+    });
+
+    rect.addEventListener('click', function() {
+      const mo  = this.dataset.mo;
+      const sel = document.getElementById('isMonth');
+      if (sel) {
+        // Find and set the option
+        for (let i=0; i<sel.options.length; i++) {
+          if (sel.options[i].value === mo) { sel.selectedIndex = i; break; }
+        }
+      }
+      renderIncomeStatement();
+    });
+  });
+}
+
 function renderIncomeStatement() {
   const el = document.getElementById('incomeStatement');
   if (!el) return;
@@ -8193,6 +8474,7 @@ function renderIncomeStatement() {
   }
   const selMonth = (moSel && moSel.value) || months[0];
   try { if (typeof renderThermometer==='function') renderThermometer('isThermo', selMonth); } catch(e){}
+  try { if (typeof renderISTrend==='function') renderISTrend(); } catch(e){}
   if (!selMonth) { el.innerHTML='<p style="color:var(--ink4);padding:20px">No data yet.</p>'; return; }
 
   const [yr,mo]   = selMonth.split('-');
@@ -8242,19 +8524,31 @@ function renderIncomeStatement() {
   monthSp.filter(t => isCCCredit(t))
          .forEach(t => addB(classifyTxn(t), Object.assign({}, t, {_isCCCredit:true})));
 
-  // ── Pre-committed savings: checking→savings near payday ──────────────────
-  const paycheckDates = monthSp.filter(t=>classifyTxn(t)==='paycheck'&&t.amount>0).map(t=>t.date);
+  // ── Pre-committed savings: two patterns ─────────────────────────────────
+  // A) checking→savings transfer near payday
+  // B) employer split direct deposit (paycheck-classified amount in savings account)
+  const _ckPayDates  = monthSp.filter(t=>classifyTxn(t)==='paycheck'&&t.amount>0&&detectAcctType(t.account||'')==='checking').map(t=>t.date);
+  const _svPayDates  = monthSp.filter(t=>classifyTxn(t)==='paycheck'&&t.amount>0&&detectAcctType(t.account||'')==='savings').map(t=>t.date);
+  const _allPayDates = [...new Set([..._ckPayDates,..._svPayDates])];
   function nearPayday(d) {
-    return paycheckDates.some(pd => Math.abs(new Date(pd)-new Date(d)) <= 4*864e5);
+    return _allPayDates.some(pd=>Math.abs(new Date(pd)-new Date(d))<=4*864e5);
   }
   const autoSaveTxns = [];
-  monthXfers.filter(t => t.amount < 0).forEach(t => {
-    const dest = (t.category||'').replace(/^\[|\]$/g,'').trim();
-    if (detectAcctType(dest)==='savings' && nearPayday(t.date)) {
-      const st = Object.assign({}, t, {_xferTo:dest, amount:-Math.abs(t.amount)});
-      autoSaveTxns.push(st);
-      addB('auto_save', st);
+  // Pattern A: transfers
+  monthXfers.filter(t=>t.amount<0).forEach(t=>{
+    const dest=(t.category||'').replace(/^\[|\]$/g,'').trim();
+    if(detectAcctType(dest)==='savings'&&nearPayday(t.date)){
+      const st=Object.assign({},t,{_xferTo:dest,amount:-Math.abs(t.amount)});
+      autoSaveTxns.push(st); addB('auto_save',st);
     }
+  });
+  // Pattern B: split direct deposits to savings
+  _svPayDates.forEach(pd=>{
+    monthSp.filter(t=>t.date===pd&&t.amount>0&&classifyTxn(t)==='paycheck'&&detectAcctType(t.account||'')==='savings')
+      .forEach(t=>{
+        const st=Object.assign({},t,{_xferTo:t.account,_splitDeposit:true,amount:-Math.abs(t.amount)});
+        autoSaveTxns.push(st); addB('auto_save',st);
+      });
   });
 
   // ── kfmt helper — must be defined before normalization uses it ──────────────

@@ -4350,23 +4350,54 @@ function buildMonthSummary(selMonth, sp) {
   // CC credits as offsets (reduces expense bucket)
   monthSp.filter(t => isCCCredit(t))
          .forEach(t => addToBkt(classifyTxn(t), Object.assign({}, t, { _isCCCredit: true })));
-  // Pre-committed savings: checking→savings transfers that occur on or near a paycheck date.
-  // This distinguishes biweekly auto-deposits from ad-hoc transfers.
-  // A transfer qualifies if: (a) destination is a savings account AND
-  // (b) a paycheck deposit exists within 4 days of the transfer date.
-  const paycheckDates = monthSp
-    .filter(t => classifyTxn(t) === 'paycheck' && t.amount > 0)
+  // ── Pre-committed savings detection ──────────────────────────────────────
+  // Two patterns:
+  // A) Checking→savings TRANSFER near payday (most common: automatic transfer on pay date)
+  // B) Employer SPLIT DIRECT DEPOSIT to savings (positive paycheck-classified income
+  //    in a savings account — employer routes part of paycheck directly to savings)
+
+  // Build payday set from checking-account paycheck deposits
+  const paycheckDatesC = monthSp
+    .filter(t => classifyTxn(t) === 'paycheck' && t.amount > 0
+                 && detectAcctType(t.account||'') === 'checking')
     .map(t => t.date);
+  // Also from savings-account paycheck deposits (split direct deposit)
+  const savingsPayDates = monthSp
+    .filter(t => classifyTxn(t) === 'paycheck' && t.amount > 0
+                 && detectAcctType(t.account||'') === 'savings')
+    .map(t => t.date);
+
+  // All payday dates = checking paychecks + savings direct deposits
+  const allPayDates = [...new Set([...paycheckDatesC, ...savingsPayDates])];
+
   function nearPaycheck(tDate) {
     const d0 = new Date(tDate);
-    return paycheckDates.some(pd => Math.abs(new Date(pd) - d0) <= 4 * 864e5);
+    return allPayDates.some(pd => Math.abs(new Date(pd) - d0) <= 4 * 864e5);
   }
+
+  // Pattern A: checking→savings transfers on or near payday
   monthXfers.forEach(t => {
     const dest = (t.category||'').replace(/^\[|\]$/g,'').trim();
     const typ  = detectAcctType(dest);
     if (typ === 'savings' && nearPaycheck(t.date)) {
       addToBkt('auto_save', Object.assign({}, t, { _xferTo: dest, amount: -Math.abs(t.amount) }));
     }
+  });
+
+  // Pattern B: employer split direct deposit (paycheck-classified income in savings account)
+  // These are already in monthSp as income — move them to auto_save bucket instead
+  savingsPayDates.forEach(pd => {
+    monthSp
+      .filter(t => t.date === pd && t.amount > 0
+                   && classifyTxn(t) === 'paycheck'
+                   && detectAcctType(t.account||'') === 'savings')
+      .forEach(t => {
+        addToBkt('auto_save', Object.assign({}, t, {
+          _xferTo: t.account,
+          _splitDeposit: true,
+          amount: -Math.abs(t.amount)
+        }));
+      });
   });
 
   // ── Accrual engine (same instance IS uses) ────────────────────────────
@@ -4390,11 +4421,11 @@ function buildMonthSummary(selMonth, sp) {
   const normalizedIncome   = (normData && normData.normalizedIncome > 0)
                              ? normData.normalizedIncome
                              : rawIncome;
-  const normalizedAutoSave = (normData && normData.curAutoSave > 0)
-                             ? normData.curAutoSave
-                             : rawAutoSave;
-  const deployable = Math.max(normalizedIncome - normalizedAutoSave,
-                              normalizedIncome * 0.05, 1);
+  // rawAutoSave is computed from monthXfers (actual transfers detected by nearPaycheck).
+  // normData.curAutoSave always = 0 because transfers are filtered out of spendable().
+  // Always use rawAutoSave — it's the ground truth from the live transfer data.
+  const normalizedAutoSave = rawAutoSave;
+  const deployable = Math.max(normalizedIncome - normalizedAutoSave, 1);
 
   // ── Fixed expense totals (actual + accrued, no double-counting) ───────
   // getFixedAccrual() already skips payees that have been charged this month.
@@ -4437,6 +4468,7 @@ function buildMonthSummary(selMonth, sp) {
     earlyMonth:    normData ? (normData.earlyMonth || false) : false,
   };
 }
+
 
 
 
@@ -4588,6 +4620,7 @@ function renderThermometer(containerId, selMonth) {
     el.innerHTML = '';
   }
 }
+
 
 
 
