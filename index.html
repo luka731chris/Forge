@@ -1424,7 +1424,7 @@ select:focus { border-color: var(--gold); }
 </div>
 
 <!-- ══ SETTINGS & CUSTOMIZATIONS ══ -->
-<div id="page-planner" class="page">
+<div id="page-planner" class="page" style="height:100%;overflow-y:auto;">
     <div class="page-hdr">
       <div>
         <div class="page-title">Scenario Planner</div>
@@ -2784,18 +2784,20 @@ function renderSettings() {
 
   // Compute per-source stats from live txn data
   function srcStats(sourceKey) {
-    const src = (txns || []).filter(t =>
-      sourceKey === 'quicken'
-        ? (!t._source || t._source === 'quicken' || t._source === 'quicken_csv')
-        : t._source === sourceKey
-    );
+    // sourceKey may be 'quicken', 'amazon', 'apple_card', 'home_depot', 'venmo', 'networth'
+    const ALIASES = {
+      'quicken':    t => !t._source || t._source === 'quicken' || t._source === 'quicken_csv' || t._source === 'quicken_qif' || t._source === 'quicken_qfx',
+      'amazon':     t => t._source === 'amazon' || t._source === 'amazon_orders',
+      'apple_card': t => t._source === 'apple_card',
+      'home_depot': t => t._source === 'home_depot',
+      'venmo':      t => t._source === 'venmo',
+      'networth':   t => false,  // NW snapshots aren't in txns[]
+    };
+    const test = ALIASES[sourceKey] || (t => t._source === sourceKey);
+    const src = (txns || []).filter(test);
     if (!src.length) return null;
     const dates = src.map(t => t.date).filter(Boolean).sort();
-    return {
-      count:   src.length,
-      earliest: dates[0],
-      latest:   dates[dates.length - 1],
-    };
+    return { count: src.length, earliest: dates[0], latest: dates[dates.length - 1] };
   }
 
   let dataBody = `
@@ -2854,6 +2856,25 @@ function renderSettings() {
       <div style="font-size:10px;font-family:var(--fm);color:var(--ink4);text-align:right;">${uploaded}</div>
     </div>`;
   });
+
+  // Show the complete file upload history from _files list
+  const allFiles = (fileReg._files || []).slice().sort((a,b) => b.importedAt.localeCompare(a.importedAt));
+  if (allFiles.length > 0) {
+    dataBody += `<div style="padding:8px 16px 4px;font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);border-top:1px solid var(--line);background:var(--void);">All Uploaded Files (${allFiles.length})</div>`;
+    allFiles.forEach((f, i) => {
+      const rowBg = i%2===0 ? 'transparent' : 'rgba(255,255,255,.012)';
+      const ico = f.type==='quicken_csv'?'📊':f.type==='quicken_networth'?'🏦':f.type==='amazon_orders'?'📦':f.type==='apple_card'?'🍎':f.type==='home_depot'?'🔨':f.type==='venmo'?'💸':'📄';
+      const thruLbl = f.thruDate ? f.thruDate.slice(0,10) : '—';
+      const impLbl  = f.importedAt ? f.importedAt.slice(0,10) : '—';
+      dataBody += `<div style="display:grid;grid-template-columns:22px 1fr 110px 90px 80px;gap:0;padding:6px 16px;border-bottom:${i<allFiles.length-1?'1px solid rgba(255,255,255,.024)':'none'};background:${rowBg};align-items:center;">
+        <span style="font-size:13px;">${ico}</span>
+        <div style="font-size:11px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.filename||'—'}</div>
+        <div style="font-size:11px;font-family:var(--fm);color:var(--ink3);text-align:right;">${thruLbl}</div>
+        <div style="font-size:11px;font-family:var(--fm);color:var(--ink4);text-align:right;">${(f.count||0).toLocaleString()}</div>
+        <div style="font-size:10px;font-family:var(--fm);color:var(--ink4);text-align:right;">${impLbl}</div>
+      </div>`;
+    });
+  }
 
   dataBody += `<div style="display:flex;gap:var(--sp2);padding:var(--sp2) var(--sp4);border-top:1px solid var(--line);flex-wrap:wrap;background:var(--lift);">
     <button class="btn btn-ghost" onclick="exportForge()" style="font-size:11px;">↓ Export JSON</button>
@@ -5944,18 +5965,20 @@ async function processFiles() {
         const accts  = [...new Set(parsed.map(t => t.account))];
         parsed.forEach(t => newTxns.push(t));
         // Detect file type for registry
+      // Detect file type — must run BEFORE _source stamping so all types get correct source
       let _ftype = 'quicken_csv';
       const _fl = firstLine || (text.slice(0,200).toLowerCase());
       if      (_fl.includes('clearing date') && _fl.includes('merchant'))     _ftype = 'apple_card';
-      // Stamp _source on detail-file transactions so isTransfer() can detect them
-      if (_ftype !== 'quicken_csv' && _ftype !== 'quicken_qif' && _ftype !== 'quicken_qfx') {
-        parsed.forEach(t => { if (!t._source) t._source = _ftype; });
-      }
       else if (_fl.includes('order id') && _fl.includes('asin'))              _ftype = 'amazon_orders';
       else if (_fl.includes('order number') && _fl.includes('items ordered')) _ftype = 'home_depot';
       else if (_fl.includes('funding source') && _fl.includes('destination')) _ftype = 'venmo';
       else if (ext === 'qif')                                                  _ftype = 'quicken_qif';
       else if (ext === 'qfx' || ext === 'ofx')                               _ftype = 'quicken_qfx';
+      // Stamp _source on ALL detail-file transactions AFTER type is determined
+      const _detailSources = new Set(['apple_card','amazon_orders','home_depot','venmo']);
+      if (_detailSources.has(_ftype)) {
+        parsed.forEach(t => { if (!t._source) t._source = _ftype; });
+      }
       const _thru = parsed.length ? [...parsed].sort((a,b)=>b.date.localeCompare(a.date))[0]?.date || '' : '';
       recordFileImport(_ftype, f.name, _thru, parsed.length);
       toast('✓ ' + f.name + ' — ' + parsed.length + ' rows (' + spndbl + ' spendable, ' + xfers + ' transfers, ' + accts.length + ' accounts)');
@@ -6495,10 +6518,19 @@ function saveData() {
 
 function recordFileImport(type, filename, thruDate, count) {
   try {
-    const reg = JSON.parse(localStorage.getItem('forge_file_registry') || '{}');
+    const reg  = JSON.parse(localStorage.getItem('forge_file_registry') || '{}');
+    const now  = new Date().toISOString();
+    const entry = { type, filename, thruDate, count, importedAt: now };
+    // Store the latest-thru entry as primary (for backward compat display)
     if (!reg[type] || thruDate > (reg[type].thruDate || '')) {
-      reg[type] = { type, filename, thruDate, count, importedAt: new Date().toISOString() };
+      reg[type] = entry;
     }
+    // Also maintain a list of all imported files per type
+    if (!reg._files) reg._files = [];
+    // Replace existing entry for same filename, or append
+    const existIdx = reg._files.findIndex(f => f.filename === filename);
+    if (existIdx >= 0) reg._files[existIdx] = entry;
+    else reg._files.push(entry);
     localStorage.setItem('forge_file_registry', JSON.stringify(reg));
   } catch(e) {}
 }
@@ -8810,10 +8842,15 @@ const BS_MISSING = [
 ];
 
 function computeBSFromTxns() {
-  // Sum all transactions per account to get Quicken register balance
+  // Sum transactions per account to get register balance.
+  // Exclude detail-file transactions (Apple Card CSV, Amazon, etc.) from BS —
+  // they don't represent real account ledger entries; only Quicken-sourced
+  // transactions produce accurate register balances.
+  const DETAIL_SOURCES = new Set(['apple_card','amazon_orders','home_depot','venmo','amazon']);
   const balances = {};
   const lastDate  = {};
   txns.forEach(t => {
+    if (DETAIL_SOURCES.has(t._source)) return; // skip detail-file rows
     balances[t.account] = (balances[t.account] || 0) + t.amount;
     if (!lastDate[t.account] || t.date > lastDate[t.account]) lastDate[t.account] = t.date;
   });
@@ -8854,9 +8891,13 @@ function buildBSAccountMap(balances) {
   });
 
   // 3. Discover unmapped accounts from transactions → classify dynamically
+  //    Skip accounts that are clearly detail-file artifacts (long date-range names)
   const mappedActuals = new Set(Object.values(map));
   actualAccts.forEach(a => {
     if (mappedActuals.has(a)) return;
+    // Skip Apple Card CSV account names (contain date range patterns)
+    if (/apple card transactions|jan \d{2} \d{4}|transactions jan/i.test(a)) return;
+    // Skip any account with < $1 in computed balance (likely zero-balance artifact)
     const type = detectAcctType(a);
     const isCredit = type === 'credit';
     const isInvest = type === 'investment';

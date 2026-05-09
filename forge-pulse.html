@@ -1225,43 +1225,62 @@ function normAcct(name) {
 }
 
 function buildBSAccountMap(balances) {
-  if (typeof BS_ACCOUNTS === 'undefined') return {};
+  // Returns { bsKey: actualQuickenName } for all matched accounts
   const map = {};
   const bsKeys = Object.keys(BS_ACCOUNTS);
   const actualAccts = Object.keys(balances);
 
+  // 1. Exact match
   bsKeys.forEach(bk => {
     if (balances[bk] !== undefined) { map[bk] = bk; }
   });
+
+  // 2. Fuzzy match for unmatched BS keys
   bsKeys.forEach(bk => {
     if (map[bk]) return;
     const normBk = normAcct(bk);
     for (const a of actualAccts) {
       if (normAcct(a) === normBk) { map[bk] = a; return; }
     }
+    // Partial: BS key contains actual or vice versa
     for (const a of actualAccts) {
       const na = normAcct(a);
       if (na.includes(normBk) || normBk.includes(na)) { map[bk] = a; return; }
     }
   });
+
+  // 3. Discover unmapped accounts from transactions → classify dynamically
+  //    Skip accounts that are clearly detail-file artifacts (long date-range names)
   const mappedActuals = new Set(Object.values(map));
   actualAccts.forEach(a => {
     if (mappedActuals.has(a)) return;
+    // Skip Apple Card CSV account names (contain date range patterns)
+    if (/apple card transactions|jan \d{2} \d{4}|transactions jan/i.test(a)) return;
+    // Skip any account with < $1 in computed balance (likely zero-balance artifact)
     const type = detectAcctType(a);
-    if (!BS_ACCOUNTS) return;
-    if (type === 'credit') {
-      if (!BS_ACCOUNTS[a]) BS_ACCOUNTS[a] = { class:'liability', sub:'current', label:a, icon:'💳', liabType:'Credit Cards', _dynamic:true };
-    } else if (type === 'investment') {
-      if (!BS_ACCOUNTS[a]) BS_ACCOUNTS[a] = { class:'asset', sub:'investment', label:a, icon:'📈', assetType:'Investment Accounts', _dynamic:true };
-    } else if (type === 'savings') {
-      if (!BS_ACCOUNTS[a]) BS_ACCOUNTS[a] = { class:'asset', sub:'current', label:a, icon:'💰', assetType:'Cash & Equivalents', _dynamic:true };
+    const isCredit = type === 'credit';
+    const isInvest = type === 'investment';
+    const isSavings = type === 'savings';
+    // Add to BS_ACCOUNTS dynamically
+    if (!BS_ACCOUNTS[a]) {
+      if (isCredit) {
+        BS_ACCOUNTS[a] = { class:'liability', sub:'current', label:a, icon:'💳', liabType:'Credit Cards', _dynamic:true };
+      } else if (isInvest) {
+        BS_ACCOUNTS[a] = { class:'asset', sub:'investment', label:a, icon:'📈', assetType:'Investment Accounts', _dynamic:true };
+      } else if (isSavings) {
+        BS_ACCOUNTS[a] = { class:'asset', sub:'current', label:a, icon:'💰', assetType:'Cash & Equivalents', _dynamic:true };
+      } else {
+        BS_ACCOUNTS[a] = { class:'asset', sub:'current', label:a, icon:'🏦', assetType:'Cash & Equivalents', _dynamic:true };
+      }
     }
     map[a] = a;
   });
+
   return map;
 }
 
 
+// Rebuild the Balance Sheet comparison dropdown dynamically from stored snapshots + named periods
 function loadFamily() {
   try {
     const raw = localStorage.getItem(SETTINGS_DB);
@@ -2038,10 +2057,19 @@ const KW_MAP = [
 
 function recordFileImport(type, filename, thruDate, count) {
   try {
-    const reg = JSON.parse(localStorage.getItem('forge_file_registry') || '{}');
+    const reg  = JSON.parse(localStorage.getItem('forge_file_registry') || '{}');
+    const now  = new Date().toISOString();
+    const entry = { type, filename, thruDate, count, importedAt: now };
+    // Store the latest-thru entry as primary (for backward compat display)
     if (!reg[type] || thruDate > (reg[type].thruDate || '')) {
-      reg[type] = { type, filename, thruDate, count, importedAt: new Date().toISOString() };
+      reg[type] = entry;
     }
+    // Also maintain a list of all imported files per type
+    if (!reg._files) reg._files = [];
+    // Replace existing entry for same filename, or append
+    const existIdx = reg._files.findIndex(f => f.filename === filename);
+    if (existIdx >= 0) reg._files[existIdx] = entry;
+    else reg._files.push(entry);
     localStorage.setItem('forge_file_registry', JSON.stringify(reg));
   } catch(e) {}
 }
@@ -2496,11 +2524,13 @@ function renderPulseSettings() {
   if (ledger?.txns) {
     const ts = ledger.txns;
     const latest = arr => arr.length ? arr.map(t=>t.date).sort().pop() : null;
-    derivedThru.quicken_csv     = latest(ts.filter(t=>!t._source||t._source==='quicken'));
-    derivedThru.amazon_orders   = latest(ts.filter(t=>t._source==='amazon'&&t.itemDetail));
-    derivedThru.apple_card      = latest(ts.filter(t=>t._source==='apple_card'&&t.itemDetail));
-    derivedThru.home_depot      = latest(ts.filter(t=>t._source==='home_depot'&&t.itemDetail));
+    derivedThru.quicken_csv     = latest(ts.filter(t=>!t._source||t._source==='quicken'||t._source==='quicken_csv'||t._source==='quicken_qif'||t._source==='quicken_qfx'));
+    derivedThru.amazon_orders   = latest(ts.filter(t=>t._source==='amazon'||t._source==='amazon_orders'));
+    derivedThru.apple_card      = latest(ts.filter(t=>t._source==='apple_card'));
+    derivedThru.home_depot      = latest(ts.filter(t=>t._source==='home_depot'));
     derivedThru.venmo           = latest(ts.filter(t=>t._source==='venmo'));
+    derivedThru.quicken_qif     = latest(ts.filter(t=>t._source==='quicken_qif'));
+    derivedThru.quicken_qfx     = latest(ts.filter(t=>t._source==='quicken_qfx'));
     const nwDates = Object.values(JSON.parse(localStorage.getItem('forge_nw_history')||'{}')||{}).map(v=>v?.syncedAt||'').filter(Boolean).sort();
     derivedThru.quicken_networth = nwDates.length ? nwDates[nwDates.length-1].slice(0,10) : null;
   }
@@ -2552,6 +2582,24 @@ function renderPulseSettings() {
         <div style="font-size:10px;margin-top:1px;">${freshLabel(days)}</div>
       </div>
     </div>`;
+
+  // Show complete file upload history from _files list
+  const _allFiles = (fileReg._files || []).slice().sort((a,b) => b.importedAt.localeCompare(a.importedAt));
+  if (_allFiles.length > 0) {
+    html += `<div style="margin-top:8px;background:var(--lift);border-radius:10px;overflow:hidden;border:1px solid var(--line);">
+      <div style="padding:8px 14px 4px;font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">All Uploaded Files (${_allFiles.length})</div>`;
+    _allFiles.forEach((f, i) => {
+      const _ico = f.type==='quicken_csv'?'📊':f.type==='quicken_networth'?'🏦':f.type==='amazon_orders'?'📦':f.type==='apple_card'?'🍎':f.type==='home_depot'?'🔨':f.type==='venmo'?'💸':'📄';
+      const _thru = f.thruDate ? f.thruDate.slice(0,10) : '—';
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:7px 14px;border-top:1px solid rgba(255,255,255,.04);">
+        <span>${_ico}</span>
+        <div style="flex:1;min-width:0;font-size:11px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.filename||'—'}</div>
+        <div style="font-size:11px;font-family:var(--fm);color:var(--ink4);flex-shrink:0;">${_thru}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
   });
 
   // ── §2 Cloud Config ─────────────────────────────────────────────────────────
@@ -3453,9 +3501,11 @@ function renderPulseNW() {
 
   // Compute account balances from transactions (accrual — by purchase date)
   function balanceAsOf(cutoff) {
+    const _BS_DETAIL = new Set(['apple_card','amazon_orders','home_depot','venmo','amazon']);
     const bals = {};
     txns.forEach(t => {
       if (cutoff && t.date > cutoff) return;
+      if (_BS_DETAIL.has(t._source)) return; // skip detail-file rows — not real account ledger entries
       bals[t.account] = (bals[t.account] || 0) + t.amount;
     });
     return bals;
