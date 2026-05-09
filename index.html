@@ -913,7 +913,7 @@ select:focus { border-color: var(--gold); }
 
 <div id="chartTip"></div>
 <div class="demo-panel" id="demoPanel">
-  <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">⚾ Demo Mode</div>
+  <div style="font-size:10px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">⚾ Demo Mode</div>
   <div style="font-size:12px;color:var(--ink3);line-height:1.65;margin-bottom:12px;">Loads 4 years of synthetic Pittsburgh family data. Demo data is stored separately — importing real files never touches it.</div>
   <div style="display:flex;gap:8px;">
     <button class="btn btn-gold" onclick="toggleDemo();loadDemo();" style="flex:1;justify-content:center;font-size:11px;">Load Demo</button>
@@ -1054,21 +1054,21 @@ select:focus { border-color: var(--gold); }
         <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:8px;">Quicken export paths</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:11px;color:var(--ink3);line-height:1.8;">
           <div>
-            <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Transactions</div>
+            <div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Transactions</div>
             <strong style="color:var(--ink2);">Reports → Banking → Transaction</strong><br>
             Set date range → Export to CSV<br>
             Include all accounts for full picture<br>
             <span style="color:var(--ink4);">Format: Date, Account, Payee, Amount...</span>
           </div>
           <div>
-            <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--positive);margin-bottom:4px;">Balance Sheet / Net Worth</div>
+            <div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--pos);margin-bottom:4px;">Balance Sheet / Net Worth</div>
             <strong style="color:var(--ink2);">Reports → Net Worth &amp; Balances → Net Worth</strong><br>
             Set date to today → Export to CSV<br>
             Gives true market values for 401k, 529s<br>
             <span style="color:var(--ink4);">Format: Account, Balance (snapshot)</span>
           </div>
           <div>
-            <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--river);margin-bottom:4px;">Investment Performance</div>
+            <div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--river);margin-bottom:4px;">Investment Performance</div>
             <strong style="color:var(--ink2);">Reports → Investing → Investment Performance</strong><br>
             Set date range → Export to CSV<br>
             Shows cost basis vs market value<br>
@@ -1118,7 +1118,7 @@ select:focus { border-color: var(--gold); }
       <div class="chart-title">Spending by Category</div>
       <div class="chart-sub">Top categories</div>
       <div class="chart-area" style="height:220px;position:relative;">
-        <canvas id="dashDonut" style="display:block;"></canvas>
+        <canvas id="dashDonut" role="img" aria-label="Category spending donut chart for current period" style="display:block;"></canvas>
       </div>
     </div>
   </div>
@@ -1185,7 +1185,7 @@ select:focus { border-color: var(--gold); }
     <div class="chart-card">
       <div class="chart-title">Category Breakdown</div>
       <div class="chart-area" style="height:260px;position:relative;">
-        <canvas id="catDonut" style="display:block;"></canvas>
+        <canvas id="catDonut" role="img" aria-label="Category spending donut chart" style="display:block;"></canvas>
       </div>
     </div>
   </div>
@@ -1258,7 +1258,7 @@ select:focus { border-color: var(--gold); }
       <span style="font-size:11px;color:var(--ink4);">Compare to:</span>
       <select id="bsCompare" onchange="renderBalanceSheet()" style="font-size:12px;padding:5px 10px;"></select>
       <button class="btn btn-ghost" onclick="renderBalanceSheet()" style="font-size:11px;padding:6px 12px;">↻ Refresh</button>
-      <button class="btn btn-ghost" onclick="if(confirm('Clear all stored Net Worth snapshots? This cannot be undone.')){clearNetWorthOverrides();renderBalanceSheet();}" style="font-size:11px;padding:6px 12px;color:var(--negative);">✕ Clear NW History</button>
+      <button class="btn btn-ghost" onclick="if(confirm('Clear all stored Net Worth snapshots? This cannot be undone.')){clearNetWorthOverrides();renderBalanceSheet();}" style="font-size:11px;padding:6px 12px;color:var(--neg);">✕ Clear NW History</button>
     </div>
   </div>
   <div id="balanceSheetContent"></div>
@@ -1320,16 +1320,17 @@ select:focus { border-color: var(--gold); }
       <div style="position:relative;display:inline-flex;align-items:center;gap:6px;">
         <div class="is-chart-type-tooltip" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:300px;background:rgba(12,12,14,.97);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:14px;z-index:200;pointer-events:none;box-shadow:0 12px 40px rgba(0,0,0,.6);">
           <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:10px;">Choose a view</div>
-          ${['stack','trellis','slope','waffle'].map(t => {
+          ${['pressure','stack','trellis','slope','waffle'].map(t => {
             const TIPS = {
-              stack:   ['Stacked Bar','How fixed vs. variable spending compares over time. Best for spotting months where overall spend spiked.'],
+              pressure:['Budget Pressure Bar','Deployable income vs. fixed + variable spend for the selected month. The primary at-a-glance view.'],
+              stack:   ['Stacked Bar Trend','Fixed vs. variable spending across months. Best for spotting months where overall spend spiked.'],
               trellis: ['Small Multiples','One sparkline per category. Best for seeing which individual categories are creeping up or staying flat.'],
-              slope:   ['Slope Chart','This month vs. your 6-month average, per category. Best for active monthly decisions — what changed right now?'],
+              slope:   ['Slope Chart','This month vs. 6-month average per category. Best for active monthly decisions — what changed right now?'],
               waffle:  ['Proportion Chart','Share of wallet by category this month. Best for understanding portfolio composition at a glance.'],
             };
             const [lbl,desc] = TIPS[t];
             return `<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;" onclick="setISTrendType('${t}')">
-              <div style="width:28px;height:28px;border-radius:6px;background:rgba(245,168,0,.12);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;">${{stack:'▦',trellis:'⊞',slope:'╱',waffle:'▩'}[t]}</div>
+              <div style="width:28px;height:28px;border-radius:6px;background:rgba(245,168,0,.12);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;">${{pressure:'▮',stack:'▦',trellis:'⊞',slope:'╱',waffle:'▩'}[t]}</div>
               <div><div style="font-size:12px;font-weight:600;color:rgba(238,234,228,.9);">${lbl}</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;line-height:1.4;">${desc}</div></div>
             </div>`;
           }).join('')}
@@ -1337,7 +1338,8 @@ select:focus { border-color: var(--gold); }
         <label style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);font-family:var(--fm);">View</label>
         <select id="isTrendTypeSel" onchange="setISTrendType(this.value)"
           style="font-size:12px;padding:5px 10px;background:var(--lift);border:1px solid var(--line2);color:var(--ink);border-radius:6px;cursor:pointer;">
-          <option value="stack">Stacked Bar</option>
+          <option value="pressure">Budget Pressure Bar</option>
+          <option value="stack">Stacked Bar Trend</option>
           <option value="trellis">Small Multiples</option>
           <option value="slope">Slope Chart</option>
           <option value="waffle">Proportion</option>
@@ -1353,9 +1355,9 @@ select:focus { border-color: var(--gold); }
         <button class="rtab" onclick="setISTrendRange(24,this)">2Y</button>
       </div>
       <div style="width:1px;height:22px;background:rgba(255,255,255,.1);"></div>
-      <span style="font-size:11px;color:var(--ink4);font-family:var(--font-m);">Month:</span>
-      <select id="isMonth" onchange="renderIncomeStatement()" style="font-size:12px;padding:5px 10px;"></select>
-      <span style="font-size:11px;color:var(--ink4);font-family:var(--font-m);margin-left:8px;">Sort:</span>
+      <span style="font-size:11px;color:var(--ink4);font-family:var(--fm);">Month:</span>
+      <select id="isMonth" onchange="renderIncomeStatement(); try{renderISTrend();}catch(e){}" style="font-size:12px;padding:5px 10px;"></select>
+      <span style="font-size:11px;color:var(--ink4);font-family:var(--fm);margin-left:8px;">Sort:</span>
       <select id="isSortField" onchange="isSort.field=this.value;renderIncomeStatement()" style="font-size:12px;padding:5px 10px;">
         <option value="date">Date</option>
         <option value="amount">Amount</option>
@@ -1402,8 +1404,8 @@ select:focus { border-color: var(--gold); }
         <div style="font-size:11px;color:var(--ink3);line-height:1.7;">In Quicken, find the transaction and correct its date. Re-export CSV and reimport. Common cause: credit card statement date vs purchase date mismatch.</div>
       </div>
 
-      <div style="background:var(--lift);border-left:3px solid var(--positive);border-radius:6px;padding:14px 16px;">
-        <div style="font-size:12px;font-weight:700;color:var(--positive);margin-bottom:4px;">② Missing Category — Transaction shows as Inferred or Uncategorized</div>
+      <div style="background:var(--lift);border-left:3px solid var(--pos);border-radius:6px;padding:14px 16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--pos);margin-bottom:4px;">② Missing Category — Transaction shows as Inferred or Uncategorized</div>
         <div style="font-size:11px;color:var(--ink3);line-height:1.7;">In Quicken, assign the correct category to the transaction. Re-export and reimport. Check the Account Hierarchy page for gray "Inferred" badges — those are the transactions needing categories.</div>
       </div>
 
@@ -1412,8 +1414,8 @@ select:focus { border-color: var(--gold); }
         <div style="font-size:11px;color:var(--ink3);line-height:1.7;">If a credit card payment is showing as an expense AND the individual charges are also showing, the payment isn't being detected as a transfer. In Quicken, categorize the payment as "Credit Card Payment" or use bracket notation [Card Account Name]. Re-export and reimport.</div>
       </div>
 
-      <div style="background:var(--lift);border-left:3px solid var(--negative);border-radius:6px;padding:14px 16px;">
-        <div style="font-size:12px;font-weight:700;color:var(--negative);margin-bottom:4px;">④ Apple Card Detail Missing — Payment showing as expense</div>
+      <div style="background:var(--lift);border-left:3px solid var(--neg);border-radius:6px;padding:14px 16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--neg);margin-bottom:4px;">④ Apple Card Detail Missing — Payment showing as expense</div>
         <div style="font-size:11px;color:var(--ink3);line-height:1.7;">Forge only treats Apple Card payments as transfers when Apple Card detail CSV is imported for that month. Go to Wallet app → Apple Card → Download Statements → Export CSV. Name the file <code style="background:var(--float);padding:1px 4px;border-radius:3px;">apple_card_YYYY_MM.csv</code> and reimport alongside your Quicken export.</div>
       </div>
 
@@ -2294,25 +2296,25 @@ function renderReconcile() {
   const last = 'padding:14px 16px;';
 
   html += '<div style="'+tileStyle+'">';
-  html += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Operating Income</div>';
-  html += '<div style="font-size:20px;font-weight:700;color:var(--positive);">'+fmt(plIncome)+'</div>';
+  html += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Operating Income</div>';
+  html += '<div style="font-size:20px;font-weight:700;color:var(--pos);">'+fmt(plIncome)+'</div>';
   html += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">payroll + income</div></div>';
 
   html += '<div style="'+tileStyle+'">';
-  html += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Operating Expenses</div>';
-  html += '<div style="font-size:20px;font-weight:700;color:var(--negative);">'+fmt(Math.abs(plExp))+'</div>';
+  html += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Operating Expenses</div>';
+  html += '<div style="font-size:20px;font-weight:700;color:var(--neg);">'+fmt(Math.abs(plExp))+'</div>';
   html += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">excl. savings transfers</div></div>';
 
   html += '<div style="'+tileStyle+'">';
-  html += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">CC Credits / Returns</div>';
+  html += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">CC Credits / Returns</div>';
   html += '<div style="font-size:20px;font-weight:700;color:var(--river);">'+fmt(plCCCred)+'</div>';
   html += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">expense offsets</div></div>';
 
-  const netCol = plNet>=0?'var(--positive)':'var(--negative)';
+  const netCol = plNet>=0?'var(--pos)':'var(--neg)';
   html += '<div style="'+last+'">';
-  html += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Net Operating</div>';
+  html += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Net Operating</div>';
   html += '<div style="font-size:20px;font-weight:700;color:'+netCol+';">'+(plNet>=0?'+':'')+fmt(plNet)+'</div>';
-  html += '<div style="font-size:10px;color:'+(isDiff?'var(--negative)':'var(--positive)')+';margin-top:2px;">'+(isDiff?'⚠ check discrepancy':'✓ reconciled')+'</div></div>';
+  html += '<div style="font-size:10px;color:'+(isDiff?'var(--neg)':'var(--pos)')+';margin-top:2px;">'+(isDiff?'⚠ check discrepancy':'✓ reconciled')+'</div></div>';
   html += '</div>';
 
   // Transfers excluded note
@@ -2320,7 +2322,7 @@ function renderReconcile() {
   html += '⤷ <strong>'+fmt(Math.abs(plXfer))+'</strong> in transfers excluded from P&L ';
   html += '(savings, 401k, CC payments, account moves) · ';
   html += 'Total register activity: <strong>'+fmt(allMonthAmt)+'</strong>';
-  if (isDiff) html += ' · <span style="color:var(--negative);">⚠ Discrepancy: '+fmt(Math.abs(reconDiff-plNet))+'</span>';
+  if (isDiff) html += ' · <span style="color:var(--neg);">⚠ Discrepancy: '+fmt(Math.abs(reconDiff-plNet))+'</span>';
   html += '</div></div>';
 
   // ── Per-Account Register ───────────────────────────────────────────────────
@@ -2348,8 +2350,8 @@ function renderReconcile() {
     html += '<div style="font-size:10px;color:var(--ink4);">'+acctType.replace(/_/g,' ')+' · '+acctTxns.length+' transactions</div>';
     html += '</div>';
     html += '<div style="display:grid;grid-template-columns:repeat(4,84px);gap:8px;text-align:right;">';
-    [['Opening', prevAmt, 'var(--ink4)'], ['Credits', totalCreds, 'var(--positive)'], ['Debits', totalDebits, 'var(--negative)'], ['Closing', closingBal, closingBal>=0?'var(--positive)':'var(--negative)']].forEach(([l,v,c]) => {
-      html += '<div><div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">'+l+'</div>';
+    [['Opening', prevAmt, 'var(--ink4)'], ['Credits', totalCreds, 'var(--pos)'], ['Debits', totalDebits, 'var(--neg)'], ['Closing', closingBal, closingBal>=0?'var(--pos)':'var(--neg)']].forEach(([l,v,c]) => {
+      html += '<div><div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">'+l+'</div>';
       html += '<div style="font-size:13px;font-weight:600;color:'+c+';">'+(l!=='Opening'&&l!=='Closing'?'':v>=0?'+':'')+fmt(v)+'</div></div>';
     });
     html += '</div></div>';
@@ -2366,10 +2368,10 @@ function renderReconcile() {
     if (catRows.length) {
       html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">';
       catRows.forEach(([cat,amt]) => {
-        const col = amt>0?'var(--positive)':'var(--negative)';
+        const col = amt>0?'var(--pos)':'var(--neg)';
         html += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:5px;padding:4px 8px;font-size:10px;">';
         html += '<span style="color:var(--ink4);">'+cat+'</span> ';
-        html += '<span style="font-family:var(--font-m);color:'+col+';font-weight:600;">'+(amt>0?'+':'')+fmt(amt)+'</span></div>';
+        html += '<span style="font-family:var(--fm);color:'+col+';font-weight:600;">'+(amt>0?'+':'')+fmt(amt)+'</span></div>';
       });
       html += '</div>';
     }
@@ -2398,7 +2400,7 @@ function renderReconcile() {
     // Register header
     html += '<div style="display:grid;grid-template-columns:90px 1fr 140px 90px 90px;padding:6px 12px;background:var(--lift);gap:8px;">';
     ['Date','Payee / Description','Category','P&L Role','Amount'].forEach(h => {
-      html += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">'+h+'</div>';
+      html += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">'+h+'</div>';
     });
     html += '</div>';
 
@@ -2408,7 +2410,7 @@ function renderReconcile() {
       const bk       = classifyTxn(t);
       const bMeta    = BUCKET_META[bk]||{label:bk,icon:'·'};
       const role     = isTxr ? 'Transfer (excluded)' : isCCCr ? 'CC Credit (offset)' : t.amount>0 ? 'Income' : 'Expense';
-      const roleCol  = isTxr?'var(--ink4)':isCCCr?'var(--river)':t.amount>0?'var(--positive)':'var(--ink3)';
+      const roleCol  = isTxr?'var(--ink4)':isCCCr?'var(--river)':t.amount>0?'var(--pos)':'var(--ink3)';
       const bg       = i%2===0?'':'background:rgba(255,255,255,.015);';
 
       html += '<div style="display:grid;grid-template-columns:90px 1fr 140px 90px 90px;padding:6px 12px;gap:8px;border-top:1px solid rgba(255,255,255,.04);'+bg+'">';
@@ -2416,7 +2418,7 @@ function renderReconcile() {
       html += '<div style="font-size:11px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+((t.payee||'—'))+'</div>';
       html += '<div style="font-size:10px;color:var(--ink4);">'+bMeta.icon+' '+bMeta.label+'</div>';
       html += '<div style="font-size:10px;color:'+roleCol+';">'+role+'</div>';
-      html += '<div style="font-size:11px;font-family:var(--font-m);text-align:right;color:'+(t.amount>0?'var(--positive)':'var(--negative)')+';">'+(t.amount>0?'+':'')+fmt(t.amount)+'</div>';
+      html += '<div style="font-size:11px;font-family:var(--fm);text-align:right;color:'+(t.amount>0?'var(--pos)':'var(--neg)')+';">'+(t.amount>0?'+':'')+fmt(t.amount)+'</div>';
       html += '</div>';
     });
     html += '</div></div>';
@@ -3590,7 +3592,7 @@ let range    = '1y';
 let catRange = '1y';
 let cfRange  = '1y';
 let isTrendN = 6;
-let isTrendType = 'stack'; // 'stack' | 'trellis' | 'slope' | 'waffle'
+let isTrendType = 'pressure'; // 'pressure' | 'stack' | 'trellis' | 'slope' | 'waffle'
 let isSort      = { field: 'date', dir: 'desc' };  // Income Statement sort state
 let txnSort     = { field: 'date', dir: 'desc' };  // Transactions sort state
 let txnDrillCat = null;  // { bucket, label } — set by IS drill-through, sticky until cleared
@@ -3857,7 +3859,7 @@ function svgBar(elId, labels, datasets) {
   if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
   const W = Math.max(el.offsetWidth || 0, 300);
   const H = Math.max(el.offsetHeight || 0, 180);
-  if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;font-family:var(--font-m);">No data</div>'; return; }
+  if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;font-family:var(--fm);">No data</div>'; return; }
 
   const PAD = { t:12, r:16, b:52, l:58 };
   const cW = W - PAD.l - PAD.r;
@@ -4583,7 +4585,7 @@ function renderFinancials() {
     if (b===0) return '';
     const up = a > b;
     const good = goodUp ? up : !up;
-    return `<span style="color:${good?'var(--positive)':'var(--negative)'};margin-left:4px;">${up?'↑':'↓'}${Math.abs((a-b)/Math.abs(b)*100).toFixed(0)}%</span>`;
+    return `<span style="color:${good?'var(--pos)':'var(--neg)'};margin-left:4px;">${up?'↑':'↓'}${Math.abs((a-b)/Math.abs(b)*100).toFixed(0)}%</span>`;
   };
 
   // Category buckets for IS
@@ -4614,14 +4616,14 @@ function renderFinancials() {
   const row = (label, cur, pri, goodUp=true) => `
     <tr style="border-bottom:1px solid rgba(255,255,255,.04);">
       <td style="padding:8px 12px;font-size:12px;color:var(--ink3);">${label}</td>
-      <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-size:12px;">${fmt(cur)}${arrow(cur,pri,goodUp)}</td>
-      <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-size:12px;color:var(--ink4);">${fmt(pri)}</td>
-      <td style="padding:8px 12px;text-align:right;font-family:var(--font-m);font-size:12px;color:${cur>=pri?'var(--positive)':'var(--negative)'};">${chg(cur,pri)}</td>
+      <td style="padding:8px 12px;text-align:right;font-family:var(--fm);font-size:12px;">${fmt(cur)}${arrow(cur,pri,goodUp)}</td>
+      <td style="padding:8px 12px;text-align:right;font-family:var(--fm);font-size:12px;color:var(--ink4);">${fmt(pri)}</td>
+      <td style="padding:8px 12px;text-align:right;font-family:var(--fm);font-size:12px;color:${cur>=pri?'var(--pos)':'var(--neg)'};">${chg(cur,pri)}</td>
     </tr>`;
 
   const kpiCard = (label, value, sub, color='var(--gold)') => `
     <div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;">
-      <div style="font-family:var(--font-m);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">${label}</div>
+      <div style="font-family:var(--fm);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">${label}</div>
       <div style="font-size:24px;font-weight:300;color:${color};font-family:var(--font-d);letter-spacing:-.02em;">${value}</div>
       <div style="font-size:11px;color:var(--ink4);margin-top:4px;">${sub}</div>
     </div>`;
@@ -4631,17 +4633,17 @@ function renderFinancials() {
 
       <!-- Header banner -->
       <div style="background:linear-gradient(135deg,#0F0E09,var(--void));border:1px solid var(--line);border-radius:var(--r-lg);padding:24px 28px;margin-bottom:24px;">
-        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);opacity:.7;margin-bottom:6px;">Luka Family Office</div>
+        <div style="font-family:var(--fm);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);opacity:.7;margin-bottom:6px;">Luka Family Office</div>
         <div style="font-family:var(--font-d);font-size:28px;font-weight:300;color:var(--ink);margin-bottom:4px;font-family:var(--fd);">Financial Statements</div>
         <div style="font-size:12px;color:var(--ink4);">${periodLabel} &nbsp;·&nbsp; Compared to ${priorLabel} &nbsp;·&nbsp; ${periodTxns.length.toLocaleString()} transactions</div>
       </div>
 
       <!-- Executive KPIs -->
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;">
-        ${kpiCard('Total Revenue', fmt(totInc), `${arrow(totInc,pInc,true)} vs ${priorLabel}`, 'var(--positive)')}
-        ${kpiCard('Total Expenses', fmt(totExp), `${arrow(totExp,pExp,false)} vs ${priorLabel}`, 'var(--negative)')}
-        ${kpiCard('Net Savings', fmt(netSav), `${savRate.toFixed(1)}% savings rate`, netSav>=0?'var(--positive)':'var(--negative)')}
-        ${kpiCard('Monthly Run Rate', fmt(mNet), `${fmt(mInc)} in · ${fmt(mExp)} out`, mNet>=0?'var(--positive)':'var(--negative)')}
+        ${kpiCard('Total Revenue', fmt(totInc), `${arrow(totInc,pInc,true)} vs ${priorLabel}`, 'var(--pos)')}
+        ${kpiCard('Total Expenses', fmt(totExp), `${arrow(totExp,pExp,false)} vs ${priorLabel}`, 'var(--neg)')}
+        ${kpiCard('Net Savings', fmt(netSav), `${savRate.toFixed(1)}% savings rate`, netSav>=0?'var(--pos)':'var(--neg)')}
+        ${kpiCard('Monthly Run Rate', fmt(mNet), `${fmt(mInc)} in · ${fmt(mExp)} out`, mNet>=0?'var(--pos)':'var(--neg)')}
       </div>
 
       <!-- ── Profit / Loss Visual Bar ──────────────────────────────────────── -->
@@ -4698,25 +4700,25 @@ function renderFinancials() {
         <table style="width:100%;border-collapse:collapse;">
           <thead>
             <tr style="border-bottom:1px solid var(--line2);">
-              <th style="padding:8px 12px;text-align:left;font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">Line Item</th>
-              <th style="padding:8px 12px;text-align:right;font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">${periodLabel}</th>
-              <th style="padding:8px 12px;text-align:right;font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">${priorLabel}</th>
-              <th style="padding:8px 12px;text-align:right;font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">Δ</th>
+              <th style="padding:8px 12px;text-align:left;font-size:10px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">Line Item</th>
+              <th style="padding:8px 12px;text-align:right;font-size:10px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">${periodLabel}</th>
+              <th style="padding:8px 12px;text-align:right;font-size:10px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">${priorLabel}</th>
+              <th style="padding:8px 12px;text-align:right;font-size:10px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">Δ</th>
             </tr>
           </thead>
           <tbody>
             ${row('Total Income', totInc, pInc, true)}
-            <tr><td colspan="4" style="padding:4px 12px;font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);background:rgba(0,0,0,.2);">Expenses by Category</td></tr>
+            <tr><td colspan="4" style="padding:4px 12px;font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);background:rgba(0,0,0,.2);">Expenses by Category</td></tr>
             ${topCats.map(([c,v])=>{
               const pv = Math.abs(priorTxns.filter(expense).filter(t=>(t.category||'Uncategorized')===c).reduce((s,t)=>s+t.amount,0));
               return row(c, v, pv, false);
             }).join('')}
             ${row('Total Expenses', totExp, pExp, false)}
             <tr style="background:${netSav>=0?'rgba(45,212,191,.06)':'rgba(248,113,113,.06)'};border-top:2px solid ${netSav>=0?'rgba(45,212,191,.3)':'rgba(248,113,113,.3)'};">
-              <td style="padding:10px 12px;font-size:13px;font-weight:700;color:${netSav>=0?'var(--positive)':'var(--negative)'};">Net Savings</td>
-              <td style="padding:10px 12px;text-align:right;font-family:var(--font-m);font-size:13px;font-weight:700;color:${netSav>=0?'var(--positive)':'var(--negative)'};">${fmt(netSav)}</td>
-              <td style="padding:10px 12px;text-align:right;font-family:var(--font-m);font-size:12px;color:var(--ink4);">${fmt(pNet)}</td>
-              <td style="padding:10px 12px;text-align:right;font-family:var(--font-m);font-size:12px;color:${netSav>=pNet?'var(--positive)':'var(--negative)'};">${chg(netSav,pNet)}</td>
+              <td style="padding:10px 12px;font-size:13px;font-weight:700;color:${netSav>=0?'var(--pos)':'var(--neg)'};">Net Savings</td>
+              <td style="padding:10px 12px;text-align:right;font-family:var(--fm);font-size:13px;font-weight:700;color:${netSav>=0?'var(--pos)':'var(--neg)'};">${fmt(netSav)}</td>
+              <td style="padding:10px 12px;text-align:right;font-family:var(--fm);font-size:12px;color:var(--ink4);">${fmt(pNet)}</td>
+              <td style="padding:10px 12px;text-align:right;font-family:var(--fm);font-size:12px;color:${netSav>=pNet?'var(--pos)':'var(--neg)'};">${chg(netSav,pNet)}</td>
             </tr>
           </tbody>
         </table>
@@ -4727,18 +4729,18 @@ function renderFinancials() {
         <div style="font-family:var(--font-d);font-size:18px;font-weight:600;color:var(--ink);margin-bottom:16px;">Key Financial Ratios</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
           <div style="border:1px solid var(--line);border-radius:8px;padding:16px;">
-            <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Savings Rate</div>
-            <div style="font-size:24px;font-weight:700;color:${savRate>=20?'var(--positive)':'var(--negative)'};font-family:var(--font-m);">${savRate.toFixed(1)}%</div>
+            <div style="font-size:10px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Savings Rate</div>
+            <div style="font-size:24px;font-weight:700;color:${savRate>=20?'var(--pos)':'var(--neg)'};font-family:var(--fm);">${savRate.toFixed(1)}%</div>
             <div style="font-size:11px;color:var(--ink4);margin-top:4px;">Target: 20%+</div>
           </div>
           <div style="border:1px solid var(--line);border-radius:8px;padding:16px;">
-            <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Expense Ratio (DTI)</div>
-            <div style="font-size:24px;font-weight:700;color:${dti<=80?'var(--positive)':'var(--negative)'};font-family:var(--font-m);">${dti.toFixed(1)}%</div>
+            <div style="font-size:10px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Expense Ratio (DTI)</div>
+            <div style="font-size:24px;font-weight:700;color:${dti<=80?'var(--pos)':'var(--neg)'};font-family:var(--fm);">${dti.toFixed(1)}%</div>
             <div style="font-size:11px;color:var(--ink4);margin-top:4px;">Expenses as % of income</div>
           </div>
           <div style="border:1px solid var(--line);border-radius:8px;padding:16px;">
-            <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Monthly Burn Rate</div>
-            <div style="font-size:24px;font-weight:700;color:var(--ink);font-family:var(--font-m);">${fmt(mExp)}</div>
+            <div style="font-size:10px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Monthly Burn Rate</div>
+            <div style="font-size:24px;font-weight:700;color:var(--ink);font-family:var(--fm);">${fmt(mExp)}</div>
             <div style="font-size:11px;color:var(--ink4);margin-top:4px;">Avg monthly expenses</div>
           </div>
         </div>
@@ -4749,9 +4751,9 @@ function renderFinancials() {
         <div style="font-family:var(--font-d);font-size:18px;font-weight:600;color:var(--ink);margin-bottom:4px;">12-Month Forward Projection</div>
         <div style="font-size:12px;color:var(--ink4);margin-bottom:16px;">Based on ${mCount}-month run rate from ${periodLabel}</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
-          ${kpiCard('Projected Income', fmt(proj12Inc), 'at current run rate', 'var(--positive)')}
-          ${kpiCard('Projected Expenses', fmt(proj12Exp), 'at current run rate', 'var(--negative)')}
-          ${kpiCard('Projected Savings', fmt(proj12Net), `${(proj12Net/proj12Inc*100).toFixed(1)}% savings rate`, proj12Net>=0?'var(--positive)':'var(--negative)')}
+          ${kpiCard('Projected Income', fmt(proj12Inc), 'at current run rate', 'var(--pos)')}
+          ${kpiCard('Projected Expenses', fmt(proj12Exp), 'at current run rate', 'var(--neg)')}
+          ${kpiCard('Projected Savings', fmt(proj12Net), `${(proj12Net/proj12Inc*100).toFixed(1)}% savings rate`, proj12Net>=0?'var(--pos)':'var(--neg)')}
         </div>
       </div>
 
@@ -4783,6 +4785,11 @@ function setISTrendType(type) {
   isTrendType = type;
   const sel = document.getElementById('isTrendTypeSel');
   if (sel) sel.value = type;
+  // Show/hide range tabs — not relevant for pressure/waffle (single-month views)
+  const rangeTabsEl = document.getElementById('isTrendRangeTabs');
+  if (rangeTabsEl) {
+    rangeTabsEl.style.display = (type === 'pressure' || type === 'waffle') ? 'none' : '';
+  }
   renderISTrend();
 }
 
@@ -4879,7 +4886,7 @@ function renderDashboard() {
   } catch(e) {
     console.error('[Forge] renderDashboard error:', e);
     const _el = document.getElementById('dashKPIs');
-    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderDashboard: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--neg);font-family:var(--fm);font-size:12px;">⚠ Render error in renderDashboard: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
   }
 }
 
@@ -4958,7 +4965,7 @@ function renderCashFlow() {
   } catch(e) {
     console.error('[Forge] renderCashFlow error:', e);
     const _el = document.getElementById('cfBarWrap');
-    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderCashFlow: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--neg);font-family:var(--fm);font-size:12px;">⚠ Render error in renderCashFlow: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
   }
 }
 
@@ -4999,7 +5006,7 @@ function renderCategories() {
   } catch(e) {
     console.error('[Forge] renderCategories error:', e);
     const _el = document.getElementById('catBarWrap');
-    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderCategories: ' + e.message + '</div>';
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--neg);font-family:var(--fm);font-size:12px;">⚠ Render error in renderCategories: ' + e.message + '</div>';
   }
 }
 
@@ -5014,7 +5021,7 @@ function renderTxns() {
   const detailSources = [
     { key: 'amazon',     label: 'Amazon',     icon: '📦', color: 'var(--gold)',     border: 'rgba(245,168,0,.35)'     },
     { key: 'apple_card', label: 'Apple Card', icon: '🍎', color: '#c084fc',         border: 'rgba(192,132,252,.35)'   },
-    { key: 'home_depot', label: 'Home Depot', icon: '🔨', color: 'var(--negative)', border: 'rgba(248,113,113,.35)'   },
+    { key: 'home_depot', label: 'Home Depot', icon: '🔨', color: 'var(--neg)', border: 'rgba(248,113,113,.35)'   },
     { key: 'venmo',      label: 'Venmo',      icon: '💸', color: 'var(--river)',     border: 'rgba(96,165,250,.35)'    },
   ];
 
@@ -5040,7 +5047,7 @@ function renderTxns() {
       const active = window._txnDetailSource;
       chipsEl.style.display = 'flex';
       chipsEl.innerHTML =
-        '<span style="font-size:11px;color:var(--ink4);font-family:var(--font-m);letter-spacing:.06em;">UNMASKED VIEW:</span>' +
+        '<span style="font-size:11px;color:var(--ink4);font-family:var(--fm);letter-spacing:.06em;">UNMASKED VIEW:</span>' +
         availableSources.map(s => {
           const on = active === s.key;
           return `<button onclick="window._txnDetailSource='${on?'':s.key}';renderTxns()" style="
@@ -5195,7 +5202,7 @@ function renderTxns() {
   } catch(e) {
     console.error('[Forge] renderTxns error:', e);
     const _el = document.getElementById('txnTable');
-    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error: ' + e.message + '</div>';
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--neg);font-family:var(--fm);font-size:12px;">⚠ Render error: ' + e.message + '</div>';
   }
 }
 
@@ -5207,7 +5214,7 @@ function renderDetailLens(sourceKey, containerEl) {
   const sourceInfo = {
     amazon:     { label:'Amazon',     icon:'📦', color:'var(--gold)',     hint:'Amazon order history items · each row is one product' },
     apple_card: { label:'Apple Card', icon:'🍎', color:'#c084fc',         hint:'Apple Card transactions · individual charges' },
-    home_depot: { label:'Home Depot', icon:'🔨', color:'var(--negative)', hint:'Home Depot purchase history · individual items' },
+    home_depot: { label:'Home Depot', icon:'🔨', color:'var(--neg)', hint:'Home Depot purchase history · individual items' },
     venmo:      { label:'Venmo',      icon:'💸', color:'var(--river)',     hint:'Venmo transactions · payments and receipts' },
   };
   const info = sourceInfo[sourceKey] || { label: sourceKey, icon:'🧾', color:'var(--ink3)', hint:'' };
@@ -5260,7 +5267,7 @@ function renderDetailLens(sourceKey, containerEl) {
       <div style="font-size:11px;color:var(--ink4);margin-top:2px;">${dateRange} · ${itemCount} items · ${bucketEntries.length} categories</div>
     </div>
     <div style="text-align:right;">
-      <div style="font-size:28px;font-weight:700;color:var(--negative);font-family:var(--font-d);">${fmt(grandTotal)}</div>
+      <div style="font-size:28px;font-weight:700;color:var(--neg);font-family:var(--font-d);">${fmt(grandTotal)}</div>
       <div style="font-size:10px;color:var(--ink4);">total spend</div>
     </div>
   </div>`;
@@ -5280,11 +5287,11 @@ function renderDetailLens(sourceKey, containerEl) {
         <div style="flex:1;">
           <div style="font-size:13px;font-weight:600;color:var(--ink2);">${bMeta.label}</div>
           <div style="margin-top:4px;height:4px;background:var(--float);border-radius:2px;overflow:hidden;">
-            <div style="height:100%;width:${pct.toFixed(1)}%;background:var(--negative);opacity:.6;border-radius:2px;"></div>
+            <div style="height:100%;width:${pct.toFixed(1)}%;background:var(--neg);opacity:.6;border-radius:2px;"></div>
           </div>
         </div>
         <div style="text-align:right;margin-right:8px;">
-          <div style="font-size:14px;font-weight:700;color:var(--negative);font-family:var(--font-m);">${fmt(total)}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--neg);font-family:var(--fm);">${fmt(total)}</div>
           <div style="font-size:10px;color:var(--ink4);">${items.length} items · ${pct.toFixed(0)}%</div>
         </div>
         <span class="dl-chev" style="color:var(--ink4);font-size:12px;transition:transform .2s;${expanded?'':'transform:rotate(-90deg)'}">▼</span>
@@ -5298,12 +5305,12 @@ function renderDetailLens(sourceKey, containerEl) {
       const itemName = t.itemDetail || t.payee || '—';
       const bg = i % 2 === 0 ? '' : 'background:rgba(255,255,255,.015);';
       html += `<div style="display:grid;grid-template-columns:90px 1fr 80px;gap:8px;padding:9px 16px;border-top:1px solid rgba(255,255,255,.04);align-items:center;${bg}">
-        <div style="font-size:10px;font-family:var(--font-m);color:var(--ink4);">${t.date}</div>
+        <div style="font-size:10px;font-family:var(--fm);color:var(--ink4);">${t.date}</div>
         <div style="font-size:12px;color:var(--ink2);line-height:1.4;">
           ${itemName.length > 80 ? itemName.slice(0,78) + '…' : itemName}
           ${t.payee && t.itemDetail && t.payee !== t.itemDetail ? `<div style="font-size:10px;color:var(--ink4);">${t.payee}</div>` : ''}
         </div>
-        <div style="font-size:12px;font-weight:600;font-family:var(--font-m);color:var(--negative);text-align:right;">${fmt(Math.abs(t.amount))}</div>
+        <div style="font-size:12px;font-weight:600;font-family:var(--fm);color:var(--neg);text-align:right;">${fmt(Math.abs(t.amount))}</div>
       </div>`;
     });
 
@@ -5339,25 +5346,25 @@ function renderUploadStatus() {
   const daysSince  = latestDate ? Math.floor((Date.now() - latestDate) / 86400000) : 999;
   const isStale    = daysSince > 35;
   const staleBadge = isStale
-    ? `<span style="background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.35);color:var(--negative);border-radius:4px;padding:2px 8px;font-size:11px;font-family:var(--font-m);">⚠ ${daysSince}d since last import — refresh needed</span>`
-    : `<span style="background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.2);color:var(--positive);border-radius:4px;padding:2px 8px;font-size:11px;font-family:var(--font-m);">✓ Current</span>`;
+    ? `<span style="background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.35);color:var(--neg);border-radius:4px;padding:2px 8px;font-size:11px;font-family:var(--fm);">⚠ ${daysSince}d since last import — refresh needed</span>`
+    : `<span style="background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.2);color:var(--pos);border-radius:4px;padding:2px 8px;font-size:11px;font-family:var(--fm);">✓ Current</span>`;
   const fmtDate = d => { if (!d) return '—'; const [y,m,dy]=d.split('-'); return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]} ${parseInt(dy)}, ${y}`; };
   el.className = 'status-strip status-real';
   el.innerHTML = `
   <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
     <div>
-      <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Data Range</div>
+      <div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Data Range</div>
       <div style="font-size:14px;font-weight:600;color:var(--ink);letter-spacing:-.01em;">${fmtDate(earliest)} <span style="color:var(--ink4);font-weight:400;">→</span> ${fmtDate(latest)}</div>
     </div>
     <div style="width:1px;height:32px;background:var(--line);flex-shrink:0;"></div>
     <div>
-      <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Coverage</div>
+      <div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">Coverage</div>
       <div style="font-size:13px;color:var(--ink2);">${sp.length.toLocaleString()} transactions · ${accounts.length} accounts${xf ? ` · ${xf} transfers excluded` : ''}</div>
     </div>
     <div>
-      <div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Accounts</div>
+      <div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Accounts</div>
       <div style="display:flex;gap:4px;flex-wrap:wrap;max-width:360px;">
-        ${accounts.slice(0,6).map(a => `<span style="font-size:9px;padding:1px 7px;border-radius:10px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);color:var(--river);font-family:var(--font-m);white-space:nowrap;">${a.length>22?a.slice(0,20)+'…':a}</span>`).join('')}${accounts.length > 6 ? `<span style="font-size:9px;color:var(--ink4);padding:1px 6px;">+${accounts.length-6} more</span>` : ''}
+        ${accounts.slice(0,6).map(a => `<span style="font-size:9px;padding:1px 7px;border-radius:10px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);color:var(--river);font-family:var(--fm);white-space:nowrap;">${a.length>22?a.slice(0,20)+'…':a}</span>`).join('')}${accounts.length > 6 ? `<span style="font-size:9px;color:var(--ink4);padding:1px 6px;">+${accounts.length-6} more</span>` : ''}
       </div>
     </div>
     ${staleBadge}
@@ -5411,11 +5418,11 @@ async function diagnoseFiles() {
         // Show QIF structure
         const acctLine = lines.find(l=>l.startsWith('!Account') || l.startsWith('!Type'));
         const recordCount = (text.match(/^\^/gm)||[]).length;
-        html += '<div style="font-size:11px;color:var(--positive);margin-bottom:6px;">✓ QIF format detected · ' + recordCount + ' records</div>';
+        html += '<div style="font-size:11px;color:var(--pos);margin-bottom:6px;">✓ QIF format detected · ' + recordCount + ' records</div>';
         html += '<pre style="font-size:10px;color:var(--ink3);background:var(--void);padding:10px;border-radius:4px;overflow-x:auto;">' + lines.slice(0,12).join('\n') + '</pre>';
       } else if (ext === 'qfx' || ext === 'ofx') {
         const txnCount = (text.match(/<STMTTRN>/gi)||[]).length;
-        html += '<div style="font-size:11px;color:var(--positive);margin-bottom:6px;">✓ OFX/QFX format detected · ' + txnCount + ' transactions</div>';
+        html += '<div style="font-size:11px;color:var(--pos);margin-bottom:6px;">✓ OFX/QFX format detected · ' + txnCount + ' transactions</div>';
         html += '<pre style="font-size:10px;color:var(--ink3);background:var(--void);padding:10px;border-radius:4px;overflow-x:auto;">' + lines.slice(0,8).join('\n') + '</pre>';
       } else {
         // CSV — show header detection result
@@ -5428,7 +5435,7 @@ async function diagnoseFiles() {
         }
 
         if (headerIdx < 0) {
-          html += '<div style="font-size:11px;color:var(--negative);margin-bottom:6px;">⚠ Could not detect CSV header row — no line containing both "date" and "amount"/"payee"/"description" found in first 30 lines</div>';
+          html += '<div style="font-size:11px;color:var(--neg);margin-bottom:6px;">⚠ Could not detect CSV header row — no line containing both "date" and "amount"/"payee"/"description" found in first 30 lines</div>';
         } else {
           const headerLine = nonBlank[headerIdx];
           const headers = csvRow(headerLine).map(h=>h.replace(/['"]/g,'').trim());
@@ -5442,7 +5449,7 @@ async function diagnoseFiles() {
           const debC   = findCol(headers.map(h=>h.toLowerCase()), 'debit', 'withdrawal');
           const creC   = findCol(headers.map(h=>h.toLowerCase()), 'credit', 'deposit');
 
-          html += '<div style="font-size:11px;color:var(--positive);margin-bottom:4px;">✓ CSV header found at line ' + (headerIdx+1) + '</div>';
+          html += '<div style="font-size:11px;color:var(--pos);margin-bottom:4px;">✓ CSV header found at line ' + (headerIdx+1) + '</div>';
 
           // Column mapping table
           html += '<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:8px;">';
@@ -5466,20 +5473,20 @@ async function diagnoseFiles() {
             const headerName = found ? headers[col] : '—';
             const sample = found && sampleRow[col] ? sampleRow[col].replace(/"/g,'') : (found?'(blank)':fallback);
             html += '<tr style="border-bottom:1px solid rgba(255,255,255,.04);">' +
-              '<td style="padding:4px 8px;font-weight:600;color:' + (found||field==='Category'||field==='Account'?'var(--ink2)':'var(--negative)') + ';">' + field + '</td>' +
-              '<td style="padding:4px 8px;font-family:var(--font-m);">' + (found ? col : '—') + '</td>' +
+              '<td style="padding:4px 8px;font-weight:600;color:' + (found||field==='Category'||field==='Account'?'var(--ink2)':'var(--neg)') + ';">' + field + '</td>' +
+              '<td style="padding:4px 8px;font-family:var(--fm);">' + (found ? col : '—') + '</td>' +
               '<td style="padding:4px 8px;color:var(--ink3);">' + headerName + '</td>' +
-              '<td style="padding:4px 8px;color:' + (found?'var(--positive)':'var(--ink4)') + ';">' + sample + '</td>' +
+              '<td style="padding:4px 8px;color:' + (found?'var(--pos)':'var(--ink4)') + ';">' + sample + '</td>' +
               '</tr>';
           });
 
           // Show debit/credit columns if amount not found
           if (amtC < 0 && (debC >= 0 || creC >= 0)) {
             html += '<tr style="border-bottom:1px solid rgba(255,255,255,.04);">' +
-              '<td style="padding:4px 8px;color:var(--positive);">Debit/Credit</td>' +
-              '<td style="padding:4px 8px;font-family:var(--font-m);">' + debC + '/' + creC + '</td>' +
+              '<td style="padding:4px 8px;color:var(--pos);">Debit/Credit</td>' +
+              '<td style="padding:4px 8px;font-family:var(--fm);">' + debC + '/' + creC + '</td>' +
               '<td style="padding:4px 8px;color:var(--ink3);">' + (debC>=0?headers[debC]:'—') + ' / ' + (creC>=0?headers[creC]:'—') + '</td>' +
-              '<td style="padding:4px 8px;color:var(--positive);">✓ will be used</td></tr>';
+              '<td style="padding:4px 8px;color:var(--pos);">✓ will be used</td></tr>';
           }
           html += '</tbody></table>';
 
@@ -5490,7 +5497,7 @@ async function diagnoseFiles() {
               .filter(Boolean);
             const xferCount = catSamples.filter(c => /^\[.+\]$/.test(c.trim())).length;
             if (xferCount > 0) {
-              html += '<div style="font-size:11px;color:var(--positive);margin-bottom:4px;">✓ ' + xferCount + ' transfer-format categories detected in first 5 rows ([Account] style)</div>';
+              html += '<div style="font-size:11px;color:var(--pos);margin-bottom:4px;">✓ ' + xferCount + ' transfer-format categories detected in first 5 rows ([Account] style)</div>';
             }
           }
         }
@@ -5506,9 +5513,9 @@ async function diagnoseFiles() {
         const testSp     = testParsed.length - testXfers;
 
         if (testParsed.length > 0) {
-          html += '<div style="font-size:11px;color:var(--positive);margin-top:6px;">✓ Parser result: <strong>' + testParsed.length + '</strong> total · <strong>' + testSp + '</strong> spendable · <strong>' + testXfers + '</strong> transfers</div>';
+          html += '<div style="font-size:11px;color:var(--pos);margin-top:6px;">✓ Parser result: <strong>' + testParsed.length + '</strong> total · <strong>' + testSp + '</strong> spendable · <strong>' + testXfers + '</strong> transfers</div>';
           if (testXfers === testParsed.length) {
-            html += '<div style="font-size:11px;color:var(--negative);margin-top:4px;">⚠ ALL transactions are flagged as transfers — this means the category column may be incorrectly detected. Check the Category column above.</div>';
+            html += '<div style="font-size:11px;color:var(--neg);margin-top:4px;">⚠ ALL transactions are flagged as transfers — this means the category column may be incorrectly detected. Check the Category column above.</div>';
           }
           // Show 3 sample parsed transactions
           if (testParsed.length > 0) {
@@ -5519,7 +5526,7 @@ async function diagnoseFiles() {
               html += '<tr style="border-top:1px solid rgba(255,255,255,.05);">' +
                 '<td style="padding:3px 6px;color:var(--ink4);">' + t.date + '</td>' +
                 '<td style="padding:3px 6px;">' + (t.payee||'').slice(0,24) + '</td>' +
-                '<td style="padding:3px 6px;text-align:right;color:' + (t.amount>=0?'var(--positive)':'var(--gold)') + ';">' + (t.amount>=0?'+':'') + t.amount.toFixed(2) + '</td>' +
+                '<td style="padding:3px 6px;text-align:right;color:' + (t.amount>=0?'var(--pos)':'var(--gold)') + ';">' + (t.amount>=0?'+':'') + t.amount.toFixed(2) + '</td>' +
                 '<td style="padding:3px 6px;color:var(--ink4);">' + (t.category||'').slice(0,20) + '</td>' +
                 '<td style="padding:3px 6px;color:var(--ink4);">' + (t.account||'').slice(0,18) + '</td>' +
                 '<td style="padding:3px 6px;color:' + (t.isTransfer?'var(--river)':'var(--ink4)') + ';">' + (t.isTransfer?'✓ yes':'no') + '</td>' +
@@ -5528,13 +5535,13 @@ async function diagnoseFiles() {
             html += '</table>';
           }
         } else {
-          html += '<div style="font-size:11px;color:var(--negative);margin-top:6px;">✗ Parser returned 0 rows — see column detection above to diagnose</div>';
+          html += '<div style="font-size:11px;color:var(--neg);margin-top:6px;">✗ Parser returned 0 rows — see column detection above to diagnose</div>';
         }
       }
 
       html += '</div>'; // end file section
     } catch(e) {
-      html += '<div style="color:var(--negative);font-size:12px;">✗ Error reading ' + f.name + ': ' + e.message + '</div>';
+      html += '<div style="color:var(--neg);font-size:12px;">✗ Error reading ' + f.name + ': ' + e.message + '</div>';
     }
   }
 
@@ -5634,18 +5641,18 @@ function renderValidation() {
     (nearDups.length===0?20:Math.max(0,20-nearDups.length*3)) +
     (catCoverage/100*40)
   );
-  const healthColor = healthScore>=85?'var(--positive)':healthScore>=65?'var(--gold)':'var(--negative)';
+  const healthColor = healthScore>=85?'var(--pos)':healthScore>=65?'var(--gold)':'var(--neg)';
   const healthLabel = healthScore>=85?'Healthy':healthScore>=65?'Review Needed':'Action Required';
 
   // ── Build HTML ─────────────────────────────────────────────────
-  const th = 'padding:8px 12px;font-family:var(--font-m);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);border-bottom:1px solid var(--line);background:var(--lift);text-align:';
+  const th = 'padding:8px 12px;font-family:var(--fm);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);border-bottom:1px solid var(--line);background:var(--lift);text-align:';
   let out = '';
 
   // ── Health summary banner ──────────────────────────────────────
   out += `<div style="display:grid;grid-template-columns:auto 1fr;gap:0;background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">
     <div style="padding:24px 28px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:140px;">
       <div style="font-size:48px;font-weight:700;color:${healthColor};line-height:1;font-family:var(--font-d);">${healthScore}</div>
-      <div style="font-size:11px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:${healthColor};margin-top:4px;">${healthLabel}</div>
+      <div style="font-size:11px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:${healthColor};margin-top:4px;">${healthLabel}</div>
       <div style="font-size:10px;color:var(--ink4);margin-top:2px;">Data Quality Score</div>
     </div>
     <div style="padding:20px 24px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:center;">
@@ -5653,9 +5660,9 @@ function renderValidation() {
         ['Total Transactions', txns.length.toLocaleString(), 'all imported', 'var(--ink)'],
         ['Spendable', sp.length.toLocaleString(), 'excl. '+xf.length+' transfers', 'var(--ink)'],
         ['Date Range', earliest, '→ '+latest, 'var(--ink3)'],
-        ['Category Coverage', catCoverage.toFixed(0)+'%', uncatTotal>0?fmt(uncatTotal)+' uncategorized':'fully categorized', catCoverage>=90?'var(--positive)':catCoverage>=70?'var(--gold)':'var(--negative)'],
+        ['Category Coverage', catCoverage.toFixed(0)+'%', uncatTotal>0?fmt(uncatTotal)+' uncategorized':'fully categorized', catCoverage>=90?'var(--pos)':catCoverage>=70?'var(--gold)':'var(--neg)'],
       ].map(([l,v,sub,c]) => `<div>
-        <div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">${l}</div>
+        <div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">${l}</div>
         <div style="font-size:18px;font-weight:700;color:${c};">${v}</div>
         <div style="font-size:10px;color:var(--ink4);">${sub}</div>
       </div>`).join('')}
@@ -5756,12 +5763,12 @@ function renderValidation() {
     out += `<tr style="border-bottom:1px solid rgba(255,255,255,.04);" onclick="filterTxnsByAcct('${acct}')" style="cursor:pointer;">
       <td style="padding:9px 12px;font-size:12px;font-weight:500;">${acct}</td>
       <td style="padding:9px 12px;font-size:11px;color:var(--ink4);">${typeLabel}</td>
-      <td style="padding:9px 12px;font-family:var(--font-m);font-size:10px;color:var(--ink4);">${d.first} → ${d.last}</td>
-      <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;">${d.n}</td>
-      <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--positive);">${d.inc>0?'+'+fmt(d.inc):'—'}</td>
-      <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--gold);">${d.exp>0?fmt(d.exp):'—'}</td>
-      <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">${d.xfer>0?fmt(d.xfer):'—'}</td>
-      <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;font-weight:600;color:${net>=0?'var(--positive)':'var(--negative)'};">${net>=0?'+':''}${fmt(net)}</td>
+      <td style="padding:9px 12px;font-family:var(--fm);font-size:10px;color:var(--ink4);">${d.first} → ${d.last}</td>
+      <td style="padding:9px 12px;text-align:right;font-family:var(--fm);font-size:11px;">${d.n}</td>
+      <td style="padding:9px 12px;text-align:right;font-family:var(--fm);font-size:11px;color:var(--pos);">${d.inc>0?'+'+fmt(d.inc):'—'}</td>
+      <td style="padding:9px 12px;text-align:right;font-family:var(--fm);font-size:11px;color:var(--gold);">${d.exp>0?fmt(d.exp):'—'}</td>
+      <td style="padding:9px 12px;text-align:right;font-family:var(--fm);font-size:11px;color:var(--ink4);">${d.xfer>0?fmt(d.xfer):'—'}</td>
+      <td style="padding:9px 12px;text-align:right;font-family:var(--fm);font-size:11px;font-weight:600;color:${net>=0?'var(--pos)':'var(--neg)'};">${net>=0?'+':''}${fmt(net)}</td>
     </tr>`;
   });
 
@@ -5772,11 +5779,11 @@ function renderValidation() {
   out += `</tbody>
         <tfoot><tr style="background:var(--lift);border-top:2px solid var(--line2);">
           <td colspan="3" style="padding:9px 12px;font-size:12px;font-weight:700;">TOTAL IMPORTED</td>
-          <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;font-weight:700;">${txns.length}</td>
-          <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;font-weight:700;color:var(--positive);">+${fmt(totInc)}</td>
-          <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;font-weight:700;color:var(--gold);">${fmt(totExp)}</td>
-          <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;font-weight:700;color:var(--ink4);">${fmt(totXfer)}</td>
-          <td style="padding:9px 12px;text-align:right;font-family:var(--font-m);font-size:11px;font-weight:700;color:${totNet>=0?'var(--positive)':'var(--negative)'};">${totNet>=0?'+':''}${fmt(totNet)}</td>
+          <td style="padding:9px 12px;text-align:right;font-family:var(--fm);font-size:11px;font-weight:700;">${txns.length}</td>
+          <td style="padding:9px 12px;text-align:right;font-family:var(--fm);font-size:11px;font-weight:700;color:var(--pos);">+${fmt(totInc)}</td>
+          <td style="padding:9px 12px;text-align:right;font-family:var(--fm);font-size:11px;font-weight:700;color:var(--gold);">${fmt(totExp)}</td>
+          <td style="padding:9px 12px;text-align:right;font-family:var(--fm);font-size:11px;font-weight:700;color:var(--ink4);">${fmt(totXfer)}</td>
+          <td style="padding:9px 12px;text-align:right;font-family:var(--fm);font-size:11px;font-weight:700;color:${totNet>=0?'var(--pos)':'var(--neg)'};">${totNet>=0?'+':''}${fmt(totNet)}</td>
         </tr></tfoot>
       </table>
     </div>
@@ -5813,13 +5820,13 @@ function renderValidation() {
     const [yr,mo] = k.split('-');
     const moLabel = new Date(yr,parseInt(mo)-1,1).toLocaleDateString('en-US',{month:'short',year:'2-digit'});
     out += `<tr style="border-bottom:1px solid rgba(255,255,255,.04);">
-      <td style="padding:7px 12px;font-family:var(--font-m);font-size:11px;color:var(--ink3);">${moLabel}</td>
-      <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;">${d.n}</td>
-      <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--positive);">${d.inc>0?'+'+fmt(d.inc):'—'}</td>
-      <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--gold);">${d.exp>0?fmt(d.exp):'—'}</td>
-      <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">${d.xfer>0?fmt(d.xfer):'—'}</td>
-      <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;font-weight:600;color:${net>=0?'var(--positive)':'var(--negative)'};">${net>=0?'+':''}${fmt(net)}</td>
-      <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:${running>=0?'var(--river)':'var(--negative)'};">${running>=0?'+':''}${fmt(running)}</td>
+      <td style="padding:7px 12px;font-family:var(--fm);font-size:11px;color:var(--ink3);">${moLabel}</td>
+      <td style="padding:7px 12px;text-align:right;font-family:var(--fm);font-size:11px;">${d.n}</td>
+      <td style="padding:7px 12px;text-align:right;font-family:var(--fm);font-size:11px;color:var(--pos);">${d.inc>0?'+'+fmt(d.inc):'—'}</td>
+      <td style="padding:7px 12px;text-align:right;font-family:var(--fm);font-size:11px;color:var(--gold);">${d.exp>0?fmt(d.exp):'—'}</td>
+      <td style="padding:7px 12px;text-align:right;font-family:var(--fm);font-size:11px;color:var(--ink4);">${d.xfer>0?fmt(d.xfer):'—'}</td>
+      <td style="padding:7px 12px;text-align:right;font-family:var(--fm);font-size:11px;font-weight:600;color:${net>=0?'var(--pos)':'var(--neg)'};">${net>=0?'+':''}${fmt(net)}</td>
+      <td style="padding:7px 12px;text-align:right;font-family:var(--fm);font-size:11px;color:${running>=0?'var(--river)':'var(--neg)'};">${running>=0?'+':''}${fmt(running)}</td>
     </tr>`;
   });
   out += `</tbody></table></div></div>`;
@@ -5828,7 +5835,7 @@ function renderValidation() {
   if (dupTxns.length > 0) {
     out += `<div style="background:rgba(248,113,113,.04);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">
       <div style="padding:12px 16px;background:rgba(248,113,113,.08);border-bottom:1px solid rgba(248,113,113,.2);">
-        <div style="font-size:13px;font-weight:600;color:var(--negative);">⚠ Duplicate Transactions (${dupKeys.length} found)</div>
+        <div style="font-size:13px;font-weight:600;color:var(--neg);">⚠ Duplicate Transactions (${dupKeys.length} found)</div>
         <div style="font-size:11px;color:var(--ink4);margin-top:2px;">These exact records appear more than once. Fix by re-exporting Quicken with non-overlapping date ranges.</div>
       </div>
       <div style="overflow-x:auto;max-height:240px;overflow-y:auto;">
@@ -5841,11 +5848,11 @@ function renderValidation() {
           ${dupKeys.slice(0,20).map(([k,n]) => {
             const t = txns.find(t=>dupKey(t)===k);
             return t ? `<tr style="border-bottom:1px solid rgba(255,255,255,.04);">
-              <td style="padding:7px 12px;font-family:var(--font-m);font-size:11px;">${t.date}</td>
+              <td style="padding:7px 12px;font-family:var(--fm);font-size:11px;">${t.date}</td>
               <td style="padding:7px 12px;font-size:12px;">${t.payee}</td>
               <td style="padding:7px 12px;font-size:11px;color:var(--ink4);">${t.account}</td>
-              <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;">${fmt(Math.abs(t.amount))}</td>
-              <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--negative);font-weight:600;">${n}×</td>
+              <td style="padding:7px 12px;text-align:right;font-family:var(--fm);font-size:11px;">${fmt(Math.abs(t.amount))}</td>
+              <td style="padding:7px 12px;text-align:right;font-family:var(--fm);font-size:11px;color:var(--neg);font-weight:600;">${n}×</td>
             </tr>` : '';
           }).join('')}
           ${dupKeys.length>20?'<tr><td colspan="5" style="padding:8px 12px;font-size:11px;color:var(--ink4);">... and '+(dupKeys.length-20)+' more</td></tr>':''}
@@ -5876,13 +5883,13 @@ function renderValidation() {
             const payees=[...new Set(group.map(t=>t.payee))];
             // Is one a transfer? If so, probably fine
             const hasXfer = group.some(t=>isTransfer(t));
-            const statusColor = hasXfer ? 'var(--positive)' : 'var(--gold)';
+            const statusColor = hasXfer ? 'var(--pos)' : 'var(--gold)';
             const statusText  = hasXfer ? '✓ Transfer detected' : '⚠ Review manually';
             return `<tr style="border-bottom:1px solid rgba(255,255,255,.04);">
-              <td style="padding:7px 12px;font-family:var(--font-m);font-size:11px;">${date}</td>
+              <td style="padding:7px 12px;font-family:var(--fm);font-size:11px;">${date}</td>
               <td style="padding:7px 12px;font-size:12px;">${payees.join(' / ')}</td>
               <td style="padding:7px 12px;font-size:11px;color:var(--ink4);">${accts.join(' ↔ ')}</td>
-              <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;">${fmt(amt)}</td>
+              <td style="padding:7px 12px;text-align:right;font-family:var(--fm);font-size:11px;">${fmt(amt)}</td>
               <td style="padding:7px 12px;font-size:11px;color:${statusColor};">${statusText}</td>
             </tr>`;
           }).join('')}
@@ -5913,11 +5920,11 @@ function renderValidation() {
           </tr></thead>
           <tbody>
           ${uncatTxns.map(t => `<tr style="border-bottom:1px solid rgba(255,255,255,.04);">
-            <td style="padding:7px 12px;font-family:var(--font-m);font-size:11px;color:var(--ink4);">${t.date}</td>
+            <td style="padding:7px 12px;font-family:var(--fm);font-size:11px;color:var(--ink4);">${t.date}</td>
             <td style="padding:7px 12px;font-size:12px;">${t.payee||'—'}</td>
             <td style="padding:7px 12px;font-size:11px;color:var(--ink4);">${t.category||'Uncategorized'}</td>
             <td style="padding:7px 12px;font-size:11px;color:var(--ink4);">${t.account}</td>
-            <td style="padding:7px 12px;text-align:right;font-family:var(--font-m);font-size:11px;color:var(--gold);">${fmt(Math.abs(t.amount))}</td>
+            <td style="padding:7px 12px;text-align:right;font-family:var(--fm);font-size:11px;color:var(--gold);">${fmt(Math.abs(t.amount))}</td>
           </tr>`).join('')}
           ${uncatTxns.length>=30?'<tr><td colspan="5" style="padding:8px 12px;font-size:11px;color:var(--ink4);">Showing top 30 by amount — go to Transactions to see all</td></tr>':''}
           </tbody>
@@ -5928,7 +5935,7 @@ function renderValidation() {
 
   // ── How to use this page ───────────────────────────────────────
   out += `<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 18px;">
-    <div style="font-size:11px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">How to Reconcile</div>
+    <div style="font-size:11px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">How to Reconcile</div>
     <div style="font-size:12px;color:var(--ink3);line-height:2;">
       <strong style="color:var(--ink2);">Step 1 — Match transaction counts:</strong> In Quicken, go to Reports → Transaction Report for each account and date range. The Txns column above should match.<br>
       <strong style="color:var(--ink2);">Step 2 — Match income totals:</strong> For checking accounts, Quicken income should match the Income column. For credit cards, income = refunds/credits only.<br>
@@ -5943,7 +5950,7 @@ function renderValidation() {
   } catch(e) {
     console.error('[Forge] renderValidation error:', e);
     const _el = document.getElementById('validateContent');
-    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderValidation: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--neg);font-family:var(--fm);font-size:12px;">⚠ Render error in renderValidation: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
   }
 }
 
@@ -5972,7 +5979,7 @@ function renderFileList() {
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--lift);border:1px solid var(--line);border-radius:var(--r-sm);margin-bottom:6px">
       <span style="font-size:12px;color:var(--ink2)">📄 ${f.name}</span>
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:10px;color:var(--ink4);font-family:var(--font-m)">${(f.size/1024).toFixed(0)} KB</span>
+        <span style="font-size:10px;color:var(--ink4);font-family:var(--fm)">${(f.size/1024).toFixed(0)} KB</span>
         <button onclick="pendingFiles.splice(${i},1);renderFileList();if(!pendingFiles.length)document.getElementById('importActions').style.display='none'"
           style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:14px">✕</button>
       </div>
@@ -7768,7 +7775,7 @@ function crosswalkRows(txnList) {
 
 // Source badge HTML
 const SOURCE_BADGES = {
-  quicken:    { label:'Quicken', color:'rgba(45,212,191,.15)',  border:'rgba(45,212,191,.4)',  text:'var(--positive)' },
+  quicken:    { label:'Quicken', color:'rgba(45,212,191,.15)',  border:'rgba(45,212,191,.4)',  text:'var(--pos)' },
   split:      { label:'Split',   color:'rgba(96,165,250,.12)',  border:'rgba(96,165,250,.35)', text:'var(--river)'    },
   amazon:     { label:'Amazon',  color:'rgba(245,168,0,.12)',   border:'rgba(245,168,0,.35)',  text:'var(--gold)'     },
   apple_card: { label:'Apple',   color:'rgba(168,85,247,.12)',  border:'rgba(168,85,247,.35)', text:'#c084fc'         },
@@ -7777,14 +7784,14 @@ const SOURCE_BADGES = {
 };
 function srcBadge(src) {
   const b = SOURCE_BADGES[src] || SOURCE_BADGES.inferred;
-  return `<span style="font-size:8px;padding:1px 5px;border-radius:3px;background:${b.color};border:1px solid ${b.border};color:${b['text'] || b.text};font-family:var(--font-m);letter-spacing:.05em;">${b.label}</span>`;
+  return `<span style="font-size:8px;padding:1px 5px;border-radius:3px;background:${b.color};border:1px solid ${b.border};color:${b['text'] || b.text};font-family:var(--fm);letter-spacing:.05em;">${b.label}</span>`;
 }
 
 const WATERFALL = [
   {
     id: 'income', label: 'Total Household Income', type: 'income',
     sub: 'All money coming in — payroll, freelance, interest, refunds',
-    color: 'var(--positive)', sign: '+',
+    color: 'var(--pos)', sign: '+',
     buckets: ['paycheck','other_inc'],
   },
   {
@@ -8278,73 +8285,124 @@ function renderISTrend() {
   if (!el) return;
   if (!txns.length) { el.innerHTML = ''; return; }
 
+  // ── Pressure bar: delegate entirely to renderThermometer ──────────
+  if (isTrendType === 'pressure') {
+    const selMoSel = document.getElementById('isMonth');
+    const selMo    = selMoSel ? (selMoSel.value || '') : '';
+    el.style.display = '';
+    el.innerHTML = '';  // clear and let renderThermometer fill it
+    if (typeof renderThermometer === 'function') {
+      renderThermometer('isTrendWrap', selMo);
+    }
+    return;
+  }
+
   const OPER = new Set(['checking','savings','credit']);
   const sp   = operatingSpendable(txns);
   const opSp = sp.filter(t => OPER.has(detectAcctType(t.account||'')));
 
-  const now = new Date();
+  const now   = new Date();
+  const curMo = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+
   const mths = [];
   for (let i = isTrendN - 1; i >= 0; i--) {
     const d  = new Date(now.getFullYear(), now.getMonth() - i, 1);
     mths.push(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'));
   }
 
+  // Selected month from isMonth picker (for waffle + slope baseline)
+  const selMoSel  = document.getElementById('isMonth');
+  const selMo     = selMoSel ? (selMoSel.value || curMo) : curMo;
+
   const FIXED_BKS = ['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','cell','subscriptions'];
   const VAR_BKS   = ['restaurants','groceries','gas_car','transit','healthcare','entertainment','household','personal','clothing','travel','gifts','other'];
   const ALL_BKS   = [...FIXED_BKS, ...VAR_BKS];
 
-  const BK_LABELS = {};
-  ALL_BKS.forEach(k => { BK_LABELS[k] = (BUCKET_META[k]||{label:k}).label.replace(/ &.*/,'').replace(/ and .*/i,''); });
+  // Safe label lookup — fallback to humanized key
+  function bkLabel(k) {
+    if (typeof BUCKET_META !== 'undefined' && BUCKET_META[k]) return BUCKET_META[k].label;
+    return k.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
 
   function monthData(mo) {
+    const isCurrentMo = mo === curMo;
     const mSp = opSp.filter(t => t.date.startsWith(mo) && t.amount < 0);
     const fixedByBk = {}, varByBk = {};
     let fixed = 0, variable = 0;
+
     mSp.forEach(t => {
       const bk = classifyTxn(t), amt = Math.abs(t.amount);
       if (FIXED_BKS.includes(bk)) { fixed += amt; fixedByBk[bk] = (fixedByBk[bk]||0) + amt; }
       else if (VAR_BKS.includes(bk)) { variable += amt; varByBk[bk] = (varByBk[bk]||0) + amt; }
     });
-    const mIn  = opSp.filter(t => t.date.startsWith(mo) && t.amount > 0 && classifyTxn(t)==='paycheck' && detectAcctType(t.account||'')==='checking');
-    const mXf  = txns.filter(t => t.date.startsWith(mo) && isTransfer(t) && t.amount < 0);
-    const payDs= [...new Set(mIn.map(t=>t.date))];
+
+    // ── Accrual projections for current month only ──────────────────
+    if (isCurrentMo) {
+      try {
+        const accrual = buildAccrualEngine && buildAccrualEngine(mo, sp);
+        if (accrual) {
+          FIXED_BKS.forEach(bk => {
+            const proj = accrual.accrueAmount(bk) || 0;
+            if (proj > 0) { fixed += proj; fixedByBk[bk] = (fixedByBk[bk]||0) + proj; }
+          });
+          VAR_BKS.forEach(bk => {
+            const proj = accrual.accrueAmount(bk) || 0;
+            if (proj > 0) { variable += proj; varByBk[bk] = (varByBk[bk]||0) + proj; }
+          });
+        }
+      } catch(e) {}
+    }
+
+    const mIn = opSp.filter(t => t.date.startsWith(mo) && t.amount > 0
+                                 && classifyTxn(t) === 'paycheck'
+                                 && detectAcctType(t.account||'') === 'checking');
+    const mXf = txns.filter(t => t.date.startsWith(mo) && isTransfer(t) && t.amount < 0);
+    const payDs = [...new Set(mIn.map(t => t.date))];
     let autoSave = 0;
     mXf.forEach(t => {
-      const dest=(t.category||'').replace(/^\[|\]$/g,'').trim();
-      if (detectAcctType(dest)==='savings' && payDs.some(pd=>Math.abs(new Date(pd)-new Date(t.date))<=4*864e5)) autoSave+=Math.abs(t.amount);
+      const dest = (t.category||'').replace(/^\[|\]$/g,'').trim();
+      if (detectAcctType(dest) === 'savings' && payDs.some(pd => Math.abs(new Date(pd)-new Date(t.date)) <= 4*864e5)) autoSave += Math.abs(t.amount);
     });
-    opSp.filter(t=>t.date.startsWith(mo)&&t.amount>0&&classifyTxn(t)==='paycheck'&&detectAcctType(t.account||'')==='savings').forEach(t=>autoSave+=t.amount);
-    const income = mIn.reduce((s,t)=>s+t.amount,0);
+    opSp.filter(t => t.date.startsWith(mo) && t.amount > 0 && classifyTxn(t)==='paycheck' && detectAcctType(t.account||'')==='savings').forEach(t => autoSave += t.amount);
+
+    // Normalized income for current month
+    let income = mIn.reduce((s,t)=>s+t.amount, 0);
+    if (isCurrentMo && income === 0) {
+      try {
+        const accrual = buildAccrualEngine && buildAccrualEngine(mo, sp);
+        if (accrual && accrual.normalizeIncome) {
+          const norm = accrual.normalizeIncome();
+          if (norm.earlyMonth) income = norm.normalPaycheck;
+        }
+      } catch(e) {}
+    }
     const deployable = Math.max(income - autoSave, 0);
-    return { mo, fixed, variable, income, deployable, autoSave, fixedByBk, varByBk, total: fixed+variable };
+    return { mo, fixed, variable, income, deployable, autoSave, fixedByBk, varByBk, total: fixed+variable, isCurrentMo };
   }
 
   const moData = mths.map(monthData);
-  const fmtK = v => { const a=Math.abs(v); return (v<0?'−':'')+(a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a)); };
+  const fmtK = v => { const neg=v<0; const a=Math.abs(v); const s=a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a); return neg?'−'+s:s; };
   const moLabel = mo => { const [y,m]=mo.split('-'); return new Date(y,m-1,1).toLocaleDateString('en-US',{month:'short'}); };
-  const curMo = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  const isCur = mo => mo === curMo;
+  const isCur   = mo => mo === curMo;
+  const isSel   = mo => mo === selMo;
 
-  // ── LEGEND ROW (shared) ──────────────────────────────────────────
-  const avgFixed    = moData.reduce((s,d)=>s+d.fixed,0)/mths.length;
-  const avgVar      = moData.reduce((s,d)=>s+d.variable,0)/mths.length;
-  const avgDeploy   = moData.reduce((s,d)=>s+d.deployable,0)/mths.length;
-
-  const legendHtml = `<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:11px;font-family:var(--fm);">
-    <span style="color:#F87171;display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:linear-gradient(135deg,#FF9494,#C94444);border-radius:2px;display:inline-block;"></span>Fixed avg ${fmtK(avgFixed)}/mo</span>
-    <span style="color:#F5A800;display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:linear-gradient(135deg,#FFCA40,#C07A00);border-radius:2px;display:inline-block;"></span>Variable avg ${fmtK(avgVar)}/mo</span>
-    <span style="color:#34D9C3;display:flex;align-items:center;gap:5px;"><span style="width:10px;height:2px;background:#34D9C3;display:inline-block;border-radius:1px;"></span>Deployable avg ${fmtK(avgDeploy)}/mo</span>
-  </div>`;
-
+  // ── Shared header ─────────────────────────────────────────────────
+  const avgFixed  = moData.reduce((s,d)=>s+d.fixed,0)/mths.length;
+  const avgVar    = moData.reduce((s,d)=>s+d.variable,0)/mths.length;
+  const avgDeploy = moData.reduce((s,d)=>s+d.deployable,0)/mths.length;
   const typeLabel = {stack:'Stacked Bar Trend',trellis:'Small Multiples',slope:'Slope Chart',waffle:'Proportion Chart'}[isTrendType]||'';
-
+  const legendHtml = `<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:11px;font-family:var(--fm);">
+    <span style="color:#F87171;display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:linear-gradient(135deg,#FF9494,#C94444);border-radius:2px;"></span>Fixed avg ${fmtK(avgFixed)}/mo</span>
+    <span style="color:#F5A800;display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:linear-gradient(135deg,#FFCA40,#C07A00);border-radius:2px;"></span>Variable avg ${fmtK(avgVar)}/mo</span>
+    <span style="color:#34D9C3;display:flex;align-items:center;gap:5px;"><span style="width:10px;height:2px;background:#34D9C3;border-radius:1px;"></span>Deployable avg ${fmtK(avgDeploy)}/mo</span>
+  </div>`;
   const headerHtml = `<div style="padding:11px 16px 9px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,.06);flex-wrap:wrap;">
     <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);">${typeLabel} · ${isTrendN}M</div>
     ${legendHtml}
   </div>`;
 
   // ══════════════════════════════════════════════════════════════════
-  // CHART A: STACKED BAR (default)
+  // CHART A: STACKED BAR
   // ══════════════════════════════════════════════════════════════════
   function renderStack() {
     const maxY = Math.max(...moData.map(d => Math.max(d.total, d.deployable)), 1);
@@ -8354,15 +8412,18 @@ function renderISTrend() {
     const gap = (iW - bW*mths.length)/mths.length;
     const xOf = i => PL + i*(bW+gap) + gap/2;
     const yOf = v => PT + iH - (v/maxY)*iH;
-
     let axisSvg='', barsSvg='', linePts=[];
     for(let i=0;i<=4;i++){const v=maxY/4*i,y=yOf(v);axisSvg+=`<line x1="${PL-4}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,.055)" stroke-width="1"/><text x="${PL-7}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="9" fill="rgba(255,255,255,.35)" font-family="monospace">${fmtK(v)}</text>`;}
     moData.forEach((d,i)=>{
       const x=xOf(i),bY=PT+iH,fH=(d.fixed/maxY)*iH,vH=(d.variable/maxY)*iH,tot=fH+vH;
-      if(isCur(d.mo)) barsSvg+=`<rect x="${(x-2).toFixed(1)}" y="${PT}" width="${(bW+4).toFixed(1)}" height="${iH}" fill="rgba(255,255,255,.04)" rx="2"/>`;
-      if(vH>0.5) barsSvg+=`<rect class="ist-bar" data-mo="${d.mo}" x="${x.toFixed(1)}" y="${(bY-tot).toFixed(1)}" width="${bW}" height="${vH.toFixed(1)}" fill="url(#istGold)" rx="2" style="cursor:pointer;"/>`;
-      if(fH>0.5) barsSvg+=`<rect class="ist-bar" data-mo="${d.mo}" x="${x.toFixed(1)}" y="${(bY-fH).toFixed(1)}" width="${bW}" height="${fH.toFixed(1)}" fill="url(#istRed)" rx="2" style="cursor:pointer;"/>`;
-      barsSvg+=`<text x="${(x+bW/2).toFixed(1)}" y="${H-PB+13}" text-anchor="middle" font-size="9" fill="${isCur(d.mo)?'rgba(245,168,0,.9)':'rgba(255,255,255,.38)'}" font-family="monospace">${moLabel(d.mo)}</text>`;
+      // Highlight selected month
+      if(isSel(d.mo)) barsSvg+=`<rect x="${(x-2).toFixed(1)}" y="${PT}" width="${(bW+4).toFixed(1)}" height="${iH}" fill="rgba(255,255,255,.07)" rx="2"/>`;
+      else if(isCur(d.mo)) barsSvg+=`<rect x="${(x-1).toFixed(1)}" y="${PT}" width="${(bW+2).toFixed(1)}" height="${iH}" fill="rgba(255,255,255,.03)" rx="2"/>`;
+      if(vH>0.5) barsSvg+=`<rect class="ist-bar" data-mo="${d.mo}" x="${x.toFixed(1)}" y="${(bY-tot).toFixed(1)}" width="${bW}" height="${vH.toFixed(1)}" fill="url(#istGold)" rx="2" style="cursor:pointer;" opacity="${d.isCurrentMo?'0.75':'1'}"/>`;
+      if(fH>0.5) barsSvg+=`<rect class="ist-bar" data-mo="${d.mo}" x="${x.toFixed(1)}" y="${(bY-fH).toFixed(1)}" width="${bW}" height="${fH.toFixed(1)}" fill="url(#istRed)" rx="2" style="cursor:pointer;" opacity="${d.isCurrentMo?'0.75':'1'}"/>`;
+      // Accrual marker for current month
+      if(d.isCurrentMo && d.total > 0) barsSvg+=`<text x="${(x+bW/2).toFixed(1)}" y="${(bY-tot-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(96,165,250,.7)" font-family="monospace">proj</text>`;
+      barsSvg+=`<text x="${(x+bW/2).toFixed(1)}" y="${H-PB+13}" text-anchor="middle" font-size="9" fill="${isSel(d.mo)?'rgba(245,168,0,1)':isCur(d.mo)?'rgba(245,168,0,.7)':'rgba(255,255,255,.38)'}" font-family="monospace">${moLabel(d.mo)}</text>`;
       if(d.deployable>0) linePts.push(`${(x+bW/2).toFixed(1)},${yOf(d.deployable).toFixed(1)}`);
     });
     let lineSvg='';
@@ -8380,12 +8441,11 @@ function renderISTrend() {
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // CHART B: SMALL MULTIPLES (trellis)
+  // CHART B: SMALL MULTIPLES
   // ══════════════════════════════════════════════════════════════════
   function renderTrellis() {
     const showBks = ALL_BKS.filter(bk => moData.some(d => (d.fixedByBk[bk]||d.varByBk[bk])>0));
-    if (!showBks.length) return '<div style="padding:24px;text-align:center;color:rgba(255,255,255,.3);font-size:13px;">No expense data in this period.</div>';
-
+    if (!showBks.length) return '<div style="padding:24px;text-align:center;color:rgba(255,255,255,.3);font-size:13px;">No expense data.</div>';
     const cols = Math.min(4, showBks.length);
     const panels = showBks.map(bk => {
       const isFixed = FIXED_BKS.includes(bk);
@@ -8393,180 +8453,119 @@ function renderISTrend() {
       const maxV    = Math.max(...vals, 1);
       const avgV    = vals.reduce((s,v)=>s+v,0)/vals.length;
       const lastV   = vals[vals.length-1];
-      const trend   = vals.length>=2 ? (vals[vals.length-1]-vals[vals.length-2]) : 0;
-      const trendCl = trend>avgV*0.15 ? '#F87171' : trend<-avgV*0.15 ? '#34D9C3' : 'rgba(255,255,255,.3)';
-      const trendIco= trend>avgV*0.15 ? '↑' : trend<-avgV*0.15 ? '↓' : '→';
-      const fillCol = isFixed ? '#C94444' : '#C07A00';
-      const lineCol = isFixed ? '#F87171' : '#F5A800';
-      const bkW=84, bkH=48, n=vals.length;
-      const bW2=Math.floor(bkW/n*0.7), gap2=(bkW-bW2*n)/n;
+      const trend   = vals.length>=2 ? vals[vals.length-1]-vals[vals.length-2] : 0;
+      const trendCl = trend>avgV*0.15?'#F87171':trend<-avgV*0.15?'#34D9C3':'rgba(255,255,255,.3)';
+      const trendIco= trend>avgV*0.15?'↑':trend<-avgV*0.15?'↓':'→';
+      const fillCol = isFixed?'#C94444':'#C07A00';
+      const lineCol = isFixed?'#F87171':'#F5A800';
+      const bkW=84,bkH=48,n=vals.length;
+      const bW2=Math.floor(bkW/n*0.7),gap2=(bkW-bW2*n)/n;
       let sparkBars='';
       vals.forEach((v,i)=>{
-        const bH2=(v/maxV)*bkH;
-        const x2=i*(bW2+gap2)+gap2/2;
-        const alpha=isCur(mths[i])?1:0.55;
-        sparkBars+=`<rect x="${x2.toFixed(1)}" y="${(bkH-bH2).toFixed(1)}" width="${bW2}" height="${bH2.toFixed(1)}" fill="${fillCol}" opacity="${alpha}" rx="1"/>`;
+        const bH2=(v/maxV)*bkH,x2=i*(bW2+gap2)+gap2/2;
+        const alpha=moData[i]&&moData[i].isCurrentMo?0.65:1;
+        sparkBars+=`<rect x="${x2.toFixed(1)}" y="${(bkH-bH2).toFixed(1)}" width="${bW2}" height="${bH2.toFixed(1)}" fill="${fillCol}" opacity="${isSel(mths[i])?'1':alpha}" rx="1"/>`;
       });
-      // Line overlay
       const lpts=vals.map((v,i)=>`${(i*(bW2+gap2)+gap2/2+bW2/2).toFixed(1)},${(bkH-(v/maxV)*bkH).toFixed(1)}`).filter((_,i)=>vals[i]>0);
-      const sparkLine = lpts.length>=2 ? `<polyline points="${lpts.join(' ')}" fill="none" stroke="${lineCol}" stroke-width="1.5" stroke-linejoin="round" opacity=".8"/>` : '';
-
+      const sparkLine=lpts.length>=2?`<polyline points="${lpts.join(' ')}" fill="none" stroke="${lineCol}" stroke-width="1.5" stroke-linejoin="round" opacity=".8"/>`:'';
       return `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 12px 8px;position:relative;">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;">
-          <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.7);line-height:1.3;max-width:80px;">${BK_LABELS[bk]}</div>
-          <div style="text-align:right;">
-            <div style="font-size:13px;font-weight:700;font-family:var(--fm);color:${lineCol};">${fmtK(lastV)}</div>
-            <div style="font-size:10px;color:${trendCl};">${trendIco} ${fmtK(Math.abs(trend))}</div>
-          </div>
+          <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.7);line-height:1.3;max-width:80px;">${bkLabel(bk)}</div>
+          <div style="text-align:right;"><div style="font-size:13px;font-weight:700;font-family:var(--fm);color:${lineCol};">${fmtK(lastV)}</div><div style="font-size:10px;color:${trendCl};">${trendIco} ${fmtK(Math.abs(trend))}</div></div>
         </div>
         <svg viewBox="0 0 ${bkW} ${bkH}" style="width:100%;display:block;">${sparkBars}${sparkLine}</svg>
         <div style="display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,.25);font-family:monospace;margin-top:3px;">
           <span>${moLabel(mths[0])}</span><span>avg ${fmtK(Math.round(avgV))}</span><span>${moLabel(mths[mths.length-1])}</span>
         </div>
-        ${isFixed?'':''}
         <div style="position:absolute;top:8px;left:8px;width:5px;height:5px;border-radius:50%;background:${isFixed?'#F87171':'#F5A800'};opacity:.7;"></div>
       </div>`;
     });
-
     return `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:8px;padding:12px;">${panels.join('')}</div>`;
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // CHART C: SLOPE CHART (current vs 6-mo avg)
+  // CHART C: SLOPE (vs 6-mo avg)
   // ══════════════════════════════════════════════════════════════════
   function renderSlope() {
-    const cur = monthData(curMo);
-    // 6-month avg baseline (prior months only)
+    const cur = monthData(selMo);
     const priorN = Math.min(6, mths.length-1);
-    const priorMths = mths.slice(-priorN-1, -1);
+    const priorMths = mths.slice(-priorN-1,-1);
     const baselines = {};
     ALL_BKS.forEach(bk => {
-      const vals = priorMths.map(m => {
-        const d = moData.find(x=>x.mo===m);
-        return d ? (d.fixedByBk[bk]||d.varByBk[bk]||0) : 0;
-      }).filter(v=>v>0);
+      const vals = priorMths.map(m => { const d=moData.find(x=>x.mo===m); return d?(d.fixedByBk[bk]||d.varByBk[bk]||0):0; }).filter(v=>v>0);
       baselines[bk] = vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : 0;
     });
-
-    const showBks = ALL_BKS.filter(bk => {
-      const c = cur.fixedByBk[bk]||cur.varByBk[bk]||0;
-      const b = baselines[bk];
-      return c > 0 || b > 0;
-    });
-
+    const showBks = ALL_BKS.filter(bk => (cur.fixedByBk[bk]||cur.varByBk[bk]||0)>0 || baselines[bk]>0);
     if (!showBks.length) return '<div style="padding:24px;text-align:center;color:rgba(255,255,255,.3);">No data.</div>';
-
     const maxAmt = Math.max(...showBks.flatMap(bk=>[cur.fixedByBk[bk]||cur.varByBk[bk]||0, baselines[bk]]), 1);
-
-    // Build rows sorted by biggest change
-    const rows = showBks.map(bk => {
-      const curV = cur.fixedByBk[bk]||cur.varByBk[bk]||0;
-      const basV = baselines[bk];
-      const delta = curV - basV;
-      const pct   = basV > 0 ? delta/basV : 0;
-      return { bk, curV, basV, delta, pct };
+    const rows = showBks.map(bk=>{
+      const curV=cur.fixedByBk[bk]||cur.varByBk[bk]||0,basV=baselines[bk],delta=curV-basV,pct=basV>0?delta/basV:0;
+      return {bk,curV,basV,delta,pct};
     }).sort((a,b)=>Math.abs(b.pct)-Math.abs(a.pct));
-
     const W=480,ROW_H=28,PT=36,PB=16,PL=90,PR=90,MID_W=W-PL-PR;
-    const H = PT + rows.length*ROW_H + PB;
-    const yOf = i => PT + i*ROW_H + ROW_H/2;
-    const xL = PL, xR = PL+MID_W;
-
-    let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:480px;display:block;margin:0 auto;">
+    const H=PT+rows.length*ROW_H+PB;
+    const xL=PL,xR=PL+MID_W;
+    const yOf=i=>PT+i*ROW_H+ROW_H/2;
+    const [sY,sM]=selMo.split('-');
+    const selName=new Date(sY,sM-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:480px;display:block;margin:0 auto;">
       <text x="${xL}" y="20" text-anchor="middle" font-size="10" fill="rgba(255,255,255,.4)" font-family="monospace">6-mo avg</text>
-      <text x="${xR}" y="20" text-anchor="middle" font-size="10" fill="rgba(255,255,255,.4)" font-family="monospace">This month</text>
+      <text x="${xR}" y="20" text-anchor="middle" font-size="10" fill="rgba(255,255,255,.85)" font-family="monospace">${selName.split(' ')[0]}</text>
       <line x1="${xL}" y1="26" x2="${xL}" y2="${H-PB}" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
-      <line x1="${xR}" y1="26" x2="${xR}" y2="${H-PB}" stroke="rgba(255,255,255,.08)" stroke-width="1"/>`;
-
-    rows.forEach((r,i) => {
-      const y   = yOf(i);
-      const isFixed = FIXED_BKS.includes(r.bk);
-      const lineCol = r.delta>0 ? 'rgba(248,113,113,.7)' : r.delta<0 ? 'rgba(52,217,195,.7)' : 'rgba(255,255,255,.2)';
-      const dotCol  = isFixed ? '#F87171' : '#F5A800';
-      const rBase = r.basV/maxAmt, rCur = r.curV/maxAmt;
-      const DOT=4;
-
-      // Row background
-      if(i%2===0) svg+=`<rect x="0" y="${(y-ROW_H/2).toFixed(1)}" width="${W}" height="${ROW_H}" fill="rgba(255,255,255,.012)"/>`;
-
-      // Label
-      svg+=`<text x="${xL-8}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="10" fill="rgba(255,255,255,.6)" font-family="system-ui">${BK_LABELS[r.bk]}</text>`;
-
-      // Dots
-      svg+=`<circle cx="${xL}" cy="${y.toFixed(1)}" r="${DOT}" fill="${dotCol}" opacity=".6"/>`;
-      svg+=`<circle cx="${xR}" cy="${y.toFixed(1)}" r="${DOT}" fill="${dotCol}" opacity="${r.curV>0?1:.3}"/>`;
-
-      // Slope line
-      if(r.basV>0 || r.curV>0)
-        svg+=`<line x1="${xL}" y1="${y.toFixed(1)}" x2="${xR}" y2="${y.toFixed(1)}" stroke="${lineCol}" stroke-width="${Math.min(2.5, 0.8+Math.abs(r.pct)*3)}" stroke-dasharray="${r.delta===0?'3,3':''}"/>`;
-
-      // Values
-      svg+=`<text x="${xL-DOT-6}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="10" fill="rgba(255,255,255,.45)" font-family="monospace">${r.basV>0?fmtK(r.basV):''}</text>`;
-      svg+=`<text x="${xR+DOT+6}" y="${(y+4).toFixed(1)}" text-anchor="start" font-size="11" font-weight="${Math.abs(r.pct)>.2?'bold':'normal'}" fill="${r.delta>0?'#F87171':r.delta<0?'#34D9C3':'rgba(255,255,255,.55)'}" font-family="monospace">${r.curV>0?fmtK(r.curV):'—'}</text>`;
-
-      // Delta badge
-      if(Math.abs(r.pct)>.05 && r.basV>0 && r.curV>0) {
-        const sign=r.delta>0?'+':'';
-        svg+=`<text x="${(xL+MID_W/2).toFixed(1)}" y="${(y-2).toFixed(1)}" text-anchor="middle" font-size="9" fill="${lineCol}" font-family="monospace">${sign}${(r.pct*100).toFixed(0)}%</text>`;
-      }
+      <line x1="${xR}" y1="26" x2="${xR}" y2="${H-PB}" stroke="rgba(255,255,255,.15)" stroke-width="1"/>`;
+    rows.forEach((r,i)=>{
+      const y=yOf(i),isFixed=FIXED_BKS.includes(r.bk);
+      const lineCol=r.delta>0?'rgba(248,113,113,.7)':r.delta<0?'rgba(52,217,195,.7)':'rgba(255,255,255,.2)';
+      const dotCol=isFixed?'#F87171':'#F5A800';
+      if(i%2===0)svg+=`<rect x="0" y="${(y-ROW_H/2).toFixed(1)}" width="${W}" height="${ROW_H}" fill="rgba(255,255,255,.012)"/>`;
+      svg+=`<text x="${xL-8}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="10" fill="rgba(255,255,255,.65)" font-family="system-ui">${bkLabel(r.bk)}</text>`;
+      svg+=`<circle cx="${xL}" cy="${y.toFixed(1)}" r="4" fill="${dotCol}" opacity=".6"/>`;
+      svg+=`<circle cx="${xR}" cy="${y.toFixed(1)}" r="4" fill="${dotCol}" opacity="${r.curV>0?1:.3}"/>`;
+      if(r.basV>0||r.curV>0)svg+=`<line x1="${xL}" y1="${y.toFixed(1)}" x2="${xR}" y2="${y.toFixed(1)}" stroke="${lineCol}" stroke-width="${Math.min(2.5,0.8+Math.abs(r.pct)*3)}" stroke-dasharray="${r.delta===0?'3,3':''}"/>`;
+      svg+=`<text x="${xL-12}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="10" fill="rgba(255,255,255,.4)" font-family="monospace">${r.basV>0?fmtK(r.basV):''}</text>`;
+      svg+=`<text x="${xR+8}" y="${(y+4).toFixed(1)}" text-anchor="start" font-size="${Math.abs(r.pct)>.2?'11':'10'}" font-weight="${Math.abs(r.pct)>.2?'bold':'normal'}" fill="${r.delta>0?'#F87171':r.delta<0?'#34D9C3':'rgba(255,255,255,.55)'}" font-family="monospace">${r.curV>0?fmtK(r.curV):'—'}</text>`;
+      if(Math.abs(r.pct)>.05&&r.basV>0&&r.curV>0)svg+=`<text x="${(xL+MID_W/2).toFixed(1)}" y="${(y-3).toFixed(1)}" text-anchor="middle" font-size="9" fill="${lineCol}" font-family="monospace">${r.delta>0?'+':''}${(r.pct*100).toFixed(0)}%</text>`;
     });
-
     svg+='</svg>';
     return `<div style="padding:12px 16px;">${svg}</div>`;
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // CHART D: WAFFLE / PROPORTION (current month)
+  // CHART D: WAFFLE / PROPORTION (for selected month)
   // ══════════════════════════════════════════════════════════════════
   function renderWaffle() {
-    const selMoSel = document.getElementById('isMonth');
-    const selMo    = selMoSel ? (selMoSel.value || curMo) : curMo;
-    const cur       = monthData(selMo);
-    const total     = cur.fixed + cur.variable;
+    const cur   = monthData(selMo);
+    const total = cur.fixed + cur.variable;
     if (total < 1) return '<div style="padding:24px;text-align:center;color:rgba(255,255,255,.3);">No expense data for this month.</div>';
-
-    const rows = ALL_BKS.map(bk => {
-      const v = cur.fixedByBk[bk]||cur.varByBk[bk]||0;
-      return { bk, v, pct: v/total };
-    }).filter(r=>r.v>0.01).sort((a,b)=>b.v-a.v);
-
-    // Color stops for fixed (red family) and variable (amber family)
-    const fixedPalette  = ['#FF9494','#F87171','#E05555','#C94444','#B03333','#952020','#7A1010'];
-    const varPalette    = ['#FFCA40','#F5A800','#E09500','#C07A00','#9A6000','#784800','#563000'];
-    let fixedIdx=0, varIdx=0;
-
-    const [selY,selM] = selMo.split('-');
-    const selName = new Date(selY,selM-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
-
-    let bars = '', labels = '';
-    let curX = 0;
-    const BAR_H=32, BAR_W=520, LBL_AREA=120;
-
-    rows.forEach((r, i) => {
-      const isFixed = FIXED_BKS.includes(r.bk);
-      const col = isFixed ? (fixedPalette[fixedIdx++] || '#7A1010') : (varPalette[varIdx++] || '#563000');
-      const w = r.pct * BAR_W;
-      bars += `<rect x="${curX.toFixed(2)}" y="0" width="${Math.max(w,1).toFixed(2)}" height="${BAR_H}" fill="${col}" data-bk="${r.bk}"/>`;
-      // Label inside bar if wide enough
-      if(w > 42) bars += `<text x="${(curX+w/2).toFixed(1)}" y="13" text-anchor="middle" font-size="9" font-weight="600" fill="rgba(255,255,255,.85)" font-family="monospace">${(r.pct*100).toFixed(0)}%</text>`;
-      if(w > 64) bars += `<text x="${(curX+w/2).toFixed(1)}" y="26" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.7)" font-family="monospace">${fmtK(r.v)}</text>`;
-      curX += w;
+    const rows = ALL_BKS.map(bk=>({bk,v:cur.fixedByBk[bk]||cur.varByBk[bk]||0,pct:(cur.fixedByBk[bk]||cur.varByBk[bk]||0)/total})).filter(r=>r.v>0.01).sort((a,b)=>b.v-a.v);
+    const fixedPalette=['#FF9494','#F87171','#E05555','#C94444','#B03333','#952020','#7A1010'];
+    const varPalette  =['#FFCA40','#F5A800','#E09500','#C07A00','#9A6000','#784800','#563000'];
+    let fixedIdx=0,varIdx=0,bars='',curX=0;
+    const BAR_H=32,BAR_W=520;
+    const [sY,sM]=selMo.split('-');
+    const selName=new Date(sY,sM-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    rows.forEach(r=>{
+      const isFixed=FIXED_BKS.includes(r.bk);
+      const col=isFixed?(fixedPalette[fixedIdx++]||'#7A1010'):(varPalette[varIdx++]||'#563000');
+      const w=r.pct*BAR_W;
+      bars+=`<rect x="${curX.toFixed(2)}" y="0" width="${Math.max(w,1).toFixed(2)}" height="${BAR_H}" fill="${col}"/>`;
+      if(w>42)bars+=`<text x="${(curX+w/2).toFixed(1)}" y="13" text-anchor="middle" font-size="9" font-weight="600" fill="rgba(255,255,255,.85)" font-family="monospace">${(r.pct*100).toFixed(0)}%</text>`;
+      if(w>64)bars+=`<text x="${(curX+w/2).toFixed(1)}" y="26" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.7)" font-family="monospace">${fmtK(r.v)}</text>`;
+      curX+=w;
     });
-
-    // Legend items: 2 columns
-    const legendItems = rows.map((r,i) => {
-      const isFixed = FIXED_BKS.includes(r.bk);
-      const col = isFixed ? (fixedPalette[Math.min(i, fixedPalette.length-1)]) : (varPalette[Math.min(i-FIXED_BKS.filter(b=>rows.some(rr=>rr.bk===b)).length, varPalette.length-1)]||'#F5A800');
+    const deployLine=cur.deployable>0?cur.deployable/total*BAR_W:-1;
+    // Legend with correct colors
+    let fixIdx2=0,varIdx2=0;
+    const legendItems=rows.map(r=>{
+      const isFixed=FIXED_BKS.includes(r.bk);
+      const col=isFixed?(fixedPalette[Math.min(fixIdx2++,fixedPalette.length-1)]):(varPalette[Math.min(varIdx2++,varPalette.length-1)]);
       return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;">
-        <span style="width:8px;height:8px;border-radius:2px;background:${FIXED_BKS.includes(r.bk)?fixedPalette[rows.filter((rr,ii)=>FIXED_BKS.includes(rr.bk)&&ii<=i).length-1]||'#C94444':varPalette[rows.filter((rr,ii)=>!FIXED_BKS.includes(rr.bk)&&ii<=i).length-1]||'#C07A00'};flex-shrink:0;"></span>
-        <span style="font-size:11px;color:rgba(255,255,255,.7);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${BK_LABELS[r.bk]}</span>
+        <span style="width:8px;height:8px;border-radius:2px;background:${col};flex-shrink:0;"></span>
+        <span style="font-size:11px;color:rgba(255,255,255,.7);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${bkLabel(r.bk)}</span>
         <span style="font-size:11px;font-family:var(--fm);color:rgba(255,255,255,.5);flex-shrink:0;">${fmtK(r.v)}</span>
         <span style="font-size:10px;color:rgba(255,255,255,.3);flex-shrink:0;min-width:28px;text-align:right;">${(r.pct*100).toFixed(0)}%</span>
       </div>`;
     });
-
-    const deployLine = cur.deployable > 0 ? cur.deployable/total*BAR_W : -1;
-
     return `<div style="padding:12px 16px 14px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
         <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.6);">${selName} · ${fmtK(total)} total spend</div>
@@ -8577,9 +8576,8 @@ function renderISTrend() {
           ${bars}
           ${deployLine>0&&deployLine<BAR_W?`<line x1="${deployLine.toFixed(1)}" y1="0" x2="${deployLine.toFixed(1)}" y2="${BAR_H+2}" stroke="rgba(255,255,255,.85)" stroke-width="2" stroke-dasharray="4,3"/><rect x="${(deployLine+3).toFixed(1)}" y="2" width="52" height="16" rx="3" fill="rgba(0,0,0,.6)"/><text x="${(deployLine+7).toFixed(1)}" y="13" font-size="9" fill="rgba(52,217,195,.9)" font-family="monospace">income ◀</text>`:''}
         </svg>
-        ${cur.fixed+cur.variable>cur.deployable&&cur.deployable>0?`<div style="position:absolute;top:-20px;right:0;font-size:10px;color:#F87171;font-family:var(--fm);">⛔ over by ${fmtK(cur.fixed+cur.variable-cur.deployable)}</div>`:''}
+        ${cur.fixed+cur.variable>cur.deployable&&cur.deployable>0?`<div style="font-size:10px;color:#F87171;font-family:var(--fm);margin-top:4px;">⛔ over by ${fmtK(cur.fixed+cur.variable-cur.deployable)}</div>`:''}
       </div>
-      <!-- fixed/variable divider label -->
       <div style="display:flex;gap:12px;font-size:10px;font-family:var(--fm);margin-bottom:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);">
         <span style="color:#F87171;">■ Fixed ${fmtK(cur.fixed)} · ${(cur.fixed/total*100).toFixed(0)}%</span>
         <span style="color:#F5A800;">■ Variable ${fmtK(cur.variable)} · ${(cur.variable/total*100).toFixed(0)}%</span>
@@ -8588,36 +8586,45 @@ function renderISTrend() {
     </div>`;
   }
 
-  // ── Tooltip for stack bars ─────────────────────────────────────────
+  // ── Tooltip (clean, no raw template markup) ──────────────────────
   function makeTip(d) {
     const [yr,m] = d.mo.split('-');
-    const moName = new Date(yr,m-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
-    const fixLines = Object.entries(d.fixedByBk).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:16px;padding:2px 0;"><span style="color:rgba(200,196,190,.8);">${BK_LABELS[k]}</span><span style="color:#F87171;font-family:monospace;">${fmtK(v)}</span></div>`).join('');
-    const varLines = Object.entries(d.varByBk).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:16px;padding:2px 0;"><span style="color:rgba(200,196,190,.8);">${BK_LABELS[k]}</span><span style="color:#F5A800;font-family:monospace;">${fmtK(v)}</span></div>`).join('');
-    return `<div style="font-weight:700;color:#EEEAE4;font-size:12px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.1);">${moName}</div>
-      ${fixLines?`<div style="font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.3);text-transform:uppercase;margin-bottom:4px;">Fixed — ${fmtK(d.fixed)}</div>${fixLines}`:''}
-      ${varLines?`<div style="font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.3);text-transform:uppercase;margin:6px 0 4px;">Variable — ${fmtK(d.variable)}</div>${varLines}`:''}
-      <div style="border-top:1px solid rgba(255,255,255,.08);margin-top:8px;padding-top:6px;font-size:11px;display:flex;justify-content:space-between;">
-        <span style="color:#34D9C3;">Deployable</span><span style="color:#34D9C3;font-family:monospace;">${fmtK(d.deployable)}</span></div>
-      <div style="font-size:10px;display:flex;justify-content:space-between;margin-top:3px;">
-        <span style="color:rgba(255,255,255,.3);">Total spend</span><span style="color:rgba(255,255,255,.4);font-family:monospace;">${fmtK(d.total)}</span></div>
-      ${d.total>d.deployable&&d.deployable>0?`<div style="color:#F87171;font-size:10px;margin-top:4px;">⛔ over by ${fmtK(d.total-d.deployable)}</div>`:`<div style="color:#34D9C3;font-size:10px;margin-top:4px;">✅ surplus ${fmtK(d.deployable-d.total)}</div>`}
-      <div style="margin-top:8px;font-size:10px;color:#60A5FA;cursor:pointer;" onclick="(function(){var sel=document.getElementById('isMonth');if(sel){for(var i=0;i<sel.options.length;i++)if(sel.options[i].value==='${d.mo}'){sel.selectedIndex=i;break;}}renderIncomeStatement();})()">Open ${moName} IS →</div>`;
+    const moName = new Date(+yr, +m-1, 1).toLocaleDateString('en-US', {month:'long', year:'numeric'});
+    let html = `<div style="font-weight:700;color:#EEEAE4;font-size:12px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:6px;margin-bottom:8px;">${moName}${d.isCurrentMo?' <span style="font-size:9px;color:#60A5FA;background:rgba(96,165,250,.15);padding:1px 6px;border-radius:10px;font-weight:400;">projected</span>':''}</div>`;
+    if (Object.keys(d.fixedByBk).length) {
+      html += `<div style="font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.3);text-transform:uppercase;margin-bottom:4px;">Fixed — ${fmtK(d.fixed)}</div>`;
+      Object.entries(d.fixedByBk).sort((a,b)=>b[1]-a[1]).forEach(([k,v]) => {
+        html += `<div style="display:flex;justify-content:space-between;gap:16px;padding:2px 0;font-size:11px;"><span style="color:rgba(200,196,190,.85);">${bkLabel(k)}</span><span style="color:#F87171;font-family:var(--fm);">${fmtK(v)}</span></div>`;
+      });
+    }
+    if (Object.keys(d.varByBk).length) {
+      html += `<div style="font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.3);text-transform:uppercase;margin:6px 0 4px;">Variable — ${fmtK(d.variable)}</div>`;
+      Object.entries(d.varByBk).sort((a,b)=>b[1]-a[1]).forEach(([k,v]) => {
+        html += `<div style="display:flex;justify-content:space-between;gap:16px;padding:2px 0;font-size:11px;"><span style="color:rgba(200,196,190,.85);">${bkLabel(k)}</span><span style="color:#F5A800;font-family:var(--fm);">${fmtK(v)}</span></div>`;
+      });
+    }
+    html += `<div style="border-top:1px solid rgba(255,255,255,.08);margin-top:8px;padding-top:6px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:#34D9C3;">Deployable</span><span style="color:#34D9C3;font-family:var(--fm);">${fmtK(d.deployable)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px;"><span style="color:rgba(255,255,255,.35);">Total spend</span><span style="color:rgba(255,255,255,.45);font-family:var(--fm);">${fmtK(d.total)}</span></div>
+      ${d.total>d.deployable&&d.deployable>0?`<div style="color:#F87171;font-size:10px;margin-top:4px;">⛔ over by ${fmtK(d.total-d.deployable)}</div>`:`<div style="color:#34D9C3;font-size:10px;margin-top:4px;">✅ surplus ${fmtK(Math.max(0,d.deployable-d.total))}</div>`}
+    </div>
+    <div style="margin-top:8px;font-size:10px;color:#60A5FA;cursor:pointer;border-top:1px solid rgba(255,255,255,.06);padding-top:6px;" data-jump-mo="${d.mo}">Open ${moName} detail →</div>`;
+    return html;
   }
 
-  // ── Render chart ──────────────────────────────────────────────────
+  // ── Dispatch ──────────────────────────────────────────────────────
   let chartHtml = '';
   if      (isTrendType === 'trellis') chartHtml = renderTrellis();
   else if (isTrendType === 'slope')   chartHtml = renderSlope();
   else if (isTrendType === 'waffle')  chartHtml = renderWaffle();
-  else                                chartHtml = `<div style="padding:8px 8px 4px;position:relative;" id="isTrendChartArea">
+  else chartHtml = `<div style="padding:8px 8px 4px;position:relative;" id="isTrendChartArea">
     ${renderStack()}
-    <div id="isTrendTip" style="display:none;position:absolute;background:rgba(18,18,20,.97);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 12px;font-size:11px;font-family:var(--fm);min-width:160px;max-width:220px;max-height:300px;overflow-y:auto;pointer-events:none;z-index:99;box-shadow:0 8px 32px rgba(0,0,0,.6);"></div>
+    <div id="isTrendTip" style="display:none;position:absolute;background:rgba(14,14,16,.98);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px 14px;font-size:11px;font-family:var(--fm);min-width:180px;max-width:240px;max-height:320px;overflow-y:auto;pointer-events:none;z-index:99;box-shadow:0 12px 40px rgba(0,0,0,.7);"></div>
   </div>`;
 
   el.innerHTML = headerHtml + chartHtml;
 
-  // Stack bar tooltip events
+  // ── Stack bar events ──────────────────────────────────────────────
   if (isTrendType === 'stack') {
     el.querySelectorAll('.ist-bar').forEach(rect => {
       rect.addEventListener('mouseenter', function(e) {
@@ -8626,10 +8633,17 @@ function renderISTrend() {
         const tip = el.querySelector('#isTrendTip');
         if (!tip) return;
         tip.innerHTML = makeTip(d);
+        tip.querySelector('[data-jump-mo]')?.addEventListener('click', function() {
+          const mo = this.dataset.jumpMo;
+          const sel = document.getElementById('isMonth');
+          if (sel) for (let i=0;i<sel.options.length;i++) if(sel.options[i].value===mo){sel.selectedIndex=i;break;}
+          renderIncomeStatement();
+          tip.style.display = 'none';
+        });
         const chartEl = el.querySelector('#isTrendChartArea');
-        const cRect = chartEl.getBoundingClientRect();
-        const bRect = this.getBoundingClientRect();
-        const tipW = 220;
+        const cRect   = chartEl.getBoundingClientRect();
+        const bRect   = this.getBoundingClientRect();
+        const tipW    = 240;
         const spaceRight = cRect.width - (bRect.left - cRect.left) - bRect.width;
         let tipX = bRect.left - cRect.left + bRect.width + 8;
         if (spaceRight < tipW + 20) tipX = bRect.left - cRect.left - tipW - 8;
@@ -8637,18 +8651,20 @@ function renderISTrend() {
         tip.style.top     = '4px';
         tip.style.display = 'block';
       });
-      rect.addEventListener('mouseleave', function() {
+      rect.addEventListener('mouseleave', () => {
         const tip = el.querySelector('#isTrendTip');
         if (tip) tip.style.display = 'none';
       });
       rect.addEventListener('click', function() {
-        const mo = this.dataset.mo, sel = document.getElementById('isMonth');
+        const mo  = this.dataset.mo;
+        const sel = document.getElementById('isMonth');
         if (sel) for (let i=0;i<sel.options.length;i++) if(sel.options[i].value===mo){sel.selectedIndex=i;break;}
         renderIncomeStatement();
       });
     });
   }
 }
+
 
 
 function renderIncomeStatement() {
@@ -9046,6 +9062,20 @@ function renderIncomeStatement() {
     </div>
   `);
 
+  // ── BLOCK 6: Recommendations ──────────────────────────────────────────
+  if (recs.length > 0) {
+    out += cardWrap(`
+      <div style="padding:10px 14px 6px;">
+        <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">RECOMMENDATIONS</div>
+        ${recs.map(r=>`
+          <div style="display:flex;gap:10px;padding:8px 10px;background:${recColors[r.level]||'rgba(255,255,255,.04)'};border-left:3px solid ${recBorders[r.level]||'var(--line)'};border-radius:0 6px 6px 0;margin-bottom:6px;">
+            <div style="font-size:16px;flex-shrink:0;">${r.icon}</div>
+            <div style="font-size:12px;color:var(--ink3);line-height:1.5;">${r.text}</div>
+          </div>`).join('')}
+      </div>
+    `);
+  }
+
   // ── BLOCK 2: Fixed expenses ────────────────────────────────────────────
   if (fixedRows.length > 0) {
     const fixedSub = isInFlight && fixedRows.some(g=>g.proj>0)
@@ -9132,49 +9162,93 @@ function renderIncomeStatement() {
     `);
   }
 
-  // ── BLOCK 6: Recommendations ──────────────────────────────────────────
-  if (recs.length > 0) {
-    out += cardWrap(`
-      <div style="padding:10px 14px 6px;">
-        <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">RECOMMENDATIONS</div>
-        ${recs.map(r=>`
-          <div style="display:flex;gap:10px;padding:8px 10px;background:${recColors[r.level]||'rgba(255,255,255,.04)'};border-left:3px solid ${recBorders[r.level]||'var(--line)'};border-radius:0 6px 6px 0;margin-bottom:6px;">
-            <div style="font-size:16px;flex-shrink:0;">${r.icon}</div>
-            <div style="font-size:12px;color:var(--ink3);line-height:1.5;">${r.text}</div>
-          </div>`).join('')}
-      </div>
-    `);
-  }
+  // ── BLOCK 7: Cash Reconciliation — source-of-truth account balance table ────────
+  // Compute per-account ending balances for the selected month
+  const reconAccts = txns.filter(t => {
+    const at = detectAcctType(t.account||'');
+    return (at === 'checking' || at === 'savings' || at === 'credit') && t.date <= selMonth+'-31';
+  });
+  // Sum all transactions through end of month, grouped by account
+  const acctBals = {};
+  reconAccts.forEach(t => { acctBals[t.account] = (acctBals[t.account]||0) + t.amount; });
+  // Sort: checking first, savings, then credit cards
+  const acctOrder = { checking:0, savings:1, credit:2 };
+  const acctList  = Object.entries(acctBals)
+    .map(([acct, bal]) => ({ acct, bal, type: detectAcctType(acct) }))
+    .sort((a,b) => (acctOrder[a.type]||3)-(acctOrder[b.type]||3) || a.acct.localeCompare(b.acct));
+  const totalBal  = acctList.reduce((s,a)=>s+a.bal, 0);
 
-  // ── BLOCK 7: Cash reconciliation ──────────────────────────────────────
+  // Credit card net: charges vs payments
+  const netCC     = ccPaid - ccCharges;
+  const checkNetMove = totalIncome + totalDraw - totalAutoSave - ccPaid;
+
   out += cardWrap(`
-    <div style="padding:10px 14px;">
-      <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px;">CASH RECONCILIATION</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div>
-          <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:4px;">CHECKING</div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:var(--ink3);">Paycheck deposits</span><span style="color:${C.pos};font-family:var(--fm);">+${kfmt(totalIncome)}</span></div>
-          ${totalDraw>0?`<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:${C.neg};">Savings draw</span><span style="color:${C.neg};font-family:var(--fm);">+${kfmt(totalDraw)} ⚠</span></div>`:''}
-          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:var(--ink3);">Auto-savings out</span><span style="color:${C.river};font-family:var(--fm);">−${kfmt(totalAutoSave)}</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:var(--ink3);">CC payments</span><span style="color:var(--ink4);font-family:var(--fm);">−${kfmt(ccPaid)}</span></div>
-          <div style="display:flex;justify-content:space-between;padding:5px 0 3px;font-size:13px;font-weight:700;border-top:1px solid rgba(255,255,255,.08);margin-top:4px;">
-            <span style="color:var(--ink);">Net checking change</span>
-            <span style="color:${(totalIncome+totalDraw-totalAutoSave-ccPaid)>=0?C.pos:C.neg};font-family:var(--fm);">${(totalIncome+totalDraw-totalAutoSave-ccPaid)>=0?'+':''}${kfmt(totalIncome+totalDraw-totalAutoSave-ccPaid)}</span>
-          </div>
+    <div style="padding:12px 16px 8px;border-bottom:1px solid rgba(255,255,255,.06);">
+      <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">RECONCILIATION — Verify against Quicken</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.4);line-height:1.5;">Compare these account balances to the actual balances shown in Quicken as of the last day of <strong style="color:rgba(255,255,255,.65);">${monthName}</strong>. If they match, your income statement is accurate.</div>
+    </div>
+
+    <!-- Account balances table -->
+    <div style="padding:0;">
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:0;padding:6px 16px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(0,0,0,.2);">
+        <div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Account</div>
+        <div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;padding-right:16px;">Type</div>
+        <div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Balance</div>
+      </div>
+      ${acctList.map((a,i) => {
+        const typeLabel = {checking:'Checking',savings:'Savings',credit:'Credit Card'}[a.type]||a.type;
+        const balColor  = a.type==='credit' ? (a.bal<0?'#F87171':'var(--ink3)') : (a.bal>=0?'var(--ink2)':'#F87171');
+        const rowBg     = i%2===0?'transparent':'rgba(255,255,255,.015)';
+        return `<div style="display:grid;grid-template-columns:1fr auto auto;gap:0;padding:7px 16px;border-bottom:1px solid rgba(255,255,255,.032);background:${rowBg};align-items:center;">
+          <div style="font-size:12px;color:var(--ink2);">${a.acct}</div>
+          <div style="font-size:10px;color:var(--ink4);text-align:right;padding-right:16px;">${typeLabel}</div>
+          <div style="font-size:13px;font-weight:600;font-family:var(--fm);color:${balColor};text-align:right;">${a.type==='credit'&&a.bal<0?'('+mfmt(Math.abs(a.bal))+')':mfmt(a.bal)}</div>
+        </div>`;
+      }).join('')}
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:0;padding:10px 16px;border-top:2px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);">
+        <div style="font-size:13px;font-weight:700;color:var(--ink);">Net Position</div>
+        <div></div>
+        <div style="font-size:16px;font-weight:700;font-family:var(--fm);color:${totalBal>=0?'var(--pos)':'var(--neg)'};text-align:right;">${totalBal>=0?'':'-'}${mfmt(Math.abs(totalBal))}</div>
+      </div>
+    </div>
+
+    <!-- Month-to-month cash flow summary -->
+    <div style="padding:10px 16px;border-top:1px solid rgba(255,255,255,.06);">
+      <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px;">HOW TO RECONCILE</div>
+      <div style="display:grid;grid-template-columns:1fr;gap:5px;font-size:12px;">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+          <span style="color:var(--ink3);">1. Open Quicken → Account List view</span>
         </div>
-        <div>
-          <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:4px;">CREDIT CARDS</div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:var(--ink3);">New charges</span><span style="color:${C.gold};font-family:var(--fm);">−${kfmt(ccCharges)}</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:var(--ink3);">Payments made</span><span style="color:${C.pos};font-family:var(--fm);">+${kfmt(ccPaid)}</span></div>
-          <div style="display:flex;justify-content:space-between;padding:5px 0 3px;font-size:13px;font-weight:700;border-top:1px solid rgba(255,255,255,.08);margin-top:4px;">
-            <span style="color:var(--ink);">Balance change</span>
-            <span style="color:${(ccPaid-ccCharges)>=0?C.pos:C.neg};font-family:var(--fm);">${(ccPaid-ccCharges)>=0?'+':''}${kfmt(ccPaid-ccCharges)}</span>
-          </div>
-          ${ccCharges>ccPaid?`<div style="font-size:10px;color:${C.ink4};margin-top:4px;font-style:italic;">${kfmt(ccCharges-ccPaid)} in charges not yet paid this month</div>`:''}
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+          <span style="color:var(--ink3);">2. Set date to last day of ${monthName}</span>
         </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+          <span style="color:var(--ink3);">3. Sum balances for all accounts listed above</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+          <span style="color:var(--ink3);">4. Quicken total should equal Forge net position:</span>
+          <span style="font-family:var(--fm);font-weight:700;color:${totalBal>=0?'var(--pos)':'var(--neg)'};">${totalBal>=0?'':'-'}${mfmt(Math.abs(totalBal))}</span>
+        </div>
+      </div>
+
+      <!-- Expense derivation reconciliation -->
+      <div style="margin-top:12px;background:rgba(255,255,255,.025);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:10px;font-weight:600;color:var(--ink4);margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">Operating Expense Derivation</div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;"><span style="color:var(--ink3);">Checking deposits (paychecks)</span><span style="color:var(--pos);font-family:var(--fm);">+${mfmt(totalIncome)}</span></div>
+        ${totalDraw>0?`<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;"><span style="color:var(--neg);">Savings draw (gap funding ⚠)</span><span style="color:var(--neg);font-family:var(--fm);">+${mfmt(totalDraw)}</span></div>`:''}
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;"><span style="color:var(--ink3);">Auto-savings transferred out</span><span style="color:var(--river);font-family:var(--fm);">−${mfmt(totalAutoSave)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;"><span style="color:var(--ink3);">Credit card payments (from checking)</span><span style="color:var(--ink4);font-family:var(--fm);">−${mfmt(ccPaid)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-top:1px solid rgba(255,255,255,.08);margin-top:4px;padding-top:6px;font-weight:600;"><span style="color:var(--ink);">Net checking change</span><span style="color:${checkNetMove>=0?'var(--pos)':'var(--neg)'};font-family:var(--fm);">${checkNetMove>=0?'+':''}${mfmt(checkNetMove)}</span></div>
+        <div style="height:8px;"></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;"><span style="color:var(--ink3);">CC charges this month</span><span style="color:var(--gold);font-family:var(--fm);">−${mfmt(ccCharges)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;"><span style="color:var(--ink3);">CC payments received by cards</span><span style="color:var(--pos);font-family:var(--fm);">+${mfmt(ccPaid)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-top:1px solid rgba(255,255,255,.08);margin-top:4px;padding-top:6px;font-weight:600;"><span style="color:var(--ink);">Net CC balance change</span><span style="color:${netCC>=0?'var(--pos)':'var(--neg)'};font-family:var(--fm);">${netCC>=0?'+':''}${mfmt(netCC)} ${netCC<0?'(balance grew)':'(balance shrunk)'}</span></div>
+        <div style="height:8px;"></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-top:2px solid rgba(255,255,255,.12);font-weight:700;"><span style="color:var(--ink);">Total operating expenses</span><span style="color:${(totalFixed+totalVar)>deployable?'var(--neg)':'var(--ink)'};font-family:var(--fm);">−${mfmt(totalFixed+totalVar)}</span></div>
       </div>
     </div>
   `);
+
 
   el.innerHTML = out;
 
@@ -9238,7 +9312,7 @@ function renderCreditFlow() {
   out += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">';
   out += '<div class="kpi"><div class="kpi-label">30-Day CC Spend</div><div class="kpi-val" style="color:var(--gold);">'+fmt(totalVel30)+'</div><div class="kpi-sub">across all cards</div></div>';
   out += '<div class="kpi"><div class="kpi-label">Avg Daily Spend</div><div class="kpi-val">'+fmt(totalVel30/30)+'</div><div class="kpi-sub">'+fmt(totalVel30/30*daysLeft)+' projected remaining month</div></div>';
-  out += '<div class="kpi"><div class="kpi-label">Est. Total Bills Due</div><div class="kpi-val" style="color:var(--negative);">'+fmt(totalEst)+'</div><div class="kpi-sub">estimated open balances</div></div>';
+  out += '<div class="kpi"><div class="kpi-label">Est. Total Bills Due</div><div class="kpi-val" style="color:var(--neg);">'+fmt(totalEst)+'</div><div class="kpi-sub">estimated open balances</div></div>';
   out += '</div>';
 
   // Per-card cards
@@ -9253,28 +9327,28 @@ function renderCreditFlow() {
     out += '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;">';
     out += '<div><div style="font-size:14px;font-weight:600;color:var(--ink);">'+p.acct+'</div>';
     out += '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">'+p.chargeCount+' charges in last 30 days</div></div>';
-    out += '<div style="text-align:right;"><div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">30-Day Velocity</div>';
+    out += '<div style="text-align:right;"><div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">30-Day Velocity</div>';
     out += '<div style="font-size:32px;font-weight:300;font-family:var(--font-d);letter-spacing:-.025em;color:'+color+';">'+fmt(p.vel30)+'</div></div>';
     out += '</div>';
 
     // Projection details
     out += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">';
     out += '<div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;">';
-    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Avg/Day</div>';
+    out += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Avg/Day</div>';
     out += '<div style="font-size:16px;font-weight:600;color:var(--ink);">'+fmt(p.vel30/30)+'</div></div>';
 
     out += '<div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;">';
-    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">'+daysLeft+'d Left in Month</div>';
+    out += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">'+daysLeft+'d Left in Month</div>';
     out += '<div style="font-size:16px;font-weight:600;color:var(--gold);">+'+fmt(projRemaining)+' est.</div></div>';
 
     out += '<div style="background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.15);border-radius:var(--r-sm);padding:10px 12px;">';
-    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--negative);margin-bottom:4px;">Have Ready to Pay</div>';
-    out += '<div style="font-size:16px;font-weight:700;color:var(--negative);">~'+fmt(p.vel30)+'</div></div>';
+    out += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--neg);margin-bottom:4px;">Have Ready to Pay</div>';
+    out += '<div style="font-size:16px;font-weight:700;color:var(--neg);">~'+fmt(p.vel30)+'</div></div>';
     out += '</div>';
 
     // Top categories on this card
     if (p.topCats.length) {
-      out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Where you&#39;re spending on this card</div>';
+      out += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Where you&#39;re spending on this card</div>';
       out += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
       p.topCats.forEach(([cat,amt]) => {
         out += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:4px;padding:4px 10px;font-size:11px;color:var(--ink3);">'+cat+' <strong style="color:var(--ink2);">'+fmt(amt)+'</strong></div>';
@@ -9284,7 +9358,7 @@ function renderCreditFlow() {
 
     // Cash flow guidance
     out += '<div style="margin-top:14px;padding:10px 14px;background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.12);border-radius:var(--r-sm);font-size:11px;color:var(--ink3);">';
-    out += '💡 <strong style="color:var(--river);">Cash flow tip:</strong> Based on last 30 days, have approximately <strong style="color:var(--positive);">'+fmt(p.vel30)+'</strong> ready in checking when this bill is due. ';
+    out += '💡 <strong style="color:var(--river);">Cash flow tip:</strong> Based on last 30 days, have approximately <strong style="color:var(--pos);">'+fmt(p.vel30)+'</strong> ready in checking when this bill is due. ';
     out += 'At your current pace, you&#39;ll spend roughly <strong>'+fmt(projRemaining)+'</strong> more on this card before month end.';
     out += '</div>';
     out += '</div>';
@@ -9317,7 +9391,7 @@ function renderCreditFlow() {
     out += '<div style="flex:1;height:'+h+'px;background:'+color+';border-radius:2px 2px 0 0;min-width:'+barW+'px;" title="Day '+d+': '+fmt(v)+'"></div>';
   });
   out += '</div>';
-  out += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--ink4);font-family:var(--font-m);">';
+  out += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--ink4);font-family:var(--fm);">';
   out += '<span>Day 1</span><span>Today (Day '+today+')</span><span>Day '+daysIn+'</span>';
   out += '</div></div>';
 
@@ -9326,7 +9400,7 @@ function renderCreditFlow() {
   } catch(e) {
     console.error('[Forge] renderCreditFlow error:', e);
     const _el = document.getElementById('creditFlowContent');
-    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--negative);font-family:var(--font-m);font-size:12px;">⚠ Render error in renderCreditFlow: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--neg);font-family:var(--fm);font-size:12px;">⚠ Render error in renderCreditFlow: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
   }
 }
 
@@ -9686,14 +9760,14 @@ function renderBalanceSheet() {
 
   function hdrRow() {
     let r = '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:7px 20px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--line);">';
-    r += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">Account</div>';
-    r += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);text-align:right;">Balance</div>';
+    r += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">Account</div>';
+    r += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);text-align:right;">Balance</div>';
     if (hasCompare) {
-      r += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">'+compareLabel.replace('vs. ','')+'</div>';
-      r += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Change</div>';
-      r += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">%</div>';
+      r += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">'+compareLabel.replace('vs. ','')+'</div>';
+      r += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Change</div>';
+      r += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">%</div>';
     } else {
-      r += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Source</div>';
+      r += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Source</div>';
     }
     return r + '</div>';
   }
@@ -9704,8 +9778,8 @@ function renderBalanceSheet() {
     const isLiab = e.meta && e.meta.class === 'liability';
     const changeColor = e.change === null ? 'var(--ink4)'
       : isLiab
-        ? (e.change <= 0 ? 'var(--positive)' : 'var(--negative)')  // liability down = good
-        : (e.change >= 0 ? 'var(--positive)' : 'var(--negative)'); // asset up = good
+        ? (e.change <= 0 ? 'var(--pos)' : 'var(--neg)')  // liability down = good
+        : (e.change >= 0 ? 'var(--pos)' : 'var(--neg)'); // asset up = good
     let r = '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:9px 20px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;" class="bs-row">';
     // Name + flags
     r += '<div style="display:flex;align-items:center;gap:7px;min-width:0;">';
@@ -9715,18 +9789,18 @@ function renderBalanceSheet() {
       r += '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:1px;">';
       e.flags.forEach(f => {
         const fc = f.type==='ok'?'rgba(45,212,191,.2)':f.type==='stale'?'rgba(245,168,0,.2)':'rgba(248,113,113,.2)';
-        const tc = f.type==='ok'?'var(--positive)':f.type==='stale'?'var(--gold)':'var(--negative)';
-        r += '<span style="font-size:8px;background:'+fc+';color:'+tc+';padding:1px 5px;border-radius:3px;font-family:var(--font-m);">'+f.text+'</span>';
+        const tc = f.type==='ok'?'var(--pos)':f.type==='stale'?'var(--gold)':'var(--neg)';
+        r += '<span style="font-size:8px;background:'+fc+';color:'+tc+';padding:1px 5px;border-radius:3px;font-family:var(--fm);">'+f.text+'</span>';
       });
       r += '</div>';
     }
     r += '</div></div>';
     // Current value
-    r += '<div style="text-align:right;font-family:var(--font-m);font-size:13px;font-weight:600;color:var(--ink);">'+fmt(e.amt)+'</div>';
+    r += '<div style="text-align:right;font-family:var(--fm);font-size:13px;font-weight:600;color:var(--ink);">'+fmt(e.amt)+'</div>';
     if (hasCompare) {
-      r += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;color:var(--ink4);">'+(e.prior !== null ? fmt(e.prior) : '—')+'</div>';
-      r += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:600;color:'+changeColor+';">'+(e.change !== null ? (e.change >= 0 ? '+' : '')+fmt(e.change) : '—')+'</div>';
-      r += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:'+changeColor+';">'+(e.changePct !== null ? (e.changePct >= 0?'+':'')+e.changePct.toFixed(1)+'%' : '—')+'</div>';
+      r += '<div style="text-align:right;font-family:var(--fm);font-size:12px;color:var(--ink4);">'+(e.prior !== null ? fmt(e.prior) : '—')+'</div>';
+      r += '<div style="text-align:right;font-family:var(--fm);font-size:12px;font-weight:600;color:'+changeColor+';">'+(e.change !== null ? (e.change >= 0 ? '+' : '')+fmt(e.change) : '—')+'</div>';
+      r += '<div style="text-align:right;font-family:var(--fm);font-size:11px;color:'+changeColor+';">'+(e.changePct !== null ? (e.changePct >= 0?'+':'')+e.changePct.toFixed(1)+'%' : '—')+'</div>';
     } else {
       r += '<div style="text-align:right;font-size:10px;color:var(--ink4);">'+(e.flags.find(f=>f.type==='ok')?.text||'txn register')+'</div>';
     }
@@ -9735,14 +9809,14 @@ function renderBalanceSheet() {
 
   function groupRow(label, total, priorTotal, labelColor) {
     const change = hasCompare && priorTotal ? total - priorTotal : null;
-    const changeColor = change === null ? 'var(--ink4)' : change >= 0 ? 'var(--positive)' : 'var(--negative)';
+    const changeColor = change === null ? 'var(--ink4)' : change >= 0 ? 'var(--pos)' : 'var(--neg)';
     const lc = labelColor || 'var(--ink3)';
     let r = '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:8px 16px;background:rgba(255,255,255,.025);border-bottom:1px solid var(--line);">';
     r += '<div style="font-size:10px;font-weight:600;color:'+lc+';letter-spacing:.05em;">'+label+'</div>';
-    r += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:600;color:'+lc+';">'+fmt(total)+'</div>';
+    r += '<div style="text-align:right;font-family:var(--fm);font-size:12px;font-weight:600;color:'+lc+';">'+fmt(total)+'</div>';
     if (hasCompare) {
-      r += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">'+fmt(priorTotal)+'</div>';
-      r += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;color:'+changeColor+';">'+(change!==null?(change>=0?'+':'')+fmt(change):'—')+'</div>';
+      r += '<div style="text-align:right;font-family:var(--fm);font-size:11px;color:var(--ink4);">'+fmt(priorTotal)+'</div>';
+      r += '<div style="text-align:right;font-family:var(--fm);font-size:12px;font-weight:700;color:'+changeColor+';">'+(change!==null?(change>=0?'+':'')+fmt(change):'—')+'</div>';
       r += '<div></div>';
     } else {
       r += '<div></div>';
@@ -9764,10 +9838,10 @@ function renderBalanceSheet() {
     const nwDateSet  = [...new Set(Object.values(netWorthOverrides).map(v=>v.date))];
     const snapCount  = Object.keys(nwHistory).length;
     const dateChips  = nwDateSet.slice(0,3).map(d =>
-      `<span style="font-size:9px;padding:1px 7px;border-radius:10px;background:rgba(45,212,191,.12);border:1px solid rgba(45,212,191,.25);color:var(--positive);font-family:var(--font-m);">${d}</span>`
+      `<span style="font-size:9px;padding:1px 7px;border-radius:10px;background:rgba(45,212,191,.12);border:1px solid rgba(45,212,191,.25);color:var(--pos);font-family:var(--fm);">${d}</span>`
     ).join(' ') + (nwDateSet.length > 3 ? ` <span style="font-size:10px;color:var(--ink4);">+${nwDateSet.length-3} more</span>` : '');
     out += '<div style="background:rgba(45,212,191,.06);border:1px solid rgba(45,212,191,.2);border-radius:var(--r-md);padding:10px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">';
-    out += '<div style="font-size:12px;color:var(--ink3);">✓ <strong style="color:var(--positive);">'+nwLoaded+' account values loaded</strong>';
+    out += '<div style="font-size:12px;color:var(--ink3);">✓ <strong style="color:var(--pos);">'+nwLoaded+' account values loaded</strong>';
     if (snapCount > 1) out += ' · '+snapCount+' historical snapshots';
     out += '</div>';
     out += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' + dateChips + '</div>';
@@ -9788,18 +9862,18 @@ function renderBalanceSheet() {
 
   out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;">';
   const kpis = [
-    ['Net Worth', fmt(netWorth), netWorth>=0?'var(--positive)':'var(--negative)',
+    ['Net Worth', fmt(netWorth), netWorth>=0?'var(--pos)':'var(--neg)',
       hasCompare && nwChange!==null ? (nwChange>=0?'↑ ':'↓ ')+fmt(Math.abs(nwChange))+(nwChangePct!==null?' ('+nwChangePct.toFixed(1)+'%)':'')+' '+compareLabel : 'assets minus liabilities'],
     ['Total Assets', fmt(totalAssets), 'var(--ink)', hasCompare && totalPriorAssets ? 'prior: '+fmt(totalPriorAssets) : 'all owned assets'],
-    ['Total Liabilities', fmt(totalLiabs), 'var(--negative)', hasCompare && totalPriorLiabs ? ((totalLiabs <= totalPriorLiabs ? '↓ good · ' : '↑ bad · ') + 'prior: '+fmt(totalPriorLiabs)) : 'all outstanding debt'],
-    ['Home Equity', fmt(homeEquity), homeEquity>=0?'var(--river)':'var(--negative)', 'property minus mortgage'],
+    ['Total Liabilities', fmt(totalLiabs), 'var(--neg)', hasCompare && totalPriorLiabs ? ((totalLiabs <= totalPriorLiabs ? '↓ good · ' : '↑ bad · ') + 'prior: '+fmt(totalPriorLiabs)) : 'all outstanding debt'],
+    ['Home Equity', fmt(homeEquity), homeEquity>=0?'var(--river)':'var(--neg)', 'property minus mortgage'],
   ];
   kpis.forEach(([l,v,c,s], ki) => {
     const accentColors = ['rgba(45,212,191,.06)','rgba(255,255,255,.02)','rgba(248,113,113,.05)','rgba(96,165,250,.05)'];
     const accentBorder = ['rgba(45,212,191,.2)','var(--line)','rgba(248,113,113,.2)','rgba(96,165,250,.2)'];
     out += '<div style="background:var(--float);border:1px solid '+accentBorder[ki]+';border-radius:var(--r-lg);padding:18px 20px;position:relative;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.05);">';
     out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:'+c+';border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
-    out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:7px;font-weight:600;">'+l+'</div>';
+    out += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:7px;font-weight:600;">'+l+'</div>';
     out += '<div style="font-size:28px;font-weight:700;color:'+c+';letter-spacing:-.02em;line-height:1;font-family:var(--font-d);text-shadow:0 1px 8px '+c+'44;">'+v+'</div>';
     out += '<div style="font-size:12px;color:var(--ink4);margin-top:6px;font-family:var(--font-ui);">'+s+'</div></div>';
   });
@@ -9824,15 +9898,15 @@ function renderBalanceSheet() {
 
   out += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;">';
   const kpis2 = [
-    ['Current Assets',  fmt(currentAssets),  'var(--positive)',  'cash + savings · liquid within 12mo'],
-    ['Current Liabilities', fmt(currentLiabs), 'var(--negative)', 'CC balances due this cycle'],
+    ['Current Assets',  fmt(currentAssets),  'var(--pos)',  'cash + savings · liquid within 12mo'],
+    ['Current Liabilities', fmt(currentLiabs), 'var(--neg)', 'CC balances due this cycle'],
     ['Current Ratio',   currentRatio!==null ? currentRatio.toFixed(2)+'×' : '—',
-      currentRatio===null?'var(--ink4)':currentRatio>=2?'var(--positive)':currentRatio>=1?'var(--gold)':'var(--negative)',
+      currentRatio===null?'var(--ink4)':currentRatio>=2?'var(--pos)':currentRatio>=1?'var(--gold)':'var(--neg)',
       'current assets ÷ current liabilities · target ≥2×'],
   ];
   kpis2.forEach(([l,v,c,s]) => {
     out += '<div style="background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.25);">';
-    out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;font-weight:600;">'+l+'</div>';
+    out += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;font-weight:600;">'+l+'</div>';
     out += '<div style="font-size:30px;font-weight:400;font-family:var(--font-d);letter-spacing:-.02em;color:'+c+';">'+v+'</div>';
     out += '<div style="font-size:11px;color:var(--ink4);margin-top:3px;">'+s+'</div></div>';
   });
@@ -9841,18 +9915,18 @@ function renderBalanceSheet() {
   out += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;">';
   const kpis3 = [
     ['Debt-to-Asset Ratio', debtRatio.toFixed(1)+'%',
-      debtRatio<30?'var(--positive)':debtRatio<50?'var(--gold)':'var(--negative)',
+      debtRatio<30?'var(--pos)':debtRatio<50?'var(--gold)':'var(--neg)',
       'total liabilities ÷ total assets · target <30%'],
     ['Debt-to-Income', dtiRatio!==null ? dtiRatio.toFixed(1)+'%' : '—',
-      dtiRatio===null?'var(--ink4)':dtiRatio<36?'var(--positive)':dtiRatio<50?'var(--gold)':'var(--negative)',
+      dtiRatio===null?'var(--ink4)':dtiRatio<36?'var(--pos)':dtiRatio<50?'var(--gold)':'var(--neg)',
       'total debt ÷ annual income · target <36%'],
     ['Liquid Coverage', liquidMonths!==null ? liquidMonths.toFixed(1)+' mo' : '—',
-      liquidMonths===null?'var(--ink4)':liquidMonths>=6?'var(--positive)':liquidMonths>=3?'var(--gold)':'var(--negative)',
+      liquidMonths===null?'var(--ink4)':liquidMonths>=6?'var(--pos)':liquidMonths>=3?'var(--gold)':'var(--neg)',
       'current assets ÷ monthly income · target ≥6mo'],
   ];
   kpis3.forEach(([l,v,c,s]) => {
     out += '<div style="background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.25);">';
-    out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;font-weight:600;">'+l+'</div>';
+    out += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;font-weight:600;">'+l+'</div>';
     out += '<div style="font-size:30px;font-weight:400;font-family:var(--font-d);letter-spacing:-.02em;color:'+c+';">'+v+'</div>';
     out += '<div style="font-size:11px;color:var(--ink4);margin-top:3px;">'+s+'</div></div>';
   });
@@ -9861,7 +9935,7 @@ function renderBalanceSheet() {
   // Assets table
   out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">';
   out += '<div style="padding:10px 16px;background:var(--lift);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">';
-  out += '<div style="font-size:22px;font-weight:400;font-family:var(--font-d);letter-spacing:-.015em;color:var(--positive);">ASSETS</div>';
+  out += '<div style="font-size:22px;font-weight:400;font-family:var(--font-d);letter-spacing:-.015em;color:var(--pos);">ASSETS</div>';
   if (hasCompare) out += '<div style="font-size:11px;color:var(--ink4);">'+compareLabel+'</div>';
   out += '</div>';
   out += hdrRow();
@@ -9875,26 +9949,26 @@ function renderBalanceSheet() {
     const priorSubTotal = entries.reduce((s,e)=>s+(e.prior||0),0);
     prevAssets += priorSubTotal;
     const subLabel = GROUP_LABELS[sub] || sub;
-    out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">'+subLabel+'</div>';
+    out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">'+subLabel+'</div>';
     entries.sort((a,b)=>b.amt-a.amt).forEach(e => { out += acctRow(e); });
     out += groupRow('Subtotal', subTotal, priorSubTotal);
   });
 
   out += '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:11px 16px;background:rgba(45,212,191,.04);border-top:2px solid rgba(45,212,191,.2);">';
-  out += '<div style="font-size:14px;font-weight:700;font-family:var(--font-m);color:var(--positive);">TOTAL ASSETS</div>';
-  out += '<div style="text-align:right;font-family:var(--font-m);font-size:14px;font-weight:700;color:var(--positive);">'+fmt(totalAssets)+'</div>';
+  out += '<div style="font-size:14px;font-weight:700;font-family:var(--fm);color:var(--pos);">TOTAL ASSETS</div>';
+  out += '<div style="text-align:right;font-family:var(--fm);font-size:14px;font-weight:700;color:var(--pos);">'+fmt(totalAssets)+'</div>';
   if (hasCompare) {
     const chg = totalAssets - totalPriorAssets;
-    out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;color:var(--ink4);">'+fmt(totalPriorAssets)+'</div>';
-    out += '<div style="text-align:right;font-family:var(--font-m);font-size:13px;font-weight:700;color:'+(chg>=0?'var(--positive)':'var(--negative)')+'">'+( chg>=0?'+':'')+fmt(chg)+'</div>';
-    out += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:'+(chg>=0?'var(--positive)':'var(--negative)')+';">'+( totalPriorAssets ? (chg/totalPriorAssets*100).toFixed(1)+'%' : '—')+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:12px;color:var(--ink4);">'+fmt(totalPriorAssets)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:13px;font-weight:700;color:'+(chg>=0?'var(--pos)':'var(--neg)')+'">'+( chg>=0?'+':'')+fmt(chg)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:11px;color:'+(chg>=0?'var(--pos)':'var(--neg)')+';">'+( totalPriorAssets ? (chg/totalPriorAssets*100).toFixed(1)+'%' : '—')+'</div>';
   } else { out += '<div></div>'; }
   out += '</div></div>';
 
   // Liabilities table
   out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">';
   out += '<div style="padding:10px 16px;background:var(--lift);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">';
-  out += '<div style="font-size:22px;font-weight:400;font-family:var(--font-d);letter-spacing:-.015em;color:var(--negative);">LIABILITIES</div>';
+  out += '<div style="font-size:22px;font-weight:400;font-family:var(--font-d);letter-spacing:-.015em;color:var(--neg);">LIABILITIES</div>';
   if (hasCompare) out += '<div style="font-size:11px;color:var(--ink4);">'+compareLabel+'</div>';
   out += '</div>';
   out += hdrRow();
@@ -9913,54 +9987,54 @@ function renderBalanceSheet() {
       if (ccEntries.length > 0) {
         const ccTotal      = ccEntries.reduce((s,e)=>s+e.amt,0);
         const ccPriorTotal = ccEntries.reduce((s,e)=>s+(e.prior||0),0);
-        out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">Credit Cards</div>';
+        out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">Credit Cards</div>';
         ccEntries.sort((a,b)=>b.amt-a.amt).forEach(e => { out += acctRow(e); });
-        out += groupRow('Credit Card Total', ccTotal, ccPriorTotal, 'var(--negative)');
+        out += groupRow('Credit Card Total', ccTotal, ccPriorTotal, 'var(--neg)');
       }
       if (otherEntries.length > 0) {
         const otherTotal      = otherEntries.reduce((s,e)=>s+e.amt,0);
         const otherPriorTotal = otherEntries.reduce((s,e)=>s+(e.prior||0),0);
-        out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">Other Current Liabilities</div>';
+        out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">Other Current Liabilities</div>';
         otherEntries.sort((a,b)=>b.amt-a.amt).forEach(e => { out += acctRow(e); });
         if (otherEntries.length > 1) out += groupRow('Subtotal', otherTotal, otherPriorTotal);
       }
     } else {
       const subTotal = entries.reduce((s,e)=>s+e.amt,0);
       const priorSub = entries.reduce((s,e)=>s+(e.prior||0),0);
-      out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">'+subLabel+'</div>';
+      out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">'+subLabel+'</div>';
       entries.sort((a,b)=>b.amt-a.amt).forEach(e => { out += acctRow(e); });
       out += groupRow('Subtotal', subTotal, priorSub);
     }
   });
 
   out += '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:11px 16px;background:rgba(248,113,113,.04);border-top:2px solid rgba(248,113,113,.2);">';
-  out += '<div style="font-size:14px;font-weight:700;font-family:var(--font-m);color:var(--negative);">TOTAL LIABILITIES</div>';
-  out += '<div style="text-align:right;font-family:var(--font-m);font-size:14px;font-weight:700;color:var(--negative);">'+fmt(totalLiabs)+'</div>';
+  out += '<div style="font-size:14px;font-weight:700;font-family:var(--fm);color:var(--neg);">TOTAL LIABILITIES</div>';
+  out += '<div style="text-align:right;font-family:var(--fm);font-size:14px;font-weight:700;color:var(--neg);">'+fmt(totalLiabs)+'</div>';
   if (hasCompare) {
     const chg = totalLiabs - totalPriorLiabs;
-    out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;color:var(--ink4);">'+fmt(totalPriorLiabs)+'</div>';
-    out += '<div style="text-align:right;font-family:var(--font-m);font-size:13px;font-weight:700;color:'+(chg<=0?'var(--positive)':'var(--negative)')+';">'+(chg>=0?'+':'')+fmt(chg)+'</div>';
-    out += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:'+(chg<=0?'var(--positive)':'var(--negative)')+';">'+( totalPriorLiabs ? (chg/totalPriorLiabs*100).toFixed(1)+'%' : '—')+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:12px;color:var(--ink4);">'+fmt(totalPriorLiabs)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:13px;font-weight:700;color:'+(chg<=0?'var(--pos)':'var(--neg)')+';">'+(chg>=0?'+':'')+fmt(chg)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:11px;color:'+(chg<=0?'var(--pos)':'var(--neg)')+';">'+( totalPriorLiabs ? (chg/totalPriorLiabs*100).toFixed(1)+'%' : '—')+'</div>';
   } else { out += '<div></div>'; }
   out += '</div></div>';
 
   // Net Worth summary
-  const nwColor = netWorth >= 0 ? 'var(--positive)' : 'var(--negative)';
+  const nwColor = netWorth >= 0 ? 'var(--pos)' : 'var(--neg)';
   out += '<div style="background:var(--float);border:1px solid '+(netWorth>=0?'rgba(45,212,191,.3)':'rgba(248,113,113,.3)')+';border-radius:var(--r-lg);overflow:hidden;">';
   out += '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:14px 16px;background:'+(netWorth>=0?'rgba(45,212,191,.06)':'rgba(248,113,113,.06)')+'">';
   out += '<div style="font-size:14px;font-weight:700;color:'+nwColor+';">NET WORTH</div>';
-  out += '<div style="text-align:right;font-family:var(--font-m);font-size:16px;font-weight:700;color:'+nwColor+';">'+fmt(netWorth)+'</div>';
+  out += '<div style="text-align:right;font-family:var(--fm);font-size:16px;font-weight:700;color:'+nwColor+';">'+fmt(netWorth)+'</div>';
   if (hasCompare) {
     const nwChg = nwChange || 0;
-    const nwChgColor = nwChg >= 0 ? 'var(--positive)' : 'var(--negative)';
-    out += '<div style="text-align:right;font-family:var(--font-m);font-size:13px;color:var(--ink4);">'+fmt(priorNetWorth)+'</div>';
-    out += '<div style="text-align:right;font-family:var(--font-m);font-size:14px;font-weight:700;color:'+nwChgColor+';">'+(nwChg>=0?'+':'')+fmt(nwChg)+'</div>';
-    out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;color:'+nwChgColor+';">'+(nwChangePct!==null?(nwChangePct>=0?'+':'')+nwChangePct.toFixed(1)+'%':'—')+'</div>';
+    const nwChgColor = nwChg >= 0 ? 'var(--pos)' : 'var(--neg)';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:13px;color:var(--ink4);">'+fmt(priorNetWorth)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:14px;font-weight:700;color:'+nwChgColor+';">'+(nwChg>=0?'+':'')+fmt(nwChg)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:12px;color:'+nwChgColor+';">'+(nwChangePct!==null?(nwChangePct>=0?'+':'')+nwChangePct.toFixed(1)+'%':'—')+'</div>';
   } else { out += '<div></div>'; }
   out += '</div>';
   if (hasCompare && nwChange !== null) {
     out += '<div style="padding:8px 16px;border-top:1px solid rgba(255,255,255,.06);font-size:11px;color:var(--ink4);">';
-    out += 'Net worth '+(nwChange>=0?'<strong style="color:var(--positive);">grew '+fmt(Math.abs(nwChange))+'</strong>':'<strong style="color:var(--negative);">declined '+fmt(Math.abs(nwChange))+'</strong>')+' '+compareLabel+'. ';
+    out += 'Net worth '+(nwChange>=0?'<strong style="color:var(--pos);">grew '+fmt(Math.abs(nwChange))+'</strong>':'<strong style="color:var(--neg);">declined '+fmt(Math.abs(nwChange))+'</strong>')+' '+compareLabel+'. ';
     out += 'Note: comparison uses '+(Object.keys(nwHistory).length > 1 ? 'stored NW snapshots' : 'transaction-computed balances for prior period — upload a historical Net Worth CSV for accuracy')+'.';
     out += '</div>';
   }
@@ -10032,13 +10106,13 @@ function renderBudget() {
   const proj = isCur&&pct>0 ? totA/pct : totA;
   let out = '';
   out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;">';
-  [['Recurring Income',fmt(incR),'var(--positive)',incNR>0?'+ '+fmt(incNR)+' one-time':''],
+  [['Recurring Income',fmt(incR),'var(--pos)',incNR>0?'+ '+fmt(incNR)+' one-time':''],
    ['Spent So Far',fmt(totA),'var(--gold)',daysDone+' of '+dIM+' days'],
-   ['Projected Total',fmt(proj),proj>totB?'var(--negative)':'var(--ink)','at current pace'],
+   ['Projected Total',fmt(proj),proj>totB?'var(--neg)':'var(--ink)','at current pace'],
    ['Budget Remaining',fmt(Math.max(0,totB-totA)),'var(--ink)',totB?'of '+fmt(totB):'click Suggest'],
   ].forEach(([l,v,c,s])=>{
     out += '<div style="background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.25);">';
-    out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;font-weight:600;">'+l+'</div>';
+    out += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;font-weight:600;">'+l+'</div>';
     out += '<div style="font-size:30px;font-weight:400;font-family:var(--font-d);letter-spacing:-.02em;color:'+c+';">'+v+'</div>';
     out += '<div style="font-size:11px;color:var(--ink4);margin-top:3px;">'+s+'</div></div>';
   });
@@ -10047,13 +10121,13 @@ function renderBudget() {
     const ok=totA<=totB*pct, diff=Math.abs(totA-totB*pct);
     out += '<div style="background:'+(ok?'rgba(45,212,191,.05)':'rgba(248,113,113,.05)')+';border:1px solid '+(ok?'rgba(45,212,191,.15)':'rgba(248,113,113,.15)')+';border-radius:var(--r-md);padding:10px 16px;margin-bottom:10px;font-size:12px;color:var(--ink3);">';
     out += (ok?'✓ On pace — ':'⚠ Running hot — ')+'Day '+daysDone+' of '+dIM+' · '+fmt(totA)+' of '+fmt(totB)+'. ';
-    out += ok?'<strong style="color:var(--positive);">'+fmt(diff)+'</strong> under pace.':'<strong style="color:var(--negative);">'+fmt(diff)+'</strong> over pace.';
+    out += ok?'<strong style="color:var(--pos);">'+fmt(diff)+'</strong> under pace.':'<strong style="color:var(--neg);">'+fmt(diff)+'</strong> over pace.';
     out += '</div>';
   }
   out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
   out += '<div style="display:grid;grid-template-columns:160px 1fr 90px 90px 90px 90px;gap:0;padding:9px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
   ['Category','Progress','Budget','Spent','Projected','Status'].forEach((h,i)=>{
-    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);'+(i>1?'text-align:right;':'')+'">'+h+'</div>';
+    out += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);'+(i>1?'text-align:right;':'')+'">'+h+'</div>';
   });
   out += '</div>';
   ['auto_save','mortgage','car','education','insurance','childcare','electric','gas_util','water','internet','cell',
@@ -10064,25 +10138,25 @@ function renderBudget() {
     const pr=isCur&&pct>0?a/pct:a, pc=b>0?Math.min(a/b,1):0;
     const over=b>0&&a>b, near=b>0&&a>b*0.85&&!over;
     const st=!b?'-':over?'Over':near?'Near':'OK';
-    const sc=!b?'var(--ink4)':over?'var(--negative)':near?'var(--gold)':'var(--positive)';
+    const sc=!b?'var(--ink4)':over?'var(--neg)':near?'var(--gold)':'var(--pos)';
     out += '<div style="display:grid;grid-template-columns:160px 1fr 90px 90px 90px 90px;gap:0;padding:9px 20px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;">';
     out += '<div style="display:flex;align-items:center;gap:6px;font-size:12px;"><span>'+meta.icon+'</span><span>'+meta.label+'</span></div>';
     out += '<div style="padding:0 12px;">';
     if (b>0) {
-      out += '<div style="height:6px;background:var(--lift);border-radius:3px;overflow:hidden;"><div style="height:100%;width:'+Math.min(pc*100,100).toFixed(1)+'%;background:'+(over?'var(--negative)':near?'var(--gold)':'var(--gold)')+';border-radius:3px;"></div></div>';
+      out += '<div style="height:6px;background:var(--lift);border-radius:3px;overflow:hidden;"><div style="height:100%;width:'+Math.min(pc*100,100).toFixed(1)+'%;background:'+(over?'var(--neg)':near?'var(--gold)':'var(--gold)')+';border-radius:3px;"></div></div>';
       out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">'+Math.round(pc*100)+'%</div>';
     } else out += '<div style="font-size:10px;color:var(--ink4);">no target</div>';
     out += '</div>';
-    out += '<div style="text-align:right;"><input type="number" value="'+(b||'')+'" placeholder="—" min="0" step="25" data-bucket="'+bk+'" style="width:75px;background:var(--lift);border:1px solid var(--line);border-radius:4px;padding:3px 6px;font-family:var(--font-m);font-size:11px;color:var(--ink);text-align:right;" onchange="budgetTargets[this.dataset.bucket]=parseFloat(this.value)||0;saveSettings();renderBudget();"></div>';
-    out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;">'+(a>0?fmt(a):'—')+'</div>';
-    out += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">'+(isCur&&a>0?fmt(pr):'—')+'</div>';
+    out += '<div style="text-align:right;"><input type="number" value="'+(b||'')+'" placeholder="—" min="0" step="25" data-bucket="'+bk+'" style="width:75px;background:var(--lift);border:1px solid var(--line);border-radius:4px;padding:3px 6px;font-family:var(--fm);font-size:11px;color:var(--ink);text-align:right;" onchange="budgetTargets[this.dataset.bucket]=parseFloat(this.value)||0;saveSettings();renderBudget();"></div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:12px;">'+(a>0?fmt(a):'—')+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:11px;color:var(--ink4);">'+(isCur&&a>0?fmt(pr):'—')+'</div>';
     out += '<div style="text-align:right;font-size:11px;font-weight:600;color:'+sc+';">'+st+'</div></div>';
   });
   out += '<div style="display:grid;grid-template-columns:160px 1fr 90px 90px 90px 90px;gap:0;padding:10px 16px;background:var(--lift);border-top:2px solid var(--line);">';
   out += '<div style="font-size:12px;font-weight:700;">Total</div><div></div>';
-  out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;">'+fmt(totB)+'</div>';
-  out += '<div style="text-align:right;font-family:var(--font-m);font-size:12px;font-weight:700;color:'+(totA>totB&&totB>0?'var(--negative)':'var(--ink)')+';">'+fmt(totA)+'</div>';
-  out += '<div style="text-align:right;font-family:var(--font-m);font-size:11px;color:var(--ink4);">'+(isCur&&totA>0?fmt(proj):'—')+'</div>';
+  out += '<div style="text-align:right;font-family:var(--fm);font-size:12px;font-weight:700;">'+fmt(totB)+'</div>';
+  out += '<div style="text-align:right;font-family:var(--fm);font-size:12px;font-weight:700;color:'+(totA>totB&&totB>0?'var(--neg)':'var(--ink)')+';">'+fmt(totA)+'</div>';
+  out += '<div style="text-align:right;font-family:var(--fm);font-size:11px;color:var(--ink4);">'+(isCur&&totA>0?fmt(proj):'—')+'</div>';
   out += '<div></div></div></div>';
   const allInc = sp.filter(t=>t.date.startsWith(sel)&&t.amount>0);
   if (allInc.length) {
@@ -10096,7 +10170,7 @@ function renderBudget() {
       out += '<button class="nr-toggle-btn" data-nrkey="'+sk+'" style="background:none;border:none;cursor:pointer;font-size:14px;opacity:'+(isNR?'1':'.35')+';">'+(isNR?'⭐':'☆')+'</button>';
       out += '<div><div style="font-size:12px;color:var(--ink2);">'+t.payee+'</div>';
       out += '<div style="font-size:10px;color:var(--ink4);">'+t.date+' · '+t.category+'</div></div></div>';
-      out += '<div style="font-family:var(--font-m);font-size:13px;font-weight:600;color:'+(isNR?'var(--river)':'var(--positive)')+';">+'+fmt(t.amount)+'</div></div>';
+      out += '<div style="font-family:var(--fm);font-size:13px;font-weight:600;color:'+(isNR?'var(--river)':'var(--pos)')+';">+'+fmt(t.amount)+'</div></div>';
     });
     out += '<div style="padding:8px 16px;font-size:11px;color:var(--ink4);">⭐ Non-recurring excluded from run-rate calculations.</div></div>';
   }

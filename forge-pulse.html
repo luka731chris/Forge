@@ -46,8 +46,8 @@
   --negative: #F87171;
   --river:    #60A5FA;
   /* Short aliases */
-  --pos:      var(--positive);
-  --neg:      var(--negative);
+  --pos:      var(--pos);
+  --neg:      var(--neg);
   --warn:     #FBBF24;
   /* Readable ink values — all pass WCAG AA on dark background */
   --ink4:     #706A64;
@@ -66,7 +66,7 @@
   /* Short aliases — used by ported desktop components */
   --fd:  var(--font-d);
   --fu:  var(--font-ui);
-  --fm:  var(--font-m);
+  --fm:  var(--fm);
 
   /* Legacy aliases — keep for ported components */
   --card:     #1A1A1D;
@@ -186,7 +186,7 @@ body {
   position: absolute; top: 3px; right: 8px;
   width: 6px; height: 6px;
   border-radius: 50%;
-  background: var(--negative);
+  background: var(--neg);
   border: 1.5px solid var(--base);
   display: none;
 }
@@ -262,7 +262,7 @@ body {
   position: relative; z-index: 1;
   letter-spacing: -.02em;
 }
-.hero-net.neg { color: var(--negative); }
+.hero-net.neg { color: var(--neg); }
 .hero-sub {
   font-size: 12px;
   color: var(--ink4);
@@ -285,8 +285,8 @@ body {
   letter-spacing: .01em;
 }
 .chip-gold  { background: var(--gold-dim); color: var(--gold);     border-color: var(--gold-line); }
-.chip-grn   { background: rgba(45,212,191,.07); color: var(--positive); border-color: rgba(45,212,191,.18); }
-.chip-red   { background: rgba(248,113,113,.07); color: var(--negative); border-color: rgba(248,113,113,.18); }
+.chip-grn   { background: rgba(45,212,191,.07); color: var(--pos); border-color: rgba(45,212,191,.18); }
+.chip-red   { background: rgba(248,113,113,.07); color: var(--neg); border-color: rgba(248,113,113,.18); }
 
 .bridge-wm {
   position: absolute; bottom: 0; right: -10px;
@@ -351,10 +351,10 @@ body {
 .kpi.negative .kpi-val { color: var(--neg); }
 .kpi-sub   { font-size: 11px; color: var(--ink4); font-family: var(--fu); }
 .kpi-delta { font-size: 12px; font-weight: 500; margin-top: 4px; font-family: var(--fu); }
-.up  { color: var(--negative); }
-.dn  { color: var(--positive); }
-.pos { color: var(--positive); }
-.neg-c { color: var(--negative); }
+.up  { color: var(--neg); }
+.dn  { color: var(--pos); }
+.pos { color: var(--pos); }
+.neg-c { color: var(--neg); }
 
 /* ── Goal Rings ────────────────────────────────────────────── */
 .rings-row {
@@ -435,7 +435,7 @@ body {
 }
 .amz-eyebrow { font-family: var(--fm); font-size: 9px; letter-spacing: .20em; text-transform: uppercase; color: var(--ink4); margin-bottom: 5px; }
 .amz-title { font-family: var(--fd); font-size: 28px; font-weight: 400; color: var(--ink); letter-spacing: -.01em; }
-.amz-big { font-family: var(--fd); font-size: 42px; font-weight: 300; color: var(--positive); margin: 6px 0 3px; letter-spacing: -.02em; }
+.amz-big { font-family: var(--fd); font-size: 42px; font-weight: 300; color: var(--pos); margin: 6px 0 3px; letter-spacing: -.02em; }
 .amz-big-sub { font-size: 11px; color: var(--ink4); }
 .amz-stats { display: flex; gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--line); }
 .amz-stat { flex: 1; background: var(--float); border-radius: var(--r-md); padding: 11px 12px; border: 1px solid var(--line); }
@@ -453,9 +453,9 @@ body {
 .amz-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .amz-date { font-size: 11px; color: var(--ink4); font-family: var(--fm); }
 .amz-cat  { font-size: 10px; padding: 2px 7px; border-radius: 12px; background: rgba(96,165,250,.08); color: var(--river); font-family: var(--fm); }
-.imp-hi   { background: rgba(248,113,113,.1); color: var(--negative); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 12px; font-family: var(--fm); }
+.imp-hi   { background: rgba(248,113,113,.1); color: var(--neg); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 12px; font-family: var(--fm); }
 .imp-md   { background: var(--gold-dim); color: var(--gold); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 12px; font-family: var(--fm); }
-.amz-price { font-family: var(--fm); font-size: 14px; font-weight: 500; color: var(--positive); margin-left: auto; flex-shrink: 0; }
+.amz-price { font-family: var(--fm); font-size: 14px; font-weight: 500; color: var(--pos); margin-left: auto; flex-shrink: 0; }
 
 /* ── Analytics Cards ───────────────────────────────────────── */
 .p-ana-card {
@@ -510,8 +510,8 @@ body {
 .chat-title { font-family: var(--fd); font-size: 28px; font-weight: 400; color: var(--ink); letter-spacing: -.01em; }
 .chat-sub   { font-size: 11px; color: var(--ink4); margin-top: 2px; font-family: var(--fm); letter-spacing: .05em; }
 .chat-status { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
-.status-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--positive); box-shadow: 0 0 6px var(--positive); }
-.status-txt  { font-size: 11px; color: var(--positive); font-weight: 500; font-family: var(--fm); letter-spacing: .04em; }
+.status-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--pos); box-shadow: 0 0 6px var(--pos); }
+.status-txt  { font-size: 11px; color: var(--pos); font-weight: 500; font-family: var(--fm); letter-spacing: .04em; }
 .chat-msgs {
   flex: 1; overflow-y: auto; padding: 16px 16px 8px;
   display: flex; flex-direction: column; gap: 12px;
@@ -1676,7 +1676,7 @@ function crosswalkRows(txnList) {
 
 // Source badge HTML
 const SOURCE_BADGES = {
-  quicken:    { label:'Quicken', color:'rgba(45,212,191,.15)',  border:'rgba(45,212,191,.4)',  text:'var(--positive)' },
+  quicken:    { label:'Quicken', color:'rgba(45,212,191,.15)',  border:'rgba(45,212,191,.4)',  text:'var(--pos)' },
   split:      { label:'Split',   color:'rgba(96,165,250,.12)',  border:'rgba(96,165,250,.35)', text:'var(--river)'    },
   amazon:     { label:'Amazon',  color:'rgba(245,168,0,.12)',   border:'rgba(245,168,0,.35)',  text:'var(--gold)'     },
   apple_card: { label:'Apple',   color:'rgba(168,85,247,.12)',  border:'rgba(168,85,247,.35)', text:'#c084fc'         },
@@ -2243,7 +2243,7 @@ const WATERFALL = [
   {
     id: 'income', label: 'Total Household Income', type: 'income',
     sub: 'All money coming in — payroll, freelance, interest, refunds',
-    color: 'var(--positive)', sign: '+',
+    color: 'var(--pos)', sign: '+',
     buckets: ['paycheck','other_inc'],
   },
   {
@@ -2552,13 +2552,13 @@ function renderPulseSettings() {
   const daysSince = iso => iso ? Math.floor((Date.now()-new Date(iso))/864e5) : null;
   const freshLabel = days => {
     if (days===null) return '<span style="color:var(--ink4);">—</span>';
-    if (days===0)    return '<span style="color:var(--positive);">Today</span>';
-    if (days<=7)     return `<span style="color:var(--positive);">${days}d ago</span>`;
+    if (days===0)    return '<span style="color:var(--pos);">Today</span>';
+    if (days<=7)     return `<span style="color:var(--pos);">${days}d ago</span>`;
     if (days<=30)    return `<span style="color:var(--gold);">${Math.floor(days/7)}w ago</span>`;
-    return `<span style="color:var(--negative);">${Math.floor(days/30)}mo ago</span>`;
+    return `<span style="color:var(--neg);">${Math.floor(days/30)}mo ago</span>`;
   };
   const dot = days => {
-    const c = days===null?'var(--line2)':days<=7?'var(--positive)':days<=30?'var(--gold)':'var(--negative)';
+    const c = days===null?'var(--line2)':days<=7?'var(--pos)':days<=30?'var(--gold)':'var(--neg)';
     return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};box-shadow:${days!==null&&days<=7?`0 0 6px ${c}`:''};flex-shrink:0;"></span>`;
   };
 
@@ -2573,7 +2573,7 @@ function renderPulseSettings() {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div>
           <div style="font-size:11px;color:var(--ink4);font-family:var(--fm);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;">Last Pull</div>
-          <div style="font-size:16px;font-weight:500;color:${syncSince!==null&&syncSince<=1?'var(--positive)':syncSince!==null&&syncSince<=7?'var(--gold)':'var(--ink)'};">${syncLabel}</div>
+          <div style="font-size:16px;font-weight:500;color:${syncSince!==null&&syncSince<=1?'var(--pos)':syncSince!==null&&syncSince<=7?'var(--gold)':'var(--ink)'};">${syncLabel}</div>
           ${txnCount ? `<div style="font-size:11px;color:var(--ink4);margin-top:2px;font-family:var(--fm);">${txnCount.toLocaleString()} txns loaded</div>` : ''}
         </div>
         <button onclick="syncPull()" style="background:var(--gold);color:#000;border:none;border-radius:var(--r-sm);padding:10px 18px;font-size:13px;font-weight:700;font-family:var(--fu);cursor:pointer;">↓ Pull</button>
@@ -2675,7 +2675,7 @@ function renderPulseSettings() {
   let dataBody = row('Storage Used', 'browser localStorage', `<span style="font-family:var(--fm);font-size:14px;color:var(--ink2);">${(storageKB/1024).toFixed(0)} KB</span>`);
   dataBody += row('Transactions', 'loaded in this session', `<span style="font-family:var(--fd);font-size:20px;font-weight:300;color:var(--ink);">${txnCount.toLocaleString()}</span>`);
   dataBody += `<div style="padding:13px 16px;display:flex;gap:8px;flex-wrap:wrap;">
-    <button onclick="if(confirm('Clear all Forge data on this device?')){keys.forEach(k=>localStorage.removeItem(k));location.reload();}" style="background:transparent;border:1px solid rgba(248,113,113,.35);color:var(--negative);padding:9px 16px;border-radius:var(--r-sm);font-size:13px;font-family:var(--fu);cursor:pointer;">Clear Local Data</button>
+    <button onclick="if(confirm('Clear all Forge data on this device?')){keys.forEach(k=>localStorage.removeItem(k));location.reload();}" style="background:transparent;border:1px solid rgba(248,113,113,.35);color:var(--neg);padding:9px 16px;border-radius:var(--r-sm);font-size:13px;font-family:var(--fu);cursor:pointer;">Clear Local Data</button>
     <button onclick="if(confirm('Reset sync token?'))localStorage.removeItem('forge_sync_token');renderPulseSettings();" style="background:var(--lift);border:1px solid var(--line2);color:var(--ink4);padding:9px 16px;border-radius:var(--r-sm);font-size:13px;font-family:var(--fu);cursor:pointer;">Reset Token</button>
   </div>`;
 
@@ -2685,7 +2685,7 @@ function renderPulseSettings() {
   const hasBio    = FORGE_AUTH.hasWebAuthn();
   let secBody = row('Protection Status',
     isLocked ? 'AES-256 encryption active' : 'Data not yet encrypted',
-    `<span style="font-family:var(--fm);font-size:12px;font-weight:600;color:${isLocked?'var(--positive)':'var(--warn)'};">${isLocked?'🔒 Encrypted':'⚠️ Open'}</span>`);
+    `<span style="font-family:var(--fm);font-size:12px;font-weight:600;color:${isLocked?'var(--pos)':'var(--warn)'};">${isLocked?'🔒 Encrypted':'⚠️ Open'}</span>`);
 
   if (!isLocked) {
     secBody += `<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.04);">
@@ -2706,7 +2706,7 @@ function renderPulseSettings() {
     );
     secBody += `<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.04);display:flex;gap:8px;">
       <button onclick="forgeForgotPIN()"
-        style="flex:1;background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--negative);border-radius:var(--r-sm);padding:9px;font-size:12px;cursor:pointer;font-family:var(--fu);">
+        style="flex:1;background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--neg);border-radius:var(--r-sm);padding:9px;font-size:12px;cursor:pointer;font-family:var(--fu);">
         Forgot / Reset PIN
       </button>
     </div>`;
@@ -3578,7 +3578,7 @@ function renderPulseNW() {
   const totalAssets = assets.reduce((s,a) => s + a.cur, 0);
   const totalLiabs  = liabs.reduce((s,l) => s + l.cur, 0);
   const netWorth    = totalAssets - totalLiabs;
-  const nwColor     = netWorth >= 0 ? 'var(--positive)' : 'var(--negative)';
+  const nwColor     = netWorth >= 0 ? 'var(--pos)' : 'var(--neg)';
 
   const priorAssets = hasCompare ? assets.reduce((s,a) => s + (a.prior||0), 0) : null;
   const priorLiabs  = hasCompare ? liabs.reduce((s,l) => s + (l.prior||0), 0) : null;
@@ -3589,7 +3589,7 @@ function renderPulseNW() {
     if (prior === null) return '';
     const d = cur - prior;
     if (Math.abs(d) < 1) return '';
-    const col = d >= 0 ? 'var(--positive)' : 'var(--negative)';
+    const col = d >= 0 ? 'var(--pos)' : 'var(--neg)';
     return `<span style="font-size:10px;color:${col};margin-left:4px;">${d>0?'+':''}${fmtK(d)}</span>`;
   }
 
@@ -3606,7 +3606,7 @@ function renderPulseNW() {
     if (hasCompare && item.prior !== null) {
       row += `<div style="font-size:10px;color:var(--ink4);min-width:52px;text-align:right;">${fmtK(item.prior)}</div>`;
     }
-    row += `<div style="font-size:13px;font-weight:600;color:${isLiab?'var(--negative)':'var(--positive)'};font-family:var(--fm);min-width:64px;text-align:right;">${fmtK(item.cur)}${delta(item.cur, item.prior)}</div>`;
+    row += `<div style="font-size:13px;font-weight:600;color:${isLiab?'var(--neg)':'var(--pos)'};font-family:var(--fm);min-width:64px;text-align:right;">${fmtK(item.cur)}${delta(item.cur, item.prior)}</div>`;
     row += `</div>`;
 
     if (isOpen && hasDetail) {
@@ -3615,7 +3615,7 @@ function renderPulseNW() {
         row += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid rgba(255,255,255,.03);">`;
         row += `<div><div style="font-size:10px;color:var(--ink3);">${t.payee||'—'}</div>`;
         row += `<div style="font-size:9px;color:var(--ink4);">${t.date}</div></div>`;
-        row += `<div style="font-size:11px;color:${t.amount>0?'var(--positive)':'var(--negative)'};font-family:var(--fm);">${t.amount>0?'+':''}${fmtK(t.amount)}</div>`;
+        row += `<div style="font-size:11px;color:${t.amount>0?'var(--pos)':'var(--neg)'};font-family:var(--fm);">${t.amount>0?'+':''}${fmtK(t.amount)}</div>`;
         row += `</div>`;
       });
       row += `</div>`;
@@ -3632,7 +3632,7 @@ function renderPulseNW() {
     if (hasCompare && priorTotal !== null) {
       s += `<div style="font-size:11px;color:var(--ink4);">${fmtK(priorTotal)}</div>`;
     }
-    s += `<div style="font-size:13px;font-weight:700;color:${isLiab?'var(--negative)':'var(--positive)'};">${fmtK(total)}${delta(total, priorTotal)}</div>`;
+    s += `<div style="font-size:13px;font-weight:700;color:${isLiab?'var(--neg)':'var(--pos)'};">${fmtK(total)}${delta(total, priorTotal)}</div>`;
     s += `</div></div>`;
 
     if (isLiab && title !== 'Mortgages & Long-Term Debt') {
@@ -3645,8 +3645,8 @@ function renderPulseNW() {
         s += `<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);opacity:.7;padding:4px 0 4px 2px;margin-bottom:2px;">Credit Cards</div>`;
         ccItems.forEach(item => { s += acctRow(item, true); });
         s += `<div style="display:flex;justify-content:space-between;padding:5px 0;border-top:1px solid var(--line);margin-bottom:8px;">`;
-        s += `<div style="font-size:10px;font-weight:600;color:var(--negative);">CC Total</div>`;
-        s += `<div style="font-size:12px;font-weight:700;color:var(--negative);font-family:var(--fm);">${fmtK(ccTotal)}${delta(ccTotal, ccPriorTotal)}</div></div>`;
+        s += `<div style="font-size:10px;font-weight:600;color:var(--neg);">CC Total</div>`;
+        s += `<div style="font-size:12px;font-weight:700;color:var(--neg);font-family:var(--fm);">${fmtK(ccTotal)}${delta(ccTotal, ccPriorTotal)}</div></div>`;
         if (otherItems.length > 0) {
           s += `<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);opacity:.7;padding:4px 0 4px 2px;margin-bottom:2px;">Other</div>`;
           otherItems.forEach(item => { s += acctRow(item, true); });
@@ -3672,16 +3672,16 @@ function renderPulseNW() {
       <div style="background:linear-gradient(135deg,#0F0E09,var(--void));border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;margin-bottom:20px;">
         <div style="font-size:9px;font-family:var(--fm);letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Net Worth</div>
         <div style="font-size:32px;font-weight:700;color:${nwColor};font-family:var(--fm);letter-spacing:-.02em;">${netWorth>=0?'+':''}${fmtK(netWorth)}</div>
-        ${nwChg !== null ? `<div style="font-size:12px;color:${nwChg>=0?'var(--positive)':'var(--negative)'};margin-top:4px;">${nwChg>=0?'↑':'↓'}${Math.abs(nwChg).toFixed(1)}% vs comparison period</div>` : ''}
+        ${nwChg !== null ? `<div style="font-size:12px;color:${nwChg>=0?'var(--pos)':'var(--neg)'};margin-top:4px;">${nwChg>=0?'↑':'↓'}${Math.abs(nwChg).toFixed(1)}% vs comparison period</div>` : ''}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;">
           <div>
             <div style="font-size:9px;color:var(--ink4);font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;">Assets</div>
-            <div style="font-size:16px;font-weight:600;color:var(--positive);font-family:var(--fm);">${fmtK(totalAssets)}</div>
+            <div style="font-size:16px;font-weight:600;color:var(--pos);font-family:var(--fm);">${fmtK(totalAssets)}</div>
             ${hasCompare&&priorAssets!==null?`<div style="font-size:10px;color:var(--ink4);">${fmtK(priorAssets)} prior</div>`:''}
           </div>
           <div>
             <div style="font-size:9px;color:var(--ink4);font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;">Liabilities</div>
-            <div style="font-size:16px;font-weight:600;color:var(--negative);font-family:var(--fm);">${fmtK(totalLiabs)}</div>
+            <div style="font-size:16px;font-weight:600;color:var(--neg);font-family:var(--fm);">${fmtK(totalLiabs)}</div>
             ${hasCompare&&priorLiabs!==null?`<div style="font-size:10px;color:var(--ink4);">${fmtK(priorLiabs)} prior</div>`:''}
           </div>
         </div>
@@ -4253,7 +4253,7 @@ function renderPulseDetailLens(sourceKey) {
   const sourceInfo = {
     amazon:     { label:'Amazon',     icon:'📦', color:'var(--gold)' },
     apple_card: { label:'Apple Card', icon:'🍎', color:'#c084fc'     },
-    home_depot: { label:'Home Depot', icon:'🔨', color:'var(--negative)' },
+    home_depot: { label:'Home Depot', icon:'🔨', color:'var(--neg)' },
     venmo:      { label:'Venmo',      icon:'💸', color:'var(--river)' },
   };
   const info = sourceInfo[sourceKey] || { label:sourceKey, icon:'🧾', color:'var(--ink3)' };
@@ -4305,7 +4305,7 @@ function renderPulseDetailLens(sourceKey) {
             <div style="font-size:12px;font-weight:600;color:var(--ink2);">${bMeta.label}</div>
             <div style="font-size:10px;color:var(--ink4);">${items.length} items · ${pct}%</div>
           </div>
-          <div style="font-size:14px;font-weight:700;color:var(--negative);font-family:var(--fm);">${fmtK(total)}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--neg);font-family:var(--fm);">${fmtK(total)}</div>
         </div>`;
 
       const sorted = items.slice().sort((a,b) => b.date.localeCompare(a.date));
@@ -4317,7 +4317,7 @@ function renderPulseDetailLens(sourceKey) {
             <div style="font-size:11px;color:var(--ink2);line-height:1.4;">${name.length>70?name.slice(0,68)+'…':name}</div>
             <div style="font-size:9px;color:var(--ink4);">${t.date}</div>
           </div>
-          <div style="font-size:12px;font-weight:600;color:var(--negative);font-family:var(--fm);white-space:nowrap;">${fmtK(Math.abs(t.amount))}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--neg);font-family:var(--fm);white-space:nowrap;">${fmtK(Math.abs(t.amount))}</div>
         </div>`;
       });
       out += `</div>`;
@@ -4693,7 +4693,7 @@ function renderPulsePL(drillSection) {
       out += '<div style="margin-top:3px;display:flex;gap:4px;align-items:center;">' + srcBadge(et.qSource);
       out += '<span style="font-size:9px;color:var(--ink4);">' + bMeta.icon + ' ' + bMeta.label + '</span></div>';
       out += '</div>';
-      out += '<div style="font-size:13px;font-weight:600;color:' + (t.amount>0?'var(--positive)':'var(--negative)') + ';font-family:var(--fm);white-space:nowrap;">' + (t.amount>0?'+':'') + fmtK(t.amount) + '</div>';
+      out += '<div style="font-size:13px;font-weight:600;color:' + (t.amount>0?'var(--pos)':'var(--neg)') + ';font-family:var(--fm);white-space:nowrap;">' + (t.amount>0?'+':'') + fmtK(t.amount) + '</div>';
       out += '</div>';
     });
     if (!sorted.length) out += '<div style="padding:30px 18px;text-align:center;color:var(--ink4);font-size:12px;">No transactions</div>';
@@ -4753,7 +4753,7 @@ function renderPulsePL(drillSection) {
   const totalExp   = sections.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.total,0);
   const checkingIn = totalInc - autoSave;
   const net        = checkingIn - totalExp;
-  const surpCol    = net>=0?'var(--positive)':'var(--negative)';
+  const surpCol    = net>=0?'var(--pos)':'var(--neg)';
   const savPct     = totalInc>0?((autoSave+Math.max(0,net))/totalInc*100):0;
 
   const pct  = v => totalInc>0?(v/totalInc*100).toFixed(0)+'%':'—';
@@ -4775,7 +4775,7 @@ function renderPulsePL(drillSection) {
   const _lensSources = [
     { key:'amazon',     icon:'📦', label:'Amazon',     color:'var(--gold)' },
     { key:'apple_card', icon:'🍎', label:'Apple Card', color:'#c084fc'     },
-    { key:'home_depot', icon:'🔨', label:'Home Depot', color:'var(--negative)' },
+    { key:'home_depot', icon:'🔨', label:'Home Depot', color:'var(--neg)' },
     { key:'venmo',      icon:'💸', label:'Venmo',      color:'var(--river)' },
   ].filter(s => txns.some(t =>
     (t._source===s.key || (s.key==='amazon' && (t.account||'').toLowerCase().includes('amazon'))) && t.itemDetail
@@ -4804,7 +4804,7 @@ function renderPulsePL(drillSection) {
     : 0;
   const totalProjectedExp = totalActualExp + totalAccruedExp;
   const projNet           = checkingIn - totalProjectedExp;
-  const projNetColor      = projNet >= 0 ? 'var(--positive)' : 'var(--negative)';
+  const projNetColor      = projNet >= 0 ? 'var(--pos)' : 'var(--neg)';
 
   // Fixed / variable breakdown
   let fixedCommitted = 0, varSpend = 0;
@@ -4828,9 +4828,9 @@ function renderPulsePL(drillSection) {
 
   // Tile 1: Income
   out += '<div style="background:var(--float);border:1px solid rgba(45,212,191,.2);border-radius:var(--r-lg);padding:14px 12px;position:relative;overflow:hidden;">';
-  out += '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--positive);border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+  out += '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--pos);border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
   out += '<div style="font-size:8px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + (isInFlightMonth ? 'Income · MTD' : 'Gross Income') + '</div>';
-  out += '<div style="font-size:22px;font-weight:700;color:var(--positive);font-family:var(--fm);">' + fmtK(totalInc) + '</div>';
+  out += '<div style="font-size:22px;font-weight:700;color:var(--pos);font-family:var(--fm);">' + fmtK(totalInc) + '</div>';
   if (autoSave > 0) {
     out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">−' + fmtK(autoSave) + ' saved → <strong style="color:var(--river);">' + fmtK(checkingIn) + '</strong> to deploy</div>';
   } else {
@@ -4840,21 +4840,21 @@ function renderPulsePL(drillSection) {
 
   // Tile 2: Projected Net to Savings
   const displayNet = isInFlightMonth ? projNet : net;
-  const netCol = displayNet >= 0 ? 'var(--positive)' : 'var(--negative)';
+  const netCol = displayNet >= 0 ? 'var(--pos)' : 'var(--neg)';
   out += '<div style="background:var(--float);border:1px solid ' + (displayNet>=0?'rgba(45,212,191,.2)':'rgba(248,113,113,.2)') + ';border-radius:var(--r-lg);padding:14px 12px;position:relative;overflow:hidden;">';
   out += '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:' + netCol + ';border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
   out += '<div style="font-size:8px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + (isInFlightMonth ? 'Proj. Net to Savings' : 'Net Surplus / Deficit') + '</div>';
   out += '<div style="font-size:22px;font-weight:700;color:' + netCol + ';font-family:var(--fm);">' + (displayNet>=0?'+':'') + fmtK(displayNet) + '</div>';
-  out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">save rate: <strong style="color:' + (displaySavPct>=20?'var(--positive)':displaySavPct>=10?'var(--gold)':'var(--negative)') + ';">' + displaySavPct.toFixed(1) + '%</strong></div>';
+  out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">save rate: <strong style="color:' + (displaySavPct>=20?'var(--pos)':displaySavPct>=10?'var(--gold)':'var(--neg)') + ';">' + displaySavPct.toFixed(1) + '%</strong></div>';
   out += '</div>';
 
   // Tile 3: Fixed Expenses
   const fixedColor = (isInFlightMonth && projBreakdown && projBreakdown.fixedProjected > 0)
     ? 'rgba(248,113,113,.15)' : 'rgba(248,113,113,.1)';
   out += '<div style="background:var(--float);border:1px solid ' + fixedColor + ';border-radius:var(--r-lg);padding:14px 12px;position:relative;overflow:hidden;">';
-  out += '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--negative);opacity:.6;border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+  out += '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--neg);opacity:.6;border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
   out += '<div style="font-size:8px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Fixed' + (isInFlightMonth ? ' · Full Month' : ' Expenses') + '</div>';
-  out += '<div style="font-size:22px;font-weight:700;color:var(--negative);font-family:var(--fm);">' + fmtK(fixedCommitted) + '</div>';
+  out += '<div style="font-size:22px;font-weight:700;color:var(--neg);font-family:var(--fm);">' + fmtK(fixedCommitted) + '</div>';
   if (isInFlightMonth && projBreakdown) {
     const paid = projBreakdown.fixedActual > 0 ? fmtK(projBreakdown.fixedActual) + ' paid' : '';
     const due  = projBreakdown.fixedProjected > 0 ? fmtK(projBreakdown.fixedProjected) + ' due' : (paid ? 'all charged ✓' : '');
@@ -4886,12 +4886,12 @@ function renderPulsePL(drillSection) {
   if (isInFlightMonth && projBreakdown) {
     const pctMonth = Math.round(daysElapsed / daysInMonth * 100);
     const budgetLeft = checkingIn - fixedCommitted - varSpend;
-    const blColor    = budgetLeft >= 0 ? 'var(--positive)' : 'var(--negative)';
+    const blColor    = budgetLeft >= 0 ? 'var(--pos)' : 'var(--neg)';
 
     let verdict, vColor;
     if (projNet >= 0 && displaySavPct >= 20) {
       verdict = '🎯 On pace for ' + displaySavPct.toFixed(1) + '% savings — above 20% target.';
-      vColor  = 'var(--positive)';
+      vColor  = 'var(--pos)';
     } else if (projNet >= 0 && displaySavPct >= 10) {
       verdict = '📈 On pace for a positive month — savings below 20% target.';
       vColor  = 'var(--gold)';
@@ -4900,7 +4900,7 @@ function renderPulsePL(drillSection) {
       vColor  = 'var(--gold)';
     } else {
       verdict = '⚠ On pace for a ' + fmtK(Math.abs(projNet)) + ' deficit — reduce variable spending.';
-      vColor  = 'var(--negative)';
+      vColor  = 'var(--neg)';
     }
 
     out += '<div style="background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.2);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:10px;">';
@@ -4910,7 +4910,7 @@ function renderPulsePL(drillSection) {
     out += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">';
     [
       ['Fixed Paid',  fmtK(projBreakdown.fixedActual),    'var(--ink3)',    'already charged'],
-      ['Fixed Due',   fmtK(projBreakdown.fixedProjected), 'var(--negative)', 'coming this month'],
+      ['Fixed Due',   fmtK(projBreakdown.fixedProjected), 'var(--neg)', 'coming this month'],
       ['Var. Spent',  fmtK(projBreakdown.variableActual), 'var(--gold)',    daysElapsed + 'd of ' + daysInMonth + 'd'],
     ].forEach(function(row) {
       out += '<div><div style="font-size:8px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">' + row[0] + '</div>';
@@ -4965,11 +4965,11 @@ function renderPulsePL(drillSection) {
     const shortfall = isInFlightMonth ? (totalProjectedExp > checkingIn) : (totalExp > checkingIn);
     const expAmt    = isInFlightMonth ? totalProjectedExp : totalExp;
     out += '<div style="background:' + (shortfall?'rgba(248,113,113,.05)':'rgba(52,211,153,.04)') + ';border:1px solid ' + (shortfall?'rgba(248,113,113,.18)':'rgba(52,211,153,.18)') + ';border-radius:var(--r-md);padding:10px 14px;margin-bottom:10px;font-size:11px;color:var(--ink3);line-height:1.6;">';
-    out += (shortfall?'\u26A0':'&#128161;') + ' <strong style="color:' + (shortfall?'var(--negative)':'#34D399') + ';">' + (shortfall?'Projected over budget:':'Savings intact:') + '</strong> ';
+    out += (shortfall?'\u26A0':'&#128161;') + ' <strong style="color:' + (shortfall?'var(--neg)':'#34D399') + ';">' + (shortfall?'Projected over budget:':'Savings intact:') + '</strong> ';
     out += fmtK(autoSave) + ' auto-saved. Budget: <strong>' + fmtK(checkingIn) + '</strong>. ';
-    out += (isInFlightMonth ? 'Projected spend: ' : 'Total: ') + '<strong style="color:' + (shortfall?'var(--negative)':'var(--ink)') + ';">' + fmtK(expAmt) + '</strong>';
-    if (shortfall) out += ' \u2014 <strong style="color:var(--negative);">' + fmtK(expAmt - checkingIn) + '</strong> over.';
-    else out += ' \u2014 <strong style="color:var(--positive);">' + fmtK(checkingIn - expAmt) + '</strong> buffer.';
+    out += (isInFlightMonth ? 'Projected spend: ' : 'Total: ') + '<strong style="color:' + (shortfall?'var(--neg)':'var(--ink)') + ';">' + fmtK(expAmt) + '</strong>';
+    if (shortfall) out += ' \u2014 <strong style="color:var(--neg);">' + fmtK(expAmt - checkingIn) + '</strong> over.';
+    else out += ' \u2014 <strong style="color:var(--pos);">' + fmtK(checkingIn - expAmt) + '</strong> buffer.';
     out += '</div>';
   }
 
@@ -4984,7 +4984,7 @@ function renderPulsePL(drillSection) {
   if (isInFlight) {
     const totalAccrued   = sections.reduce((s,sec)=>s+sec.buckets.reduce((ss,bk)=>ss+(sec.bucketData[bk]?.accrued||0),0),0);
     const projNet        = (totalInc - autoSave - totalExp) - totalAccrued;
-    const projCol        = projNet>=0?'var(--positive)':'var(--negative)';
+    const projCol        = projNet>=0?'var(--pos)':'var(--neg)';
     out += '<div style="background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.25);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">';
     out += '<div><div style="font-size:8px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--river);opacity:.8;margin-bottom:2px;">MTD</div>';
     out += '<div style="font-size:14px;font-weight:700;color:var(--ink);font-family:var(--fm);">'+daysElapsed+' / '+daysInMonth+'d</div>';
@@ -5015,7 +5015,7 @@ function renderPulsePL(drillSection) {
     if (!sec.total && sec.id !== 'income') return;
     const isOpen  = !!_piDrillOpen[sec.id];
     const hasBkts = Object.keys(sec.bucketData).length > 0;
-    const balCol  = sec.runBal>=0?'var(--positive)':'var(--negative)';
+    const balCol  = sec.runBal>=0?'var(--pos)':'var(--neg)';
     const rot     = isOpen?'0deg':'-90deg';
     const chevSvg = hasBkts
       ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2.5" style="transform:rotate('+rot+');transition:transform .2s;flex-shrink:0;"><polyline points="18 15 12 9 6 15"/></svg>'
@@ -5107,7 +5107,7 @@ function renderPulsePL(drillSection) {
             out += '<div style="display:flex;justify-content:space-between;padding:4px 14px 4px 62px;border-bottom:1px solid rgba(255,255,255,.015);background:rgba(0,0,0,.35);">';
             out += '<div><div style="font-size:9px;color:var(--ink4);">' + t.date + '</div>';
             if (subLbl) out += '<div style="font-size:9px;color:'+(isSplit?'var(--river)':'var(--ink4)')+';font-style:'+(isSplit?'italic':'normal')+';">' + subLbl.slice(0,32) + '</div>';
-            out += '</div><div style="font-size:10px;font-family:var(--fm);color:'+(t.amount>0?'var(--positive)':'var(--gold)')+';"> ' + fmtK(Math.abs(t.amount)) + '</div></div>';
+            out += '</div><div style="font-size:10px;font-family:var(--fm);color:'+(t.amount>0?'var(--pos)':'var(--gold)')+';"> ' + fmtK(Math.abs(t.amount)) + '</div></div>';
           });
         }
       });
@@ -5131,7 +5131,7 @@ function renderPulsePL(drillSection) {
       const amt = net * parseFloat(p);
       out += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px;">';
       out += '<div style="font-size:8px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">' + l + '</div>';
-      out += '<div style="font-size:16px;font-weight:700;color:var(--positive);">' + fmtK(amt) + '</div>';
+      out += '<div style="font-size:16px;font-weight:700;color:var(--pos);">' + fmtK(amt) + '</div>';
       out += '<div style="font-size:9px;color:var(--ink4);">' + s + '</div></div>';
     });
     out += '</div></div>';
