@@ -8172,11 +8172,10 @@ function renderIncomeStatement() {
   const el = document.getElementById('incomeStatement');
   if (!el) return;
 
-  // Month selector
+  // ── Month selector ──────────────────────────────────────────────────────────
   const moSel  = document.getElementById('isMonth');
   const sp     = spendable(txns);
   const months = [...new Set(sp.map(t=>t.date.slice(0,7)))].sort().reverse();
-
   if (moSel && moSel.options.length === 0) {
     months.forEach(m => {
       const [yr,mo] = m.split('-');
@@ -8188,441 +8187,476 @@ function renderIncomeStatement() {
     });
   }
   const selMonth = (moSel && moSel.value) || months[0];
-  try {
-    if (typeof renderThermometer === 'function') renderThermometer('isThermo', selMonth);
-  } catch(e) { console.warn('[IS] thermometer error:', e); }
+  try { if (typeof renderThermometer==='function') renderThermometer('isThermo', selMonth); } catch(e){}
   if (!selMonth) { el.innerHTML='<p style="color:var(--ink4);padding:20px">No data yet.</p>'; return; }
-  const [yr,mo] = selMonth.split('-');
-  const monthName = new Date(yr,parseInt(mo)-1,1)
-    .toLocaleDateString('en-US',{month:'long',year:'numeric'});
 
-  // Classify all spendable txns for this month (accrual by purchase date)
-  const monthSp = sp.filter(t => t.date.startsWith(selMonth));
+  const [yr,mo]   = selMonth.split('-');
+  const monthName = new Date(+yr,+mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const now       = new Date();
+  const curMonth  = now.toISOString().slice(0,7);
+  const isInFlight = selMonth === curMonth;  // current month only
 
-  // Savings transfers (auto-deposits to savings/investment accounts)
-  const monthXfers = txns.filter(t =>
-    t.date.startsWith(selMonth) && isTransfer(t) && t.amount < 0
-  );
+  // ── Accrual engine ────────────────────────────────────────────────────────
+  const accrual      = isInFlight ? buildAccrualEngine(selMonth, sp) : null;
+  const daysElapsed  = accrual ? accrual.daysElapsed  : 0;
+  const daysRemaining= accrual ? accrual.daysRemaining: 0;
+  const daysInMonth  = accrual ? accrual.daysInMonth  : 0;
 
-  // Build bucket → txns map — operating transactions only
-  // CC credits (returns) are kept but treated as negative expenses (offsets) in their bucket.
-  // Savings transfers (401k, IRA, HSA, 529) go only into auto_save, not operating expenses.
-  const bucketTxns = {};
-  function addToBucket(key, t) {
-    if (!bucketTxns[key]) bucketTxns[key] = [];
-    bucketTxns[key].push(t);
-  }
+  // ── Data pipeline ─────────────────────────────────────────────────────────
+  const monthSp    = sp.filter(t => t.date.startsWith(selMonth));
+  const monthXfers = txns.filter(t => t.date.startsWith(selMonth) && isTransfer(t));
 
-  // Income: only real household income — exclude CC credits
-  monthSp.filter(t => t.amount > 0 && !isCCCredit(t)).forEach(t => addToBucket(classifyTxn(t), t));
+  // Bucket accumulator
+  const bkt = {};
+  function addB(key, t) { if (!bkt[key]) bkt[key]=[]; bkt[key].push(t); }
+
+  // Income: paychecks + other operating income (positive, non-CC-credit)
+  monthSp.filter(t => t.amount > 0 && !isNonOperatingCredit(t) && !isCCCredit(t))
+         .forEach(t => addB(classifyTxn(t), t));
 
   // Expenses: all negative operating transactions
-  monthSp.filter(t => t.amount < 0).forEach(t => addToBucket(classifyTxn(t), t));
+  monthSp.filter(t => t.amount < 0).forEach(t => addB(classifyTxn(t), t));
 
-  // CC credits as expense offsets — add as positive to their expense bucket (reduces bucket total)
-  monthSp.filter(t => isCCCredit(t)).forEach(t => {
-    const bk = classifyTxn(t);
-    addToBucket(bk, Object.assign({}, t, { _isCCCredit: true }));
-  });
+  // CC credits as expense offsets (NOT income)
+  monthSp.filter(t => isCCCredit(t))
+         .forEach(t => addB(classifyTxn(t), Object.assign({}, t, {_isCCCredit:true})));
 
-  // Pre-committed savings: checking→savings transfers near a paycheck date only.
-  // Excludes ad-hoc transfers; 401k/IRA/HSA/529 already excluded by savings-only check.
-  const _paycheckDates = monthSp
-    .filter(t => classifyTxn(t) === 'paycheck' && t.amount > 0)
-    .map(t => t.date);
-  function _nearPaycheck(tDate) {
-    const d0 = new Date(tDate);
-    return _paycheckDates.some(pd => Math.abs(new Date(pd) - d0) <= 4 * 864e5);
+  // ── Pre-committed savings: checking→savings near payday ──────────────────
+  const paycheckDates = monthSp.filter(t=>classifyTxn(t)==='paycheck'&&t.amount>0).map(t=>t.date);
+  function nearPayday(d) {
+    return paycheckDates.some(pd => Math.abs(new Date(pd)-new Date(d)) <= 4*864e5);
   }
-  monthXfers.forEach(t => {
-    const destAcct = (t.category||'').replace(/^\[|\]$/g,'').trim();
-    const type = detectAcctType(destAcct);
-    if (type === 'savings' && _nearPaycheck(t.date)) {
-      addToBucket('auto_save', Object.assign({}, t, {_xferTo: destAcct, amount: -Math.abs(t.amount)}));
+  const autoSaveTxns = [];
+  monthXfers.filter(t => t.amount < 0).forEach(t => {
+    const dest = (t.category||'').replace(/^\[|\]$/g,'').trim();
+    if (detectAcctType(dest)==='savings' && nearPayday(t.date)) {
+      const st = Object.assign({}, t, {_xferTo:dest, amount:-Math.abs(t.amount)});
+      autoSaveTxns.push(st);
+      addB('auto_save', st);
     }
   });
 
-  // ── Accrual engine for in-flight months ───────────────────────────────────
-  const accrual = buildAccrualEngine(selMonth, sp);
-  const isInFlight      = accrual !== null;
-  const isInFlightMonth = accrual !== null;   // alias used throughout hero tiles
-  const daysRemaining = accrual ? accrual.daysRemaining : 0;
-  const daysElapsed   = accrual ? accrual.daysElapsed   : 0;
-  const daysInMonth   = accrual ? accrual.daysInMonth   : 0;
+  // ── Savings draws: savings→checking (warning signal) ─────────────────────
+  const savingsDrawTxns = monthXfers.filter(t => {
+    if (t.amount <= 0) return false;  // must be positive (money coming IN)
+    const src = (t.category||'').replace(/^\[|\]$/g,'').trim();
+    // positive transfer into checking FROM savings = a draw
+    return detectAcctType(src)==='savings' || detectAcctType(t.account||'')==='savings';
+  });
+  const totalDraw = savingsDrawTxns.reduce((s,t)=>s+t.amount, 0);
 
-  // projBreakdown — populated after sectionData is built (see below)
-  let projBreakdown = null;
+  // ── Raw totals ──────────────────────────────────────────────────────────────
+  const totalIncome  = (bkt.paycheck  ||[]).reduce((s,t)=>s+t.amount,0)
+                     + (bkt.other_inc ||[]).filter(t=>!isCCCredit(t)).reduce((s,t)=>s+t.amount,0);
+  const totalAutoSave= autoSaveTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
+  const deployable   = Math.max(totalIncome - totalAutoSave, 0);
 
-  // Section totals
-  let running = 0;
-  const sectionData = WATERFALL.map(sec => {
-    const bucketData = {};
-    let secTotal = 0;
-    sec.buckets.forEach(bk => {
-      const bTxns = bucketTxns[bk] || [];
-      // Mark one-time txns for display (accrual not projected for these)
-      if (isInFlight) {
-        bTxns.forEach(t => { t._oneTime = accrual.isOneTime(t, bk); });
+  // ── Accrual projections (in-flight only) ────────────────────────────────
+  function accrued(bucketKey) { return isInFlight && accrual ? (accrual.accrueAmount(bucketKey)||0) : 0; }
+  function bucketTotal(bucketKey, projected) {
+    const actual = (bkt[bucketKey]||[]).reduce((s,t)=>s+Math.abs(t.amount),0);
+    return projected ? actual + accrued(bucketKey) : actual;
+  }
+
+  // ── FIXED bucket groups (priority order, highest cost first) ────────────
+  const FIXED_GROUPS = [
+    { key:'mortgage',      label:'Mortgage / Rent',           icon:'🏠' },
+    { key:'car',           label:'Auto (loan, insurance)',     icon:'🚗' },
+    { key:'education',     label:'Education & Tuition',        icon:'🎓' },
+    { key:'insurance',     label:'Insurance (life, health)',   icon:'🛡️' },
+    { key:'childcare',     label:'Childcare & Kids Sports',    icon:'👨‍👧' },
+    { key:'electric',      label:'Electric',                   icon:'⚡' },
+    { key:'gas_util',      label:'Gas & Heat',                 icon:'🔥' },
+    { key:'water',         label:'Water',                      icon:'💧' },
+    { key:'internet',      label:'Internet & Streaming',       icon:'📡' },
+    { key:'cell',          label:'Cell Phones',                icon:'📱' },
+    { key:'subscriptions', label:'Subscriptions',              icon:'📋' },
+  ];
+
+  // ── VARIABLE bucket groups (sorted by actual spend descending) ──────────
+  const VARIABLE_GROUPS = [
+    { key:'groceries',    label:'Groceries',                   icon:'🛒' },
+    { key:'restaurants',  label:'Restaurants & Dining',        icon:'🍽️' },
+    { key:'household',    label:'Home & Amazon',               icon:'🏡' },
+    { key:'gas_car',      label:'Gas (vehicle)',               icon:'⛽' },
+    { key:'healthcare',   label:'Healthcare',                  icon:'🏥' },
+    { key:'personal',     label:'Personal Care',               icon:'💆' },
+    { key:'entertainment',label:'Entertainment',               icon:'🎭' },
+    { key:'clothing',     label:'Clothing',                    icon:'👔' },
+    { key:'transit',      label:'Transit & Rideshare',         icon:'🚌' },
+    { key:'travel',       label:'Travel',                      icon:'✈️' },
+    { key:'gifts',        label:'Gifts & Donations',           icon:'🎁' },
+    { key:'other',        label:'Other',                       icon:'📌' },
+  ];
+
+  // Compute totals for each group
+  function groupRows(groups) {
+    return groups.map(g => ({
+      ...g,
+      actual:  (bkt[g.key]||[]).reduce((s,t)=>s+Math.abs(t.amount),0),
+      proj:    accrued(g.key),
+      txns:    bkt[g.key]||[],
+    }))
+    .filter(g => g.actual + g.proj > 0.01)
+    .sort((a,b) => (b.actual+b.proj)-(a.actual+a.proj));
+  }
+
+  const fixedRows    = groupRows(FIXED_GROUPS);
+  const varRows      = groupRows(VARIABLE_GROUPS);
+  const totalFixed   = fixedRows.reduce((s,g)=>s+g.actual+g.proj, 0);
+  const totalVar     = varRows.reduce((s,g)=>s+g.actual+g.proj, 0);
+  const totalExp     = totalFixed + totalVar;
+  const netRemaining = deployable - totalExp;
+  const onTrack      = netRemaining >= 0;
+
+  // ── Helper renderers ────────────────────────────────────────────────────
+  const C = { pos:'#34D9C3', neg:'#F87171', gold:'#F5A800', river:'#60A5FA', ink:'#EEEAE4', ink4:'#6B6560' };
+  function kfmt(v) {
+    const neg=v<0; const a=Math.abs(v);
+    const s = a>=1000 ? '$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K' : '$'+Math.round(a);
+    return neg ? '−'+s : s;
+  }
+  function mfmt(v) { // money with 2dp for amounts under $100
+    const a=Math.abs(v); return '$'+(a>=10?Math.round(a).toLocaleString('en-US'):a.toFixed(2));
+  }
+  function pctOf(v, base) { return base>0 ? (v/base*100).toFixed(0)+'%' : '—'; }
+  function miniBar(v, base, color) {
+    const w = base>0 ? Math.min(100, v/base*100) : 0;
+    return `<div style="height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:4px;overflow:hidden;">
+      <div style="height:100%;width:${w.toFixed(1)}%;background:${color};border-radius:2px;"></div></div>`;
+  }
+  function txnRows(txns) {
+    if (!txns.length) return '';
+    const sorted = txns.slice().sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount));
+    return sorted.map(t => {
+      const det = t.itemDetail && t.itemDetail!==t.payee ? `<div style="font-size:11px;color:${C.river};font-style:italic;margin-top:1px;">${t.itemDetail}</div>` : '';
+      const meta = [t.category, t.account].filter(Boolean).join(' · ');
+      return `<div style="display:grid;grid-template-columns:80px 1fr auto;gap:6px;padding:5px 12px 5px 32px;border-bottom:1px solid rgba(255,255,255,.03);">
+        <div style="font-family:var(--fm);font-size:11px;color:${C.ink4};padding-top:2px;">${t.date}</div>
+        <div>
+          <div style="font-size:13px;color:#C8C4BE;">${t.payee||t._xferTo||'—'}</div>
+          ${det}
+          <div style="font-size:10px;color:${C.ink4};">${meta}</div>
+        </div>
+        <div style="font-family:var(--fm);font-size:13px;font-weight:600;color:${t.amount<0?C.gold:C.pos};white-space:nowrap;padding-top:2px;">
+          ${t.amount<0?'−':'+'}${mfmt(Math.abs(t.amount))}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function sectionHeader(label, icon, total, base, color, sub) {
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px 6px;border-top:1px solid rgba(255,255,255,.06);">
+      <div style="font-size:18px;">${icon}</div>
+      <div style="flex:1;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${C.ink4};">${label}</div>
+        ${sub?`<div style="font-size:11px;color:${C.ink4};margin-top:1px;">${sub}</div>`:''}
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:20px;font-weight:700;font-family:var(--fd);color:${color};">${kfmt(total)}</div>
+        <div style="font-size:11px;color:${C.ink4};">${pctOf(total,deployable)} of deployable</div>
+      </div>
+    </div>`;
+  }
+
+  function bucketRow(g, base, color) {
+    const total = g.actual + g.proj;
+    const pKey  = 'is_bk_'+g.key;
+    const isOpen= !!isBucketOpen[g.key];
+    const hasTxn= g.txns.length > 0;
+    const projBadge = g.proj > 0 ? `<span style="font-size:10px;color:${C.river};font-family:var(--fm);margin-left:6px;">+${kfmt(g.proj)} proj</span>` : '';
+    return `<div>
+      <div data-bkid="${g.key}" class="is-bk-row" style="display:flex;align-items:center;gap:8px;padding:8px 14px;cursor:${hasTxn?'pointer':'default'};transition:background .1s;"
+        onmouseenter="this.style.background='rgba(255,255,255,.03)'" onmouseleave="this.style.background=''">
+        <div style="font-size:15px;min-width:22px;">${g.icon}</div>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:13px;color:${C.ink};">${g.label}</span>
+            ${projBadge}
+            ${hasTxn?`<span style="font-size:11px;color:${C.ink4};">(${g.txns.length})</span>`:''}
+          </div>
+          ${miniBar(total, base, color)}
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:14px;font-weight:600;font-family:var(--fm);color:${color};">${kfmt(total)}</div>
+          <div style="font-size:11px;color:${C.ink4};">${pctOf(total, base)}</div>
+        </div>
+        ${hasTxn?`<div style="font-size:11px;color:${C.ink4};min-width:14px;">${isOpen?'▾':'▸'}</div>`:'<div style="min-width:14px;"></div>'}
+      </div>
+      ${hasTxn&&isOpen?`<div style="background:rgba(0,0,0,.25);border-top:1px solid rgba(255,255,255,.04);">${txnRows(g.txns)}</div>`:''}
+    </div>`;
+  }
+
+  // ── Actionable recommendations ─────────────────────────────────────────
+  function buildRecs() {
+    const recs = [];
+    const vc   = varRows.filter(g=>g.actual+g.proj>0);
+    const topV = vc[0];
+    if (!onTrack) {
+      const gap = Math.abs(netRemaining);
+      recs.push({ level:'danger', icon:'🚨',
+        text:`You are on track to exceed deployable cash by ${kfmt(gap)} this month. `
+           + `Reduce variable spending to close the gap.` });
+    }
+    if (totalDraw > 0) {
+      recs.push({ level:'warning', icon:'⚠️',
+        text:`Savings draw of ${kfmt(totalDraw)} this month. Your expenses exceeded checking inflows — `
+           + `you needed to pull from savings to cover bills. Review fixed and variable spending.` });
+    }
+    if (isInFlight && daysRemaining > 0 && topV) {
+      const daily = (topV.actual) / Math.max(daysElapsed,1);
+      const pace  = daily * daysRemaining;
+      if (pace > topV.actual * 0.4) {
+        recs.push({ level:'info', icon:'👁️',
+          text:`${topV.label} is running at ${kfmt(topV.actual)} with ${daysRemaining} days left. `
+             + `At current pace, another ${kfmt(Math.round(pace))} is projected.` });
       }
-      const bTotal = bTxns.reduce((s,t) => s + Math.abs(t.amount), 0);
-      if (bTotal > 0.01) { bucketData[bk] = {txns:bTxns, actual:bTotal, total:bTotal}; secTotal += bTotal; }
-    });
-    if (sec.type === 'income') running = secTotal;
-    else running -= secTotal;
-    // Compute accrued amounts for each bucket (in-flight months only)
-    if (isInFlight) {
-      sec.buckets.forEach(bk => {
-        const accrued = accrual.accrueAmount(bk);
-        if (bucketData[bk]) {
-          bucketData[bk].accrued = accrued;
-          bucketData[bk].total   = bucketData[bk].actual + accrued;
-        } else if (accrued > 0.5) {
-          bucketData[bk] = { txns: [], actual: 0, accrued, total: accrued };
-        }
-      });
-      secTotal = sec.buckets.reduce((s,bk) => s + (bucketData[bk]?.total||0), 0);
     }
-    return {...sec, bucketData, total:secTotal, runningBalance:running};
-  });
-
-  const totalIncome  = sectionData.find(s=>s.id==='income')?.total || 0;
-  const autoSave     = sectionData.find(s=>s.id==='auto_save')?.total || 0;
-  const totalExp     = sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>s+sec.total,0);
-
-  // ── Income normalization — uses buildMonthSummary so IS matches thermometer ─
-  // Both IS and the Budget Pressure Bar call the same shared compute function,
-  // guaranteeing the numbers are identical across views.
-  const _mSummary      = buildMonthSummary(selMonth, sp);
-  const incNorm        = _mSummary ? _mSummary.normData : null;
-  const displayIncome  = _mSummary ? _mSummary.normalizedIncome  : totalIncome;
-  const displayAutoSave= _mSummary ? _mSummary.normalizedAutoSave : autoSave;
-  const checkingIn     = displayIncome - displayAutoSave;
-  // Propagate early-month flag for hero display
-  const earlyMonthIS   = _mSummary ? _mSummary.earlyMonth : false;
-
-  const netSurplus   = totalIncome - autoSave - totalExp;
-  const savingsPct   = displayIncome>0 ? ((displayAutoSave+Math.max(0,displayIncome-displayAutoSave-totalExp))/displayIncome*100) : 0;
-  const displaySavPct = savingsPct;  // alias used in hero tiles below
-  const surpColor    = netSurplus>=0?'var(--positive)':'var(--negative)';
-
-  // Populate projBreakdown now that sectionData is available
-  if (isInFlightMonth && accrual && accrual.getProjectionBreakdown) {
-    projBreakdown = accrual.getProjectionBreakdown(sectionData);
+    if (onTrack && netRemaining > 200 && !totalDraw) {
+      recs.push({ level:'good', icon:'✅',
+        text:`${kfmt(netRemaining)} unallocated after all expenses. `
+           + `Consider deploying to emergency fund, brokerage, or 529.` });
+    }
+    const highVar = varRows.find(g=>(g.actual+g.proj)>deployable*0.15);
+    if (highVar) {
+      recs.push({ level:'info', icon:'📊',
+        text:`${highVar.label} is ${pctOf(highVar.actual+highVar.proj, deployable)} of deployable — `
+           + `your highest variable category. This is the most impactful place to reduce.` });
+    }
+    return recs;
   }
+  const recs = buildRecs();
+  const recColors = { danger:'rgba(248,113,113,.15)', warning:'rgba(245,168,0,.12)', info:'rgba(96,165,250,.1)', good:'rgba(52,217,195,.1)' };
+  const recBorders = { danger:'#F87171', warning:'#F5A800', info:'#60A5FA', good:'#34D9C3' };
 
-  // ── Helpers ────────────────────────────────────────────────────
-  function pct(v) { return totalIncome>0?(v/totalIncome*100).toFixed(0)+'%':'—'; }
-  function pbar(v, color) {
-    const w = totalIncome>0?Math.min(100,v/totalIncome*100):0;
-    return '<div style="height:3px;background:var(--lift);border-radius:2px;margin-top:5px;overflow:hidden;"><div style="height:100%;width:'+w.toFixed(1)+'%;background:'+color+';border-radius:2px;transition:width .3s;"></div></div>';
-  }
-  function chevron(open, id, fn) {
-    const rot = open ? '0deg' : '-90deg';
-    // Use data-sid for section toggles, data-bkid for bucket toggles
-    const attr = fn === 'toggleSection' ? 'data-sid="'+id+'"' : 'data-bkid="'+id+'"';
-    return '<span '+attr+' class="'+(fn==='toggleSection'?'is-sec-row':'is-bk-row')+'" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;cursor:pointer;border-radius:4px;transition:transform .2s;flex-shrink:0;transform:rotate('+rot+');">'
-      + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></span>';
-  }
-  function fmtTxnAmt(t) {
-    const v = Math.abs(t.amount);
-    const sign = t.amount > 0 ? '+' : '−';
-    const c = t.amount > 0 ? 'var(--positive)' : 'var(--gold)';
-    return '<span style="font-family:var(--font-m);font-size:12px;font-weight:600;color:'+c+';">'+sign+fmt(v)+'</span>';
-  }
+  // ── Cash reconciliation ────────────────────────────────────────────────
+  // Checking inflows: paychecks + savings draws
+  const checkIn  = totalIncome + totalDraw;
+  // Checking outflows: all expenses paid from checking + auto-saves
+  const chkTxns  = txns.filter(t=>t.date.startsWith(selMonth)&&!isTransfer(t)&&t.amount<0
+                     &&(detectAcctType(t.account||'')==='checking'||detectAcctType(t.account||'')===''));
+  const checkOut = chkTxns.reduce((s,t)=>s+Math.abs(t.amount),0) + totalAutoSave;
+  // CC charges: negative txns on CC accounts
+  const ccTxns   = txns.filter(t=>t.date.startsWith(selMonth)&&!isTransfer(t)&&t.amount<0
+                     &&detectAcctType(t.account||'')==='credit');
+  const ccCharges= ccTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
+  // CC payments from checking to card
+  const ccPayTxns= monthXfers.filter(t=>t.amount<0&&detectAcctType((t.category||'').replace(/^\[|\]$/g,'').trim())==='credit');
+  const ccPaid   = ccPayTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
 
-  // ── Build income statement HTML ─────────────────────────────────
+  // ── BUILD OUTPUT ───────────────────────────────────────────────────────
   try {
   let out = '';
+  const cardWrap = (content, mt='12px') =>
+    `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:${mt};">${content}</div>`;
+  const divider = '<div style="border-top:2px solid rgba(255,255,255,.08);margin:0;"></div>';
 
-  // ── KPI tile row — 4 cards, fixed height, below the pressure bar ────────────
-  {
-    const _FIXED_BKS = ['mortgage','car','insurance','education','childcare',
-                        'electric','gas_util','water','internet','cell','subscriptions'];
-    const _VAR_BKS   = ['restaurants','groceries','gas_car','transit','healthcare',
-                        'entertainment','household','personal','clothing','travel','gifts','other'];
+  // ── Status header ──────────────────────────────────────────────────────
+  const statusBadge = isInFlight
+    ? `<span style="background:rgba(96,165,250,.15);border:1px solid rgba(96,165,250,.3);color:${C.river};font-size:10px;font-family:var(--fm);letter-spacing:.1em;padding:2px 8px;border-radius:20px;">⚡ IN FLIGHT · Day ${daysElapsed}/${daysInMonth}</span>`
+    : `<span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:${C.ink4};font-size:10px;font-family:var(--fm);letter-spacing:.1em;padding:2px 8px;border-radius:20px;">📋 CLOSED · Actuals Only</span>`;
 
-    const fixedKPI = _mSummary ? _mSummary.fixedTotal
-      : sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>
-          s + _FIXED_BKS.filter(bk=>sec.buckets.includes(bk)).reduce((ss,bk)=>ss+(sec.bucketData[bk]?.total||0),0), 0);
-    const varKPI = _mSummary ? _mSummary.varTotal
-      : sectionData.filter(s=>s.type==='expense').reduce((s,sec)=>
-          s + _VAR_BKS.filter(bk=>sec.buckets.includes(bk)).reduce((ss,bk)=>ss+(sec.bucketData[bk]?.total||0),0), 0);
+  out += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+    <div style="font-size:15px;font-weight:700;color:${C.ink};">${monthName}</div>
+    ${statusBadge}
+    ${isInFlight?`<span style="font-size:11px;color:${C.ink4};">${daysRemaining} days remaining</span>`:''}
+  </div>`;
 
-    const displayNet  = isInFlightMonth ? (totalIncome - autoSave - fixedKPI - varKPI) : netSurplus;
-    const _netColor   = displayNet >= 0 ? 'var(--positive)' : 'var(--negative)';
-    const _savColor   = displaySavPct >= 20 ? 'var(--positive)' : displaySavPct >= 10 ? 'var(--gold)' : 'var(--negative)';
-    const wasNorm     = incNorm && (incNorm.isThreePayMonth || (incNorm.oneTimeTotal||0) > 0);
+  // ── BLOCK 1: Income stepdown ───────────────────────────────────────────
+  const incomeRows = [...(bkt.paycheck||[]), ...(bkt.other_inc||[]).filter(t=>!isCCCredit(t))]
+    .sort((a,b)=>b.amount-a.amount);
 
-    const kpiCards = [
-      { label: 'Net Income',     val: fmt(displayIncome),   color: 'var(--positive)',
-        sub: wasNorm ? (incNorm.isThreePayMonth ? '3-pay normalized' : 'bonus excl.')
-                     : (isInFlightMonth ? 'projected' : 'actual') },
-      { label: 'Fixed Expenses', val: fmt(fixedKPI),        color: 'var(--negative)',
-        sub: isInFlightMonth && _mSummary?.fixedAccrued > 0
-          ? fmt(_mSummary.fixedActual) + ' charged · ' + fmt(_mSummary.fixedAccrued) + ' due'
-          : 'obligations & bills' },
-      { label: 'Variable',       val: fmt(varKPI),          color: 'var(--gold)',
-        sub: isInFlightMonth && _mSummary?.varAccrued > 0
-          ? fmt(_mSummary.varActual) + ' spent · +' + fmt(_mSummary.varAccrued) + ' on pace'
-          : 'discretionary spend' },
-      { label: isInFlightMonth ? 'Projected Net' : 'Net Savings', val: (displayNet>=0?'+':'') + fmt(displayNet), color: _netColor,
-        sub: displaySavPct.toFixed(1) + '% of income' },
-    ];
+  out += cardWrap(`
+    <div style="padding:12px 14px 10px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:${C.ink4};margin-bottom:8px;">OPERATING INCOME</div>
+      ${incomeRows.length === 0 ? `<div style="font-size:13px;color:${C.ink4};font-style:italic;">No income recorded${isInFlight?` — ${daysRemaining} days remaining`:''}.</div>` : ''}
+      ${incomeRows.map(t=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+          <div style="font-size:13px;color:${C.ink};flex:1;">${t.payee||'Paycheck'}</div>
+          <div style="font-size:11px;font-family:var(--fm);color:${C.ink4};">${t.date}</div>
+          <div style="font-size:14px;font-weight:600;font-family:var(--fm);color:${C.pos};">+${mfmt(t.amount)}</div>
+        </div>`).join('')}
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(52,217,195,.06);border-top:1px solid rgba(52,217,195,.2);">
+      <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${C.pos};">Total Operating Income</div>
+      <div style="font-size:22px;font-weight:700;font-family:var(--fd);color:${C.pos};">${kfmt(totalIncome)}</div>
+    </div>
 
-    out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">';
-    kpiCards.forEach(function(k) {
-      var shade = k.color.replace('var(--','').replace(')','');
-      out += '<div class="is-kpi-tile" style="background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px 10px;border-top:3px solid ' + k.color + ';box-shadow:0 2px 10px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);cursor:pointer;">'
-        + '<div style="font-size:8px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;font-weight:700;">' + k.label + '</div>'
-        + '<div style="font-size:24px;font-family:var(--fd);font-weight:700;color:' + k.color + ';line-height:1;margin-bottom:5px;letter-spacing:-.02em;">' + k.val + '</div>'
-        + '<div style="font-size:10px;color:var(--ink4);font-family:var(--font-m);">' + k.sub + '</div>'
-        + '</div>';
-    });
-    out += '</div>';
+    ${autoSaveTxns.length>0 ? `
+    <div style="padding:8px 14px;background:rgba(96,165,250,.05);border-top:1px solid rgba(255,255,255,.06);">
+      <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:${C.ink4};margin-bottom:6px;">PRE-COMMITTED SAVINGS (auto-deducted at payday)</div>
+      ${autoSaveTxns.map(t=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+          <div style="font-size:13px;color:${C.ink};flex:1;">→ ${t._xferTo||'Savings'}</div>
+          <div style="font-size:11px;font-family:var(--fm);color:${C.ink4};">${t.date}</div>
+          <div style="font-size:13px;font-weight:600;font-family:var(--fm);color:${C.river};">−${mfmt(Math.abs(t.amount))}</div>
+        </div>`).join('')}
+    </div>
+    ` : `<div style="padding:8px 14px;border-top:1px solid rgba(255,255,255,.04);"><div style="font-size:12px;color:${C.ink4};">No paycheck savings transfers detected this month.</div></div>`}
 
-    // Month status row
-    out += '<div style="font-size:11px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">';
-    if (isInFlightMonth) {
-      out += '📅 ' + monthName + ' · Day ' + daysElapsed + ' of ' + daysInMonth + ' · ' + daysRemaining + ' days remaining';
-    } else {
-      out += '📋 ' + monthName + ' · Closed — actuals only';
-    }
-    out += '</div>';
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(255,255,255,.04);border-top:2px solid rgba(255,255,255,.12);">
+      <div>
+        <div style="font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${C.ink};">💵 DEPLOYABLE CASH</div>
+        <div style="font-size:11px;color:${C.ink4};">Income available to fund all operating expenses</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:26px;font-weight:700;font-family:var(--fd);color:${C.ink};">${kfmt(deployable)}</div>
+        ${totalAutoSave>0?`<div style="font-size:11px;color:${C.ink4};">${kfmt(totalIncome)} − ${kfmt(totalAutoSave)} saved</div>`:''}
+      </div>
+    </div>
+  `);
+
+  // ── BLOCK 2: Fixed expenses ────────────────────────────────────────────
+  if (fixedRows.length > 0) {
+    const fixedSub = isInFlight && fixedRows.some(g=>g.proj>0)
+      ? `${kfmt(fixedRows.reduce((s,g)=>s+g.actual,0))} charged · ${kfmt(fixedRows.reduce((s,g)=>s+g.proj,0))} still due`
+      : 'Obligations you cannot immediately change — pay these first';
+    out += cardWrap(
+      sectionHeader('FIXED EXPENSES', '🔒', totalFixed, deployable, C.neg, fixedSub)
+      + divider
+      + fixedRows.map(g => bucketRow(g, deployable, C.neg)).join('')
+      + `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 14px;background:rgba(248,113,113,.06);border-top:2px solid rgba(248,113,113,.2);">
+        <div style="font-size:12px;font-weight:700;color:${C.neg};">Fixed Total</div>
+        <div style="font-size:18px;font-weight:700;font-family:var(--fd);color:${C.neg};">−${kfmt(totalFixed)}</div>
+       </div>`
+    );
   }
 
-  // ── Accrual projection banner (in-flight months only) ─────────────────────
-  if (isInFlight) {
-    const totalAccrued = sectionData.reduce((s,sec) =>
-      s + sec.buckets.reduce((ss,bk)=>ss+(sec.bucketData[bk]?.accrued||0),0), 0);
-    out += '<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:9px 14px;background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.2);border-radius:var(--r-md);margin-bottom:10px;font-size:11px;">';
-    out += '<span style="font-family:var(--font-m);color:var(--river);font-weight:600;">⚡ ' + daysElapsed + 'd actual + ' + daysRemaining + 'd projected</span>';
-    if (totalAccrued > 0) {
-      out += '<span style="color:var(--ink4);">' + fmt(totalAccrued) + ' additional expenses projected · fixed bills use per-payee median, not straight-line</span>';
-    }
-    out += '</div>';
+  // ── Running balance after fixed ────────────────────────────────────────
+  const afterFixed = deployable - totalFixed;
+  const afColor    = afterFixed >= 0 ? C.pos : C.neg;
+  out += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:12px;">
+    <div style="font-size:11px;color:${C.ink4};font-family:var(--fm);letter-spacing:.06em;text-transform:uppercase;">After fixed expenses</div>
+    <div style="font-size:18px;font-weight:700;font-family:var(--fd);color:${afColor};">${afterFixed>=0?'+':''}${kfmt(afterFixed)}</div>
+  </div>`;
+
+  // ── BLOCK 3: Variable expenses ─────────────────────────────────────────
+  if (varRows.length > 0) {
+    const varSub = isInFlight && varRows.some(g=>g.proj>0)
+      ? `${kfmt(varRows.reduce((s,g)=>s+g.actual,0))} spent · ${kfmt(varRows.reduce((s,g)=>s+g.proj,0))} projected at current pace`
+      : 'Discretionary — actively manage these to influence your month\'s outcome';
+    out += cardWrap(
+      sectionHeader('VARIABLE & DISCRETIONARY', '🎛️', totalVar, deployable, C.gold, varSub)
+      + divider
+      + varRows.map(g => bucketRow(g, deployable, C.gold)).join('')
+      + `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 14px;background:rgba(245,168,0,.06);border-top:2px solid rgba(245,168,0,.2);">
+        <div style="font-size:12px;font-weight:700;color:${C.gold};">Variable Total</div>
+        <div style="font-size:18px;font-weight:700;font-family:var(--fd);color:${C.gold};">−${kfmt(totalVar)}</div>
+       </div>`
+    );
   }
 
+  // ── BLOCK 4: Net position ─────────────────────────────────────────────
+  const netColor  = onTrack ? C.pos : C.neg;
+  const netBg     = onTrack ? 'rgba(52,217,195,.08)' : 'rgba(248,113,113,.1)';
+  const netBorder = onTrack ? 'rgba(52,217,195,.3)'  : 'rgba(248,113,113,.3)';
+  out += cardWrap(`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:${netBg};border-bottom:1px solid ${netBorder};">
+      <div>
+        <div style="font-size:15px;font-weight:700;color:${netColor};">
+          ${onTrack ? '✅ Net Remaining' : '⛔ Deficit'}
+          ${isInFlight ? '<span style="font-size:11px;font-weight:400;color:var(--ink4);margin-left:8px;">projected</span>' : ''}
+        </div>
+        <div style="font-size:11px;color:var(--ink4);margin-top:3px;">${pctOf(Math.abs(netRemaining),deployable)} of deployable · ${pctOf(totalExp,totalIncome)} total expense ratio</div>
+      </div>
+      <div style="font-size:28px;font-weight:700;font-family:var(--fd);color:${netColor};">${netRemaining>=0?'+':''}${kfmt(netRemaining)}</div>
+    </div>
+    ${onTrack && netRemaining > 100 ? `
+    <div style="padding:10px 14px;">
+      <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:8px;">💡 Deploy this surplus</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+        ${[['40%','Emergency Fund','3–6 mo expenses'],['35%','Brokerage','index funds'],['25%','529 College','per child']].map(([p,l,s])=>`
+          <div style="background:rgba(52,217,195,.06);border:1px solid rgba(52,217,195,.15);border-radius:8px;padding:10px;">
+            <div style="font-size:11px;color:var(--ink4);">${p}</div>
+            <div style="font-size:16px;font-weight:700;color:${C.pos};font-family:var(--fd);">${kfmt(netRemaining*parseFloat(p)/100)}</div>
+            <div style="font-size:10px;color:var(--ink4);">${l}</div>
+            <div style="font-size:9px;color:var(--ink4);font-style:italic;">${s}</div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+  `);
 
-  // ── Table header — 3 cols when in-flight, 2 cols otherwise ──────────────────
-  const gridCols = isInFlight ? '1fr 90px 90px 100px' : '1fr 120px 110px';
-  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
-  out += '<div style="display:grid;grid-template-columns:'+gridCols+';padding:9px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Category</div>';
-  if (isInFlight) {
-    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Actual<br><span style="color:var(--ink4);font-size:8px;opacity:.7;">'+daysElapsed+' days</span></div>';
-    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--river);text-align:right;">Accrued<br><span style="color:var(--ink4);font-size:8px;opacity:.7;">'+daysRemaining+' left</span></div>';
+  // ── BLOCK 5: Savings draw warning ─────────────────────────────────────
+  if (totalDraw > 0) {
+    out += cardWrap(`
+      <div style="padding:12px 14px;background:rgba(248,113,113,.1);border-left:3px solid ${C.neg};">
+        <div style="font-size:13px;font-weight:700;color:${C.neg};margin-bottom:6px;">⚠️ Savings Draw — ${kfmt(totalDraw)}</div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;">Your expenses exceeded checking inflows this month. You drew from savings to cover the gap. Successful months do not require a savings draw.</div>
+        ${savingsDrawTxns.map(t=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+            <div style="font-size:13px;color:var(--ink);flex:1;">${t.payee||'Transfer'} ← ${(t.category||'').replace(/^\[|\]$/g,'')}</div>
+            <div style="font-size:11px;font-family:var(--fm);color:var(--ink4);">${t.date}</div>
+            <div style="font-size:13px;font-weight:600;font-family:var(--fm);color:${C.neg};">+${mfmt(t.amount)}</div>
+          </div>`).join('')}
+      </div>
+    `);
   }
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">'+(isInFlight?'Total':'Amount')+'</div>';
-  out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Running</div></div>';
 
-  sectionData.forEach(sec => {
-    if (sec.id === 'other' && sec.total < 0.01) return;
-    const open = !!isDrillOpen[sec.id];
-    const hasBuckets = Object.keys(sec.bucketData).length > 0;
-    const balColor = sec.runningBalance >= 0 ? 'var(--positive)' : 'var(--negative)';
-    const opacity  = sec.total < 0.01 ? 'opacity:.3;' : '';
-    const secOnclick = hasBuckets ? ' data-sid="'+sec.id+'" class="is-sec-row"' : '';
-
-    // Section row
-    out += '<div'+secOnclick+' style="'+opacity+'display:grid;grid-template-columns:'+gridCols+';padding:11px 16px;border-bottom:1px solid var(--line);background:var(--lift);'+(hasBuckets?'cursor:pointer;':'')+'">';
-    out += '<div style="display:flex;align-items:center;gap:6px;">';
-    out += hasBuckets ? chevron(open, sec.id, 'toggleSection') : '<span style="width:20px;display:inline-block;"></span>';
-    out += '<div><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;font-weight:600;color:var(--ink2);">'+sec.label+'</span>'
-         + (sec.total>0.01?'<span onclick="event.stopPropagation();drillToCategory(\''+sec.id+'\',\''+sec.label+'\')" style="font-size:10px;color:var(--river);cursor:pointer;padding:1px 6px;border:1px solid rgba(96,165,250,.3);border-radius:3px;flex-shrink:0;" title="View transactions">→ txns</span>':'')
-         + '</div>';
-    out += '<div style="font-size:10px;color:var(--ink4);">'+sec.sub+'</div></div></div>';
-
-    if (isInFlight) {
-      const secActual  = sec.buckets.reduce((s,bk)=>s+(sec.bucketData[bk]?.actual||0),0);
-      const secAccrued = sec.buckets.reduce((s,bk)=>s+(sec.bucketData[bk]?.accrued||0),0);
-      out += '<div style="text-align:right;padding-left:8px;">';
-      out += secActual>0.01?'<div style="font-size:13px;font-weight:600;color:'+sec.color+';font-family:var(--font-m);">'+sec.sign+fmt(secActual)+'</div>':'<div style="font-size:12px;color:var(--ink4);">—</div>';
-      out += '</div>';
-      out += '<div style="text-align:right;padding-left:8px;">';
-      out += secAccrued>0.5?'<div style="font-size:13px;font-weight:600;color:var(--river);font-family:var(--font-m);opacity:.8;">'+sec.sign+fmt(secAccrued)+'</div><div style="font-size:9px;color:var(--ink4);">projected</div>':'<div style="font-size:12px;color:var(--ink4);">—</div>';
-      out += '</div>';
-    }
-
-    out += '<div style="text-align:right;padding-left:8px;">';
-    if (sec.total > 0.01) {
-      out += '<div style="font-size:14px;font-weight:700;color:'+sec.color+';font-family:var(--font-m);">'+sec.sign+fmt(sec.total)+'</div>';
-      out += '<div style="font-size:9px;color:var(--ink4);">'+pct(sec.total)+'</div>';
-    } else { out += '<div style="font-size:13px;color:var(--ink4);">—</div>'; }
-    out += '</div>';
-
-    out += '<div style="text-align:right;padding-left:8px;">';
-    out += '<div style="font-size:13px;font-weight:600;color:'+balColor+';font-family:var(--font-m);">'+(sec.runningBalance>=0?'+':'')+fmt(sec.runningBalance)+'</div>';
-    out += '</div></div>';
-
-        // Bucket rows (level 1 drilldown)
-    if (open && hasBuckets) {
-      sec.buckets.forEach(bk => {
-        const bd = sec.bucketData[bk];
-        if (!bd) return;
-        const bMeta = BUCKET_META[bk] || {label:bk, icon:'·'};
-        const bOpen = !!isBucketOpen[bk];
-
-        out += '<div data-bkid="'+bk+'" class="is-bk-row" style="display:grid;grid-template-columns:'+gridCols+';padding:8px 16px 8px 36px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.012);cursor:pointer;">';
-        out += '<div style="display:flex;align-items:center;gap:6px;">';
-        out += chevron(bOpen, bk, 'toggleBucket');
-        out += '<span style="font-size:14px;">'+bMeta.icon+'</span>';
-        out += '<div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:12px;color:var(--ink2);">'+bMeta.label+'</span>'
-             + '<span onclick="event.stopPropagation();drillToCategory(\''+bk+'\',\''+bMeta.label+'\')" style="font-size:9px;color:var(--river);cursor:pointer;padding:1px 5px;border:1px solid rgba(96,165,250,.3);border-radius:3px;flex-shrink:0;">→</span>'
-             + '</div>';
-        out += '<div style="font-size:10px;color:var(--ink4);">'+bd.txns.length+' transaction'+(bd.txns.length!==1?'s':'')+'</div></div></div>';
-
-        if (isInFlight) {
-          const bActual  = bd.actual  || 0;
-          const bAccrued = bd.accrued || 0;
-          out += '<div style="text-align:right;padding-left:8px;">';
-          out += bActual>0.01?'<div style="font-size:13px;font-weight:600;color:'+sec.color+';font-family:var(--font-m);">'+fmt(bActual)+'</div>':'<div style="font-size:12px;color:var(--ink4);">&#8212;</div>';
-          out += '</div>';
-          out += '<div style="text-align:right;padding-left:8px;">';
-          out += bAccrued>0.5?'<div style="font-size:12px;color:var(--river);font-family:var(--font-m);opacity:.8;">'+fmt(bAccrued)+'</div>':'<div style="font-size:12px;color:var(--ink4);">&#8212;</div>';
-          out += '</div>';
-        }
-
-        out += '<div style="text-align:right;padding-left:8px;">';
-        out += '<div style="font-size:13px;font-weight:600;color:'+sec.color+';font-family:var(--font-m);">'+sec.sign+fmt(bd.total)+'</div>';
-        out += pbar(bd.total, sec.color);
-        out += '</div><div style="text-align:right;padding-left:8px;"></div></div>';
-
-        // Transaction rows (level 2 drilldown)
-        if (bOpen) {
-          // Group by payee for a cleaner summary level
-          const byPayee = {};
-          bd.txns.forEach(t => {
-            const p = t.payee || (t._xferTo ? '→ '+t._xferTo : 'Unknown');
-            if (!byPayee[p]) byPayee[p] = {total:0, txns:[]};
-            byPayee[p].total += Math.abs(t.amount);
-            byPayee[p].txns.push(t);
-          });
-          const payeeOpen = isBucketOpen[bk+'_payees'];
-
-          // Show payee summaries
-          const sortedPayees = Object.entries(byPayee).sort((a,b)=>b[1].total-a[1].total);
-          sortedPayees.forEach(([payee, pd]) => {
-            const pKey = bk+'_p_'+payee.replace(/[^a-zA-Z0-9]/g,'_');
-            const pOpen = !!isBucketOpen[pKey];
-
-            out += '<div data-bkid="'+pKey+'" class="is-bk-row" style="display:grid;grid-template-columns:1fr 120px 110px;padding:6px 16px 6px 56px;border-bottom:1px solid rgba(255,255,255,.03);background:rgba(0,0,0,.12);cursor:pointer;">';
-            out += '<div style="display:flex;align-items:center;gap:5px;">';
-            out += pd.txns.length > 1 ? chevron(pOpen, pKey, 'toggleBucket') : '<span style="width:20px;display:inline-block;"></span>';
-            out += '<div>';
-            out += '<div style="font-size:12px;color:var(--ink3);">'+payee+'</div>';
-            if (pd.txns.length > 1) out += '<div style="font-size:10px;color:var(--ink4);">'+pd.txns.length+' transactions</div>';
-            out += '</div></div>';
-            out += '<div style="text-align:right;padding-left:8px;font-family:var(--font-m);font-size:12px;color:var(--gold);">'+fmt(pd.total)+'</div>';
-            out += '<div style="text-align:right;padding-left:8px;"></div></div>';
-
-            // Individual transactions (level 3)
-            if (pOpen || pd.txns.length === 1) {
-              const sorted = pd.txns.slice().sort((a,b) => {
-                if (isSort.field === 'amount') return isSort.dir === 'desc' ? Math.abs(b.amount)-Math.abs(a.amount) : Math.abs(a.amount)-Math.abs(b.amount);
-                if (isSort.field === 'payee')  return isSort.dir === 'desc' ? b.payee.localeCompare(a.payee) : a.payee.localeCompare(b.payee);
-                return isSort.dir === 'desc' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
-              });
-              const needsCap = sorted.length > 8;
-              if (needsCap) out += '<div style=\"max-height:320px;overflow-y:auto;\">';
-              sorted.forEach(t => {
-                let disp = t.payee || (t._xferTo ? '→ '+t._xferTo : '—');
-                let sub1 = '';  // item name / detail line
-                let sub2 = '';  // category · account meta line
-
-                if ((t.category||'').toLowerCase()==='--split--') {
-                  const p = (t.payee||'').toLowerCase();
-                  if (/house loan|rocket mortgage|pennymac|mr\.? cooper|nationstar|wells fargo home|chase home|quicken loan|loancare|freedom mortgage|newrez|loandepot|flagstar|sps |select portfolio/i.test(t.payee)) {
-                    disp = t.payee; sub2 = 'Mortgage · principal + interest + escrow · ' + t.account;
-                  } else if (/palisade|hyundai|honda financial|hmf |gm financial|ford motor credit|toyota financial|nissan motor|chrysler capital|ally.*auto|auto loan|car loan|chevrolet/i.test(t.payee)) {
-                    disp = t.payee; sub2 = 'Auto loan · principal + interest · ' + t.account;
-                  } else if (/liberty mutual|state farm|allstate|geico|nationwide|progressive|usaa|travelers|amica|erie|auto-owners|farmers|chubb|metlife|prudential.*ins|new york life|guardian.*ins/i.test(t.payee)) {
-                    disp = t.payee; sub2 = 'Insurance · split payment · ' + t.account;
-                  } else if (/comcast|xfinity|verizon|at&t|t-mobile|spectrum|cox|dish network|directv|frontier|centurylink|lumen/i.test(t.payee)) {
-                    disp = t.payee; sub2 = 'Internet / phone · split payment · ' + t.account;
-                  } else if (/duquesne|peoples gas|equitable gas|columbia gas|dominion energy|atmos|pg&e|con ed|national grid|water authority|sewage|peco|pseg/i.test(t.payee)) {
-                    disp = t.payee; sub2 = 'Utility · split payment · ' + t.account;
-                  } else if (/retirement|fidelity|vanguard|401k|ira|lifepath|blackrock|t rowe|schwab|merrill|empower|principal financial/i.test(t.payee)) {
-                    disp = t.payee; sub2 = 'Retirement contribution · ' + t.account;
-                  } else if (/upmc|highmark|adp |paychex|gusto|payroll|direct dep/i.test(t.payee)) {
-                    disp = t.payee; sub2 = 'Payroll · net pay split · ' + t.account;
-                  } else {
-                    disp = t.payee || 'Split transaction'; sub2 = 'Split payment · ' + t.account;
-                  }
-                } else {
-                  // Item detail: real item name from merchant CSVs (Amazon title, HD item, etc.)
-                  if (t.itemDetail && t.itemDetail !== t.payee) {
-                    sub1 = t.itemDetail;
-                  }
-                  sub2 = '';
-                  if (t.category && t.category !== 'Uncategorized') sub2 += t.category;
-                  if (t.account) sub2 += (sub2 ? ' · ' : '') + t.account;
-                  if (t.memo && t.memo !== t.itemDetail && t.memo.length < 60) sub2 += (sub2?' · ':'')+t.memo;
-                }
-
-                out += '<div style="display:grid;grid-template-columns:90px 1fr 120px 110px;padding:6px 16px 6px 72px;border-bottom:1px solid rgba(255,255,255,.02);background:rgba(0,0,0,.2);">';
-                out += '<div style="font-family:var(--font-m);font-size:12px;color:var(--ink4);padding-top:1px;">'+t.date+'</div>';
-                out += '<div>';
-                out += '<div style="font-size:13px;color:var(--ink3);">'+disp+'</div>';
-                if (sub1) out += '<div style="font-size:11px;color:var(--river);font-style:italic;">'+sub1+'</div>';
-                if (sub2) out += '<div style="font-size:11px;color:var(--ink4);">'+sub2+'</div>';
-                out += '</div>';
-                out += '<div style="text-align:right;padding-left:8px;">'+fmtTxnAmt(t)+'</div>';
-                out += '<div></div></div>';
-              });
-              if (needsCap) out += '</div>';
-            }
-          });
-        }
-      });
-    }
-  });
-
-  // Net surplus row
-  out += '<div style="display:grid;grid-template-columns:1fr 120px 110px;padding:13px 16px;background:'+(netSurplus>=0?'rgba(45,212,191,.06)':'rgba(248,113,113,.06)')+';border-top:2px solid '+(netSurplus>=0?'rgba(45,212,191,.3)':'rgba(248,113,113,.3)')+';">';
-  out += '<div style="font-size:14px;font-weight:700;color:'+surpColor+';display:flex;align-items:center;gap:8px;">';
-  out += (netSurplus>=0?'✓ Net Surplus':'⚠ Net Deficit');
-  out += '<span style="font-size:10px;font-weight:400;color:var(--ink4);">'+(netSurplus>=0?'unallocated — deploy to savings or investments':'expenses exceed available income')+'</span></div>';
-  out += '<div style="text-align:right;font-size:16px;font-weight:700;color:'+surpColor+';font-family:var(--font-m);padding-left:8px;">'+(netSurplus>=0?'+':'')+fmt(netSurplus)+'</div>';
-  out += '<div></div></div>';
-
-  // Surplus allocation
-  if (netSurplus > 0) {
-    out += '<div style="margin-top:8px;background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px;">';
-    out += '<div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:10px;">💰 Deploy Your '+fmt(netSurplus)+' Surplus</div>';
-    out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">';
-    [['.40','Emergency Fund','3–6 months expenses'],['.30','Investments','brokerage/index funds'],['.20','College (529)','per-child'],['.10','Experience','travel, family']].forEach(([p,l,s]) => {
-      const amt = netSurplus * parseFloat(p);
-      out += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;">';
-      out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">'+l+'</div>';
-      out += '<div style="font-size:16px;font-weight:700;color:var(--positive);">'+fmt(amt)+'</div>';
-      out += '<div style="font-size:10px;color:var(--ink4);">'+s+'</div></div>';
-    });
-    out += '</div></div>';
+  // ── BLOCK 6: Recommendations ──────────────────────────────────────────
+  if (recs.length > 0) {
+    out += cardWrap(`
+      <div style="padding:10px 14px 6px;">
+        <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">RECOMMENDATIONS</div>
+        ${recs.map(r=>`
+          <div style="display:flex;gap:10px;padding:8px 10px;background:${recColors[r.level]||'rgba(255,255,255,.04)'};border-left:3px solid ${recBorders[r.level]||'var(--line)'};border-radius:0 6px 6px 0;margin-bottom:6px;">
+            <div style="font-size:16px;flex-shrink:0;">${r.icon}</div>
+            <div style="font-size:12px;color:var(--ink3);line-height:1.5;">${r.text}</div>
+          </div>`).join('')}
+      </div>
+    `);
   }
+
+  // ── BLOCK 7: Cash reconciliation ──────────────────────────────────────
+  out += cardWrap(`
+    <div style="padding:10px 14px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px;">CASH RECONCILIATION</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:4px;">CHECKING</div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:var(--ink3);">Paycheck deposits</span><span style="color:${C.pos};font-family:var(--fm);">+${kfmt(totalIncome)}</span></div>
+          ${totalDraw>0?`<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:${C.neg};">Savings draw</span><span style="color:${C.neg};font-family:var(--fm);">+${kfmt(totalDraw)} ⚠</span></div>`:''}
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:var(--ink3);">Auto-savings out</span><span style="color:${C.river};font-family:var(--fm);">−${kfmt(totalAutoSave)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:var(--ink3);">CC payments</span><span style="color:var(--ink4);font-family:var(--fm);">−${kfmt(ccPaid)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0 3px;font-size:13px;font-weight:700;border-top:1px solid rgba(255,255,255,.08);margin-top:4px;">
+            <span style="color:var(--ink);">Net checking change</span>
+            <span style="color:${(totalIncome+totalDraw-totalAutoSave-ccPaid)>=0?C.pos:C.neg};font-family:var(--fm);">${(totalIncome+totalDraw-totalAutoSave-ccPaid)>=0?'+':''}${kfmt(totalIncome+totalDraw-totalAutoSave-ccPaid)}</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:4px;">CREDIT CARDS</div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:var(--ink3);">New charges</span><span style="color:${C.gold};font-family:var(--fm);">−${kfmt(ccCharges)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:var(--ink3);">Payments made</span><span style="color:${C.pos};font-family:var(--fm);">+${kfmt(ccPaid)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0 3px;font-size:13px;font-weight:700;border-top:1px solid rgba(255,255,255,.08);margin-top:4px;">
+            <span style="color:var(--ink);">Balance change</span>
+            <span style="color:${(ccPaid-ccCharges)>=0?C.pos:C.neg};font-family:var(--fm);">${(ccPaid-ccCharges)>=0?'+':''}${kfmt(ccPaid-ccCharges)}</span>
+          </div>
+          ${ccCharges>ccPaid?`<div style="font-size:10px;color:${C.ink4};margin-top:4px;font-style:italic;">${kfmt(ccCharges-ccPaid)} in charges not yet paid this month</div>`:''}
+        </div>
+      </div>
+    </div>
+  `);
 
   el.innerHTML = out;
+
   } catch(e) {
-    console.error("[IS] render error:", e);
-    el.innerHTML = '<div style="padding:32px;text-align:center;color:var(--ink4);">'
-      + '<div style="font-size:24px;margin-bottom:12px;">⚠️</div>'
-      + '<div style="font-size:14px;color:var(--ink2);">Income Statement error</div>'
-      + '<div style="font-size:11px;color:var(--ink4);margin-top:6px;font-family:var(--fm);">' + e.message + '</div>'
-      + '</div>';
+    console.error('[IS] render error:', e);
+    el.innerHTML = `<div style="padding:32px;text-align:center;color:var(--ink4);">
+      <div style="font-size:24px;margin-bottom:12px;">⚠️</div>
+      <div style="font-size:14px;color:var(--ink2);">Income Statement error</div>
+      <div style="font-size:11px;color:var(--ink4);margin-top:6px;font-family:var(--fm);">${e.message}</div>
+    </div>`;
   }
 
-  // Single delegated click handler — only add once, flag on element
+  // ── Single delegated click handler ─────────────────────────────────────
   if (el.dataset.listenerBound) return;
   el.dataset.listenerBound = '1';
-  el.addEventListener('click', function handler(e) {
+  el.addEventListener('click', function(e) {
     let node = e.target;
     while (node && node !== el) {
-      if (node.dataset && node.dataset.sid) {
-        toggleSection(node.dataset.sid);
-        return;
-      }
       if (node.dataset && node.dataset.bkid) {
         e.stopPropagation();
         toggleBucket(node.dataset.bkid);
+        renderIncomeStatement();
         return;
       }
       node = node.parentElement;
@@ -8630,11 +8664,6 @@ function renderIncomeStatement() {
   });
 }
 
-
-// ════════════════════════════════════════════════
-// CREDIT CARD CASH FLOW PAGE
-// Shows per-card: velocity, projected bill, when to have cash ready
-// ════════════════════════════════════════════════
 function renderCreditFlow() {
   try {
 
