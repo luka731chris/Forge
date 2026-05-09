@@ -4325,7 +4325,12 @@ function buildMonthSummary(selMonth, sp) {
   if (!selMonth || !sp.length) return null;
 
   // ── Same bucket-txns logic as renderIncomeStatement ────────────────────
-  const monthSp    = sp.filter(t => t.date.startsWith(selMonth));
+  const OPER_TYPES_BMS = new Set(['checking', 'savings', 'credit']);
+  const monthSp = sp.filter(t => {
+    if (!t.date.startsWith(selMonth)) return false;
+    const acctType = detectAcctType(t.account || '');
+    return OPER_TYPES_BMS.has(acctType);
+  });
   const monthXfers = txns.filter(t =>
     t.date.startsWith(selMonth) && isTransfer(t) && t.amount < 0
   );

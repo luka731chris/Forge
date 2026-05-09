@@ -3175,7 +3175,12 @@ function buildMonthSummary(selMonth, sp) {
   if (!selMonth || !sp.length) return null;
 
   // ── Same bucket-txns logic as renderIncomeStatement ────────────────────
-  const monthSp    = sp.filter(t => t.date.startsWith(selMonth));
+  const OPER_TYPES_BMS = new Set(['checking', 'savings', 'credit']);
+  const monthSp = sp.filter(t => {
+    if (!t.date.startsWith(selMonth)) return false;
+    const acctType = detectAcctType(t.account || '');
+    return OPER_TYPES_BMS.has(acctType);
+  });
   const monthXfers = txns.filter(t =>
     t.date.startsWith(selMonth) && isTransfer(t) && t.amount < 0
   );
@@ -8203,16 +8208,32 @@ function renderIncomeStatement() {
   const daysInMonth  = accrual ? accrual.daysInMonth  : 0;
 
   // ── Data pipeline ─────────────────────────────────────────────────────────
-  const monthSp    = sp.filter(t => t.date.startsWith(selMonth));
+  // Operating scope: checking, savings, and credit card accounts ONLY.
+  // Investment, retirement, HSA, 529, brokerage accounts are excluded entirely —
+  // their transactions (dividends, distributions, contributions) are not operating cash flow.
+  const OPER_TYPES = new Set(['checking', 'savings', 'credit']);
+  const monthSp = sp.filter(t => {
+    if (!t.date.startsWith(selMonth)) return false;
+    const acctType = detectAcctType(t.account || '');
+    return OPER_TYPES.has(acctType);
+  });
   const monthXfers = txns.filter(t => t.date.startsWith(selMonth) && isTransfer(t));
 
   // Bucket accumulator
   const bkt = {};
   function addB(key, t) { if (!bkt[key]) bkt[key]=[]; bkt[key].push(t); }
 
-  // Income: paychecks + other operating income (positive, non-CC-credit)
-  monthSp.filter(t => t.amount > 0 && !isNonOperatingCredit(t) && !isCCCredit(t))
-         .forEach(t => addB(classifyTxn(t), t));
+  // Income: PAYCHECKS ONLY — direct deposits to checking from employers.
+  // No dividends, interest, tax refunds, HSA distributions, or other non-paycheck income.
+  // CC credits and non-operating credits are never income.
+  monthSp.filter(t => {
+    if (t.amount <= 0) return false;
+    if (isCCCredit(t)) return false;
+    if (isNonOperatingCredit(t)) return false;
+    // Only allow paycheck-classified transactions as income
+    const bk = classifyTxn(t);
+    return bk === 'paycheck';
+  }).forEach(t => addB('paycheck', t));
 
   // Expenses: all negative operating transactions
   monthSp.filter(t => t.amount < 0).forEach(t => addB(classifyTxn(t), t));
@@ -8236,6 +8257,31 @@ function renderIncomeStatement() {
     }
   });
 
+  // ── Normalized income: use accrual engine for in-flight months ────────────
+  // When no paychecks have been exported yet (early month), use historical expected.
+  // When a 3-pay month or bonus detected, normalize to typical monthly amount.
+  let totalIncome = actualPaycheckTotal;
+  let earlyMonthIS = false;
+  let normPaycheck = 0;
+  let normNote = '';
+  if (isInFlight && accrual && typeof accrual.normalizeIncome === 'function') {
+    const norm = accrual.normalizeIncome();
+    normPaycheck = norm.normalPaycheck;
+    if (norm.earlyMonth) {
+      // No paychecks deposited yet — use historical expected
+      totalIncome  = norm.normalPaycheck;
+      earlyMonthIS = true;
+      normNote     = `No deposits yet · using ${kfmt(norm.normalPaycheck)} from 6-mo history`;
+    } else if (norm.isThreePayMonth) {
+      totalIncome  = norm.normalPaycheck;
+      normNote     = `3-pay month · normalized to ${kfmt(norm.normalPaycheck)}`;
+    } else if (norm.bonusExclusion > 0) {
+      totalIncome  = norm.normalizedIncome;
+      normNote     = `${kfmt(norm.bonusExclusion)} bonus excluded from operating income`;
+    }
+    // For display: always show actual paychecks received, with note if normalized
+  }
+
   // ── Savings draws: savings→checking (warning signal) ─────────────────────
   const savingsDrawTxns = monthXfers.filter(t => {
     if (t.amount <= 0) return false;  // must be positive (money coming IN)
@@ -8246,10 +8292,16 @@ function renderIncomeStatement() {
   const totalDraw = savingsDrawTxns.reduce((s,t)=>s+t.amount, 0);
 
   // ── Raw totals ──────────────────────────────────────────────────────────────
-  const totalIncome  = (bkt.paycheck  ||[]).reduce((s,t)=>s+t.amount,0)
-                     + (bkt.other_inc ||[]).filter(t=>!isCCCredit(t)).reduce((s,t)=>s+t.amount,0);
+  // Income = paychecks only. other_inc (tax refunds, interest, etc.) not included.
+  const actualPaycheckTotal = (bkt.paycheck||[]).reduce((s,t)=>s+t.amount, 0);
   const totalAutoSave= autoSaveTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
   const deployable   = Math.max(totalIncome - totalAutoSave, 0);
+  // kfmt defined here so normNote can use it above
+  function kfmt(v) {
+    const neg=v<0; const a=Math.abs(v);
+    const s=a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a);
+    return neg?'−'+s:s;
+  }
 
   // ── Accrual projections (in-flight only) ────────────────────────────────
   function accrued(bucketKey) { return isInFlight && accrual ? (accrual.accrueAmount(bucketKey)||0) : 0; }
@@ -8311,11 +8363,7 @@ function renderIncomeStatement() {
 
   // ── Helper renderers ────────────────────────────────────────────────────
   const C = { pos:'#34D9C3', neg:'#F87171', gold:'#F5A800', river:'#60A5FA', ink:'#EEEAE4', ink4:'#6B6560' };
-  function kfmt(v) {
-    const neg=v<0; const a=Math.abs(v);
-    const s = a>=1000 ? '$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K' : '$'+Math.round(a);
-    return neg ? '−'+s : s;
-  }
+  // kfmt already defined above
   function mfmt(v) { // money with 2dp for amounts under $100
     const a=Math.abs(v); return '$'+(a>=10?Math.round(a).toLocaleString('en-US'):a.toFixed(2));
   }
@@ -8463,8 +8511,8 @@ function renderIncomeStatement() {
   </div>`;
 
   // ── BLOCK 1: Income stepdown ───────────────────────────────────────────
-  const incomeRows = [...(bkt.paycheck||[]), ...(bkt.other_inc||[]).filter(t=>!isCCCredit(t))]
-    .sort((a,b)=>b.amount-a.amount);
+  // Only show actual paycheck transactions (no other_inc)
+  const incomeRows = (bkt.paycheck||[]).slice().sort((a,b)=>b.amount-a.amount);
 
   out += cardWrap(`
     <div style="padding:12px 14px 10px;">
