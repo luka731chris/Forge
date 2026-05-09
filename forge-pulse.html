@@ -348,6 +348,7 @@ body {
   margin-bottom: 4px;
   letter-spacing: -.01em;
 }
+.kpi.negative .kpi-val { color: var(--neg); }
 .kpi-sub   { font-size: 11px; color: var(--ink4); font-family: var(--fu); }
 .kpi-delta { font-size: 12px; font-weight: 500; margin-top: 4px; font-family: var(--fu); }
 .up  { color: var(--negative); }
@@ -2381,6 +2382,11 @@ const fmt  = n => {
   const s = '$' + a.toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
   return neg ? '−' + s : s;
 };
+function operatingSpendable(arr) {
+  return (arr || []).filter(t => !isTransfer(t));
+}
+function spendable(arr) { return operatingSpendable(arr); }
+
 const fmtK = n => {
   const neg = (n || 0) < 0;
   const a = Math.abs(n || 0);
@@ -4341,9 +4347,19 @@ function buildMonthSummary(selMonth, sp) {
     bktTxns[key].push(t);
   }
 
-  // Income (positive non-CC-credit)
-  monthSp.filter(t => t.amount > 0 && !isCCCredit(t))
-         .forEach(t => addToBkt(classifyTxn(t), t));
+  // Income: paychecks to CHECKING only (savings-account paychecks = auto_save below)
+  monthSp.filter(t => {
+    if (t.amount <= 0 || isCCCredit(t)) return false;
+    const bk = classifyTxn(t);
+    if (bk !== 'paycheck') return false;
+    return detectAcctType(t.account||'') === 'checking';
+  }).forEach(t => addToBkt('paycheck', t));
+  // Non-paycheck positive income (not used in IS but included for bucket completeness)
+  monthSp.filter(t => {
+    if (t.amount <= 0 || isCCCredit(t)) return false;
+    const bk = classifyTxn(t);
+    return bk !== 'paycheck';
+  }).forEach(t => addToBkt(classifyTxn(t), t));
   // Expenses (negative)
   monthSp.filter(t => t.amount < 0)
          .forEach(t => addToBkt(classifyTxn(t), t));
@@ -4405,10 +4421,9 @@ function buildMonthSummary(selMonth, sp) {
   const isInFlight = !!accrual;
 
   // ── Raw income and auto-savings (before normalization) ────────────────
+  // rawIncome = checking paychecks only (savings-acct paychecks are in auto_save)
   const rawPaycheck  = (bktTxns.paycheck  || []).reduce((s,t) => s + t.amount, 0);
-  const rawOtherInc  = (bktTxns.other_inc || []).filter(t => !isCCCredit(t))
-                                                  .reduce((s,t) => s + t.amount, 0);
-  const rawIncome    = rawPaycheck + rawOtherInc;
+  const rawIncome    = rawPaycheck;
   const rawAutoSave  = (bktTxns.auto_save || []).reduce((s,t) => s + Math.abs(t.amount), 0);
 
   // ── Normalization (same call IS makes) ───────────────────────────────
@@ -4468,8 +4483,6 @@ function buildMonthSummary(selMonth, sp) {
     earlyMonth:    normData ? (normData.earlyMonth || false) : false,
   };
 }
-
-
 
 
 function renderThermometer(containerId, selMonth) {
@@ -4620,6 +4633,7 @@ function renderThermometer(containerId, selMonth) {
     el.innerHTML = '';
   }
 }
+
 
 
 
