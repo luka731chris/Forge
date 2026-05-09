@@ -8257,51 +8257,50 @@ function renderIncomeStatement() {
     }
   });
 
-  // ── Normalized income: use accrual engine for in-flight months ────────────
-  // When no paychecks have been exported yet (early month), use historical expected.
-  // When a 3-pay month or bonus detected, normalize to typical monthly amount.
-  let totalIncome = actualPaycheckTotal;
-  let earlyMonthIS = false;
-  let normPaycheck = 0;
-  let normNote = '';
-  if (isInFlight && accrual && typeof accrual.normalizeIncome === 'function') {
-    const norm = accrual.normalizeIncome();
-    normPaycheck = norm.normalPaycheck;
-    if (norm.earlyMonth) {
-      // No paychecks deposited yet — use historical expected
-      totalIncome  = norm.normalPaycheck;
-      earlyMonthIS = true;
-      normNote     = `No deposits yet · using ${kfmt(norm.normalPaycheck)} from 6-mo history`;
-    } else if (norm.isThreePayMonth) {
-      totalIncome  = norm.normalPaycheck;
-      normNote     = `3-pay month · normalized to ${kfmt(norm.normalPaycheck)}`;
-    } else if (norm.bonusExclusion > 0) {
-      totalIncome  = norm.normalizedIncome;
-      normNote     = `${kfmt(norm.bonusExclusion)} bonus excluded from operating income`;
-    }
-    // For display: always show actual paychecks received, with note if normalized
-  }
-
-  // ── Savings draws: savings→checking (warning signal) ─────────────────────
-  const savingsDrawTxns = monthXfers.filter(t => {
-    if (t.amount <= 0) return false;  // must be positive (money coming IN)
-    const src = (t.category||'').replace(/^\[|\]$/g,'').trim();
-    // positive transfer into checking FROM savings = a draw
-    return detectAcctType(src)==='savings' || detectAcctType(t.account||'')==='savings';
-  });
-  const totalDraw = savingsDrawTxns.reduce((s,t)=>s+t.amount, 0);
-
-  // ── Raw totals ──────────────────────────────────────────────────────────────
-  // Income = paychecks only. other_inc (tax refunds, interest, etc.) not included.
-  const actualPaycheckTotal = (bkt.paycheck||[]).reduce((s,t)=>s+t.amount, 0);
-  const totalAutoSave= autoSaveTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
-  const deployable   = Math.max(totalIncome - totalAutoSave, 0);
-  // kfmt defined here so normNote can use it above
+  // ── kfmt helper — must be defined before normalization uses it ──────────────
   function kfmt(v) {
     const neg=v<0; const a=Math.abs(v);
     const s=a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a);
     return neg?'−'+s:s;
   }
+
+  // ── Raw totals ────────────────────────────────────────────────────────────
+  const actualPaycheckTotal = (bkt.paycheck||[]).reduce((s,t)=>s+t.amount, 0);
+  const totalAutoSave       = autoSaveTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
+
+  // ── Savings draws: savings→checking (warning signal) ─────────────────────
+  const savingsDrawTxns = monthXfers.filter(t => {
+    if (t.amount <= 0) return false;
+    const src = (t.category||'').replace(/^\[|\]$/g,'').trim();
+    return detectAcctType(src)==='savings' || detectAcctType(t.account||'')==='savings';
+  });
+  const totalDraw = savingsDrawTxns.reduce((s,t)=>s+t.amount, 0);
+
+  // ── Normalized income: use accrual engine for in-flight months ────────────
+  // If no paychecks exported yet (early month) → use 6-month historical median.
+  // If 3-pay month → normalize to 2-check equivalent.
+  // If bonus detected → strip excess above normal paycheck.
+  let totalIncome  = actualPaycheckTotal;
+  let earlyMonthIS = false;
+  let normPaycheck = 0;
+  let normNote     = '';
+  if (isInFlight && accrual && typeof accrual.normalizeIncome === 'function') {
+    const norm = accrual.normalizeIncome();
+    normPaycheck = norm.normalPaycheck;
+    if (norm.earlyMonth) {
+      totalIncome  = norm.normalPaycheck;
+      earlyMonthIS = true;
+      normNote     = 'No deposits yet · using ' + kfmt(norm.normalPaycheck) + ' from 6-mo history';
+    } else if (norm.isThreePayMonth) {
+      totalIncome  = norm.normalPaycheck;
+      normNote     = '3-pay month · normalized to ' + kfmt(norm.normalPaycheck);
+    } else if (norm.bonusExclusion > 0) {
+      totalIncome  = norm.normalizedIncome;
+      normNote     = kfmt(norm.bonusExclusion) + ' bonus excluded from operating income';
+    }
+  }
+
+  const deployable = Math.max(totalIncome - totalAutoSave, 0);
 
   // ── Accrual projections (in-flight only) ────────────────────────────────
   function accrued(bucketKey) { return isInFlight && accrual ? (accrual.accrueAmount(bucketKey)||0) : 0; }
