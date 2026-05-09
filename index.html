@@ -4459,7 +4459,6 @@ function showPage(name) {
     if (name === 'creditflow'    && txns.length) renderCreditFlow();
     if (name === 'validate'      ) renderValidation();
     if (name === 'budget'        ) renderBudget();
-    if (name === 'calendar'      ) renderBillCalendar();
     if (name === 'balancesheet'  ) renderBalanceSheet();
     if (name === 'financials'    ) renderFinancials();
     if (name === 'upload')                      renderUploadStatus();
@@ -5967,7 +5966,7 @@ async function processFiles() {
         // Detect file type for registry
       // Detect file type — must run BEFORE _source stamping so all types get correct source
       let _ftype = 'quicken_csv';
-      const _fl = firstLine || (text.slice(0,200).toLowerCase());
+      const _fl = text.replace(/^\uFEFF/, '').slice(0, 400).toLowerCase();
       if      (_fl.includes('clearing date') && _fl.includes('merchant'))     _ftype = 'apple_card';
       else if (_fl.includes('order id') && _fl.includes('asin'))              _ftype = 'amazon_orders';
       else if (_fl.includes('order number') && _fl.includes('items ordered')) _ftype = 'home_depot';
@@ -9603,7 +9602,7 @@ function updateCCSetting(input) {
   const a=input.dataset.acct, f=input.dataset.field, v=parseInt(input.value)||1;
   if(!ccSettings[a])ccSettings[a]={closeDay:1,dueDay:25};
   ccSettings[a][f]=Math.min(Math.max(v,1),31);
-  saveSettings(); renderBillCalendar();
+  saveSettings();
 }
 
 // ════════════════════════════════════════════════
