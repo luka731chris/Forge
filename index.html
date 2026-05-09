@@ -1315,13 +1315,45 @@ select:focus { border-color: var(--gold); }
       <div class="page-title">Income Statement</div>
       <div class="page-sub">Household P&amp;L · accrual basis · click any section to expand</div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <!-- Chart type selector with tooltip -->
+      <div style="position:relative;display:inline-flex;align-items:center;gap:6px;">
+        <div class="is-chart-type-tooltip" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:300px;background:rgba(12,12,14,.97);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:14px;z-index:200;pointer-events:none;box-shadow:0 12px 40px rgba(0,0,0,.6);">
+          <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:10px;">Choose a view</div>
+          ${['stack','trellis','slope','waffle'].map(t => {
+            const TIPS = {
+              stack:   ['Stacked Bar','How fixed vs. variable spending compares over time. Best for spotting months where overall spend spiked.'],
+              trellis: ['Small Multiples','One sparkline per category. Best for seeing which individual categories are creeping up or staying flat.'],
+              slope:   ['Slope Chart','This month vs. your 6-month average, per category. Best for active monthly decisions — what changed right now?'],
+              waffle:  ['Proportion Chart','Share of wallet by category this month. Best for understanding portfolio composition at a glance.'],
+            };
+            const [lbl,desc] = TIPS[t];
+            return `<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;" onclick="setISTrendType('${t}')">
+              <div style="width:28px;height:28px;border-radius:6px;background:rgba(245,168,0,.12);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;">${{stack:'▦',trellis:'⊞',slope:'╱',waffle:'▩'}[t]}</div>
+              <div><div style="font-size:12px;font-weight:600;color:rgba(238,234,228,.9);">${lbl}</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;line-height:1.4;">${desc}</div></div>
+            </div>`;
+          }).join('')}
+        </div>
+        <label style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);font-family:var(--fm);">View</label>
+        <select id="isTrendTypeSel" onchange="setISTrendType(this.value)"
+          style="font-size:12px;padding:5px 10px;background:var(--lift);border:1px solid var(--line2);color:var(--ink);border-radius:6px;cursor:pointer;">
+          <option value="stack">Stacked Bar</option>
+          <option value="trellis">Small Multiples</option>
+          <option value="slope">Slope Chart</option>
+          <option value="waffle">Proportion</option>
+        </select>
+        <div style="width:18px;height:18px;border-radius:50%;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.4);cursor:help;flex-shrink:0;font-family:var(--fm);"
+          onmouseenter="this.parentElement.querySelector('.is-chart-type-tooltip').style.display='block'"
+          onmouseleave="this.parentElement.querySelector('.is-chart-type-tooltip').style.display='none'">?</div>
+      </div>
+      <div style="width:1px;height:22px;background:rgba(255,255,255,.1);"></div>
       <div class="range-tabs" id="isTrendRangeTabs">
         <button class="rtab active" onclick="setISTrendRange(6,this)">6M</button>
         <button class="rtab" onclick="setISTrendRange(12,this)">12M</button>
         <button class="rtab" onclick="setISTrendRange(24,this)">2Y</button>
       </div>
-      <span style="font-size:11px;color:var(--ink4);font-family:var(--font-m);margin-left:8px;">Month:</span>
+      <div style="width:1px;height:22px;background:rgba(255,255,255,.1);"></div>
+      <span style="font-size:11px;color:var(--ink4);font-family:var(--font-m);">Month:</span>
       <select id="isMonth" onchange="renderIncomeStatement()" style="font-size:12px;padding:5px 10px;"></select>
       <span style="font-size:11px;color:var(--ink4);font-family:var(--font-m);margin-left:8px;">Sort:</span>
       <select id="isSortField" onchange="isSort.field=this.value;renderIncomeStatement()" style="font-size:12px;padding:5px 10px;">
@@ -3198,9 +3230,19 @@ function buildMonthSummary(selMonth, sp) {
     bktTxns[key].push(t);
   }
 
-  // Income (positive non-CC-credit)
-  monthSp.filter(t => t.amount > 0 && !isCCCredit(t))
-         .forEach(t => addToBkt(classifyTxn(t), t));
+  // Income: paychecks to CHECKING only (savings-account paychecks = auto_save below)
+  monthSp.filter(t => {
+    if (t.amount <= 0 || isCCCredit(t)) return false;
+    const bk = classifyTxn(t);
+    if (bk !== 'paycheck') return false;
+    return detectAcctType(t.account||'') === 'checking';
+  }).forEach(t => addToBkt('paycheck', t));
+  // Non-paycheck positive income (not used in IS but included for bucket completeness)
+  monthSp.filter(t => {
+    if (t.amount <= 0 || isCCCredit(t)) return false;
+    const bk = classifyTxn(t);
+    return bk !== 'paycheck';
+  }).forEach(t => addToBkt(classifyTxn(t), t));
   // Expenses (negative)
   monthSp.filter(t => t.amount < 0)
          .forEach(t => addToBkt(classifyTxn(t), t));
@@ -3262,10 +3304,9 @@ function buildMonthSummary(selMonth, sp) {
   const isInFlight = !!accrual;
 
   // ── Raw income and auto-savings (before normalization) ────────────────
+  // rawIncome = checking paychecks only (savings-acct paychecks are in auto_save)
   const rawPaycheck  = (bktTxns.paycheck  || []).reduce((s,t) => s + t.amount, 0);
-  const rawOtherInc  = (bktTxns.other_inc || []).filter(t => !isCCCredit(t))
-                                                  .reduce((s,t) => s + t.amount, 0);
-  const rawIncome    = rawPaycheck + rawOtherInc;
+  const rawIncome    = rawPaycheck;
   const rawAutoSave  = (bktTxns.auto_save || []).reduce((s,t) => s + Math.abs(t.amount), 0);
 
   // ── Normalization (same call IS makes) ───────────────────────────────
@@ -3549,6 +3590,7 @@ let range    = '1y';
 let catRange = '1y';
 let cfRange  = '1y';
 let isTrendN = 6;
+let isTrendType = 'stack'; // 'stack' | 'trellis' | 'slope' | 'waffle'
 let isSort      = { field: 'date', dir: 'desc' };  // Income Statement sort state
 let txnSort     = { field: 'date', dir: 'desc' };  // Transactions sort state
 let txnDrillCat = null;  // { bucket, label } — set by IS drill-through, sticky until cleared
@@ -4734,6 +4776,13 @@ function setISTrendRange(n, btn) {
   isTrendN = n;
   document.querySelectorAll('#isTrendRangeTabs .rtab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
+  renderISTrend();
+}
+
+function setISTrendType(type) {
+  isTrendType = type;
+  const sel = document.getElementById('isTrendTypeSel');
+  if (sel) sel.value = type;
   renderISTrend();
 }
 
@@ -8229,230 +8278,378 @@ function renderISTrend() {
   if (!el) return;
   if (!txns.length) { el.innerHTML = ''; return; }
 
-  const sp = operatingSpendable(txns);
   const OPER = new Set(['checking','savings','credit']);
+  const sp   = operatingSpendable(txns);
   const opSp = sp.filter(t => OPER.has(detectAcctType(t.account||'')));
 
-  // Build month list (most recent N months, oldest→newest left→right)
-  const now  = new Date();
+  const now = new Date();
   const mths = [];
   for (let i = isTrendN - 1; i >= 0; i--) {
     const d  = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const mo = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-    mths.push(mo);
+    mths.push(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'));
   }
 
   const FIXED_BKS = ['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','cell','subscriptions'];
   const VAR_BKS   = ['restaurants','groceries','gas_car','transit','healthcare','entertainment','household','personal','clothing','travel','gifts','other'];
+  const ALL_BKS   = [...FIXED_BKS, ...VAR_BKS];
 
-  // Per-month data
-  const moData = mths.map(mo => {
+  const BK_LABELS = {};
+  ALL_BKS.forEach(k => { BK_LABELS[k] = (BUCKET_META[k]||{label:k}).label.replace(/ &.*/,'').replace(/ and .*/i,''); });
+
+  function monthData(mo) {
     const mSp = opSp.filter(t => t.date.startsWith(mo) && t.amount < 0);
-    const mIn = opSp.filter(t => t.date.startsWith(mo) && t.amount > 0 && classifyTxn(t)==='paycheck');
-
     const fixedByBk = {}, varByBk = {};
     let fixed = 0, variable = 0;
     mSp.forEach(t => {
-      const bk = classifyTxn(t);
-      const amt = Math.abs(t.amount);
+      const bk = classifyTxn(t), amt = Math.abs(t.amount);
       if (FIXED_BKS.includes(bk)) { fixed += amt; fixedByBk[bk] = (fixedByBk[bk]||0) + amt; }
       else if (VAR_BKS.includes(bk)) { variable += amt; varByBk[bk] = (varByBk[bk]||0) + amt; }
     });
-
-    // Auto-saves: transfers to savings near payday
-    const mXf = txns.filter(t => t.date.startsWith(mo) && isTransfer(t) && t.amount < 0);
-    const mPay = opSp.filter(t => t.date.startsWith(mo) && t.amount > 0 && classifyTxn(t)==='paycheck');
-    const payDays = [...new Set(mPay.map(t => t.date))];
+    const mIn  = opSp.filter(t => t.date.startsWith(mo) && t.amount > 0 && classifyTxn(t)==='paycheck' && detectAcctType(t.account||'')==='checking');
+    const mXf  = txns.filter(t => t.date.startsWith(mo) && isTransfer(t) && t.amount < 0);
+    const payDs= [...new Set(mIn.map(t=>t.date))];
     let autoSave = 0;
     mXf.forEach(t => {
-      const dest = (t.category||'').replace(/^\[|\]$/g,'').trim();
-      if (detectAcctType(dest)==='savings') {
-        const d0 = new Date(t.date);
-        if (payDays.some(pd => Math.abs(new Date(pd)-d0) <= 4*864e5)) autoSave += Math.abs(t.amount);
-      }
+      const dest=(t.category||'').replace(/^\[|\]$/g,'').trim();
+      if (detectAcctType(dest)==='savings' && payDs.some(pd=>Math.abs(new Date(pd)-new Date(t.date))<=4*864e5)) autoSave+=Math.abs(t.amount);
     });
-    // Split direct deposits to savings
-    opSp.filter(t => t.date.startsWith(mo) && t.amount > 0 && classifyTxn(t)==='paycheck' && detectAcctType(t.account||'')==='savings')
-        .forEach(t => autoSave += t.amount);
-
-    const income   = mIn.reduce((s,t)=>s+t.amount, 0);
+    opSp.filter(t=>t.date.startsWith(mo)&&t.amount>0&&classifyTxn(t)==='paycheck'&&detectAcctType(t.account||'')==='savings').forEach(t=>autoSave+=t.amount);
+    const income = mIn.reduce((s,t)=>s+t.amount,0);
     const deployable = Math.max(income - autoSave, 0);
-
-    return { mo, fixed, variable, income, deployable, autoSave, fixedByBk, varByBk };
-  });
-
-  const maxY = Math.max(...moData.map(d => Math.max(d.fixed+d.variable, d.deployable)), 1);
-
-  // Layout
-  const W = 600, H = 200, PAD = { t:12, b:36, l:44, r:12 };
-  const innerW = W - PAD.l - PAD.r;
-  const innerH = H - PAD.t - PAD.b;
-  const barW   = Math.floor((innerW / mths.length) * 0.72);
-  const gap    = (innerW - barW * mths.length) / mths.length;
-  const xOf    = i => PAD.l + i * (barW + gap) + gap / 2;
-  const yOf    = v => PAD.t + innerH - (v / maxY) * innerH;
-  const fmtK   = v => v >= 1000 ? '$'+(v/1000).toFixed(1).replace(/\.0$/,'')+'K' : '$'+Math.round(v);
-
-  const isCur  = mo => mo === (now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
-  const moLbl  = mo => { const [y,m]=mo.split('-'); return new Date(y,m-1,1).toLocaleDateString('en-US',{month:'short'}); };
-
-  // Y-axis ticks
-  const yTicks = 4;
-  let axisSvg = '';
-  for (let i = 0; i <= yTicks; i++) {
-    const v = (maxY / yTicks) * i;
-    const y = yOf(v);
-    axisSvg += `<line x1="${PAD.l-4}" y1="${y.toFixed(1)}" x2="${W-PAD.r}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,.06)" stroke-width="1"/>`;
-    axisSvg += `<text x="${PAD.l-6}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="9" fill="rgba(255,255,255,.4)" font-family="monospace">${fmtK(v)}</text>`;
+    return { mo, fixed, variable, income, deployable, autoSave, fixedByBk, varByBk, total: fixed+variable };
   }
 
-  // Bars + income line points
-  let barsSvg = '', linePts = [], lineAreaPts = [];
-  moData.forEach((d, i) => {
-    const x     = xOf(i);
-    const fixH  = (d.fixed    / maxY) * innerH;
-    const varH  = (d.variable / maxY) * innerH;
-    const totalH= fixH + varH;
-    const baseY = PAD.t + innerH;
-    const cur   = isCur(d.mo);
+  const moData = mths.map(monthData);
+  const fmtK = v => { const a=Math.abs(v); return (v<0?'−':'')+(a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a)); };
+  const moLabel = mo => { const [y,m]=mo.split('-'); return new Date(y,m-1,1).toLocaleDateString('en-US',{month:'short'}); };
+  const curMo = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const isCur = mo => mo === curMo;
 
-    // Bar background (current month highlight)
-    if (cur) barsSvg += `<rect x="${(x-1).toFixed(1)}" y="${PAD.t}" width="${(barW+2).toFixed(1)}" height="${innerH}" fill="rgba(255,255,255,.04)" rx="2"/>`;
+  // ── LEGEND ROW (shared) ──────────────────────────────────────────
+  const avgFixed    = moData.reduce((s,d)=>s+d.fixed,0)/mths.length;
+  const avgVar      = moData.reduce((s,d)=>s+d.variable,0)/mths.length;
+  const avgDeploy   = moData.reduce((s,d)=>s+d.deployable,0)/mths.length;
 
-    // Variable segment (gold, top)
-    if (varH > 0.5) barsSvg += `<rect class="is-trend-bar" data-mo="${d.mo}" data-seg="var"
-      x="${x.toFixed(1)}" y="${(baseY-totalH).toFixed(1)}" width="${barW}" height="${varH.toFixed(1)}"
-      fill="url(#isTrendGold)" rx="2" style="cursor:pointer;"/>`;
-
-    // Fixed segment (red, bottom)
-    if (fixH > 0.5) barsSvg += `<rect class="is-trend-bar" data-mo="${d.mo}" data-seg="fix"
-      x="${x.toFixed(1)}" y="${(baseY-fixH).toFixed(1)}" width="${barW}" height="${fixH.toFixed(1)}"
-      fill="url(#isTrendRed)" rx="2" style="cursor:pointer;"/>`;
-
-    // Month label
-    const lblY = H - PAD.b + 13;
-    barsSvg += `<text x="${(x+barW/2).toFixed(1)}" y="${lblY}" text-anchor="middle" font-size="9" fill="${cur?'rgba(245,168,0,.9)':'rgba(255,255,255,.4)'}" font-family="monospace">${moLbl(d.mo)}</text>`;
-    if (cur) barsSvg += `<text x="${(x+barW/2).toFixed(1)}" y="${lblY+9}" text-anchor="middle" font-size="7" fill="rgba(245,168,0,.7)" font-family="monospace">▲</text>`;
-
-    // Income line
-    if (d.deployable > 0) {
-      const lx = x + barW / 2;
-      const ly = yOf(d.deployable);
-      linePts.push(`${lx.toFixed(1)},${ly.toFixed(1)}`);
-      lineAreaPts.push(`${lx.toFixed(1)},${ly.toFixed(1)}`);
-    }
-  });
-
-  // Close area path for income line fill
-  const lastD = moData[moData.length-1];
-  const firstD = moData.find(d=>d.deployable>0);
-  let lineAreaSvg = '';
-  if (linePts.length >= 2) {
-    const areaPath = `M${lineAreaPts[0]} L${lineAreaPts.join(' L')} L${(xOf(mths.length-1)+barW/2).toFixed(1)},${(PAD.t+innerH)} L${(xOf(0)+barW/2).toFixed(1)},${(PAD.t+innerH)} Z`;
-    lineAreaSvg = `<path d="${areaPath}" fill="rgba(52,217,195,.07)"/>
-    <polyline points="${linePts.join(' ')}" fill="none" stroke="#34D9C3" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
-    linePts.forEach(pt => {
-      const [px,py] = pt.split(',');
-      lineAreaSvg += `<circle cx="${px}" cy="${py}" r="3" fill="#34D9C3" stroke="rgba(0,0,0,.5)" stroke-width="1"/>`;
-    });
-  }
-
-  const svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
-    <defs>
-      <linearGradient id="isTrendRed" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#FF9494"/><stop offset="100%" stop-color="#C94444"/>
-      </linearGradient>
-      <linearGradient id="isTrendGold" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#FFCA40"/><stop offset="100%" stop-color="#C07A00"/>
-      </linearGradient>
-    </defs>
-    ${axisSvg}
-    ${lineAreaSvg}
-    ${barsSvg}
-  </svg>`;
-
-  // Summary stats
-  const avgFixed  = moData.reduce((s,d)=>s+d.fixed,0)/mths.length;
-  const avgVar    = moData.reduce((s,d)=>s+d.variable,0)/mths.length;
-  const avgIncome = moData.reduce((s,d)=>s+d.deployable,0)/mths.length;
-
-  el.innerHTML = `
-  <div style="padding:10px 14px 6px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.06);">
-    <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">${isTrendN}-Month Expense Trend</div>
-    <div style="display:flex;gap:12px;font-size:11px;font-family:var(--fm);margin-left:auto;">
-      <span style="color:#F87171;">■ Fixed avg ${fmtK(avgFixed)}/mo</span>
-      <span style="color:#F5A800;">■ Variable avg ${fmtK(avgVar)}/mo</span>
-      <span style="color:#34D9C3;">── Deployable avg ${fmtK(avgIncome)}/mo</span>
-    </div>
-  </div>
-  <div style="padding:8px 8px 4px;position:relative;" id="isTrendChartArea">
-    ${svg}
-    <div id="isTrendTip" style="display:none;position:absolute;background:rgba(18,18,20,.95);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 12px;font-size:11px;font-family:var(--fm);min-width:160px;pointer-events:none;z-index:99;"></div>
+  const legendHtml = `<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:11px;font-family:var(--fm);">
+    <span style="color:#F87171;display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:linear-gradient(135deg,#FF9494,#C94444);border-radius:2px;display:inline-block;"></span>Fixed avg ${fmtK(avgFixed)}/mo</span>
+    <span style="color:#F5A800;display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:linear-gradient(135deg,#FFCA40,#C07A00);border-radius:2px;display:inline-block;"></span>Variable avg ${fmtK(avgVar)}/mo</span>
+    <span style="color:#34D9C3;display:flex;align-items:center;gap:5px;"><span style="width:10px;height:2px;background:#34D9C3;display:inline-block;border-radius:1px;"></span>Deployable avg ${fmtK(avgDeploy)}/mo</span>
   </div>`;
 
-  // Bind events
-  el.querySelectorAll('.is-trend-bar').forEach(rect => {
-    rect.addEventListener('mouseenter', function(e) {
-      const mo  = this.dataset.mo;
-      const d   = moData.find(x=>x.mo===mo);
-      if (!d) return;
-      const tip = document.getElementById('isTrendTip');
-      if (!tip) return;
-      const [yr,m] = mo.split('-');
-      const moName = new Date(yr,m-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const typeLabel = {stack:'Stacked Bar Trend',trellis:'Small Multiples',slope:'Slope Chart',waffle:'Proportion Chart'}[isTrendType]||'';
 
-      // Build category breakdown
-      const fixLines = Object.entries(d.fixedByBk).sort((a,b)=>b[1]-a[1])
-        .map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:#C8C4BE;">${(window.BUCKET_META&&BUCKET_META[k])?BUCKET_META[k].label:k}</span><span style="color:#F87171;">${fmtK(v)}</span></div>`).join('');
-      const varLines = Object.entries(d.varByBk).sort((a,b)=>b[1]-a[1])
-        .map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:#C8C4BE;">${(window.BUCKET_META&&BUCKET_META[k])?BUCKET_META[k].label:k}</span><span style="color:#F5A800;">${fmtK(v)}</span></div>`).join('');
+  const headerHtml = `<div style="padding:11px 16px 9px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,.06);flex-wrap:wrap;">
+    <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);">${typeLabel} · ${isTrendN}M</div>
+    ${legendHtml}
+  </div>`;
 
-      tip.innerHTML = `
-        <div style="font-weight:700;color:#EEEAE4;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:5px;">${moName}</div>
-        <div style="margin-bottom:6px;">
-          <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#6B6560;margin-bottom:3px;">FIXED — ${fmtK(d.fixed)}</div>
-          ${fixLines||'<span style="color:#6B6560;">—</span>'}
-        </div>
-        <div style="margin-bottom:6px;">
-          <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#6B6560;margin-bottom:3px;">VARIABLE — ${fmtK(d.variable)}</div>
-          ${varLines||'<span style="color:#6B6560;">—</span>'}
-        </div>
-        <div style="border-top:1px solid rgba(255,255,255,.08);padding-top:5px;margin-top:4px;">
-          <div style="display:flex;justify-content:space-between;"><span style="color:#34D9C3;">Deployable</span><span style="color:#34D9C3;">${fmtK(d.deployable)}</span></div>
-          <div style="display:flex;justify-content:space-between;"><span style="color:#6B6560;">Total spend</span><span style="color:#6B6560;">${fmtK(d.fixed+d.variable)}</span></div>
-          ${d.fixed+d.variable>d.deployable
-            ? `<div style="color:#F87171;margin-top:3px;font-size:10px;">⛔ Over by ${fmtK(d.fixed+d.variable-d.deployable)}</div>`
-            : `<div style="color:#34D9C3;margin-top:3px;font-size:10px;">✅ Surplus ${fmtK(d.deployable-d.fixed-d.variable)}</div>`}
-        </div>
-        <div style="margin-top:6px;font-size:10px;color:#60A5FA;cursor:pointer;">Click to open ${moName} IS →</div>`;
+  // ══════════════════════════════════════════════════════════════════
+  // CHART A: STACKED BAR (default)
+  // ══════════════════════════════════════════════════════════════════
+  function renderStack() {
+    const maxY = Math.max(...moData.map(d => Math.max(d.total, d.deployable)), 1);
+    const W=600,H=210,PT=14,PB=34,PL=46,PR=10;
+    const iW=W-PL-PR, iH=H-PT-PB;
+    const bW  = Math.floor(iW/mths.length*0.72);
+    const gap = (iW - bW*mths.length)/mths.length;
+    const xOf = i => PL + i*(bW+gap) + gap/2;
+    const yOf = v => PT + iH - (v/maxY)*iH;
 
-      // Position tooltip
-      const chartRect = document.getElementById('isTrendChartArea').getBoundingClientRect();
-      const barRect   = this.getBoundingClientRect();
-      const tipX = Math.min(barRect.left - chartRect.left + 10, chartRect.width - 180);
-      tip.style.left   = Math.max(0, tipX) + 'px';
-      tip.style.top    = '10px';
-      tip.style.display= 'block';
+    let axisSvg='', barsSvg='', linePts=[];
+    for(let i=0;i<=4;i++){const v=maxY/4*i,y=yOf(v);axisSvg+=`<line x1="${PL-4}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,.055)" stroke-width="1"/><text x="${PL-7}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="9" fill="rgba(255,255,255,.35)" font-family="monospace">${fmtK(v)}</text>`;}
+    moData.forEach((d,i)=>{
+      const x=xOf(i),bY=PT+iH,fH=(d.fixed/maxY)*iH,vH=(d.variable/maxY)*iH,tot=fH+vH;
+      if(isCur(d.mo)) barsSvg+=`<rect x="${(x-2).toFixed(1)}" y="${PT}" width="${(bW+4).toFixed(1)}" height="${iH}" fill="rgba(255,255,255,.04)" rx="2"/>`;
+      if(vH>0.5) barsSvg+=`<rect class="ist-bar" data-mo="${d.mo}" x="${x.toFixed(1)}" y="${(bY-tot).toFixed(1)}" width="${bW}" height="${vH.toFixed(1)}" fill="url(#istGold)" rx="2" style="cursor:pointer;"/>`;
+      if(fH>0.5) barsSvg+=`<rect class="ist-bar" data-mo="${d.mo}" x="${x.toFixed(1)}" y="${(bY-fH).toFixed(1)}" width="${bW}" height="${fH.toFixed(1)}" fill="url(#istRed)" rx="2" style="cursor:pointer;"/>`;
+      barsSvg+=`<text x="${(x+bW/2).toFixed(1)}" y="${H-PB+13}" text-anchor="middle" font-size="9" fill="${isCur(d.mo)?'rgba(245,168,0,.9)':'rgba(255,255,255,.38)'}" font-family="monospace">${moLabel(d.mo)}</text>`;
+      if(d.deployable>0) linePts.push(`${(x+bW/2).toFixed(1)},${yOf(d.deployable).toFixed(1)}`);
+    });
+    let lineSvg='';
+    if(linePts.length>=2){
+      const first=linePts[0],last=linePts[linePts.length-1];
+      const [lx0]=first.split(','),[lxN]=last.split(',');
+      lineSvg=`<path d="M${first} L${linePts.join(' L')} L${lxN},${(PT+iH)} L${lx0},${(PT+iH)} Z" fill="rgba(52,217,195,.06)"/>
+      <polyline points="${linePts.join(' ')}" fill="none" stroke="#34D9C3" stroke-width="2" stroke-linejoin="round"/>`;
+      linePts.forEach(pt=>{const[px,py]=pt.split(',');lineSvg+=`<circle cx="${px}" cy="${py}" r="2.5" fill="#34D9C3" stroke="rgba(0,0,0,.4)" stroke-width="1.5"/>`;});
+    }
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;"><defs>
+      <linearGradient id="istRed" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF9494"/><stop offset="100%" stop-color="#C94444"/></linearGradient>
+      <linearGradient id="istGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFCA40"/><stop offset="100%" stop-color="#C07A00"/></linearGradient>
+    </defs>${axisSvg}${lineSvg}${barsSvg}</svg>`;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // CHART B: SMALL MULTIPLES (trellis)
+  // ══════════════════════════════════════════════════════════════════
+  function renderTrellis() {
+    const showBks = ALL_BKS.filter(bk => moData.some(d => (d.fixedByBk[bk]||d.varByBk[bk])>0));
+    if (!showBks.length) return '<div style="padding:24px;text-align:center;color:rgba(255,255,255,.3);font-size:13px;">No expense data in this period.</div>';
+
+    const cols = Math.min(4, showBks.length);
+    const panels = showBks.map(bk => {
+      const isFixed = FIXED_BKS.includes(bk);
+      const vals    = moData.map(d => d.fixedByBk[bk] || d.varByBk[bk] || 0);
+      const maxV    = Math.max(...vals, 1);
+      const avgV    = vals.reduce((s,v)=>s+v,0)/vals.length;
+      const lastV   = vals[vals.length-1];
+      const trend   = vals.length>=2 ? (vals[vals.length-1]-vals[vals.length-2]) : 0;
+      const trendCl = trend>avgV*0.15 ? '#F87171' : trend<-avgV*0.15 ? '#34D9C3' : 'rgba(255,255,255,.3)';
+      const trendIco= trend>avgV*0.15 ? '↑' : trend<-avgV*0.15 ? '↓' : '→';
+      const fillCol = isFixed ? '#C94444' : '#C07A00';
+      const lineCol = isFixed ? '#F87171' : '#F5A800';
+      const bkW=84, bkH=48, n=vals.length;
+      const bW2=Math.floor(bkW/n*0.7), gap2=(bkW-bW2*n)/n;
+      let sparkBars='';
+      vals.forEach((v,i)=>{
+        const bH2=(v/maxV)*bkH;
+        const x2=i*(bW2+gap2)+gap2/2;
+        const alpha=isCur(mths[i])?1:0.55;
+        sparkBars+=`<rect x="${x2.toFixed(1)}" y="${(bkH-bH2).toFixed(1)}" width="${bW2}" height="${bH2.toFixed(1)}" fill="${fillCol}" opacity="${alpha}" rx="1"/>`;
+      });
+      // Line overlay
+      const lpts=vals.map((v,i)=>`${(i*(bW2+gap2)+gap2/2+bW2/2).toFixed(1)},${(bkH-(v/maxV)*bkH).toFixed(1)}`).filter((_,i)=>vals[i]>0);
+      const sparkLine = lpts.length>=2 ? `<polyline points="${lpts.join(' ')}" fill="none" stroke="${lineCol}" stroke-width="1.5" stroke-linejoin="round" opacity=".8"/>` : '';
+
+      return `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 12px 8px;position:relative;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;">
+          <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.7);line-height:1.3;max-width:80px;">${BK_LABELS[bk]}</div>
+          <div style="text-align:right;">
+            <div style="font-size:13px;font-weight:700;font-family:var(--fm);color:${lineCol};">${fmtK(lastV)}</div>
+            <div style="font-size:10px;color:${trendCl};">${trendIco} ${fmtK(Math.abs(trend))}</div>
+          </div>
+        </div>
+        <svg viewBox="0 0 ${bkW} ${bkH}" style="width:100%;display:block;">${sparkBars}${sparkLine}</svg>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,.25);font-family:monospace;margin-top:3px;">
+          <span>${moLabel(mths[0])}</span><span>avg ${fmtK(Math.round(avgV))}</span><span>${moLabel(mths[mths.length-1])}</span>
+        </div>
+        ${isFixed?'':''}
+        <div style="position:absolute;top:8px;left:8px;width:5px;height:5px;border-radius:50%;background:${isFixed?'#F87171':'#F5A800'};opacity:.7;"></div>
+      </div>`;
     });
 
-    rect.addEventListener('mouseleave', function() {
-      const tip = document.getElementById('isTrendTip');
-      if (tip) tip.style.display = 'none';
+    return `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:8px;padding:12px;">${panels.join('')}</div>`;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // CHART C: SLOPE CHART (current vs 6-mo avg)
+  // ══════════════════════════════════════════════════════════════════
+  function renderSlope() {
+    const cur = monthData(curMo);
+    // 6-month avg baseline (prior months only)
+    const priorN = Math.min(6, mths.length-1);
+    const priorMths = mths.slice(-priorN-1, -1);
+    const baselines = {};
+    ALL_BKS.forEach(bk => {
+      const vals = priorMths.map(m => {
+        const d = moData.find(x=>x.mo===m);
+        return d ? (d.fixedByBk[bk]||d.varByBk[bk]||0) : 0;
+      }).filter(v=>v>0);
+      baselines[bk] = vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : 0;
     });
 
-    rect.addEventListener('click', function() {
-      const mo  = this.dataset.mo;
-      const sel = document.getElementById('isMonth');
-      if (sel) {
-        // Find and set the option
-        for (let i=0; i<sel.options.length; i++) {
-          if (sel.options[i].value === mo) { sel.selectedIndex = i; break; }
-        }
+    const showBks = ALL_BKS.filter(bk => {
+      const c = cur.fixedByBk[bk]||cur.varByBk[bk]||0;
+      const b = baselines[bk];
+      return c > 0 || b > 0;
+    });
+
+    if (!showBks.length) return '<div style="padding:24px;text-align:center;color:rgba(255,255,255,.3);">No data.</div>';
+
+    const maxAmt = Math.max(...showBks.flatMap(bk=>[cur.fixedByBk[bk]||cur.varByBk[bk]||0, baselines[bk]]), 1);
+
+    // Build rows sorted by biggest change
+    const rows = showBks.map(bk => {
+      const curV = cur.fixedByBk[bk]||cur.varByBk[bk]||0;
+      const basV = baselines[bk];
+      const delta = curV - basV;
+      const pct   = basV > 0 ? delta/basV : 0;
+      return { bk, curV, basV, delta, pct };
+    }).sort((a,b)=>Math.abs(b.pct)-Math.abs(a.pct));
+
+    const W=480,ROW_H=28,PT=36,PB=16,PL=90,PR=90,MID_W=W-PL-PR;
+    const H = PT + rows.length*ROW_H + PB;
+    const yOf = i => PT + i*ROW_H + ROW_H/2;
+    const xL = PL, xR = PL+MID_W;
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:480px;display:block;margin:0 auto;">
+      <text x="${xL}" y="20" text-anchor="middle" font-size="10" fill="rgba(255,255,255,.4)" font-family="monospace">6-mo avg</text>
+      <text x="${xR}" y="20" text-anchor="middle" font-size="10" fill="rgba(255,255,255,.4)" font-family="monospace">This month</text>
+      <line x1="${xL}" y1="26" x2="${xL}" y2="${H-PB}" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+      <line x1="${xR}" y1="26" x2="${xR}" y2="${H-PB}" stroke="rgba(255,255,255,.08)" stroke-width="1"/>`;
+
+    rows.forEach((r,i) => {
+      const y   = yOf(i);
+      const isFixed = FIXED_BKS.includes(r.bk);
+      const lineCol = r.delta>0 ? 'rgba(248,113,113,.7)' : r.delta<0 ? 'rgba(52,217,195,.7)' : 'rgba(255,255,255,.2)';
+      const dotCol  = isFixed ? '#F87171' : '#F5A800';
+      const rBase = r.basV/maxAmt, rCur = r.curV/maxAmt;
+      const DOT=4;
+
+      // Row background
+      if(i%2===0) svg+=`<rect x="0" y="${(y-ROW_H/2).toFixed(1)}" width="${W}" height="${ROW_H}" fill="rgba(255,255,255,.012)"/>`;
+
+      // Label
+      svg+=`<text x="${xL-8}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="10" fill="rgba(255,255,255,.6)" font-family="system-ui">${BK_LABELS[r.bk]}</text>`;
+
+      // Dots
+      svg+=`<circle cx="${xL}" cy="${y.toFixed(1)}" r="${DOT}" fill="${dotCol}" opacity=".6"/>`;
+      svg+=`<circle cx="${xR}" cy="${y.toFixed(1)}" r="${DOT}" fill="${dotCol}" opacity="${r.curV>0?1:.3}"/>`;
+
+      // Slope line
+      if(r.basV>0 || r.curV>0)
+        svg+=`<line x1="${xL}" y1="${y.toFixed(1)}" x2="${xR}" y2="${y.toFixed(1)}" stroke="${lineCol}" stroke-width="${Math.min(2.5, 0.8+Math.abs(r.pct)*3)}" stroke-dasharray="${r.delta===0?'3,3':''}"/>`;
+
+      // Values
+      svg+=`<text x="${xL-DOT-6}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="10" fill="rgba(255,255,255,.45)" font-family="monospace">${r.basV>0?fmtK(r.basV):''}</text>`;
+      svg+=`<text x="${xR+DOT+6}" y="${(y+4).toFixed(1)}" text-anchor="start" font-size="11" font-weight="${Math.abs(r.pct)>.2?'bold':'normal'}" fill="${r.delta>0?'#F87171':r.delta<0?'#34D9C3':'rgba(255,255,255,.55)'}" font-family="monospace">${r.curV>0?fmtK(r.curV):'—'}</text>`;
+
+      // Delta badge
+      if(Math.abs(r.pct)>.05 && r.basV>0 && r.curV>0) {
+        const sign=r.delta>0?'+':'';
+        svg+=`<text x="${(xL+MID_W/2).toFixed(1)}" y="${(y-2).toFixed(1)}" text-anchor="middle" font-size="9" fill="${lineCol}" font-family="monospace">${sign}${(r.pct*100).toFixed(0)}%</text>`;
       }
-      renderIncomeStatement();
     });
-  });
+
+    svg+='</svg>';
+    return `<div style="padding:12px 16px;">${svg}</div>`;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // CHART D: WAFFLE / PROPORTION (current month)
+  // ══════════════════════════════════════════════════════════════════
+  function renderWaffle() {
+    const selMoSel = document.getElementById('isMonth');
+    const selMo    = selMoSel ? (selMoSel.value || curMo) : curMo;
+    const cur       = monthData(selMo);
+    const total     = cur.fixed + cur.variable;
+    if (total < 1) return '<div style="padding:24px;text-align:center;color:rgba(255,255,255,.3);">No expense data for this month.</div>';
+
+    const rows = ALL_BKS.map(bk => {
+      const v = cur.fixedByBk[bk]||cur.varByBk[bk]||0;
+      return { bk, v, pct: v/total };
+    }).filter(r=>r.v>0.01).sort((a,b)=>b.v-a.v);
+
+    // Color stops for fixed (red family) and variable (amber family)
+    const fixedPalette  = ['#FF9494','#F87171','#E05555','#C94444','#B03333','#952020','#7A1010'];
+    const varPalette    = ['#FFCA40','#F5A800','#E09500','#C07A00','#9A6000','#784800','#563000'];
+    let fixedIdx=0, varIdx=0;
+
+    const [selY,selM] = selMo.split('-');
+    const selName = new Date(selY,selM-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+
+    let bars = '', labels = '';
+    let curX = 0;
+    const BAR_H=32, BAR_W=520, LBL_AREA=120;
+
+    rows.forEach((r, i) => {
+      const isFixed = FIXED_BKS.includes(r.bk);
+      const col = isFixed ? (fixedPalette[fixedIdx++] || '#7A1010') : (varPalette[varIdx++] || '#563000');
+      const w = r.pct * BAR_W;
+      bars += `<rect x="${curX.toFixed(2)}" y="0" width="${Math.max(w,1).toFixed(2)}" height="${BAR_H}" fill="${col}" data-bk="${r.bk}"/>`;
+      // Label inside bar if wide enough
+      if(w > 42) bars += `<text x="${(curX+w/2).toFixed(1)}" y="13" text-anchor="middle" font-size="9" font-weight="600" fill="rgba(255,255,255,.85)" font-family="monospace">${(r.pct*100).toFixed(0)}%</text>`;
+      if(w > 64) bars += `<text x="${(curX+w/2).toFixed(1)}" y="26" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.7)" font-family="monospace">${fmtK(r.v)}</text>`;
+      curX += w;
+    });
+
+    // Legend items: 2 columns
+    const legendItems = rows.map((r,i) => {
+      const isFixed = FIXED_BKS.includes(r.bk);
+      const col = isFixed ? (fixedPalette[Math.min(i, fixedPalette.length-1)]) : (varPalette[Math.min(i-FIXED_BKS.filter(b=>rows.some(rr=>rr.bk===b)).length, varPalette.length-1)]||'#F5A800');
+      return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;">
+        <span style="width:8px;height:8px;border-radius:2px;background:${FIXED_BKS.includes(r.bk)?fixedPalette[rows.filter((rr,ii)=>FIXED_BKS.includes(rr.bk)&&ii<=i).length-1]||'#C94444':varPalette[rows.filter((rr,ii)=>!FIXED_BKS.includes(rr.bk)&&ii<=i).length-1]||'#C07A00'};flex-shrink:0;"></span>
+        <span style="font-size:11px;color:rgba(255,255,255,.7);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${BK_LABELS[r.bk]}</span>
+        <span style="font-size:11px;font-family:var(--fm);color:rgba(255,255,255,.5);flex-shrink:0;">${fmtK(r.v)}</span>
+        <span style="font-size:10px;color:rgba(255,255,255,.3);flex-shrink:0;min-width:28px;text-align:right;">${(r.pct*100).toFixed(0)}%</span>
+      </div>`;
+    });
+
+    const deployLine = cur.deployable > 0 ? cur.deployable/total*BAR_W : -1;
+
+    return `<div style="padding:12px 16px 14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.6);">${selName} · ${fmtK(total)} total spend</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);">${cur.deployable>0?fmtK(cur.deployable)+' deployable':''}</div>
+      </div>
+      <div style="position:relative;margin-bottom:8px;">
+        <svg viewBox="0 0 ${BAR_W} ${BAR_H+2}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;border-radius:6px;overflow:hidden;">
+          ${bars}
+          ${deployLine>0&&deployLine<BAR_W?`<line x1="${deployLine.toFixed(1)}" y1="0" x2="${deployLine.toFixed(1)}" y2="${BAR_H+2}" stroke="rgba(255,255,255,.85)" stroke-width="2" stroke-dasharray="4,3"/><rect x="${(deployLine+3).toFixed(1)}" y="2" width="52" height="16" rx="3" fill="rgba(0,0,0,.6)"/><text x="${(deployLine+7).toFixed(1)}" y="13" font-size="9" fill="rgba(52,217,195,.9)" font-family="monospace">income ◀</text>`:''}
+        </svg>
+        ${cur.fixed+cur.variable>cur.deployable&&cur.deployable>0?`<div style="position:absolute;top:-20px;right:0;font-size:10px;color:#F87171;font-family:var(--fm);">⛔ over by ${fmtK(cur.fixed+cur.variable-cur.deployable)}</div>`:''}
+      </div>
+      <!-- fixed/variable divider label -->
+      <div style="display:flex;gap:12px;font-size:10px;font-family:var(--fm);margin-bottom:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+        <span style="color:#F87171;">■ Fixed ${fmtK(cur.fixed)} · ${(cur.fixed/total*100).toFixed(0)}%</span>
+        <span style="color:#F5A800;">■ Variable ${fmtK(cur.variable)} · ${(cur.variable/total*100).toFixed(0)}%</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 20px;">${legendItems.join('')}</div>
+    </div>`;
+  }
+
+  // ── Tooltip for stack bars ─────────────────────────────────────────
+  function makeTip(d) {
+    const [yr,m] = d.mo.split('-');
+    const moName = new Date(yr,m-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    const fixLines = Object.entries(d.fixedByBk).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:16px;padding:2px 0;"><span style="color:rgba(200,196,190,.8);">${BK_LABELS[k]}</span><span style="color:#F87171;font-family:monospace;">${fmtK(v)}</span></div>`).join('');
+    const varLines = Object.entries(d.varByBk).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:16px;padding:2px 0;"><span style="color:rgba(200,196,190,.8);">${BK_LABELS[k]}</span><span style="color:#F5A800;font-family:monospace;">${fmtK(v)}</span></div>`).join('');
+    return `<div style="font-weight:700;color:#EEEAE4;font-size:12px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.1);">${moName}</div>
+      ${fixLines?`<div style="font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.3);text-transform:uppercase;margin-bottom:4px;">Fixed — ${fmtK(d.fixed)}</div>${fixLines}`:''}
+      ${varLines?`<div style="font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.3);text-transform:uppercase;margin:6px 0 4px;">Variable — ${fmtK(d.variable)}</div>${varLines}`:''}
+      <div style="border-top:1px solid rgba(255,255,255,.08);margin-top:8px;padding-top:6px;font-size:11px;display:flex;justify-content:space-between;">
+        <span style="color:#34D9C3;">Deployable</span><span style="color:#34D9C3;font-family:monospace;">${fmtK(d.deployable)}</span></div>
+      <div style="font-size:10px;display:flex;justify-content:space-between;margin-top:3px;">
+        <span style="color:rgba(255,255,255,.3);">Total spend</span><span style="color:rgba(255,255,255,.4);font-family:monospace;">${fmtK(d.total)}</span></div>
+      ${d.total>d.deployable&&d.deployable>0?`<div style="color:#F87171;font-size:10px;margin-top:4px;">⛔ over by ${fmtK(d.total-d.deployable)}</div>`:`<div style="color:#34D9C3;font-size:10px;margin-top:4px;">✅ surplus ${fmtK(d.deployable-d.total)}</div>`}
+      <div style="margin-top:8px;font-size:10px;color:#60A5FA;cursor:pointer;" onclick="(function(){var sel=document.getElementById('isMonth');if(sel){for(var i=0;i<sel.options.length;i++)if(sel.options[i].value==='${d.mo}'){sel.selectedIndex=i;break;}}renderIncomeStatement();})()">Open ${moName} IS →</div>`;
+  }
+
+  // ── Render chart ──────────────────────────────────────────────────
+  let chartHtml = '';
+  if      (isTrendType === 'trellis') chartHtml = renderTrellis();
+  else if (isTrendType === 'slope')   chartHtml = renderSlope();
+  else if (isTrendType === 'waffle')  chartHtml = renderWaffle();
+  else                                chartHtml = `<div style="padding:8px 8px 4px;position:relative;" id="isTrendChartArea">
+    ${renderStack()}
+    <div id="isTrendTip" style="display:none;position:absolute;background:rgba(18,18,20,.97);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 12px;font-size:11px;font-family:var(--fm);min-width:160px;max-width:220px;max-height:300px;overflow-y:auto;pointer-events:none;z-index:99;box-shadow:0 8px 32px rgba(0,0,0,.6);"></div>
+  </div>`;
+
+  el.innerHTML = headerHtml + chartHtml;
+
+  // Stack bar tooltip events
+  if (isTrendType === 'stack') {
+    el.querySelectorAll('.ist-bar').forEach(rect => {
+      rect.addEventListener('mouseenter', function(e) {
+        const d = moData.find(x=>x.mo===this.dataset.mo);
+        if (!d) return;
+        const tip = el.querySelector('#isTrendTip');
+        if (!tip) return;
+        tip.innerHTML = makeTip(d);
+        const chartEl = el.querySelector('#isTrendChartArea');
+        const cRect = chartEl.getBoundingClientRect();
+        const bRect = this.getBoundingClientRect();
+        const tipW = 220;
+        const spaceRight = cRect.width - (bRect.left - cRect.left) - bRect.width;
+        let tipX = bRect.left - cRect.left + bRect.width + 8;
+        if (spaceRight < tipW + 20) tipX = bRect.left - cRect.left - tipW - 8;
+        tip.style.left    = Math.max(0, Math.min(tipX, cRect.width - tipW - 4)) + 'px';
+        tip.style.top     = '4px';
+        tip.style.display = 'block';
+      });
+      rect.addEventListener('mouseleave', function() {
+        const tip = el.querySelector('#isTrendTip');
+        if (tip) tip.style.display = 'none';
+      });
+      rect.addEventListener('click', function() {
+        const mo = this.dataset.mo, sel = document.getElementById('isMonth');
+        if (sel) for (let i=0;i<sel.options.length;i++) if(sel.options[i].value===mo){sel.selectedIndex=i;break;}
+        renderIncomeStatement();
+      });
+    });
+  }
 }
+
 
 function renderIncomeStatement() {
   const el = document.getElementById('incomeStatement');
@@ -8508,13 +8705,15 @@ function renderIncomeStatement() {
   // Income: PAYCHECKS ONLY — direct deposits to checking from employers.
   // No dividends, interest, tax refunds, HSA distributions, or other non-paycheck income.
   // CC credits and non-operating credits are never income.
+  // Income = paychecks deposited into CHECKING only.
+  // Savings-account paychecks (employer split direct deposit) go to auto_save below.
   monthSp.filter(t => {
     if (t.amount <= 0) return false;
     if (isCCCredit(t)) return false;
     if (isNonOperatingCredit(t)) return false;
-    // Only allow paycheck-classified transactions as income
-    const bk = classifyTxn(t);
-    return bk === 'paycheck';
+    if (classifyTxn(t) !== 'paycheck') return false;
+    // Split direct deposits to savings are auto_save, not income
+    return detectAcctType(t.account||'') === 'checking';
   }).forEach(t => addB('paycheck', t));
 
   // Expenses: all negative operating transactions
