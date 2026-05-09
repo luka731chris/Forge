@@ -277,6 +277,7 @@ main::-webkit-scrollbar-thumb:hover { background: var(--line3); }
 }
 .kpi-sub { font-size: 12px; color: var(--ink3); }
 .kpi.positive .kpi-val { color: var(--pos); }
+.kpi.negative .kpi-val { color: var(--neg); }
 .kpi.gold     .kpi-val { color: var(--gold); }
 
 /* ── Chart cards ──────────────────────────────────────────────────────────── */
@@ -823,18 +824,18 @@ select:focus { border-color: var(--gold); }
   <div style="font-family:var(--font-d,'Georgia,serif');font-size:32px;font-weight:600;letter-spacing:.08em;color:var(--ink,#EEEAE4);margin-bottom:6px;">
     F<span style="color:var(--gold,#F5A800)">O</span>RGE
   </div>
-  <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink4,#524E4A);margin-bottom:40px;">Est. 2026</div>
+  <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#7A7672;margin-bottom:40px;">Est. 2026</div>
 
   <!-- Lock icon SVG -->
   <div style="margin-bottom:20px;">
-    <svg width="220" height="66" viewBox="0 0 680 195" fill="none" style="opacity:1;display:block;"><path d="M 158,162 L 158,40 L 161,33 L 191,33 L 194,40 L 194,162" stroke="#524E4A" stroke-width="1.05" fill="none"/><line x1="176" y1="18" x2="176" y2="33" stroke="#524E4A" stroke-width=".7"/><line x1="158" y1="72" x2="194" y2="72" stroke="#524E4A" stroke-width=".42"/><line x1="155" y1="72" x2="158" y2="72" stroke="#524E4A" stroke-width=".82"/><line x1="194" y1="72" x2="197" y2="72" stroke="#524E4A" stroke-width=".82"/><path d="M 240,162 L 240,116 L 268,116 L 268,162" stroke="#524E4A" stroke-width=".86" fill="none"/><path d="M 242,100 L 242,116 L 266,116 L 266,100 Z" stroke="#524E4A" stroke-width=".83" fill="none"/><path d="M 246,88 L 246,100 L 262,100 L 262,88 Z" stroke="#524E4A" stroke-width=".80" fill="none"/><path d="M 250,79 L 250,88 L 258,88 L 258,79 Z" stroke="#524E4A" stroke-width=".78" fill="none"/><line x1="254" y1="61" x2="254" y2="79" stroke="#524E4A" stroke-width=".7"/><path d="M 320,162 L 320,66 L 366,66 L 366,162" stroke="#F5A800" stroke-width="1.0" fill="none"/><line x1="320" y1="66" x2="366" y2="66" stroke="#F5A800" stroke-width="1.0"/><polygon points="321,66 324,47 327,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="334,66 337.5,48 341,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="340,66 343.5,44 347,66" stroke="#F5A800" stroke-width=".88" fill="none"/><polygon points="346,66 349.5,48 353,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="359,66 362,47 365,66" stroke="#F5A800" stroke-width=".82" fill="none"/><line x1="332" y1="66" x2="332" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="344" y1="66" x2="344" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="356" y1="66" x2="356" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="100" y1="162" x2="430" y2="162" stroke="#524E4A" stroke-width=".85"/><path d="M 100,168 Q 265,164 430,168" stroke="#524E4A" stroke-width=".6" fill="none" opacity=".5"/></svg>
-    <div style="font-size:8px;font-family:var(--fm,'Fira Code',monospace);letter-spacing:.18em;text-transform:uppercase;color:var(--ink4,#4E4A46);text-align:center;margin-top:6px;">LUKA<span style="color:var(--gold,#F5A800);">LAB</span> · AI Creative Lab</div>
+    <svg width="220" height="66" viewBox="0 0 680 195" fill="none" style="opacity:1;display:block;"><path d="M 158,162 L 158,40 L 161,33 L 191,33 L 194,40 L 194,162" stroke="#7A7672" stroke-width="1.05" fill="none"/><line x1="176" y1="18" x2="176" y2="33" stroke="#7A7672" stroke-width=".7"/><line x1="158" y1="72" x2="194" y2="72" stroke="#7A7672" stroke-width=".42"/><line x1="155" y1="72" x2="158" y2="72" stroke="#7A7672" stroke-width=".82"/><line x1="194" y1="72" x2="197" y2="72" stroke="#7A7672" stroke-width=".82"/><path d="M 240,162 L 240,116 L 268,116 L 268,162" stroke="#7A7672" stroke-width=".86" fill="none"/><path d="M 242,100 L 242,116 L 266,116 L 266,100 Z" stroke="#7A7672" stroke-width=".83" fill="none"/><path d="M 246,88 L 246,100 L 262,100 L 262,88 Z" stroke="#7A7672" stroke-width=".80" fill="none"/><path d="M 250,79 L 250,88 L 258,88 L 258,79 Z" stroke="#7A7672" stroke-width=".78" fill="none"/><line x1="254" y1="61" x2="254" y2="79" stroke="#7A7672" stroke-width=".7"/><path d="M 320,162 L 320,66 L 366,66 L 366,162" stroke="#F5A800" stroke-width="1.0" fill="none"/><line x1="320" y1="66" x2="366" y2="66" stroke="#F5A800" stroke-width="1.0"/><polygon points="321,66 324,47 327,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="334,66 337.5,48 341,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="340,66 343.5,44 347,66" stroke="#F5A800" stroke-width=".88" fill="none"/><polygon points="346,66 349.5,48 353,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="359,66 362,47 365,66" stroke="#F5A800" stroke-width=".82" fill="none"/><line x1="332" y1="66" x2="332" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="344" y1="66" x2="344" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="356" y1="66" x2="356" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="100" y1="162" x2="430" y2="162" stroke="#7A7672" stroke-width=".85"/><path d="M 100,168 Q 265,164 430,168" stroke="#7A7672" stroke-width=".6" fill="none" opacity=".5"/></svg>
+    <div style="font-size:8px;font-family:var(--fm,'Fira Code',monospace);letter-spacing:.18em;text-transform:uppercase;color:#8A8480;text-align:center;margin-top:6px;">LUKA<span style="color:var(--gold,#F5A800);">LAB</span> · AI Creative</div>
   </div>
 
   <!-- Mode: setup (first time) or unlock -->
   <div id="lock-setup" style="display:none;width:100%;max-width:320px;text-align:center;">
     <div style="font-size:14px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:6px;">Create your Forge PIN</div>
-    <div style="font-size:12px;color:var(--ink4,#524E4A);margin-bottom:24px;line-height:1.6;">
+    <div style="font-size:12px;color:var(--ink4,#7A7672);margin-bottom:24px;line-height:1.6;">
       Your financial data will be encrypted locally.<br>Recovery: clear &amp; re-pull from Cloudflare.
     </div>
     <input id="lock-pass-new" type="password" placeholder="Create passphrase" autocomplete="new-password"
@@ -851,7 +852,7 @@ select:focus { border-color: var(--gold); }
              padding:15px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
       Create PIN &amp; Encrypt Data
     </button>
-    <div style="margin-top:12px;font-size:11px;color:var(--ink4,#524E4A);line-height:1.6;">
+    <div style="margin-top:12px;font-size:11px;color:var(--ink4,#7A7672);line-height:1.6;">
       Use a passphrase you'll remember — minimum 4 characters.<br>
       <strong style="color:var(--ink3,#8A857E);">Forgotten PIN = pull fresh from Cloudflare.</strong>
     </div>
@@ -877,7 +878,7 @@ select:focus { border-color: var(--gold); }
       🔐 Use Face ID / Touch ID
     </button>
     <button onclick="forgeForgotPIN()"
-      style="background:transparent;border:none;color:var(--ink4,#524E4A);font-size:12px;
+      style="background:transparent;border:none;color:var(--ink4,#7A7672);font-size:12px;
              cursor:pointer;font-family:inherit;text-decoration:underline;padding:4px;">
       Forgot passphrase?
     </button>
@@ -887,7 +888,7 @@ select:focus { border-color: var(--gold); }
   <div id="lock-spinner" style="display:none;margin-top:20px;">
     <div style="width:28px;height:28px;border:2px solid rgba(245,168,0,.25);border-top-color:var(--gold,#F5A800);
                 border-radius:50%;animation:lock-spin .7s linear infinite;margin:0 auto;"></div>
-    <div id="lock-spinner-lbl" style="font-size:11px;color:var(--ink4,#524E4A);margin-top:8px;letter-spacing:.06em;">Encrypting…</div>
+    <div id="lock-spinner-lbl" style="font-size:11px;color:var(--ink4,#7A7672);margin-top:8px;letter-spacing:.06em;">Encrypting…</div>
   </div>
 
   <style>
@@ -2960,8 +2961,8 @@ function renderSettings() {
     card('data',     '💾',      'Data & File Status',       'Storage · thru dates · export · clear',       dataBody),
     card('hierarchy','🗂️',     'Forge Hierarchy Editor',   'Keyword lists · save or revert per bucket',   hierBody),
   ].join('') + `<div style="margin:16px 0 0;padding:12px 16px;display:flex;align-items:center;gap:10px;opacity:.35;">
-    <svg width="100" height="30" viewBox="0 0 680 195" fill="none" style="opacity:.6;display:block;"><path d="M 158,162 L 158,40 L 161,33 L 191,33 L 194,40 L 194,162" stroke="#4E4A46" stroke-width="1.05" fill="none"/><line x1="176" y1="18" x2="176" y2="33" stroke="#4E4A46" stroke-width=".7"/><line x1="158" y1="72" x2="194" y2="72" stroke="#4E4A46" stroke-width=".42"/><line x1="155" y1="72" x2="158" y2="72" stroke="#4E4A46" stroke-width=".82"/><line x1="194" y1="72" x2="197" y2="72" stroke="#4E4A46" stroke-width=".82"/><path d="M 240,162 L 240,116 L 268,116 L 268,162" stroke="#4E4A46" stroke-width=".86" fill="none"/><path d="M 242,100 L 242,116 L 266,116 L 266,100 Z" stroke="#4E4A46" stroke-width=".83" fill="none"/><path d="M 246,88 L 246,100 L 262,100 L 262,88 Z" stroke="#4E4A46" stroke-width=".80" fill="none"/><path d="M 250,79 L 250,88 L 258,88 L 258,79 Z" stroke="#4E4A46" stroke-width=".78" fill="none"/><line x1="254" y1="61" x2="254" y2="79" stroke="#4E4A46" stroke-width=".7"/><path d="M 320,162 L 320,66 L 366,66 L 366,162" stroke="#F5A800" stroke-width="1.0" fill="none"/><line x1="320" y1="66" x2="366" y2="66" stroke="#F5A800" stroke-width="1.0"/><polygon points="321,66 324,47 327,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="334,66 337.5,48 341,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="340,66 343.5,44 347,66" stroke="#F5A800" stroke-width=".88" fill="none"/><polygon points="346,66 349.5,48 353,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="359,66 362,47 365,66" stroke="#F5A800" stroke-width=".82" fill="none"/><line x1="332" y1="66" x2="332" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="344" y1="66" x2="344" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="356" y1="66" x2="356" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="100" y1="162" x2="430" y2="162" stroke="#4E4A46" stroke-width=".85"/><path d="M 100,168 Q 265,164 430,168" stroke="#4E4A46" stroke-width=".6" fill="none" opacity=".5"/></svg>
-    <div style="font-size:9px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);">LUKA<span style="color:var(--gold);">LAB</span> · AI Creative Lab · 2026</div>
+    <svg width="100" height="30" viewBox="0 0 680 195" fill="none" style="opacity:.6;display:block;"><path d="M 158,162 L 158,40 L 161,33 L 191,33 L 194,40 L 194,162" stroke="#7A7672" stroke-width="1.05" fill="none"/><line x1="176" y1="18" x2="176" y2="33" stroke="#7A7672" stroke-width=".7"/><line x1="158" y1="72" x2="194" y2="72" stroke="#7A7672" stroke-width=".42"/><line x1="155" y1="72" x2="158" y2="72" stroke="#7A7672" stroke-width=".82"/><line x1="194" y1="72" x2="197" y2="72" stroke="#7A7672" stroke-width=".82"/><path d="M 240,162 L 240,116 L 268,116 L 268,162" stroke="#7A7672" stroke-width=".86" fill="none"/><path d="M 242,100 L 242,116 L 266,116 L 266,100 Z" stroke="#7A7672" stroke-width=".83" fill="none"/><path d="M 246,88 L 246,100 L 262,100 L 262,88 Z" stroke="#7A7672" stroke-width=".80" fill="none"/><path d="M 250,79 L 250,88 L 258,88 L 258,79 Z" stroke="#7A7672" stroke-width=".78" fill="none"/><line x1="254" y1="61" x2="254" y2="79" stroke="#7A7672" stroke-width=".7"/><path d="M 320,162 L 320,66 L 366,66 L 366,162" stroke="#F5A800" stroke-width="1.0" fill="none"/><line x1="320" y1="66" x2="366" y2="66" stroke="#F5A800" stroke-width="1.0"/><polygon points="321,66 324,47 327,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="334,66 337.5,48 341,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="340,66 343.5,44 347,66" stroke="#F5A800" stroke-width=".88" fill="none"/><polygon points="346,66 349.5,48 353,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="359,66 362,47 365,66" stroke="#F5A800" stroke-width=".82" fill="none"/><line x1="332" y1="66" x2="332" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="344" y1="66" x2="344" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="356" y1="66" x2="356" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="100" y1="162" x2="430" y2="162" stroke="#7A7672" stroke-width=".85"/><path d="M 100,168 Q 265,164 430,168" stroke="#7A7672" stroke-width=".6" fill="none" opacity=".5"/></svg>
+    <div style="font-size:9px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);">LUKA<span style="color:var(--gold);">LAB</span> · AI Creative · 2026</div>
   </div>` + '<div style="height:20px;"></div>';
   // Fix toggle visual state (CSS sibling selectors don't reach nested elements)
   setTimeout(fixToggles, 0);
@@ -3328,9 +3329,9 @@ function renderThermometer(containerId, selMonth) {
         </div>
 
         <!-- Bar container with drop shadow for depth -->
-        <div style="position:relative;height:40px;border-radius:8px;overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08),inset 0 -1px 0 rgba(0,0,0,.4);cursor:pointer;border:1px solid rgba(255,255,255,.06);" onclick="${clickIS}">
+        <div style="position:relative;height:48px;border-radius:8px;overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08),inset 0 -1px 0 rgba(0,0,0,.4);cursor:pointer;border:1px solid rgba(255,255,255,.06);" onclick="${clickIS}">
 
-          <svg width="100%" height="40" preserveAspectRatio="none" style="position:absolute;inset:0;">
+          <svg width="100%" height="48" preserveAspectRatio="none" style="position:absolute;inset:0;">
             <defs>
               <!-- Highlight gradient for 3D top-lit feel -->
               <linearGradient id="g-top" x1="0" y1="0" x2="0" y2="1">
@@ -3361,37 +3362,37 @@ function renderThermometer(containerId, selMonth) {
             </defs>
 
             <!-- Background track -->
-            <rect x="0" y="0" width="100%" height="40" fill="rgba(255,255,255,.04)"/>
+            <rect x="0" y="0" width="100%" height="48" fill="rgba(255,255,255,.04)"/>
 
             <!-- Fixed — 3D gradient fill -->
-            <rect x="0" y="0" width="${fixW.toFixed(2)}%" height="40" fill="url(#g-fix)"
+            <rect x="0" y="0" width="${fixW.toFixed(2)}%" height="48" fill="url(#g-fix)"
             style="cursor:pointer;"
             data-thermo="${JSON.stringify({type:'fixed',bks:['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','cell','subscriptions']}).replace(/"/g,'&quot;')}"/>
             <!-- Fixed label (inside bar if wide enough) -->
-            ${fixW > 16 ? `<text x="${(fixW/2).toFixed(1)}%" y="15" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="800" fill="rgba(255,255,255,.95)" letter-spacing="0.5">FIXED</text>
-            <text x="${(fixW/2).toFixed(1)}%" y="30" text-anchor="middle" font-family="'Courier New',monospace" font-size="14" font-weight="700" fill="rgba(255,255,255,.92)">${fmtK(fixedTotal)}</text>` : ''}
+            ${fixW > 16 ? `<text x="${(fixW/2).toFixed(1)}%" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="800" fill="rgba(255,255,255,.95)" letter-spacing="0.5">FIXED</text>
+            <text x="${(fixW/2).toFixed(1)}%" y="37" text-anchor="middle" font-family="'Courier New',monospace" font-size="14" font-weight="700" fill="rgba(255,255,255,.92)">${fmtK(fixedTotal)}</text>` : ''}
 
             <!-- Variable — gold gradient fill -->
-            <rect x="${fixW.toFixed(2)}%" y="0" width="${varW.toFixed(2)}%" height="40" fill="url(#g-var)"
+            <rect x="${fixW.toFixed(2)}%" y="0" width="${varW.toFixed(2)}%" height="48" fill="url(#g-var)"
             style="cursor:pointer;"
             data-thermo="${JSON.stringify({type:'variable',bks:['restaurants','groceries','gas_car','transit','healthcare','entertainment','household','personal','clothing','travel','gifts','other']}).replace(/"/g,'&quot;')}"/>
-            ${varW > 14 ? `<text x="${(fixW + varW/2).toFixed(1)}%" y="15" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="800" fill="rgba(0,0,0,.75)" letter-spacing="0.5">VARIABLE</text>
-            <text x="${(fixW + varW/2).toFixed(1)}%" y="30" text-anchor="middle" font-family="'Courier New',monospace" font-size="14" font-weight="700" fill="rgba(0,0,0,.75)">${fmtK(varTotal)}</text>` : ''}
+            ${varW > 14 ? `<text x="${(fixW + varW/2).toFixed(1)}%" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="800" fill="rgba(0,0,0,.75)" letter-spacing="0.5">VARIABLE</text>
+            <text x="${(fixW + varW/2).toFixed(1)}%" y="37" text-anchor="middle" font-family="'Courier New',monospace" font-size="14" font-weight="700" fill="rgba(0,0,0,.75)">${fmtK(varTotal)}</text>` : ''}
 
             <!-- Buffer stripes -->
-            ${!overflows && bufW > 0.5 ? `<rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${bufW.toFixed(2)}%" height="40" fill="url(#g-buf)"/>
-            ${bufW > 10 ? `<text x="${(fixW+varW+bufW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="'Courier New',monospace" font-size="13" font-weight="700" fill="rgba(52,217,195,.85)">${fmtK(buffer)}</text>` : ''}` : ''}
+            ${!overflows && bufW > 0.5 ? `<rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${bufW.toFixed(2)}%" height="48" fill="url(#g-buf)"/>
+            ${bufW > 10 ? `<text x="${(fixW+varW+bufW/2).toFixed(1)}%" y="27" text-anchor="middle" font-family="'Courier New',monospace" font-size="13" font-weight="700" fill="rgba(52,217,195,.85)">${fmtK(buffer)}</text>` : ''}` : ''}
 
             <!-- Overage hatching -->
-            ${overflows ? `<rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${overW.toFixed(2)}%" height="40" fill="url(#g-ov)"/>
-            ${overW > 6 ? `<text x="${(fixW+varW+overW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="'Courier New',monospace" font-size="13" font-weight="700" fill="${OVER_C}">-${fmtK(Math.abs(buffer))}</text>` : ''}` : ''}
+            ${overflows ? `<rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${overW.toFixed(2)}%" height="48" fill="url(#g-ov)"/>
+            ${overW > 6 ? `<text x="${(fixW+varW+overW/2).toFixed(1)}%" y="27" text-anchor="middle" font-family="'Courier New',monospace" font-size="13" font-weight="700" fill="${OVER_C}">-${fmtK(Math.abs(buffer))}</text>` : ''}` : ''}
 
             <!-- Global top-lit highlight overlay -->
-            <rect x="0" y="0" width="100%" height="40" fill="url(#g-top)"/>
+            <rect x="0" y="0" width="100%" height="48" fill="url(#g-top)"/>
 
             <!-- Income limit line — strong vertical marker with glow -->
-            <rect x="${(incLine-0.5).toFixed(2)}%" y="0" width="2" height="40" fill="rgba(255,255,255,.7)"/>
-            <rect x="${(incLine-1).toFixed(2)}%" y="0" width="4" height="40" fill="rgba(255,255,255,.15)"/>
+            <rect x="${(incLine-0.5).toFixed(2)}%" y="0" width="2" height="48" fill="rgba(255,255,255,.7)"/>
+            <rect x="${(incLine-1).toFixed(2)}%" y="0" width="4" height="48" fill="rgba(255,255,255,.15)"/>
           </svg>
         </div>
 
@@ -3603,35 +3604,41 @@ function isCreditAcct(acctName) {
 // CC payments from checking to CC account = transfer (the CC charges are the real expenses).
 function isTransfer(t) {
   if (t.isTransfer) return true;
-  const cat = (t.category || '').trim();
-  const pay = (t.payee   || '').trim().toLowerCase();
+  const cat    = (t.category || '').trim();
+  const catLow = cat.toLowerCase();
+  const pay    = (t.payee   || '').trim().toLowerCase();
 
-  // 1. Quicken bracket-category format [AccountName] = always a transfer
+  // 1. Quicken bracket-category [AccountName] = internal account transfer
   if (/^\[.*\]$/.test(cat)) return true;
 
-  // 2. Explicit transfer / CC payment categories
-  if (/^(transfer|credit card payment|cc payment|card payment|online payment|payment thank you)$/i.test(cat)) return true;
+  // 2. Explicit transfer / CC payment categories — handle full Quicken subcategory path
+  //    e.g. "Bills & Utilities:Credit Card Payment" or just "Credit Card Payment"
+  if (/transfer$/i.test(catLow)) return true;
+  if (/credit card payment/i.test(catLow)) return true;
+  if (/^(cc payment|card payment|online payment|payment thank you)$/i.test(catLow)) return true;
 
-  // 3. Apple Card: treat as transfer when we have Apple Card detail for that month
-  //    This means the lump-sum CC payment is replaced by individual Apple Card txns
-  if (/apple card/i.test(cat) || /apple card/i.test(pay)) {
+  // 3. Apple Card: any side of the Apple Card payment (with OR without space in name)
+  //    Treat as transfer ONLY when we have Apple Card detail loaded for that month
+  if (/apple.?card/i.test(catLow) || /apple.?card/i.test(pay) || /web recur applecard/i.test(pay)) {
     const txnMonth = (t.date || '').slice(0, 7);
     const sp = typeof txns !== 'undefined' ? txns : [];
     const hasDetail = sp.some(d => d._source === 'apple_card' && (d.date||'').slice(0,7) === txnMonth);
-    if (hasDetail) return true; // detail loaded → payment is a transfer
-    // No detail → fall through (payment stays as expense so you know to upload detail)
+    if (hasDetail) return true;
+    // No Apple detail → keep as expense (user needs to upload the CSV)
   }
 
-  // 4. Payee-based CC payment detection (negative amounts only)
+  // 4. Payee-based CC payment detection — negative amounts (debit from checking)
   if (t.amount < 0) {
-    if (/^(apple card payment|visa payment|mastercard payment|amex payment|american express payment|discover payment|citi payment|citibank payment|chase payment|capital one payment|barclays payment|synchrony payment|wells fargo payment|bank of america payment|us bank payment|usaa payment)$/i.test(pay)) return true;
-    // Generic "payment" payees on known CC account names
+    if (/^(apple card|apple card payment|web recur applecard|visa payment|mastercard payment|amex payment|american express payment|discover payment|citi payment|citibank payment|chase payment|capital one payment|barclays payment|synchrony payment|wells fargo payment|bank of america payment|us bank payment|usaa payment)$/i.test(pay)) return true;
+    // Generic "Web Recur *" CC autopay pattern (Quicken online payment label)
+    if (/^web recur /i.test(pay)) return true;
+    // Generic: payment payee on a CC account
     const acct = (t.account || '').toLowerCase();
     if (/credit|visa|mastercard|amex|discover|sapphire|freedom|venture|platinum|rewards|card/i.test(acct) && /payment/i.test(pay)) return true;
   }
 
-  // 5. Venmo / Zelle / PayPal transfers between own accounts
-  if (/^(venmo|zelle|paypal transfer|apple cash|google pay transfer)$/i.test(cat)) return true;
+  // 5. Venmo / Zelle / PayPal / Apple Cash internal transfers
+  if (/^(venmo|zelle|paypal transfer|apple cash|google pay transfer)$/i.test(catLow)) return true;
 
   return false;
 }
@@ -3797,7 +3804,9 @@ function svgBar(elId, labels, datasets) {
     const v = minV + (span / YTICKS) * i;
     const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
     grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
-    const lbl = Math.abs(v)>=1000 ? '$'+(v/1000).toFixed(0)+'K' : '$'+Math.round(v);
+    const _neg = v < 0;
+    const _a = Math.abs(v);
+    const lbl = (_neg ? '−$' : '$') + (_a>=1000 ? (_a/1000).toFixed(0)+'K' : Math.round(_a));
     yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="10" font-family="'DM Mono',monospace">${lbl}</text>`;
   }
 
@@ -3887,7 +3896,9 @@ function svgLine(elId, labels, datasets) {
     const v = minV + (span / 4) * i;
     const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
     grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
-    const lbl = Math.abs(v)>=1000?'$'+(v/1000).toFixed(0)+'K':'$'+Math.round(v);
+    const _lneg = v < 0;
+    const _la = Math.abs(v);
+    const lbl = (_lneg ? '−$' : '$') + (_la>=1000 ? (_la/1000).toFixed(0)+'K' : Math.round(_la));
     yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="10" font-family="'DM Mono',monospace">${lbl}</text>`;
   }
 
@@ -4089,8 +4100,23 @@ function monthlyData(txnArr) {
   };
 }
 
-function fmt(v)  { const a=Math.abs(v); if(!a)return '$0'; return a>=10 ? '$'+Math.round(a).toLocaleString('en-US') : '$'+a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function fmtK(v) { return Math.abs(v)>=1000 ? '$'+(Math.abs(v)/1000).toFixed(1)+'K' : '$'+Math.abs(v).toFixed(0); }
+function fmt(v) {
+  const neg = v < 0;
+  const a = Math.abs(v);
+  if (!a) return '$0';
+  const s = a >= 10
+    ? '$' + Math.round(a).toLocaleString('en-US')
+    : '$' + a.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return neg ? '−' + s : s;  // use proper minus sign (−) not hyphen
+}
+// fmtSgn: always shows + or − prefix
+function fmtSgn(v) { return v >= 0 ? '+' + fmt(v) : fmt(v); }
+function fmtK(v) {
+  const neg = v < 0;
+  const a = Math.abs(v);
+  const s = a >= 1000 ? '$' + (a/1000).toFixed(1).replace(/\.0$/, '') + 'K' : '$' + Math.round(a);
+  return neg ? '−' + s : s;
+}
 
 // ════════════════════════════════════════════════
 // NAVIGATION
@@ -4698,7 +4724,7 @@ function renderDashboard() {
   document.getElementById('dashKPIs').innerHTML = [
     { label:'Total Expenses',  val:fmtK(exp), sub:fmt(exp/months)+'/mo', cls:'' },
     { label:'Total Income',    val:fmtK(inc), sub:fmt(inc/months)+'/mo', cls:'positive' },
-    { label:'Net Savings',     val:(net>=0?'+':'')+fmtK(net), sub:'Rate: '+(inc>0?((net/inc)*100).toFixed(1):0)+'%', cls:net>=0?'positive':'' },
+    { label:'Net Savings',     val:(net>=0?'+':'')+fmtK(net), sub:'Rate: '+(inc>0?((net/inc)*100).toFixed(1):0)+'%', cls:net>=0?'positive':'negative' },
     { label:'Transactions',    val:filtered.length.toLocaleString(), sub:accounts.length+' accounts', cls:'' },
   ].map(k => `<div class="kpi ${k.cls}">
     <div class="kpi-label">${k.label}</div>
@@ -4838,7 +4864,7 @@ function renderCashFlow() {
   document.getElementById('cfKPIs').innerHTML = [
     { label:'Total Income',    val:fmtK(totInc), sub:fmt(totInc/mo)+'/mo', cls:'positive' },
     { label:'Total Expenses',  val:fmtK(totExp), sub:fmt(totExp/mo)+'/mo', cls:'' },
-    { label:'Net',             val:(totNet>=0?'+':'')+fmtK(totNet), sub:'Savings rate: '+(totInc>0?((totNet/totInc)*100).toFixed(1):0)+'%', cls:totNet>=0?'positive':'' },
+    { label:'Net',             val:(totNet>=0?'+':'')+fmtK(totNet), sub:'Savings rate: '+(totInc>0?((totNet/totInc)*100).toFixed(1):0)+'%', cls:totNet>=0?'positive':'negative' },
     { label:'Months',          val:mo, sub:'in view', cls:'' },
   ].map(k=>`<div class="kpi ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-val">${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
 
@@ -5056,16 +5082,16 @@ function renderTxns() {
     const bMeta  = BUCKET_META[et.forgeBucket] || { label: et.forgeBucket, icon: '·' };
     return `<tr>
       <td class="td-num" style="text-align:left;color:var(--ink4)">${t.date}</td>
-      <td>${t.payee||'—'}${t.itemDetail&&t.itemDetail!==t.payee?'<div style="font-size:10px;color:var(--river);font-style:italic;">'+t.itemDetail.slice(0,70)+'</div>':''}</td>
+      <td>${t.payee||'—'}${t.itemDetail&&t.itemDetail!==t.payee?'<div style="font-size:12px;color:var(--river);font-style:italic;">'+t.itemDetail.slice(0,70)+'</div>':''}</td>
       <td style="color:var(--ink4)">
-        <div style="font-size:11px;">${et.qParent||t.category||'—'}</div>
-        ${et.qSub&&et.qSub!=='—'?'<div style="font-size:10px;color:var(--ink4);">'+et.qSub+'</div>':''}
+        <div style="font-size:13px;">${et.qParent||t.category||'—'}</div>
+        ${et.qSub&&et.qSub!=='—'?'<div style="font-size:12px;color:var(--ink4);">'+et.qSub+'</div>':''}
       </td>
-      <td style="font-size:11px;">
+      <td style="font-size:13px;">
         <div style="font-weight:500;color:var(--ink2);">${bMeta.icon} ${bMeta.label}</div>
         <div style="margin-top:2px;">${srcBadge(et.qSource)}</div>
       </td>
-      <td style="color:var(--ink4);font-size:11px">${t.account||'—'}</td>
+      <td style="color:var(--ink4);font-size:13px">${t.account||'—'}</td>
       <td class="td-num ${amtCls}">${amtSign}${fmt(t.amount)}</td>
       <td>${xfer?'<span class="xfer-badge">Transfer</span>':''}</td>
     </tr>`;
@@ -6174,10 +6200,19 @@ function parseMerchantCSV(text, acctName, opts) {
   const detailC = opts.detailCol ? fc(opts.detailCol) : -1;
   if (dateC < 0 || amtC < 0) return [];
 
+  // Pre-compute type column index OUTSIDE the row loop (avoid re-lookup per row)
+  const _typeC = (opts.typeCol && opts.typeSkip) ? fc(opts.typeCol) : -1;
+
   const results = [];
   for (let i = hdrIdx + 1; i < lines.length; i++) {
     const row = csvRow(lines[i]);
     if (!row.length) continue;
+
+    // Skip by type column FIRST — before any other work (avoids misclassifying payment rows)
+    if (_typeC >= 0 && opts.typeSkip) {
+      const typeVal = (row[_typeC] || '').trim();
+      if (opts.typeSkip.test(typeVal)) continue;
+    }
 
     const rawDate = (row[dateC] || '').trim();
     const date = parseDate(rawDate);
@@ -6217,14 +6252,7 @@ function parseMerchantCSV(text, acctName, opts) {
       payee = payee.slice(0, 55) + '…';
     }
 
-    // Skip rows whose type column matches the typeSkip pattern (e.g. Apple Card "Payment" rows)
-    if (opts.typeCol && opts.typeSkip) {
-      const typeC = fc(opts.typeCol);
-      if (typeC >= 0) {
-        const typeVal = (row[typeC] || '').trim();
-        if (opts.typeSkip.test(typeVal)) continue;
-      }
-    }
+
 
     results.push({
       date, payee, amount: rawAmt,
@@ -6801,116 +6829,188 @@ function toast(msg) {
 // If Quicken already categorized it, we trust that completely.
 
 const QUICKEN_CAT_MAP = {
-  // ── Income ──────────────────────────────────────────────────────
-  'net salary':                    'paycheck',
-  'salary':                        'paycheck',
-  'wages':                         'paycheck',
-  'paycheck':                      'paycheck',
-  'bonus':                         'paycheck',
-  'other inc':                     'other_inc',
-  'interest inc':                  'other_inc',
-  '_divinc':                       'other_inc',   // Quicken dividend income
-  '_rlzdgain':                     'other_inc',   // Quicken realized gain
-  'interest income':               'other_inc',
-  'dividend income':               'other_inc',
-  'rental income':                 'other_inc',
-  'freelance':                     'other_inc',
-  'consulting':                    'other_inc',
-  'fees & charges:bank fee':       'other_inc',   // reimbursements sometimes coded here
+  // ── Income ──────────────────────────────────────────────────────────────────
+  'net salary':                        'paycheck',
+  'salary':                            'paycheck',
+  'wages':                             'paycheck',
+  'paycheck':                          'paycheck',
+  'bonus':                             'paycheck',
+  'other inc':                         'other_inc',
+  'interest inc':                      'other_inc',
+  '_divinc':                           'other_inc',
+  '_rlzdgain':                         'other_inc',
+  'interest income':                   'other_inc',
+  'dividend income':                   'other_inc',
+  'rental income':                     'other_inc',
+  'freelance':                         'other_inc',
+  'consulting':                        'other_inc',
+  'fees & charges:trade commissions':  'other_inc',  // investment trade commissions as income offset
 
-  // ── Fixed ────────────────────────────────────────────────────────
-  'home:mortgage':                 'mortgage',
-  'mortgage':                      'mortgage',
-  'home:rent':                     'mortgage',
-  'rent':                          'mortgage',
-  'hoa':                           'mortgage',
-  'auto & transport:auto payment': 'car',
-  'auto & transport:auto insurance':'car',
-  'auto & transport:registration': 'car',
-  'financial:life insurance':      'insurance',
-  'financial':                     'insurance',
-  'insurance':                     'insurance',
-  'education:tuition':             'education',
-  'education':                     'education',
-  'kids:kids activities':          'childcare',
-  'kids':                          'childcare',
-  'kids:toys':                     'childcare',
+  // ── Non-operating / excluded from IS ─────────────────────────────────────
+  'fees & charges:bank fee':           'other',   // bank fees = expense, not income
+  'fees & charges:finance charge':     'other',
+  'fees & charges':                    'other',
+  'cash & atm':                        'other',
+  'dues':                              'other',
+  'tax:fed':                           'other',
+  'tax:state':                         'other',
+  'tax:local':                         'other',
+  'tax':                               'other',
+  'transfer':                          'other',
+  'uncategorized':                     'other',
+  // CC payments are transfers — handled by isTransfer(); mapping here prevents
+  // them appearing as 'electric' via the broad 'bills & utilities' fallback
+  'bills & utilities:credit card payment': 'other',
+  'bills & utilities:online payment':  'other',
+  'payment':                           'other',
 
-  // ── Utilities ────────────────────────────────────────────────────
-  'bills & utilities:utilities':   'electric',
-  'bills & utilities':             'electric',
-  'bills & utilities:mobile phone':'cell',
-  'bills & utilities:credit card payment': 'other', // not a real expense category
+  // ── Housing ──────────────────────────────────────────────────────────────────
+  'home:mortgage':                     'mortgage',
+  'mortgage':                          'mortgage',
+  'home:rent':                         'mortgage',
+  'rent':                              'mortgage',
+  'hoa':                               'mortgage',
+  'home:hoa':                          'mortgage',
 
-  // ── Food ─────────────────────────────────────────────────────────
-  'food & dining:groceries':       'groceries',
-  'food & dining:restaurants':     'restaurants',
-  'food & dining:fast food':       'restaurants',
-  'food & dining:coffee shops':    'restaurants',
-  'food & dining:alcohol & bars':  'restaurants',
-  'food & dining':                 'groceries',
+  // ── Auto ─────────────────────────────────────────────────────────────────────
+  'auto & transport:auto payment':     'car',
+  'auto & transport:auto insurance':   'car',
+  'auto & transport:registration':     'car',
+  'auto & transport:service & parts':  'car',
+  // NOTE: 'auto & transport' broad fallback intentionally omitted — too broad;
+  // specific subcategories below will match; unknown auto → KW_MAP or 'other'
 
-  // ── Transport ────────────────────────────────────────────────────
-  'auto & transport:gas & fuel':   'gas_car',
-  'auto & transport:parking':      'transit',
-  'auto & transport:tolls':        'transit',
+  // ── Insurance (Health/Life) ──────────────────────────────────────────────────
+  'financial:life insurance':          'insurance',
+  'financial:disability insurance':    'insurance',
+  'financial:dental insurance':        'insurance',
+  'financial:vision insurance':        'insurance',
+  'financial:health insurance':        'insurance',
+  'insurance:health':                  'insurance',
+  'insurance:life':                    'insurance',
+  'insurance:dental':                  'insurance',
+  'insurance:vision':                  'insurance',
+  'insurance':                         'insurance',
+  // 'financial' alone NOT mapped — too broad (includes bank fees, investments, etc.)
+
+  // ── Education ────────────────────────────────────────────────────────────────
+  'education:tuition':                 'education',
+  'education:books & supplies':        'education',
+  'education:student loan':            'education',
+  'education':                         'education',
+
+  // ── Childcare / Kids ─────────────────────────────────────────────────────────
+  'kids:kids activities':              'childcare',
+  'kids:sports':                       'childcare',
+  'kids:camp':                         'childcare',
+  'kids:music lessons':                'childcare',
+  'kids:tutoring':                     'childcare',
+  'kids:school':                       'childcare',
+  'kids:clothing':                     'clothing',   // kids clothing → clothing bucket
+  'kids:toys':                         'household',  // toys → household not childcare
+  'kids':                              'childcare',  // generic kids catch-all
+
+  // ── Utilities — SPECIFIC subcategories listed BEFORE any broad catch-all ─────
+  'bills & utilities:utilities':       'electric',
+  'bills & utilities:gas & heat':      'gas_util',
+  'bills & utilities:water':           'water',
+  'bills & utilities:internet':        'internet',
+  'bills & utilities:television':      'internet',
+  'bills & utilities:mobile phone':    'cell',
+  'bills & utilities:home phone':      'cell',
+  // Broad 'bills & utilities' NOT mapped — let specific subcats match above;
+  // unknowns fall to KW_MAP (payee-based) for accurate utility routing
+
+  // ── Food ─────────────────────────────────────────────────────────────────────
+  'food & dining:groceries':           'groceries',
+  'food & dining:restaurants':         'restaurants',
+  'food & dining:fast food':           'restaurants',
+  'food & dining:coffee shops':        'restaurants',
+  'food & dining:alcohol & bars':      'restaurants',
+  'food & dining:food delivery':       'restaurants',
+  'food & dining':                     'groceries',   // unknown food → groceries
+
+  // ── Transport ────────────────────────────────────────────────────────────────
+  'auto & transport:gas & fuel':       'gas_car',
+  'auto & transport:parking':          'transit',
+  'auto & transport:tolls':            'transit',
   'auto & transport:rental car & taxi':'transit',
-  'auto & transport:car wash':     'transit',
-  'auto & transport:service & parts':'car',
-  'auto & transport':              'gas_car',
+  'auto & transport:ride share':       'transit',
+  'auto & transport:car wash':         'household',  // car wash = household/personal
+  // 'auto & transport' broad fallback NOT mapped (too broad)
 
-  // ── Health ───────────────────────────────────────────────────────
-  'health & fitness:pharmacy':     'healthcare',
-  'health & fitness:doctor':       'healthcare',
-  'health & fitness:dentist':      'healthcare',
-  'health & fitness:eyecare':      'healthcare',
-  'health & fitness:gym':          'personal',
-  'health & fitness:sports':       'entertainment',
-  'health & fitness':              'healthcare',
+  // ── Health & Fitness ─────────────────────────────────────────────────────────
+  'health & fitness:pharmacy':         'healthcare',
+  'health & fitness:doctor':           'healthcare',
+  'health & fitness:dentist':          'healthcare',
+  'health & fitness:eyecare':          'healthcare',
+  'health & fitness:medical':          'healthcare',
+  'health & fitness:therapist':        'healthcare',
+  'health & fitness:hospital':         'healthcare',
+  'health & fitness:gym':              'personal',
+  'health & fitness:sports':           'entertainment',
+  'health & fitness:outdoor rec':      'entertainment',
+  'health & fitness':                  'healthcare',  // generic health → healthcare
 
-  // ── Discretionary ────────────────────────────────────────────────
-  'entertainment':                 'entertainment',
-  'entertainment:amusement':       'entertainment',
-  'entertainment:movies & dvds':   'entertainment',
-  'entertainment:music':           'subscriptions',
-  'entertainment:arts':            'entertainment',
-  'media subscriptions':           'subscriptions',
-  'shopping':                      'household',
-  'shopping:clothing':             'clothing',
-  'shopping:electronics & software':'household',
-  'shopping:books':                'household',
-  'shopping:sporting goods':       'entertainment',
-  'shopping:hobbies':              'entertainment',
+  // ── Discretionary / Entertainment ────────────────────────────────────────────
+  'entertainment:amusement':           'entertainment',
+  'entertainment:movies & dvds':       'entertainment',
+  'entertainment:music':               'subscriptions',
+  'entertainment:arts':                'entertainment',
+  'entertainment:games':               'entertainment',
+  'entertainment:events':              'entertainment',
+  'entertainment':                     'entertainment',
+  'media subscriptions':               'subscriptions',
+
+  // ── Shopping / Household ─────────────────────────────────────────────────────
+  'shopping:clothing':                 'clothing',
   'shopping:clothing:jewelry insurance':'clothing',
-  'home:home supplies':            'household',
-  'home:home improvement':         'household',
-  'home:home services':            'household',
-  'home:furnishings':              'household',
-  'home:lawn & garden':            'household',
-  'personal care':                 'personal',
-  'personal care:hair':            'personal',
-  'personal care:spa & massage':   'personal',
-  'kira self care':                'personal',
-  'chris self care':               'personal',
-  'gifts & donations:gift':        'gifts',
-  'gifts & donations:charity':     'gifts',
-  'gifts & donations':             'gifts',
-  'travel':                        'travel',
-  'travel:hotel':                  'travel',
-  'travel:air travel':             'travel',
-  'travel:vacation':               'travel',
-  'travel:rental car & taxi':      'transit',
-  'pets:vet':                      'healthcare',
-  'pets:pet food & supplies':      'household',
-  'shipping':                      'household',
-  'cash & atm':                    'other',
-  'fees & charges':                'other',
-  'fees & charges:trade commissions':'other_inc',
-  'dues':                          'other',
-  'tax:fed':                       'other',
-  'tax:state':                     'other',
-  // '--split--' intentionally NOT in this map — handled by special case in classifyTxn
-  'transfer':                      'other',
+  'shopping:electronics & software':   'household',
+  'shopping:books':                    'household',
+  'shopping:sporting goods':           'entertainment',
+  'shopping:hobbies':                  'entertainment',
+  'shopping:toys':                     'household',
+  'shopping':                          'household',   // generic shopping → household
+  'home:home supplies':                'household',
+  'home:home improvement':             'household',
+  'home:home services':                'household',
+  'home:furnishings':                  'household',
+  'home:lawn & garden':                'household',
+  'home:garden':                       'household',
+  'home:cleaning':                     'household',
+  'home':                              'household',   // generic home → household
+
+  // ── Personal Care ────────────────────────────────────────────────────────────
+  'personal care':                     'personal',
+  'personal care:hair':                'personal',
+  'personal care:spa & massage':       'personal',
+  'kira self care':                    'personal',
+  'chris self care':                   'personal',
+
+  // ── Gifts & Giving ───────────────────────────────────────────────────────────
+  'gifts & donations:gift':            'gifts',
+  'gifts & donations:charity':         'gifts',
+  'gifts & donations:charitable':      'gifts',
+  'gifts & donations':                 'gifts',
+
+  // ── Travel ───────────────────────────────────────────────────────────────────
+  'travel:hotel':                      'travel',
+  'travel:air travel':                 'travel',
+  'travel:vacation':                   'travel',
+  'travel:baggage':                    'travel',
+  'travel:rental car & taxi':          'transit',
+  'travel:parking':                    'transit',
+  'travel':                            'travel',
+
+  // ── Pets ─────────────────────────────────────────────────────────────────────
+  'pets:vet':                          'healthcare',
+  'pets:pet food & supplies':          'household',
+  'pets:grooming':                     'personal',
+  'pets':                              'household',
+
+  // ── Misc ─────────────────────────────────────────────────────────────────────
+  'shipping':                          'household',
+  // '--split--' intentionally NOT in this map — handled by classifyTxn special case
 };
 
 // Keyword matching (fallback when Quicken category doesn't match above)
@@ -7155,9 +7255,18 @@ function classifyTxn(t) {
   // 1. Direct Quicken category match — highest trust, exact or substring
   if (QUICKEN_CAT_MAP[cat]) return QUICKEN_CAT_MAP[cat];
 
-  // 2. Partial match: Quicken subcategory hierarchy (e.g. "Food & Dining:Restaurants" matches "food & dining")
-  for (const [qcat, bucket] of Object.entries(QUICKEN_CAT_MAP)) {
-    if (cat.includes(qcat)) return bucket;
+  // 2. Prefix match: if category is "Food & Dining:Restaurants" and "Food & Dining:Restaurants"
+  //    isn't in the map, find the longest key that is a proper prefix of the category.
+  //    This prevents "Bills & Utilities:Gas & Heat" matching the broad "Bills & Utilities" → electric.
+  //    We look for keys where: cat === key  OR  cat starts with key + ':'
+  {
+    let bestKey = '', bestBucket = '';
+    for (const [qcat, bucket] of Object.entries(QUICKEN_CAT_MAP)) {
+      if ((cat === qcat || cat.startsWith(qcat + ':')) && qcat.length > bestKey.length) {
+        bestKey = qcat; bestBucket = bucket;
+      }
+    }
+    if (bestKey) return bestBucket;
   }
 
   // 3. Special handling for Quicken --Split-- transactions.
@@ -8444,12 +8553,12 @@ function renderIncomeStatement() {
                   if (t.memo && t.memo !== t.itemDetail && t.memo.length < 60) sub2 += (sub2?' · ':'')+t.memo;
                 }
 
-                out += '<div style="display:grid;grid-template-columns:90px 1fr 120px 110px;padding:5px 16px 5px 72px;border-bottom:1px solid rgba(255,255,255,.02);background:rgba(0,0,0,.2);">';
-                out += '<div style="font-family:var(--font-m);font-size:10px;color:var(--ink4);padding-top:1px;">'+t.date+'</div>';
+                out += '<div style="display:grid;grid-template-columns:90px 1fr 120px 110px;padding:6px 16px 6px 72px;border-bottom:1px solid rgba(255,255,255,.02);background:rgba(0,0,0,.2);">';
+                out += '<div style="font-family:var(--font-m);font-size:12px;color:var(--ink4);padding-top:1px;">'+t.date+'</div>';
                 out += '<div>';
-                out += '<div style="font-size:11px;color:var(--ink3);">'+disp+'</div>';
-                if (sub1) out += '<div style="font-size:10px;color:var(--river);font-style:italic;">'+sub1+'</div>';
-                if (sub2) out += '<div style="font-size:10px;color:var(--ink4);">'+sub2+'</div>';
+                out += '<div style="font-size:13px;color:var(--ink3);">'+disp+'</div>';
+                if (sub1) out += '<div style="font-size:11px;color:var(--river);font-style:italic;">'+sub1+'</div>';
+                if (sub2) out += '<div style="font-size:11px;color:var(--ink4);">'+sub2+'</div>';
                 out += '</div>';
                 out += '<div style="text-align:right;padding-left:8px;">'+fmtTxnAmt(t)+'</div>';
                 out += '<div></div></div>';
@@ -9006,7 +9115,13 @@ function renderBalanceSheet() {
   }
 
   function acctRow(e) {
-    const changeColor = e.change === null ? 'var(--ink4)' : e.change >= 0 ? 'var(--positive)' : 'var(--negative)';
+    // For assets: increase = good (green), decrease = bad (red)
+    // For liabilities: increase = bad (red), decrease = good (green)
+    const isLiab = e.meta && e.meta.class === 'liability';
+    const changeColor = e.change === null ? 'var(--ink4)'
+      : isLiab
+        ? (e.change <= 0 ? 'var(--positive)' : 'var(--negative)')  // liability down = good
+        : (e.change >= 0 ? 'var(--positive)' : 'var(--negative)'); // asset up = good
     let r = '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:9px 20px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;" class="bs-row">';
     // Name + flags
     r += '<div style="display:flex;align-items:center;gap:7px;min-width:0;">';
@@ -9092,17 +9207,17 @@ function renderBalanceSheet() {
     ['Net Worth', fmt(netWorth), netWorth>=0?'var(--positive)':'var(--negative)',
       hasCompare && nwChange!==null ? (nwChange>=0?'↑ ':'↓ ')+fmt(Math.abs(nwChange))+(nwChangePct!==null?' ('+nwChangePct.toFixed(1)+'%)':'')+' '+compareLabel : 'assets minus liabilities'],
     ['Total Assets', fmt(totalAssets), 'var(--ink)', hasCompare && totalPriorAssets ? 'prior: '+fmt(totalPriorAssets) : 'all owned assets'],
-    ['Total Liabilities', fmt(totalLiabs), 'var(--negative)', hasCompare && totalPriorLiabs ? 'prior: '+fmt(totalPriorLiabs) : 'all outstanding debt'],
+    ['Total Liabilities', fmt(totalLiabs), 'var(--negative)', hasCompare && totalPriorLiabs ? ((totalLiabs <= totalPriorLiabs ? '↓ good · ' : '↑ bad · ') + 'prior: '+fmt(totalPriorLiabs)) : 'all outstanding debt'],
     ['Home Equity', fmt(homeEquity), homeEquity>=0?'var(--river)':'var(--negative)', 'property minus mortgage'],
   ];
   kpis.forEach(([l,v,c,s], ki) => {
     const accentColors = ['rgba(45,212,191,.06)','rgba(255,255,255,.02)','rgba(248,113,113,.05)','rgba(96,165,250,.05)'];
     const accentBorder = ['rgba(45,212,191,.2)','var(--line)','rgba(248,113,113,.2)','rgba(96,165,250,.2)'];
-    out += '<div style="background:var(--float);border:1px solid '+accentBorder[ki]+';border-radius:var(--r-lg);padding:18px 20px;position:relative;overflow:hidden;">';
-    out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:'+c+';opacity:.5;border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
-    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">'+l+'</div>';
-    out += '<div style="font-size:24px;font-weight:700;color:'+c+';letter-spacing:-.02em;line-height:1;font-family:var(--font-d);">'+v+'</div>';
-    out += '<div style="font-size:11px;color:var(--ink4);margin-top:5px;font-family:var(--font-ui);">'+s+'</div></div>';
+    out += '<div style="background:var(--float);border:1px solid '+accentBorder[ki]+';border-radius:var(--r-lg);padding:18px 20px;position:relative;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.05);">';
+    out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:'+c+';border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+    out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:7px;font-weight:600;">'+l+'</div>';
+    out += '<div style="font-size:28px;font-weight:700;color:'+c+';letter-spacing:-.02em;line-height:1;font-family:var(--font-d);text-shadow:0 1px 8px '+c+'44;">'+v+'</div>';
+    out += '<div style="font-size:12px;color:var(--ink4);margin-top:6px;font-family:var(--font-ui);">'+s+'</div></div>';
   });
   out += '</div>';
 
@@ -9132,10 +9247,10 @@ function renderBalanceSheet() {
       'current assets ÷ current liabilities · target ≥2×'],
   ];
   kpis2.forEach(([l,v,c,s]) => {
-    out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;">';
-    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">'+l+'</div>';
-    out += '<div style="font-size:32px;font-weight:300;font-family:var(--font-d);letter-spacing:-.025em;color:'+c+';">'+v+'</div>';
-    out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+s+'</div></div>';
+    out += '<div style="background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.25);">';
+    out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;font-weight:600;">'+l+'</div>';
+    out += '<div style="font-size:30px;font-weight:400;font-family:var(--font-d);letter-spacing:-.02em;color:'+c+';">'+v+'</div>';
+    out += '<div style="font-size:11px;color:var(--ink4);margin-top:3px;">'+s+'</div></div>';
   });
   out += '</div>';
 
@@ -9152,10 +9267,10 @@ function renderBalanceSheet() {
       'current assets ÷ monthly income · target ≥6mo'],
   ];
   kpis3.forEach(([l,v,c,s]) => {
-    out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;">';
-    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">'+l+'</div>';
-    out += '<div style="font-size:32px;font-weight:300;font-family:var(--font-d);letter-spacing:-.025em;color:'+c+';">'+v+'</div>';
-    out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+s+'</div></div>';
+    out += '<div style="background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.25);">';
+    out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;font-weight:600;">'+l+'</div>';
+    out += '<div style="font-size:30px;font-weight:400;font-family:var(--font-d);letter-spacing:-.02em;color:'+c+';">'+v+'</div>';
+    out += '<div style="font-size:11px;color:var(--ink4);margin-top:3px;">'+s+'</div></div>';
   });
   out += '</div>';
 
@@ -9338,10 +9453,10 @@ function renderBudget() {
    ['Projected Total',fmt(proj),proj>totB?'var(--negative)':'var(--ink)','at current pace'],
    ['Budget Remaining',fmt(Math.max(0,totB-totA)),'var(--ink)',totB?'of '+fmt(totB):'click Suggest'],
   ].forEach(([l,v,c,s])=>{
-    out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;">';
-    out += '<div style="font-size:9px;font-family:var(--font-m);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">'+l+'</div>';
-    out += '<div style="font-size:32px;font-weight:300;font-family:var(--font-d);letter-spacing:-.025em;color:'+c+';">'+v+'</div>';
-    out += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+s+'</div></div>';
+    out += '<div style="background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.25);">';
+    out += '<div style="font-size:10px;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;font-weight:600;">'+l+'</div>';
+    out += '<div style="font-size:30px;font-weight:400;font-family:var(--font-d);letter-spacing:-.02em;color:'+c+';">'+v+'</div>';
+    out += '<div style="font-size:11px;color:var(--ink4);margin-top:3px;">'+s+'</div></div>';
   });
   out += '</div>';
   if (isCur&&totB>0) {

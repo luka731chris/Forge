@@ -614,97 +614,100 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
 <!-- FORGE LOCK SCREEN — shown before any data renders -->
 <div id="forge-lock" style="
   position:fixed;inset:0;z-index:999999;
-  background:var(--void);
+  background:var(--void,#050505);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   font-family:var(--font-ui,sans-serif);
   padding:24px;
 ">
   <!-- Logo -->
-  <div style="font-family:var(--font-d,'Georgia,serif');font-size:32px;font-weight:600;letter-spacing:.08em;color:var(--ink,#EEEAE4);margin-bottom:6px;">
+  <div style="font-family:var(--font-d,'Georgia,serif');font-size:32px;font-weight:600;letter-spacing:.08em;color:var(--ink,#EEEAE4);margin-bottom:5px;">
     F<span style="color:var(--gold,#F5A800)">O</span>RGE
   </div>
-  <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink4,#524E4A);margin-bottom:40px;">Est. 2026</div>
+  <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#7A7672;margin-bottom:32px;">Est. 2026</div>
 
   <!-- Lock icon SVG -->
-  <div style="margin-bottom:20px;">
-    <svg width="220" height="66" viewBox="0 0 680 195" fill="none" style="opacity:1;display:block;"><path d="M 158,162 L 158,40 L 161,33 L 191,33 L 194,40 L 194,162" stroke="#524E4A" stroke-width="1.05" fill="none"/><line x1="176" y1="18" x2="176" y2="33" stroke="#524E4A" stroke-width=".7"/><line x1="158" y1="72" x2="194" y2="72" stroke="#524E4A" stroke-width=".42"/><line x1="155" y1="72" x2="158" y2="72" stroke="#524E4A" stroke-width=".82"/><line x1="194" y1="72" x2="197" y2="72" stroke="#524E4A" stroke-width=".82"/><path d="M 240,162 L 240,116 L 268,116 L 268,162" stroke="#524E4A" stroke-width=".86" fill="none"/><path d="M 242,100 L 242,116 L 266,116 L 266,100 Z" stroke="#524E4A" stroke-width=".83" fill="none"/><path d="M 246,88 L 246,100 L 262,100 L 262,88 Z" stroke="#524E4A" stroke-width=".80" fill="none"/><path d="M 250,79 L 250,88 L 258,88 L 258,79 Z" stroke="#524E4A" stroke-width=".78" fill="none"/><line x1="254" y1="61" x2="254" y2="79" stroke="#524E4A" stroke-width=".7"/><path d="M 320,162 L 320,66 L 366,66 L 366,162" stroke="#F5A800" stroke-width="1.0" fill="none"/><line x1="320" y1="66" x2="366" y2="66" stroke="#F5A800" stroke-width="1.0"/><polygon points="321,66 324,47 327,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="334,66 337.5,48 341,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="340,66 343.5,44 347,66" stroke="#F5A800" stroke-width=".88" fill="none"/><polygon points="346,66 349.5,48 353,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="359,66 362,47 365,66" stroke="#F5A800" stroke-width=".82" fill="none"/><line x1="332" y1="66" x2="332" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="344" y1="66" x2="344" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="356" y1="66" x2="356" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="100" y1="162" x2="430" y2="162" stroke="#524E4A" stroke-width=".85"/><path d="M 100,168 Q 265,164 430,168" stroke="#524E4A" stroke-width=".6" fill="none" opacity=".5"/></svg>
-    <div style="font-size:8px;font-family:var(--fm,'Fira Code',monospace);letter-spacing:.18em;text-transform:uppercase;color:var(--ink4,#4E4A46);text-align:center;margin-top:6px;">LUKA<span style="color:var(--gold,#F5A800);">LAB</span> · AI Creative Lab</div>
+  <div style="margin-bottom:24px;">
+    <svg width="220" height="66" viewBox="0 0 680 195" fill="none" style="opacity:1;display:block;"><path d="M 158,162 L 158,40 L 161,33 L 191,33 L 194,40 L 194,162" stroke="#7A7672" stroke-width="1.05" fill="none"/><line x1="176" y1="18" x2="176" y2="33" stroke="#7A7672" stroke-width=".7"/><line x1="158" y1="72" x2="194" y2="72" stroke="#7A7672" stroke-width=".42"/><line x1="155" y1="72" x2="158" y2="72" stroke="#7A7672" stroke-width=".82"/><line x1="194" y1="72" x2="197" y2="72" stroke="#7A7672" stroke-width=".82"/><path d="M 240,162 L 240,116 L 268,116 L 268,162" stroke="#7A7672" stroke-width=".86" fill="none"/><path d="M 242,100 L 242,116 L 266,116 L 266,100 Z" stroke="#7A7672" stroke-width=".83" fill="none"/><path d="M 246,88 L 246,100 L 262,100 L 262,88 Z" stroke="#7A7672" stroke-width=".80" fill="none"/><path d="M 250,79 L 250,88 L 258,88 L 258,79 Z" stroke="#7A7672" stroke-width=".78" fill="none"/><line x1="254" y1="61" x2="254" y2="79" stroke="#7A7672" stroke-width=".7"/><path d="M 320,162 L 320,66 L 366,66 L 366,162" stroke="#F5A800" stroke-width="1.0" fill="none"/><line x1="320" y1="66" x2="366" y2="66" stroke="#F5A800" stroke-width="1.0"/><polygon points="321,66 324,47 327,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="334,66 337.5,48 341,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="340,66 343.5,44 347,66" stroke="#F5A800" stroke-width=".88" fill="none"/><polygon points="346,66 349.5,48 353,66" stroke="#F5A800" stroke-width=".82" fill="none"/><polygon points="359,66 362,47 365,66" stroke="#F5A800" stroke-width=".82" fill="none"/><line x1="332" y1="66" x2="332" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="344" y1="66" x2="344" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="356" y1="66" x2="356" y2="162" stroke="#F5A800" stroke-width=".3" opacity=".7"/><line x1="100" y1="162" x2="430" y2="162" stroke="#7A7672" stroke-width=".85"/><path d="M 100,168 Q 265,164 430,168" stroke="#7A7672" stroke-width=".6" fill="none" opacity=".5"/></svg>
+    <div style="font-size:8px;font-family:var(--fm,'Fira Code',monospace);letter-spacing:.18em;text-transform:uppercase;color:#8A8480;text-align:center;margin-top:6px;">LUKA<span style="color:var(--gold,#F5A800);">LAB</span> · AI Creative</div>
   </div>
 
-  <!-- Mode: setup (first time) or unlock -->
-  <div id="lock-setup" style="display:none;width:100%;max-width:320px;text-align:center;">
-    <div style="font-size:14px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:6px;">Create your Forge PIN</div>
-    <div style="font-size:12px;color:var(--ink4,#524E4A);margin-bottom:24px;line-height:1.6;">
-      Your financial data will be encrypted locally.<br>Recovery: clear &amp; re-pull from Cloudflare.
-    </div>
-    <div id="lock-pass-new-wrap" style="margin-bottom:10px;"></div>
-    <div id="lock-pass-confirm-wrap" style="margin-bottom:16px;"></div>
-    <div id="lock-setup-err" style="color:#F87171;font-size:12px;margin-bottom:10px;min-height:16px;"></div>
-    <button onclick="forgeSetupPIN()"
-      style="width:100%;background:var(--gold,#F5A800);color:#000;border:none;border-radius:8px;
-             padding:15px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
-      Create PIN &amp; Encrypt Data
-    </button>
-    <div style="margin-top:12px;font-size:11px;color:var(--ink4,#524E4A);line-height:1.6;">
-      Use a passphrase you'll remember — minimum 4 characters.<br>
-      <strong style="color:var(--ink3,#8A857E);">Forgotten PIN = pull fresh from Cloudflare.</strong>
-    </div>
+  <!-- PIN prompt label -->
+  <div id="lock-prompt" style="font-size:14px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:20px;min-height:22px;text-align:center;"></div>
+
+  <!-- PIN dot display — shows 6 dots filling as digits are entered -->
+  <div id="lock-dots" style="display:flex;gap:12px;margin-bottom:8px;justify-content:center;"></div>
+
+  <!-- Error message -->
+  <div id="lock-err" style="color:#F87171;font-size:12px;margin-bottom:16px;min-height:18px;text-align:center;"></div>
+
+  <!-- PIN pad — buttons only, no inputs, iOS credential manager cannot fire -->
+  <div id="lock-pad" style="display:grid;grid-template-columns:repeat(3,72px);gap:10px;justify-content:center;">
+    <!-- Digits 1–9 -->
+    <button class="pin-btn" onclick="forgePinDigit('1')">1</button>
+    <button class="pin-btn" onclick="forgePinDigit('2')">2</button>
+    <button class="pin-btn" onclick="forgePinDigit('3')">3</button>
+    <button class="pin-btn" onclick="forgePinDigit('4')">4</button>
+    <button class="pin-btn" onclick="forgePinDigit('5')">5</button>
+    <button class="pin-btn" onclick="forgePinDigit('6')">6</button>
+    <button class="pin-btn" onclick="forgePinDigit('7')">7</button>
+    <button class="pin-btn" onclick="forgePinDigit('8')">8</button>
+    <button class="pin-btn" onclick="forgePinDigit('9')">9</button>
+    <!-- Bottom row: backspace, 0, confirm -->
+    <button class="pin-btn pin-btn-ghost" onclick="forgePinBack()">⌫</button>
+    <button class="pin-btn" onclick="forgePinDigit('0')">0</button>
+    <button class="pin-btn pin-btn-gold" id="lock-confirm-btn" onclick="forgePinConfirm()">✓</button>
   </div>
 
-  <!-- Face ID offer — shown after passphrase setup, before first unlock -->
-  <div id="lock-bio-offer" style="display:none;width:100%;max-width:320px;text-align:center;">
-    <div style="font-size:22px;margin-bottom:10px;">🔐</div>
-    <div style="font-size:15px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:8px;">Enable Face ID?</div>
-    <div style="font-size:12px;color:var(--ink4,#524E4A);margin-bottom:24px;line-height:1.65;">
-      Tap your face to unlock Forge instead of typing your passphrase.<br>
-      You can always use your passphrase as a backup.
-    </div>
-    <button onclick="forgeRegisterBiometric()"
-      style="width:100%;background:var(--gold,#F5A800);color:#000;border:none;border-radius:8px;
-             padding:15px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">
-      Enable Face ID / Touch ID
-    </button>
-    <button onclick="forgeSkipBiometric()"
-      style="width:100%;background:transparent;border:1px solid rgba(255,255,255,.12);color:var(--ink3,#8A857E);
-             border-radius:8px;padding:13px;font-size:13px;cursor:pointer;font-family:inherit;">
-      Skip for now
-    </button>
-  </div>
+  <!-- Face ID button — shown only when WebAuthn is registered -->
+  <button id="lock-bio-btn" style="display:none;margin-top:18px;background:transparent;
+    border:1px solid rgba(255,255,255,.12);color:var(--ink3,#8A857E);border-radius:8px;
+    padding:13px 32px;font-size:14px;cursor:pointer;font-family:inherit;"
+    onclick="forgeUnlockBio()">
+    🔐 Use Face ID / Touch ID
+  </button>
 
-  <div id="lock-unlock" style="display:none;width:100%;max-width:320px;text-align:center;">
-    <div style="font-size:14px;font-weight:600;color:var(--ink,#EEEAE4);margin-bottom:20px;">Enter your passphrase</div>
-    <div id="lock-pass-wrap" style="margin-bottom:10px;"></div>
-    <div id="lock-err" style="color:#F87171;font-size:12px;margin-bottom:10px;min-height:16px;"></div>
-    <button id="lock-btn" onclick="forgeUnlock()"
-      style="width:100%;background:var(--gold,#F5A800);color:#000;border:none;border-radius:8px;
-             padding:15px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">
-      Unlock Forge
-    </button>
-    <button id="lock-bio-btn" style="display:none;width:100%;background:transparent;
-      border:1px solid rgba(255,255,255,.12);color:var(--ink3,#8A857E);border-radius:8px;
-      padding:13px;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:10px;"
-      onclick="forgeUnlockBio()">
-      🔐 Use Face ID / Touch ID
-    </button>
-    <button onclick="forgeForgotPIN()"
-      style="background:transparent;border:none;color:var(--ink4,#524E4A);font-size:12px;
-             cursor:pointer;font-family:inherit;text-decoration:underline;padding:4px;">
-      Forgot passphrase?
-    </button>
-  </div>
+  <!-- Forgot PIN — shown only on unlock screen -->
+  <button id="lock-forgot-btn" style="display:none;margin-top:12px;background:transparent;border:none;
+    color:#524E4A;font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;padding:4px;"
+    onclick="forgeForgotPIN()">
+    Forgot PIN?
+  </button>
 
-  <!-- Spinner shown during crypto ops -->
-  <div id="lock-spinner" style="display:none;margin-top:20px;">
+  <!-- Spinner during crypto ops -->
+  <div id="lock-spinner" style="display:none;margin-top:20px;text-align:center;">
     <div style="width:28px;height:28px;border:2px solid rgba(245,168,0,.25);border-top-color:var(--gold,#F5A800);
                 border-radius:50%;animation:lock-spin .7s linear infinite;margin:0 auto;"></div>
-    <div id="lock-spinner-lbl" style="font-size:11px;color:var(--ink4,#524E4A);margin-top:8px;letter-spacing:.06em;">Encrypting…</div>
+    <div id="lock-spinner-lbl" style="font-size:11px;color:#7A7672;margin-top:8px;letter-spacing:.06em;">Working…</div>
   </div>
 
   <style>
     @keyframes lock-spin { to { transform:rotate(360deg); } }
-    #lock-pass:focus, #lock-pass-new:focus, #lock-pass-confirm:focus {
-      border-color:var(--gold,#F5A800);outline:none;
+    .pin-btn {
+      width:72px;height:72px;border-radius:50%;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      color:var(--ink,#EEEAE4);
+      font-size:22px;font-weight:300;
+      font-family:var(--font-d,'Georgia,serif');
+      cursor:pointer;
+      -webkit-tap-highlight-color:transparent;
+      transition:background .12s;
     }
+    .pin-btn:active { background:rgba(255,255,255,.15); }
+    .pin-btn-ghost { background:transparent;border-color:transparent;color:#7A7672;font-size:20px; }
+    .pin-btn-gold  { background:var(--gold,#F5A800);border-color:var(--gold,#F5A800);color:#000;font-size:22px; }
+    .pin-btn-gold:active { background:#d48f00; }
+    .pin-dot {
+      width:14px;height:14px;border-radius:50%;
+      border:1.5px solid rgba(255,255,255,.25);
+      background:transparent;
+      transition:background .15s,border-color .15s;
+    }
+    .pin-dot.filled {
+      background:var(--gold,#F5A800);
+      border-color:var(--gold,#F5A800);
+    }
+    .pin-dot.error { border-color:#F87171;background:#F87171; }
   </style>
 </div>
 
@@ -1659,479 +1662,189 @@ function srcBadge(src) {
 
 // ── PORTED FROM DESKTOP (P&L + Net Worth tabs) ─────────────────────────────
 QUICKEN_CAT_MAP = {
-  'net salary':'paycheck','salary':'paycheck','wages':'paycheck','paycheck':'paycheck','bonus':'paycheck',
-  'other inc':'other_inc','interest inc':'other_inc','_divinc':'other_inc','_rlzdgain':'other_inc',
-  'interest income':'other_inc','dividend income':'other_inc','rental income':'other_inc',
-  'freelance':'other_inc','consulting':'other_inc','fees & charges:bank fee':'other_inc',
-  'home:mortgage':'mortgage','mortgage':'mortgage','home:rent':'mortgage','rent':'mortgage','hoa':'mortgage',
-  'auto & transport:auto payment':'car','auto & transport:auto insurance':'car','auto & transport:registration':'car',
-  'financial:life insurance':'insurance','financial':'insurance','insurance':'insurance',
-  'education:tuition':'education','education':'education',
-  'kids:kids activities':'childcare','kids':'childcare','kids:toys':'childcare',
-  'bills & utilities:utilities':'electric','bills & utilities':'electric',
-  'bills & utilities:mobile phone':'cell','bills & utilities:credit card payment':'other',
-  'food & dining:groceries':'groceries','food & dining:restaurants':'restaurants',
-  'food & dining:fast food':'restaurants','food & dining:coffee shops':'restaurants',
-  'food & dining:alcohol & bars':'restaurants','food & dining':'groceries',
-  'auto & transport:gas & fuel':'gas_car','auto & transport:parking':'transit',
-  'auto & transport:tolls':'transit','auto & transport:rental car & taxi':'transit',
-  'auto & transport:car wash':'transit','auto & transport:service & parts':'car','auto & transport':'gas_car',
-  'health & fitness:pharmacy':'healthcare','health & fitness:doctor':'healthcare',
-  'health & fitness:dentist':'healthcare','health & fitness:eyecare':'healthcare',
-  'health & fitness:gym':'personal','health & fitness:sports':'entertainment','health & fitness':'healthcare',
-  'entertainment':'entertainment','entertainment:amusement':'entertainment',
-  'entertainment:movies & dvds':'entertainment','entertainment:music':'subscriptions',
-  'entertainment:arts':'entertainment','media subscriptions':'subscriptions',
-  'shopping':'household','shopping:clothing':'clothing','shopping:electronics & software':'household',
-  'shopping:books':'household','shopping:sporting goods':'entertainment','shopping:hobbies':'entertainment',
-  'home:home supplies':'household','home:home improvement':'household','home:home services':'household',
-  'home:furnishings':'household','home:lawn & garden':'household',
-  'personal care':'personal','personal care:hair':'personal','personal care:spa & massage':'personal',
-  'kira self care':'personal','chris self care':'personal',
-  'gifts & donations:gift':'gifts','gifts & donations:charity':'gifts','gifts & donations':'gifts',
-  'travel':'travel','travel:hotel':'travel','travel:air travel':'travel','travel:vacation':'travel',
-  'travel:rental car & taxi':'transit','pets:vet':'healthcare','pets:pet food & supplies':'household',
-  'shipping':'household','cash & atm':'other','fees & charges':'other',
-  'fees & charges:trade commissions':'other_inc','dues':'other','tax:fed':'other','tax:state':'other',
-  'transfer':'other',
-};// ════════════════════════════════════════════════
-// NAVIGATION
-// ════════════════════════════════════════════════
+  // ── Income ──────────────────────────────────────────────────────────────────
+  'net salary':                        'paycheck',
+  'salary':                            'paycheck',
+  'wages':                             'paycheck',
+  'paycheck':                          'paycheck',
+  'bonus':                             'paycheck',
+  'other inc':                         'other_inc',
+  'interest inc':                      'other_inc',
+  '_divinc':                           'other_inc',
+  '_rlzdgain':                         'other_inc',
+  'interest income':                   'other_inc',
+  'dividend income':                   'other_inc',
+  'rental income':                     'other_inc',
+  'freelance':                         'other_inc',
+  'consulting':                        'other_inc',
+  'fees & charges:trade commissions':  'other_inc',  // investment trade commissions as income offset
 
-// Income = non-transfer positive transactions (payroll, freelance, dividends, etc.)
+  // ── Non-operating / excluded from IS ─────────────────────────────────────
+  'fees & charges:bank fee':           'other',   // bank fees = expense, not income
+  'fees & charges:finance charge':     'other',
+  'fees & charges':                    'other',
+  'cash & atm':                        'other',
+  'dues':                              'other',
+  'tax:fed':                           'other',
+  'tax:state':                         'other',
+  'tax:local':                         'other',
+  'tax':                               'other',
+  'transfer':                          'other',
+  'uncategorized':                     'other',
+  // CC payments are transfers — handled by isTransfer(); mapping here prevents
+  // them appearing as 'electric' via the broad 'bills & utilities' fallback
+  'bills & utilities:credit card payment': 'other',
+  'bills & utilities:online payment':  'other',
+  'payment':                           'other',
 
-function isTransfer(t) {
-  if (t.isTransfer) return true;
-  const cat = (t.category || '').trim();
-  const pay = (t.payee   || '').trim().toLowerCase();
+  // ── Housing ──────────────────────────────────────────────────────────────────
+  'home:mortgage':                     'mortgage',
+  'mortgage':                          'mortgage',
+  'home:rent':                         'mortgage',
+  'rent':                              'mortgage',
+  'hoa':                               'mortgage',
+  'home:hoa':                          'mortgage',
 
-  // 1. Quicken bracket-category format [AccountName] = always a transfer
-  if (/^\[.*\]$/.test(cat)) return true;
+  // ── Auto ─────────────────────────────────────────────────────────────────────
+  'auto & transport:auto payment':     'car',
+  'auto & transport:auto insurance':   'car',
+  'auto & transport:registration':     'car',
+  'auto & transport:service & parts':  'car',
+  // NOTE: 'auto & transport' broad fallback intentionally omitted — too broad;
+  // specific subcategories below will match; unknown auto → KW_MAP or 'other'
 
-  // 2. Explicit transfer / CC payment categories
-  if (/^(transfer|credit card payment|cc payment|card payment|online payment|payment thank you)$/i.test(cat)) return true;
+  // ── Insurance (Health/Life) ──────────────────────────────────────────────────
+  'financial:life insurance':          'insurance',
+  'financial:disability insurance':    'insurance',
+  'financial:dental insurance':        'insurance',
+  'financial:vision insurance':        'insurance',
+  'financial:health insurance':        'insurance',
+  'insurance:health':                  'insurance',
+  'insurance:life':                    'insurance',
+  'insurance:dental':                  'insurance',
+  'insurance:vision':                  'insurance',
+  'insurance':                         'insurance',
+  // 'financial' alone NOT mapped — too broad (includes bank fees, investments, etc.)
 
-  // 3. Apple Card: treat as transfer when we have Apple Card detail for that month
-  //    This means the lump-sum CC payment is replaced by individual Apple Card txns
-  if (/apple card/i.test(cat) || /apple card/i.test(pay)) {
-    const txnMonth = (t.date || '').slice(0, 7);
-    const sp = typeof txns !== 'undefined' ? txns : [];
-    const hasDetail = sp.some(d => d._source === 'apple_card' && (d.date||'').slice(0,7) === txnMonth);
-    if (hasDetail) return true; // detail loaded → payment is a transfer
-    // No detail → fall through (payment stays as expense so you know to upload detail)
-  }
+  // ── Education ────────────────────────────────────────────────────────────────
+  'education:tuition':                 'education',
+  'education:books & supplies':        'education',
+  'education:student loan':            'education',
+  'education':                         'education',
 
-  // 4. Payee-based CC payment detection (negative amounts only)
-  if (t.amount < 0) {
-    if (/^(apple card payment|visa payment|mastercard payment|amex payment|american express payment|discover payment|citi payment|citibank payment|chase payment|capital one payment|barclays payment|synchrony payment|wells fargo payment|bank of america payment|us bank payment|usaa payment)$/i.test(pay)) return true;
-    // Generic "payment" payees on known CC account names
-    const acct = (t.account || '').toLowerCase();
-    if (/credit|visa|mastercard|amex|discover|sapphire|freedom|venture|platinum|rewards|card/i.test(acct) && /payment/i.test(pay)) return true;
-  }
+  // ── Childcare / Kids ─────────────────────────────────────────────────────────
+  'kids:kids activities':              'childcare',
+  'kids:sports':                       'childcare',
+  'kids:camp':                         'childcare',
+  'kids:music lessons':                'childcare',
+  'kids:tutoring':                     'childcare',
+  'kids:school':                       'childcare',
+  'kids:clothing':                     'clothing',   // kids clothing → clothing bucket
+  'kids:toys':                         'household',  // toys → household not childcare
+  'kids':                              'childcare',  // generic kids catch-all
 
-  // 5. Venmo / Zelle / PayPal transfers between own accounts
-  if (/^(venmo|zelle|paypal transfer|apple cash|google pay transfer)$/i.test(cat)) return true;
+  // ── Utilities — SPECIFIC subcategories listed BEFORE any broad catch-all ─────
+  'bills & utilities:utilities':       'electric',
+  'bills & utilities:gas & heat':      'gas_util',
+  'bills & utilities:water':           'water',
+  'bills & utilities:internet':        'internet',
+  'bills & utilities:television':      'internet',
+  'bills & utilities:mobile phone':    'cell',
+  'bills & utilities:home phone':      'cell',
+  // Broad 'bills & utilities' NOT mapped — let specific subcats match above;
+  // unknowns fall to KW_MAP (payee-based) for accurate utility routing
 
-  return false;
+  // ── Food ─────────────────────────────────────────────────────────────────────
+  'food & dining:groceries':           'groceries',
+  'food & dining:restaurants':         'restaurants',
+  'food & dining:fast food':           'restaurants',
+  'food & dining:coffee shops':        'restaurants',
+  'food & dining:alcohol & bars':      'restaurants',
+  'food & dining:food delivery':       'restaurants',
+  'food & dining':                     'groceries',   // unknown food → groceries
+
+  // ── Transport ────────────────────────────────────────────────────────────────
+  'auto & transport:gas & fuel':       'gas_car',
+  'auto & transport:parking':          'transit',
+  'auto & transport:tolls':            'transit',
+  'auto & transport:rental car & taxi':'transit',
+  'auto & transport:ride share':       'transit',
+  'auto & transport:car wash':         'household',  // car wash = household/personal
+  // 'auto & transport' broad fallback NOT mapped (too broad)
+
+  // ── Health & Fitness ─────────────────────────────────────────────────────────
+  'health & fitness:pharmacy':         'healthcare',
+  'health & fitness:doctor':           'healthcare',
+  'health & fitness:dentist':          'healthcare',
+  'health & fitness:eyecare':          'healthcare',
+  'health & fitness:medical':          'healthcare',
+  'health & fitness:therapist':        'healthcare',
+  'health & fitness:hospital':         'healthcare',
+  'health & fitness:gym':              'personal',
+  'health & fitness:sports':           'entertainment',
+  'health & fitness:outdoor rec':      'entertainment',
+  'health & fitness':                  'healthcare',  // generic health → healthcare
+
+  // ── Discretionary / Entertainment ────────────────────────────────────────────
+  'entertainment:amusement':           'entertainment',
+  'entertainment:movies & dvds':       'entertainment',
+  'entertainment:music':               'subscriptions',
+  'entertainment:arts':                'entertainment',
+  'entertainment:games':               'entertainment',
+  'entertainment:events':              'entertainment',
+  'entertainment':                     'entertainment',
+  'media subscriptions':               'subscriptions',
+
+  // ── Shopping / Household ─────────────────────────────────────────────────────
+  'shopping:clothing':                 'clothing',
+  'shopping:clothing:jewelry insurance':'clothing',
+  'shopping:electronics & software':   'household',
+  'shopping:books':                    'household',
+  'shopping:sporting goods':           'entertainment',
+  'shopping:hobbies':                  'entertainment',
+  'shopping:toys':                     'household',
+  'shopping':                          'household',   // generic shopping → household
+  'home:home supplies':                'household',
+  'home:home improvement':             'household',
+  'home:home services':                'household',
+  'home:furnishings':                  'household',
+  'home:lawn & garden':                'household',
+  'home:garden':                       'household',
+  'home:cleaning':                     'household',
+  'home':                              'household',   // generic home → household
+
+  // ── Personal Care ────────────────────────────────────────────────────────────
+  'personal care':                     'personal',
+  'personal care:hair':                'personal',
+  'personal care:spa & massage':       'personal',
+  'kira self care':                    'personal',
+  'chris self care':                   'personal',
+
+  // ── Gifts & Giving ───────────────────────────────────────────────────────────
+  'gifts & donations:gift':            'gifts',
+  'gifts & donations:charity':         'gifts',
+  'gifts & donations:charitable':      'gifts',
+  'gifts & donations':                 'gifts',
+
+  // ── Travel ───────────────────────────────────────────────────────────────────
+  'travel:hotel':                      'travel',
+  'travel:air travel':                 'travel',
+  'travel:vacation':                   'travel',
+  'travel:baggage':                    'travel',
+  'travel:rental car & taxi':          'transit',
+  'travel:parking':                    'transit',
+  'travel':                            'travel',
+
+  // ── Pets ─────────────────────────────────────────────────────────────────────
+  'pets:vet':                          'healthcare',
+  'pets:pet food & supplies':          'household',
+  'pets:grooming':                     'personal',
+  'pets':                              'household',
+
+  // ── Misc ─────────────────────────────────────────────────────────────────────
+  'shipping':                          'household',
+  // '--split--' intentionally NOT in this map — handled by classifyTxn special case
 }
-
-
-
-// CC credits / returns: positive amounts on CC accounts that offset expenses,
-// not household income. Genuine income (paycheck, cashback tagged as income) is preserved.
-function isCCCredit(t) {
-  if (t.amount <= 0) return false;
-  if (typeof isCreditAcct !== 'function' || !isCreditAcct(t.account)) return false;
-  const bk = classifyTxn(t);
-  if (bk === 'paycheck' || bk === 'other_inc') return false;
-  return true;
-}
-
-function isSavingsTransfer(t) {
-  if (!isTransfer(t)) return false;
-  const destAcct = (t.category||'').replace(/^\[|\]$/g,'').trim();
-  const type = typeof detectAcctType === 'function' ? detectAcctType(destAcct) : '';
-  if (type === 'investment') return true;
-  if (/fidelity|vanguard|schwab|empower|401k|ira|roth|hsa|529|college fund/i.test(t.payee||'')) return true;
-  return false;
-}
-
-function operatingSpendable(arr) {
-  return (arr || []).filter(t => !isTransfer(t));
-}
-
-function spendable(arr) {
-  return operatingSpendable(arr);
-}
-
-
-function isCreditAcct(acctName) {
-  if (typeof acctMeta !== 'undefined' && acctMeta && acctMeta[acctName]) {
-    return acctMeta[acctName].isCreditCard;
-  }
-  return detectAcctType(acctName) === 'credit';
-}
-
-// ════════════════════════════════════════════════
-// TRANSFER DETECTION
-// ════════════════════════════════════════════════
-// A transfer is an internal move between accounts — NOT a real expense.
-// Quicken marks these with [AccountName] bracket syntax in the category.
-// CC payments from checking to CC account = transfer (the CC charges are the real expenses).
-
-
-
-// ── SVG CHART ENGINE (ported from desktop) ──────────────────────────────────
-const COLORS = [
-  '#F5A800','#60A5FA','#2DD4BF','#F87171','#A78BFA',
-  '#34D399','#FB923C','#E879F9','#38BDF8','#4ADE80',
-  '#FCD34D','#F472B6','#818CF8','#6EE7B7','#FCA5A5'
-];
-
-function svgBar(elId, labels, datasets) {
-  const el = document.getElementById(elId);
-  if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
-  const W = Math.max(el.offsetWidth || 0, 300);
-  const H = Math.max(el.offsetHeight || 0, 180);
-  if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;font-family:var(--fm);">No data</div>'; return; }
-
-  const PAD = { t:12, r:16, b:52, l:58 };
-  const cW = W - PAD.l - PAD.r;
-  const cH = H - PAD.t - PAD.b;
-  const n  = labels.length;
-  const allVals = datasets.flatMap(d => d.data || []).filter(v => isFinite(v));
-  if (!allVals.length) return;
-
-  const maxV = Math.max(...allVals.map(Math.abs), 1);
-  const minV = Math.min(0, ...allVals);
-  const span = maxV - minV || 1;
-  const zeroY = cH * (maxV / span);
-
-  // Y grid + labels
-  const YTICKS = 4;
-  let grid = '', yLbls = '';
-  for (let i = 0; i <= YTICKS; i++) {
-    const v = minV + (span / YTICKS) * i;
-    const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
-    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
-    const lbl = Math.abs(v)>=1000 ? '$'+(v/1000).toFixed(0)+'K' : '$'+Math.round(v);
-    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="10" font-family="'DM Mono',monospace">${lbl}</text>`;
-  }
-
-  // Bars + invisible hit areas for tooltip
-  const nDS  = datasets.length;
-  const grpW = cW / n;
-  const barW = Math.max(Math.min((grpW / (nDS + 0.8)) - 1, 40), 3);
-  const off  = (grpW - barW * nDS) / 2;
-  let bars = '', hitAreas = '', legend = '';
-
-  datasets.forEach((ds, di) => {
-    const color = ds.backgroundColor || COLORS[di % COLORS.length];
-    const safeLabel = (ds.label||'').replace(/'/g, '&apos;');
-    legend += `<rect x="${di*90+PAD.l}" y="${H-16}" width="10" height="8" rx="2" fill="${color}"/>
-               <text x="${di*90+PAD.l+14}" y="${H-8}" fill="rgba(255,255,255,.5)" font-size="10" font-family="'DM Mono',monospace">${safeLabel}</text>`;
-    (ds.data || []).forEach((v, i) => {
-      if (!isFinite(v)) return;
-      const x  = (PAD.l + i * grpW + off + di * barW).toFixed(1);
-      const bH = Math.max((Math.abs(v) / span * cH).toFixed(1), 1);
-      const y  = (PAD.t + (v >= 0 ? zeroY - Math.abs(v)/span*cH : zeroY)).toFixed(1);
-      const fmtV = Math.abs(v)>=1000?'$'+(v/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
-      const tip = `${labels[i]} · ${safeLabel}: ${fmtV}`;
-      bars += `<rect x="${x}" y="${y}" width="${barW.toFixed(1)}" height="${bH}" rx="2" fill="${color}" opacity=".85"/>`;
-    });
-  });
-
-  // Per-column hit areas — all dataset values + computed net in one tooltip
-  labels.forEach(function(colLbl, ci) {
-    var parts = [String(colLbl)];
-    var incV = 0, expV = 0;
-    datasets.forEach(function(ds) {
-      var v = (ds.data||[])[ci];
-      if (!isFinite(v)) return;
-      var av=Math.abs(v), fv=av>=1000?(av/1000).toFixed(1)+'K':Math.round(av).toString();
-      var sign=v>=0?'+':'-';
-      parts.push((ds.label||'').replace(/['"&<>]/g,' ')+': '+sign+'$'+fv);
-      if(/income/i.test(ds.label||'')) incV=v;
-      if(/expense/i.test(ds.label||'')) expV=v;
-    });
-    if(incV&&expV){var net=incV-Math.abs(expV),nAbs=Math.abs(net),nFv=nAbs>=1000?(nAbs/1000).toFixed(1)+'K':Math.round(nAbs).toString();parts.push('Net: '+(net>=0?'+':'-')+'$'+nFv);}
-    var colTip=parts.join('  |  ');
-    var dd=JSON.stringify({month:String(colLbl)}).replace(/"/g,'&quot;');
-    hitAreas+='<rect x="'+(PAD.l+ci*grpW).toFixed(1)+'" y="'+PAD.t+'" width="'+grpW.toFixed(1)+'" height="'+cH+'" fill="transparent" style="cursor:pointer;" data-tip="'+colTip.replace(/"/g,'&quot;')+'" data-drill="'+dd+'"/>';
-  });
-
-  // X labels — adaptive: skip labels to prevent overlap
-  // Calculate how many chars fit per slot
-  const charsPerSlot = Math.floor(grpW / 6.5); // ~6.5px per char at font-size 10
-  const minStep = Math.ceil(n / Math.max(1, Math.floor(cW / 48)));
-  let xLbls = '';
-  labels.forEach((lbl, i) => {
-    if (i % minStep !== 0 && i !== n-1) return;
-    const x = (PAD.l + i * grpW + grpW / 2).toFixed(1);
-    const s = String(lbl).length > charsPerSlot ? String(lbl).slice(-Math.max(4, charsPerSlot)) : String(lbl);
-    xLbls += `<text x="${x}" y="${PAD.t+cH+16}" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10" font-family="'DM Mono',monospace">${s}</text>`;
-  });
-
-  const zY = (PAD.t + zeroY).toFixed(1);
-  const zeroLine = `<line x1="${PAD.l}" y1="${zY}" x2="${W-PAD.r}" y2="${zY}" stroke="rgba(255,255,255,.18)" stroke-width="1"/>`;
-
-  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:hidden;">
-    ${grid}${zeroLine}${bars}${yLbls}${xLbls}${legend}${hitAreas}
-  </svg>`;
-  bindChartTips(el);
-}
-
-
-function svgLine(elId, labels, datasets) {
-  const el = document.getElementById(elId);
-  if (!el) return;
-  const W = Math.max(el.offsetWidth || 0, 300);
-  const H = Math.max(el.offsetHeight || 0, 140);
-  if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>'; return; }
-
-  const PAD = { t:10, r:16, b:30, l:58 };
-  const cW  = W - PAD.l - PAD.r;
-  const cH  = H - PAD.t - PAD.b;
-  const n   = labels.length;
-  const allVals = datasets.flatMap(d => d.data || []).filter(v => isFinite(v));
-  if (!allVals.length) return;
-
-  const maxV = Math.max(...allVals, 1);
-  const minV = Math.min(0, ...allVals);
-  const span = maxV - minV || 1;
-
-  let grid = '', yLbls = '';
-  for (let i = 0; i <= 4; i++) {
-    const v = minV + (span / 4) * i;
-    const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
-    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
-    const lbl = Math.abs(v)>=1000?'$'+(v/1000).toFixed(0)+'K':'$'+Math.round(v);
-    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="10" font-family="'DM Mono',monospace">${lbl}</text>`;
-  }
-
-  let paths = '', areas = '', dots = '', hitAreas = '';
-  datasets.forEach((ds, di) => {
-    const color = ds.color || ds.borderColor || COLORS[di];
-    const pts = (ds.data || []).map((v, i) => {
-      const x = (PAD.l + (i / Math.max(n-1,1)) * cW).toFixed(1);
-      const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
-      return {x, y, v, lbl:labels[i]};
-    });
-    if (pts.length < 2) return;
-    const d = 'M' + pts.map(p=>p.x+','+p.y).join(' L');
-    paths += `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
-    if (ds.fill) {
-      const last = pts[pts.length-1];
-      areas += `<path d="${d} L${last.x},${PAD.t+cH} L${PAD.l},${PAD.t+cH} Z" fill="${color}" opacity=".12"/>`;
-    }
-    pts.forEach(function(p) {
-      dots += '<circle cx="'+p.x+'" cy="'+p.y+'" r="3" fill="'+color+'" opacity=".8"/>';
-    });
-  });
-
-  const minStep = Math.ceil(n / Math.max(1, Math.floor(cW / 48)));
-  let xLbls = '';
-  labels.forEach((lbl, i) => {
-    if (i % minStep !== 0 && i !== n-1) return;
-    const x = (PAD.l + (i / Math.max(n-1,1)) * cW).toFixed(1);
-    xLbls += `<text x="${x}" y="${H-4}" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10" font-family="'DM Mono',monospace">${String(lbl).slice(-5)}</text>`;
-  });
-  // Vertical strip hit areas — show all datasets at each x position
-  var slotPx = n > 1 ? cW / (n-1) : cW;
-  labels.forEach(function(lbl2, ii) {
-    var stripCx = PAD.l + (ii / Math.max(n-1,1)) * cW;
-    var tp = [String(lbl2)];
-    datasets.forEach(function(ds) {
-      var v=(ds.data||[])[ii];
-      if(v===undefined||!isFinite(v))return;
-      var av=Math.abs(v),fv=av>=1000?(av/1000).toFixed(1)+'K':Math.round(av).toString();
-      tp.push((ds.label||ds.color||'').replace(/['"&<>]/g,' ')+(v<0?' -':' +')+'$'+fv);
-    });
-    var sw=Math.max(slotPx*0.9,12);
-    hitAreas+='<rect x="'+(stripCx-sw/2).toFixed(1)+'" y="'+PAD.t+'" width="'+sw.toFixed(1)+'" height="'+cH+'" fill="transparent" style="cursor:crosshair;" data-tip="'+tp.join('  |  ').replace(/"/g,'&quot;')+'"/>';
-  });
-
-  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:hidden;">
-    ${grid}${areas}${paths}${dots}${yLbls}${xLbls}${hitAreas}
-  </svg>`;
-  bindChartTips(el);
-}
-
-
-function svgHBar(elId, labels, values, colors, bucketKeys) {
-  const el = document.getElementById(elId);
-  if (!el) return;
-  if (!labels.length) { el.innerHTML = '<div style="padding:20px;color:var(--ink4);font-size:12px;">No data</div>'; return; }
-  const W    = Math.max(el.offsetWidth || 0, 300);
-  const rowH = 34;
-  const H    = labels.length * rowH + 16;
-  const PAD  = { l:150, r:70, t:8, b:8 };
-  const cW   = W - PAD.l - PAD.r;
-  const maxV = Math.max(...values.map(Math.abs), 1);
-  let rows   = '';
-  labels.forEach((lbl, i) => {
-    const v     = values[i] || 0;
-    const bW    = Math.max((Math.abs(v) / maxV * cW), 2).toFixed(1);
-    const y     = PAD.t + i * rowH;
-    const color = colors ? colors[i % colors.length] : COLORS[i % COLORS.length];
-    const valS  = Math.abs(v)>=1000?'$'+(Math.abs(v)/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
-    const lShort= String(lbl).length > 20 ? String(lbl).slice(0,19)+'…' : String(lbl);
-    const tip   = `${lbl}: ${valS}`;
-    rows += `<text x="${PAD.l-10}" y="${(y+rowH/2).toFixed(1)}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.7)" font-size="11" font-family="'DM Sans',sans-serif">${lShort}</text>`;
-    const drillKey = (bucketKeys && bucketKeys[i]) ? String(bucketKeys[i]) : String(lbl);
-    const catDrill = JSON.stringify({cat: drillKey}).replace(/"/g,'&quot;');
-    rows += `<rect x="${PAD.l}" y="${(y+rowH*.18).toFixed(1)}" width="${bW}" height="${(rowH*.64).toFixed(1)}" rx="3" fill="${color}" opacity=".85"
-      style="cursor:pointer;"
-      data-tip="${tip.replace(/'/g,'&apos;').replace(/"/g,'&quot;')}"
-      data-drill="${catDrill}"/>`;
-    rows += `<text x="${(PAD.l+parseFloat(bW)+6).toFixed(1)}" y="${(y+rowH/2).toFixed(1)}" dominant-baseline="middle" fill="rgba(255,255,255,.5)" font-size="10" font-family="'DM Mono',monospace">${valS}</text>`;
-  });
-  el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;">${rows}</svg>`;
-  bindChartTips(el);
-}
-
-
-// ════════════════════════════════════════════════
-// CHART.JS DONUT (still using Chart.js — works fine)
-// ════════════════════════════════════════════════
-
-function svgWaterfall(elId, items) {
-  var el = document.getElementById(elId);
-  if (!el) return;
-  var W = Math.max(el.offsetWidth || 0, 300);
-  var H = Math.max(el.offsetHeight || 0, 220);
-  if (!items || !items.length) {
-    el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
-    return;
-  }
-  var PAD = {t:20,r:16,b:52,l:64};
-  var cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b, n = items.length;
-  var running = 0;
-  var segs = items.map(function(item) {
-    var val = item.value || 0;
-    var start = item.type === 'total' ? 0 : running;
-    var end2  = item.type === 'total' ? val : running + val;
-    if (item.type !== 'total') running += val;
-    return {label:item.label, value:val, type:item.type, color:item.color, start:start, end:end2};
-  });
-  var allV = [];
-  segs.forEach(function(s){allV.push(s.start,s.end);});
-  allV = allV.filter(isFinite);
-  var minV = Math.min.apply(null,[0].concat(allV));
-  var maxV = Math.max.apply(null,allV.concat([1]));
-  var span = maxV - minV || 1;
-  function toY(v){return PAD.t + cH - cH*(v-minV)/span;}
-  function fmtM(v){var a=Math.abs(v);return a>=1000?'$'+(a/1000).toFixed(1)+'K':'$'+Math.round(a);}
-  var gap=cW/n, barW=Math.max(Math.min(gap*0.65,52),6);
-  var grid='',yLbls='',connectors='',bars='',hitAreas='',xLbls='';
-  for(var gi=0;gi<=5;gi++){
-    var gv=minV+span*gi/5, gy=toY(gv).toFixed(1);
-    grid+='<line x1="'+PAD.l+'" y1="'+gy+'" x2="'+(W-PAD.r)+'" y2="'+gy+'" stroke="rgba(255,255,255,.05)" stroke-width="1"/>';
-    var gl=(gv<0?'-':'')+fmtM(gv);
-    yLbls+='<text x="'+(PAD.l-6)+'" y="'+gy+'" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="10" font-family="monospace">'+gl+'</text>';
-  }
-  var zY=toY(0).toFixed(1);
-  var zeroLine='<line x1="'+PAD.l+'" y1="'+zY+'" x2="'+(W-PAD.r)+'" y2="'+zY+'" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>';
-  for(var ci=1;ci<segs.length;ci++){
-    var prev=segs[ci-1],cur2=segs[ci];
-    var cx1=(PAD.l+(ci-1)*gap+gap/2+barW/2).toFixed(1);
-    var cx2=(PAD.l+ci*gap+gap/2-barW/2).toFixed(1);
-    var connY=cur2.type==='total'?toY(0).toFixed(1):toY(prev.end).toFixed(1);
-    connectors+='<line x1="'+cx1+'" y1="'+connY+'" x2="'+cx2+'" y2="'+connY+'" stroke="rgba(255,255,255,.12)" stroke-width="1" stroke-dasharray="3,2"/>';
-  }
-  segs.forEach(function(s,i){
-    var cx=PAD.l+i*gap+gap/2, x=(cx-barW/2).toFixed(1);
-    var yTop=toY(Math.max(s.start,s.end)).toFixed(1);
-    var yBot=toY(Math.min(s.start,s.end)).toFixed(1);
-    var bH=Math.max(parseFloat(yBot)-parseFloat(yTop),2).toFixed(1);
-    var dc=s.value>=0?'rgba(45,212,191,.85)':'rgba(248,113,113,.85)';
-    var color=s.type==='total'?'rgba(245,168,0,.9)':(s.color||dc);
-    bars+='<rect x="'+x+'" y="'+yTop+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="2" fill="'+color+'"/>';
-    var valY=s.value>=0?(parseFloat(yTop)-4).toFixed(1):(parseFloat(yTop)+parseFloat(bH)+11).toFixed(1);
-    var sign=s.value>=0?'+':'';
-    bars+='<text x="'+cx.toFixed(1)+'" y="'+valY+'" text-anchor="middle" fill="rgba(255,255,255,.75)" font-size="9" font-family="monospace">'+sign+fmtM(s.value)+'</text>';
-    if(s.type!=='total'){bars+='<circle cx="'+cx.toFixed(1)+'" cy="'+toY(s.end).toFixed(1)+'" r="3" fill="rgba(245,168,0,.8)"/>';}
-    var tipT=s.type==='total'?'Net total':(s.value>=0?'Adds':'Reduces');
-    var tip=s.label+': '+sign+fmtM(s.value)+' | '+tipT+' | Running: '+(s.type!=='total'?fmtM(s.end):'final');
-    hitAreas+='<rect x="'+(PAD.l+i*gap).toFixed(1)+'" y="'+PAD.t+'" width="'+gap.toFixed(1)+'" height="'+cH+'" fill="transparent" style="cursor:default;" data-tip="'+tip.replace(/"/g,"'")+'" />';
-    var sl=s.label.length>11?s.label.slice(0,10)+String.fromCharCode(8230):s.label;
-    xLbls+='<text x="'+cx.toFixed(1)+'" y="'+(H-PAD.b+16)+'" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="9" font-family="monospace">'+sl+'</text>';
-  });
-  el.innerHTML='<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'+grid+zeroLine+connectors+bars+yLbls+xLbls+hitAreas+'</svg>';
-  bindChartTips(el);
-}
-
-
-function makeDonut(canvasId, labels, values, existingChart) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return null;
-  if (existingChart) { try { existingChart.destroy(); } catch(e) {} }
-  // Set explicit dimensions
-  const par = canvas.parentElement;
-  const h = par ? (par.offsetHeight || 220) : 220;
-  const w = par ? (par.offsetWidth  || 300) : 300;
-  canvas.width  = w;
-  canvas.height = h;
-  canvas.style.width  = '100%';
-  canvas.style.height = '100%';
-  return new Chart(canvas, {
-    type: 'doughnut',
-    data: {
-      labels,
-      datasets: [{ data: values, backgroundColor: COLORS.slice(0,labels.length), borderWidth: 1, borderColor: 'rgba(255,255,255,.06)' }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '58%',
-      plugins: {
-        legend: { position: 'right', labels: { font:{size:10}, boxWidth:8, color:'rgba(255,255,255,.55)', padding:6 } }
-      }
-    }
-  });
-}
-
-// ════════════════════════════════════════════════
-// MONTHLY DATA HELPER
-// ════════════════════════════════════════════════
-
-function showChartTip(e, text) {
-  const tip = document.getElementById('chartTip');
-  if (!tip) return;
-  const hasDrill = e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.drill;
-  tip.innerHTML = (text||'').replace(/&apos;/g,"'").replace(/&quot;/g,'"') +
-    (hasDrill ? '<span style="display:block;font-size:9px;color:var(--gold);margin-top:3px;">↗ click to view transactions</span>' : '');
-  tip.style.display = 'block';
-  positionChartTip(e);
-}
-
-function hideChartTip() {
-  const tip = document.getElementById('chartTip');
-  if (tip) tip.style.display = 'none';
-}
-
-function positionChartTip(e) {
-  const tip = document.getElementById('chartTip');
-  if (!tip || tip.style.display === 'none') return;
-  const x = e.clientX + 14, y = e.clientY - 10;
-  const tw = tip.offsetWidth + 20, th = tip.offsetHeight + 10;
-  tip.style.left = (x + tw > window.innerWidth  ? e.clientX - tw : x) + 'px';
-  tip.style.top  = (y + th > window.innerHeight ? e.clientY - th : y) + 'px';
-}
-
-function bindChartTips(container) {
-  if (!container) return;
-  container.querySelectorAll('[data-tip]').forEach(function(el) {
-    el.addEventListener('mouseenter', function(e) { showChartTip(e, this.dataset.tip); });
-    el.addEventListener('mouseleave', hideChartTip);
-    if (el.dataset && el.dataset.drill) {
-      el.style.cursor = 'pointer';
-      el.addEventListener('click', function() { drillFromChart(this.dataset.drill); });
-    }
-  });
-}
-document.addEventListener('mousemove', positionChartTip);
-
 
 const KW_MAP = [
   // ── Income ─────────────────────────────────────────────────────────────────
@@ -2380,6 +2093,50 @@ function isNonOperatingCredit(t) {
 }
 
 
+function isTransfer(t) {
+  if (t.isTransfer) return true;
+  const cat    = (t.category || '').trim();
+  const catLow = cat.toLowerCase();
+  const pay    = (t.payee   || '').trim().toLowerCase();
+
+  // 1. Quicken bracket-category [AccountName] = internal account transfer
+  if (/^\[.*\]$/.test(cat)) return true;
+
+  // 2. Explicit transfer / CC payment categories — handle full Quicken subcategory path
+  //    e.g. "Bills & Utilities:Credit Card Payment" or just "Credit Card Payment"
+  if (/transfer$/i.test(catLow)) return true;
+  if (/credit card payment/i.test(catLow)) return true;
+  if (/^(cc payment|card payment|online payment|payment thank you)$/i.test(catLow)) return true;
+
+  // 3. Apple Card: any side of the Apple Card payment (with OR without space in name)
+  //    Treat as transfer ONLY when we have Apple Card detail loaded for that month
+  if (/apple.?card/i.test(catLow) || /apple.?card/i.test(pay) || /web recur applecard/i.test(pay)) {
+    const txnMonth = (t.date || '').slice(0, 7);
+    const sp = typeof txns !== 'undefined' ? txns : [];
+    const hasDetail = sp.some(d => d._source === 'apple_card' && (d.date||'').slice(0,7) === txnMonth);
+    if (hasDetail) return true;
+    // No Apple detail → keep as expense (user needs to upload the CSV)
+  }
+
+  // 4. Payee-based CC payment detection — negative amounts (debit from checking)
+  if (t.amount < 0) {
+    if (/^(apple card|apple card payment|web recur applecard|visa payment|mastercard payment|amex payment|american express payment|discover payment|citi payment|citibank payment|chase payment|capital one payment|barclays payment|synchrony payment|wells fargo payment|bank of america payment|us bank payment|usaa payment)$/i.test(pay)) return true;
+    // Generic "Web Recur *" CC autopay pattern (Quicken online payment label)
+    if (/^web recur /i.test(pay)) return true;
+    // Generic: payment payee on a CC account
+    const acct = (t.account || '').toLowerCase();
+    if (/credit|visa|mastercard|amex|discover|sapphire|freedom|venture|platinum|rewards|card/i.test(acct) && /payment/i.test(pay)) return true;
+  }
+
+  // 5. Venmo / Zelle / PayPal / Apple Cash internal transfers
+  if (/^(venmo|zelle|paypal transfer|apple cash|google pay transfer)$/i.test(catLow)) return true;
+
+  return false;
+}
+
+// CC credits / returns: positive amounts on CC accounts that offset expenses,
+// not household income. Genuine income (paycheck, cashback tagged as income) is preserved.
+
 function classifyTxn(t) {
   const cat  = (t.category || '').toLowerCase().trim();
   const pay  = (t.payee    || '').toLowerCase().trim();
@@ -2387,9 +2144,18 @@ function classifyTxn(t) {
   // 1. Direct Quicken category match — highest trust, exact or substring
   if (QUICKEN_CAT_MAP[cat]) return QUICKEN_CAT_MAP[cat];
 
-  // 2. Partial match: Quicken subcategory hierarchy (e.g. "Food & Dining:Restaurants" matches "food & dining")
-  for (const [qcat, bucket] of Object.entries(QUICKEN_CAT_MAP)) {
-    if (cat.includes(qcat)) return bucket;
+  // 2. Prefix match: if category is "Food & Dining:Restaurants" and "Food & Dining:Restaurants"
+  //    isn't in the map, find the longest key that is a proper prefix of the category.
+  //    This prevents "Bills & Utilities:Gas & Heat" matching the broad "Bills & Utilities" → electric.
+  //    We look for keys where: cat === key  OR  cat starts with key + ':'
+  {
+    let bestKey = '', bestBucket = '';
+    for (const [qcat, bucket] of Object.entries(QUICKEN_CAT_MAP)) {
+      if ((cat === qcat || cat.startsWith(qcat + ':')) && qcat.length > bestKey.length) {
+        bestKey = qcat; bestBucket = bucket;
+      }
+    }
+    if (bestKey) return bestBucket;
   }
 
   // 3. Special handling for Quicken --Split-- transactions.
@@ -2402,20 +2168,21 @@ function classifyTxn(t) {
     if (/house loan|rocket mortgage|pennymac|mr\.? cooper|nationstar|wells fargo home|chase home|quicken loan|loancare|freedom mortgage|newrez|loanDepot|flagstar|sps |select portfolio/i.test(pay)) return 'mortgage';
     // Car loans
     if (/palisade|hyundai|honda financial|hmf |gm financial|ford motor credit|toyota financial|nissan motor|chrysler capital|ally financial.*auto|auto loan|car loan|chevrolet/i.test(pay)) return 'car';
-    // Insurance
+    // Insurance (home, auto, life, umbrella)
     if (/liberty mutual|state farm|allstate|geico|nationwide|progressive|usaa|travelers|amica|erie insurance|auto-owners|farmers insurance|chubb|metlife|prudential.*ins|new york life|guardian.*ins/i.test(pay)) return 'insurance';
-    // Utilities
+    // Utilities (electric, gas, water)
     if (/duquesne light|peoples gas|equitable gas|columbia gas|dominion energy|atmos energy|pg&e|con ed|national grid|water authority|municipal auth|sewage|peco|pseg/i.test(pay)) return 'utilities';
     // Internet / phone / cable
     if (/comcast|xfinity|verizon|at&t|t-mobile|spectrum|cox communications|dish network|directv|frontier comm|centurylink|lumen/i.test(pay)) return 'subscriptions';
-    // Investment / retirement
+    // Investment / retirement splits
     if (/retirement|fidelity|vanguard|401k|ira|lifepath|blackrock|dodge|t rowe|schwab|merrill|empower|principal financial/i.test(pay)) return 'auto_save';
-    // 529
+    // 529 college contributions
     if (/529|college|sam college|whitney college|will college/i.test(pay)) return 'auto_save';
-    // Payroll
+    // Payroll processors (net pay split across deductions)
     if (/upmc|highmark|employer|payroll|adp |paychex|direct dep|gusto|bamboo/i.test(pay)) return 'paycheck';
-    // ATM
+    // ATM / cash
     if (/atm/i.test(pay)) return 'other';
+    // Fall through to payee keyword match
     for (const [bucket, keywords] of KW_MAP) {
       if (keywords.some(kw => pay.includes(kw))) return bucket;
     }
@@ -2572,8 +2339,18 @@ function getKidsContext() {
 // ════════════════════════════════════════════
 // HELPERS
 // ════════════════════════════════════════════
-const fmt  = n => '$' + Math.abs(n||0).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
-const fmtK = n => { const a = Math.abs(n||0); return a>=1e6?'$'+(a/1e6).toFixed(1)+'M':a>=1e3?'$'+(a/1e3).toFixed(1)+'K':'$'+a.toFixed(0); };
+const fmt  = n => {
+  const neg = (n || 0) < 0;
+  const a = Math.abs(n || 0);
+  const s = '$' + a.toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  return neg ? '−' + s : s;
+};
+const fmtK = n => {
+  const neg = (n || 0) < 0;
+  const a = Math.abs(n || 0);
+  const s = a >= 1000 ? '$' + (a/1000).toFixed(1).replace(/\.0$/, '') + 'K' : '$' + Math.round(a);
+  return neg ? '−' + s : s;
+};
 const nowMo  = () => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; };
 const prevMo = () => { const n=new Date(), m=n.getMonth()===0?12:n.getMonth(), y=n.getMonth()===0?n.getFullYear()-1:n.getFullYear(); return `${y}-${String(m).padStart(2,'0')}`; };
 const cats3m = () => { const n=new Date(), s=new Date(n.getFullYear(),n.getMonth()-2,1), c={}; spendable(txns).filter(t=>new Date(t.date)>=s&&t.amount<0).forEach(t=>{ const bk=classifyTxn(t); const lbl=(BUCKET_META[bk]||{label:bk}).label; c[lbl]=(c[lbl]||0)+Math.abs(t.amount); }); return Object.entries(c).sort((a,b)=>b[1]-a[1]); };
@@ -2904,7 +2681,7 @@ function renderPulseSettings() {
 
 
     el.innerHTML =
-    `<div style='display:flex;align-items:center;gap:10px;padding:8px 14px 14px;'><svg width="22" height="13" viewBox="0 0 680 280" fill="none" style="display:inline-block;vertical-align:middle;flex-shrink:0;"><path d="M 680 10 C 548 10 422 30 338 58 C 270 82 210 112 170 145" stroke="#7EAFD6" stroke-width="48" stroke-linecap="round"/><path d="M 680 272 C 555 272 448 248 368 215 C 298 186 232 162 170 154" stroke="#7EAFD6" stroke-width="44" stroke-linecap="round"/><path d="M 170 149 C 148 142 118 120 92 92 C 66 64 44 40 8 22" stroke="#F5A800" stroke-width="42" stroke-linecap="round"/><circle cx="170" cy="149" r="26" fill="#F5A800"/></svg><div><div style='font-size:14px;font-weight:700;letter-spacing:.04em;color:var(--ink);'>LUKA<span style='color:var(--gold);font-weight:400;'>LAB</span></div><div style='font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);font-family:var(--fm);margin-top:2px;'>AI Creative Lab</div></div></div>` +
+    `<div style='display:flex;align-items:center;gap:10px;padding:8px 14px 14px;'><svg width="22" height="13" viewBox="0 0 680 280" fill="none" style="display:inline-block;vertical-align:middle;flex-shrink:0;"><path d="M 680 10 C 548 10 422 30 338 58 C 270 82 210 112 170 145" stroke="#7EAFD6" stroke-width="48" stroke-linecap="round"/><path d="M 680 272 C 555 272 448 248 368 215 C 298 186 232 162 170 154" stroke="#7EAFD6" stroke-width="44" stroke-linecap="round"/><path d="M 170 149 C 148 142 118 120 92 92 C 66 64 44 40 8 22" stroke="#F5A800" stroke-width="42" stroke-linecap="round"/><circle cx="170" cy="149" r="26" fill="#F5A800"/></svg><div><div style='font-size:14px;font-weight:700;letter-spacing:.04em;color:var(--ink);'>LUKA<span style='color:var(--gold);font-weight:400;'>LAB</span></div><div style='font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink4);font-family:var(--fm);margin-top:2px;'>AI Creative</div></div></div>` +
     sec('Sync & Data',   '☁️',  syncBody)  +
     sec('Cloud Config',  '🔗',  cloudBody) +
     sec('Family',        '👨‍👩‍👧‍👦', familyBody) +
@@ -4666,9 +4443,9 @@ function renderThermometer(containerId, selMonth) {
         </div>
 
         <!-- Bar container with drop shadow for depth -->
-        <div style="position:relative;height:40px;border-radius:8px;overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08),inset 0 -1px 0 rgba(0,0,0,.4);cursor:pointer;border:1px solid rgba(255,255,255,.06);" onclick="${clickIS}">
+        <div style="position:relative;height:48px;border-radius:8px;overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08),inset 0 -1px 0 rgba(0,0,0,.4);cursor:pointer;border:1px solid rgba(255,255,255,.06);" onclick="${clickIS}">
 
-          <svg width="100%" height="40" preserveAspectRatio="none" style="position:absolute;inset:0;">
+          <svg width="100%" height="48" preserveAspectRatio="none" style="position:absolute;inset:0;">
             <defs>
               <!-- Highlight gradient for 3D top-lit feel -->
               <linearGradient id="g-top" x1="0" y1="0" x2="0" y2="1">
@@ -4699,37 +4476,37 @@ function renderThermometer(containerId, selMonth) {
             </defs>
 
             <!-- Background track -->
-            <rect x="0" y="0" width="100%" height="40" fill="rgba(255,255,255,.04)"/>
+            <rect x="0" y="0" width="100%" height="48" fill="rgba(255,255,255,.04)"/>
 
             <!-- Fixed — 3D gradient fill -->
-            <rect x="0" y="0" width="${fixW.toFixed(2)}%" height="40" fill="url(#g-fix)"
+            <rect x="0" y="0" width="${fixW.toFixed(2)}%" height="48" fill="url(#g-fix)"
             style="cursor:pointer;"
             data-thermo="${JSON.stringify({type:'fixed',bks:['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','cell','subscriptions']}).replace(/"/g,'&quot;')}"/>
             <!-- Fixed label (inside bar if wide enough) -->
-            ${fixW > 16 ? `<text x="${(fixW/2).toFixed(1)}%" y="15" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="800" fill="rgba(255,255,255,.95)" letter-spacing="0.5">FIXED</text>
-            <text x="${(fixW/2).toFixed(1)}%" y="30" text-anchor="middle" font-family="'Courier New',monospace" font-size="14" font-weight="700" fill="rgba(255,255,255,.92)">${fmtK(fixedTotal)}</text>` : ''}
+            ${fixW > 16 ? `<text x="${(fixW/2).toFixed(1)}%" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="800" fill="rgba(255,255,255,.95)" letter-spacing="0.5">FIXED</text>
+            <text x="${(fixW/2).toFixed(1)}%" y="37" text-anchor="middle" font-family="'Courier New',monospace" font-size="14" font-weight="700" fill="rgba(255,255,255,.92)">${fmtK(fixedTotal)}</text>` : ''}
 
             <!-- Variable — gold gradient fill -->
-            <rect x="${fixW.toFixed(2)}%" y="0" width="${varW.toFixed(2)}%" height="40" fill="url(#g-var)"
+            <rect x="${fixW.toFixed(2)}%" y="0" width="${varW.toFixed(2)}%" height="48" fill="url(#g-var)"
             style="cursor:pointer;"
             data-thermo="${JSON.stringify({type:'variable',bks:['restaurants','groceries','gas_car','transit','healthcare','entertainment','household','personal','clothing','travel','gifts','other']}).replace(/"/g,'&quot;')}"/>
-            ${varW > 14 ? `<text x="${(fixW + varW/2).toFixed(1)}%" y="15" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="800" fill="rgba(0,0,0,.75)" letter-spacing="0.5">VARIABLE</text>
-            <text x="${(fixW + varW/2).toFixed(1)}%" y="30" text-anchor="middle" font-family="'Courier New',monospace" font-size="14" font-weight="700" fill="rgba(0,0,0,.75)">${fmtK(varTotal)}</text>` : ''}
+            ${varW > 14 ? `<text x="${(fixW + varW/2).toFixed(1)}%" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="800" fill="rgba(0,0,0,.75)" letter-spacing="0.5">VARIABLE</text>
+            <text x="${(fixW + varW/2).toFixed(1)}%" y="37" text-anchor="middle" font-family="'Courier New',monospace" font-size="14" font-weight="700" fill="rgba(0,0,0,.75)">${fmtK(varTotal)}</text>` : ''}
 
             <!-- Buffer stripes -->
-            ${!overflows && bufW > 0.5 ? `<rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${bufW.toFixed(2)}%" height="40" fill="url(#g-buf)"/>
-            ${bufW > 10 ? `<text x="${(fixW+varW+bufW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="'Courier New',monospace" font-size="13" font-weight="700" fill="rgba(52,217,195,.85)">${fmtK(buffer)}</text>` : ''}` : ''}
+            ${!overflows && bufW > 0.5 ? `<rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${bufW.toFixed(2)}%" height="48" fill="url(#g-buf)"/>
+            ${bufW > 10 ? `<text x="${(fixW+varW+bufW/2).toFixed(1)}%" y="27" text-anchor="middle" font-family="'Courier New',monospace" font-size="13" font-weight="700" fill="rgba(52,217,195,.85)">${fmtK(buffer)}</text>` : ''}` : ''}
 
             <!-- Overage hatching -->
-            ${overflows ? `<rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${overW.toFixed(2)}%" height="40" fill="url(#g-ov)"/>
-            ${overW > 6 ? `<text x="${(fixW+varW+overW/2).toFixed(1)}%" y="22" text-anchor="middle" font-family="'Courier New',monospace" font-size="13" font-weight="700" fill="${OVER_C}">-${fmtK(Math.abs(buffer))}</text>` : ''}` : ''}
+            ${overflows ? `<rect x="${(fixW+varW).toFixed(2)}%" y="0" width="${overW.toFixed(2)}%" height="48" fill="url(#g-ov)"/>
+            ${overW > 6 ? `<text x="${(fixW+varW+overW/2).toFixed(1)}%" y="27" text-anchor="middle" font-family="'Courier New',monospace" font-size="13" font-weight="700" fill="${OVER_C}">-${fmtK(Math.abs(buffer))}</text>` : ''}` : ''}
 
             <!-- Global top-lit highlight overlay -->
-            <rect x="0" y="0" width="100%" height="40" fill="url(#g-top)"/>
+            <rect x="0" y="0" width="100%" height="48" fill="url(#g-top)"/>
 
             <!-- Income limit line — strong vertical marker with glow -->
-            <rect x="${(incLine-0.5).toFixed(2)}%" y="0" width="2" height="40" fill="rgba(255,255,255,.7)"/>
-            <rect x="${(incLine-1).toFixed(2)}%" y="0" width="4" height="40" fill="rgba(255,255,255,.15)"/>
+            <rect x="${(incLine-0.5).toFixed(2)}%" y="0" width="2" height="48" fill="rgba(255,255,255,.7)"/>
+            <rect x="${(incLine-1).toFixed(2)}%" y="0" width="4" height="48" fill="rgba(255,255,255,.15)"/>
           </svg>
         </div>
 
@@ -5416,194 +5193,238 @@ window.addEventListener('DOMContentLoaded', function() {
   // ════════════════════════════════════════════════════════════════════════════
 // FORGE LOCK CONTROLLER
 // ════════════════════════════════════════════════════════════════════════════
-function _lockShow() { const e=document.getElementById('forge-lock'); if(e)e.style.display='flex'; }
-function _lockHide() { const e=document.getElementById('forge-lock'); if(e)e.style.display='none'; }
-function _lockSpinner(show,label) {
-  const sp=document.getElementById('lock-spinner'),lbl=document.getElementById('lock-spinner-lbl');
-  if(sp)sp.style.display=show?'block':'none';
-  if(lbl&&label)lbl.textContent=label;
+// ══════════════════════════════════════════════════════════════════
+// FORGE LOCK — PIN PAD AUTH SYSTEM
+// No <input> elements anywhere — iOS credential manager cannot fire.
+// PIN is entered via <button> taps, stored only in JS variables.
+// ══════════════════════════════════════════════════════════════════
+
+// ── Lock screen visibility ────────────────────────────────────────
+function _lockShow() {
+  const e = document.getElementById('forge-lock');
+  if (e) e.style.display = 'flex';
+}
+function _lockHide() {
+  const e = document.getElementById('forge-lock');
+  if (e) e.style.display = 'none';
+}
+function _lockSpinner(show, label) {
+  const sp  = document.getElementById('lock-spinner');
+  const lbl = document.getElementById('lock-spinner-lbl');
+  const pad = document.getElementById('lock-pad');
+  if (sp)  sp.style.display  = show ? 'block' : 'none';
+  if (pad) pad.style.opacity = show ? '.4'    : '1';
+  if (pad) pad.style.pointerEvents = show ? 'none' : '';
+  if (lbl && label) lbl.textContent = label;
 }
 
-// ── _injectInput ─────────────────────────────────────────────────────────────
-// Creates a passphrase input entirely in JS so iOS's credential scanner
-// (which runs at HTML parse time) never sees it. No autocomplete attribute
-// is set at all — omitting the attribute entirely is more reliable than "off".
-function _injectInput(id, placeholder, mb, onEnter) {
-  const wrap = document.getElementById(id + '-wrap');
-  if (!wrap || document.getElementById(id)) return; // already injected
-  const inp = document.createElement('input');
-  inp.id          = id;
-  inp.type        = 'text';            // NOT password — avoids credential manager
-  inp.placeholder = placeholder;
-  // -webkit-text-security:disc renders dots without being a password field
-  inp.style.cssText = [
-    'width:100%','box-sizing:border-box',
-    'background:#141416','color:#EEEAE4',
-    'border:1px solid #2D2D33','border-radius:8px',
-    'padding:14px 16px','font-size:16px',
-    'text-align:center','letter-spacing:.18em',
-    'outline:none','-webkit-appearance:none',
-    '-webkit-text-security:disc',
-    'margin:0','display:block',
-    `margin-bottom:${mb}`,
-  ].join(';');
-  // Explicitly NO autocomplete, autocorrect, autocapitalize — omitting is better than "off"
-  inp.setAttribute('autocorrect',   'off');
-  inp.setAttribute('autocapitalize','off');
-  inp.setAttribute('spellcheck',    'false');
-  inp.setAttribute('inputmode',     'text');
-  // Kill any credential save attempt at the input level
-  inp.addEventListener('focus', () => { inp.setAttribute('readonly', ''); setTimeout(() => inp.removeAttribute('readonly'), 80); });
-  if (onEnter) inp.addEventListener('keydown', e => { if (e.key === 'Enter') onEnter(); });
-  wrap.appendChild(inp);
-  return inp;
+// ── PIN pad state ─────────────────────────────────────────────────
+// _pinPhase: 'setup1' | 'setup2' | 'unlock'
+let _pinPhase = 'unlock';
+let _pinCurrent = '';   // digits entered so far (current phase)
+let _pinFirst   = '';   // saved after setup phase 1
+const _PIN_LEN  = 6;    // 6-digit PIN
+
+function _pinDots() {
+  const el = document.getElementById('lock-dots');
+  if (!el) return;
+  el.innerHTML = Array.from({length: _PIN_LEN}, (_, i) =>
+    `<div class="pin-dot${i < _pinCurrent.length ? ' filled' : ''}"></div>`
+  ).join('');
+}
+
+function _pinError(msg) {
+  const el = document.getElementById('lock-err');
+  if (el) el.textContent = msg;
+  // Flash dots red briefly
+  document.querySelectorAll('.pin-dot').forEach(d => {
+    d.classList.add('error');
+    setTimeout(() => d.classList.remove('error'), 500);
+  });
+  _pinCurrent = '';
+  setTimeout(_pinDots, 520);
+}
+
+function _pinClearErr() {
+  const el = document.getElementById('lock-err');
+  if (el) el.textContent = '';
+}
+
+function forgePinDigit(d) {
+  if (_pinCurrent.length >= _PIN_LEN) return;
+  _pinCurrent += d;
+  _pinDots();
+  _pinClearErr();
+  // Auto-submit when all digits entered
+  if (_pinCurrent.length === _PIN_LEN) {
+    setTimeout(forgePinConfirm, 80);
+  }
+}
+
+function forgePinBack() {
+  if (_pinCurrent.length === 0) return;
+  _pinCurrent = _pinCurrent.slice(0, -1);
+  _pinDots();
+}
+
+async function forgePinConfirm() {
+  if (_pinCurrent.length < 4) {
+    _pinError('Enter at least 4 digits');
+    return;
+  }
+  const pin = _pinCurrent;
+  _pinCurrent = '';
+
+  if (_pinPhase === 'setup1') {
+    // Phase 1 complete — save and ask for confirmation
+    _pinFirst = pin;
+    _pinPhase = 'setup2';
+    _pinDots();
+    const prompt = document.getElementById('lock-prompt');
+    if (prompt) prompt.textContent = 'Confirm your PIN';
+    return;
+  }
+
+  if (_pinPhase === 'setup2') {
+    if (pin !== _pinFirst) {
+      _pinFirst  = '';
+      _pinPhase  = 'setup1';
+      _pinDots();
+      const prompt = document.getElementById('lock-prompt');
+      if (prompt) prompt.textContent = 'Create a 6-digit PIN';
+      _pinError('PINs did not match — try again');
+      return;
+    }
+    // Both phases match — set up encryption
+    _lockSpinner(true, 'Encrypting your data…');
+    try {
+      await FORGE_AUTH.setup(_pinFirst);
+      _pinFirst = '';
+      _lockSpinner(false);
+      window._forgeNewSetup = true;
+      await forgePostUnlock();
+    } catch(e) {
+      _lockSpinner(false);
+      _pinPhase = 'setup1';
+      _pinDots();
+      _pinError('Setup failed: ' + (e.message || String(e)));
+    }
+    return;
+  }
+
+  if (_pinPhase === 'unlock') {
+    _lockSpinner(true, 'Decrypting…');
+    try {
+      const ok = await FORGE_AUTH.unlock(pin);
+      _lockSpinner(false);
+      if (ok) {
+        await forgePostUnlock();
+      } else {
+        _pinError('Incorrect PIN');
+      }
+    } catch(e) {
+      _lockSpinner(false);
+      _pinError('Unlock error: ' + (e.message || String(e)));
+    }
+    return;
+  }
 }
 
 async function forgeInitAuth() {
   _lockShow();
-  const setup  = document.getElementById('lock-setup');
-  const unlock = document.getElementById('lock-unlock');
+  _pinCurrent = '';
+  _pinFirst   = '';
+  const prompt = document.getElementById('lock-prompt');
 
   if (!FORGE_AUTH.isSetup()) {
-    // First time — show setup, inject inputs now (post-parse, scanner already ran)
-    if (setup)  setup.style.display  = 'block';
-    if (unlock) unlock.style.display = 'none';
-    setTimeout(() => {
-      _injectInput('lock-pass-new',     'Create passphrase',  '10px');
-      _injectInput('lock-pass-confirm', 'Confirm passphrase', '16px');
-      const inp = document.getElementById('lock-pass-new');
-      if (inp) inp.focus();
-    }, 50);
+    // First time — setup flow
+    _pinPhase = 'setup1';
+    _pinDots();
+    const forgot = document.getElementById('lock-forgot-btn');
+    if (forgot) forgot.style.display = 'none';
+    if (prompt) prompt.textContent = 'Create a 6-digit PIN';
     return;
   }
 
-  // Returning user — show unlock screen
-  if (setup)  setup.style.display  = 'none';
-  if (unlock) unlock.style.display = 'block';
-  setTimeout(() => {
-    _injectInput('lock-pass', 'Passphrase', '10px', forgeUnlock);
-    const inp = document.getElementById('lock-pass');
-    if (inp) inp.focus();
-  }, 50);
+  // Returning user — unlock flow
+  _pinPhase = 'unlock';
+  _pinDots();
+  const forgot = document.getElementById('lock-forgot-btn');
+  if (forgot) forgot.style.display = 'block';
+  if (prompt) prompt.textContent   = 'Enter your PIN';
 
+  // Try Face ID automatically
   if (FORGE_AUTH.hasWebAuthn()) {
     const bioBtn = document.getElementById('lock-bio-btn');
     if (bioBtn) bioBtn.style.display = 'block';
-    const biometric = await FORGE_AUTH.isBiometricAvailable();
-    if (biometric) {
-      setTimeout(async () => {
-        const ok = await FORGE_AUTH.unlockWithBiometric();
-        if (ok) forgePostUnlock();
-      }, 300);
-    }
+    try {
+      const biometric = await FORGE_AUTH.isBiometricAvailable();
+      if (biometric) {
+        setTimeout(async () => {
+          const ok = await FORGE_AUTH.unlockWithBiometric();
+          if (ok) await forgePostUnlock();
+        }, 300);
+      }
+    } catch(e) { /* biometric unavailable — fall through to PIN */ }
   }
-}
-
-async function forgeSetupPIN() {
-  const p1  = document.getElementById('lock-pass-new')?.value  || '';
-  const p2  = document.getElementById('lock-pass-confirm')?.value || '';
-  const err = document.getElementById('lock-setup-err');
-  if (p1.length < 4) { if(err) err.textContent = 'Minimum 4 characters.'; return; }
-  if (p1 !== p2)     { if(err) err.textContent = 'Passphrases do not match.'; return; }
-  if (err) err.textContent = '';
-  _lockSpinner(true, 'Encrypting your data…');
-  try {
-    await FORGE_AUTH.setup(p1);
-    _lockSpinner(false);
-    // Store temporarily so Settings can offer Face ID setup after app loads
-    // Face ID setup happens INSIDE the app, not on the lock screen — no more blocking
-    window._forgeTmpPass = p1;
-    window._forgeNewSetup = true;  // flag: show Face ID prompt in Settings after load
-    // Always proceed immediately — user is never gated by biometric setup
-    forgePostUnlock();
-  } catch(e) {
-    _lockSpinner(false);
-    if (err) err.textContent = 'Setup failed: ' + (e.message || String(e));
-    console.error('[Auth] setup failed:', e);
-  }
-}
-
-async function forgeRegisterBiometric() {
-  const pass = window._forgeTmpPass || '';
-  window._forgeTmpPass = null;
-  if (!pass) { forgePostUnlock(); return; }
-  _lockSpinner(true, 'Setting up Face ID…');
-  try {
-    await FORGE_AUTH.registerBiometric(pass);
-    _lockSpinner(false);
-  } catch(e) {
-    _lockSpinner(false);
-    console.warn('[Auth] biometric registration failed:', e);
-  }
-  forgePostUnlock();
-}
-
-function forgeSkipBiometric() {
-  window._forgeTmpPass = null;
-  forgePostUnlock();
-}
-
-async function forgeUnlock() {
-  const passEl=document.getElementById('lock-pass'),errEl=document.getElementById('lock-err'),btnEl=document.getElementById('lock-btn');
-  const p=passEl?.value||'';
-  if(!p){if(errEl)errEl.textContent='Enter your passphrase.';return;}
-  if(errEl)errEl.textContent='';
-  if(btnEl){btnEl.disabled=true;btnEl.textContent='Checking\u2026';}
-  _lockSpinner(true,'Decrypting\u2026');
-  const ok=await FORGE_AUTH.unlock(p);
-  _lockSpinner(false);
-  if(btnEl){btnEl.disabled=false;btnEl.textContent='Unlock Forge';}
-  if(ok){ forgePostUnlock(); }
-  else{ if(errEl)errEl.textContent='Incorrect passphrase.'; if(passEl){passEl.value='';passEl.focus();} }
 }
 
 async function forgeUnlockBio() {
-  _lockSpinner(true,'Waiting for biometric\u2026');
-  const ok=await FORGE_AUTH.unlockWithBiometric();
-  _lockSpinner(false);
-  if(ok){ forgePostUnlock(); }
-  else{ const e=document.getElementById('lock-err'); if(e)e.textContent='Biometric failed \u2014 use passphrase.'; }
+  _lockSpinner(true, 'Waiting for biometric…');
+  try {
+    const ok = await FORGE_AUTH.unlockWithBiometric();
+    _lockSpinner(false);
+    if (ok) {
+      await forgePostUnlock();
+    } else {
+      _pinError('Biometric failed — use PIN');
+    }
+  } catch(e) {
+    _lockSpinner(false);
+    _pinError('Biometric error — use PIN');
+  }
 }
 
 function forgeForgotPIN() {
-  const msg='FORGE: Forgot Passphrase Recovery\n\n1. Clear local data from this browser.\n2. Re-pull from Cloudflare sync.\n3. Set a new passphrase.\n\nNo data is lost if you have Cloudflare sync.\n\nClear local data now?';
-  if(confirm(msg)){
-    ['forge_prod_v1','ledger_v3','forge_settings_v2','forge_settings_v1','forge_lean_v1','forge_file_registry'].forEach(k=>localStorage.removeItem(k));
+  const msg = 'FORGE: Forgotten PIN Recovery\n\n1. Clear local data from this browser.\n2. Re-pull from Cloudflare sync.\n3. Set a new PIN.\n\nNo data is lost if you have Cloudflare sync.\n\nClear local data now?';
+  if (confirm(msg)) {
+    ['forge_prod_v1','ledger_v3','forge_settings_v2','forge_settings_v1','forge_lean_v1','forge_file_registry'].forEach(k => localStorage.removeItem(k));
     FORGE_AUTH.clearAuth();
     location.reload();
   }
 }
 
 async function forgePostUnlock() {
-  _lockSpinner(true,'Loading\u2026');
-  window._forgeDecrypted=window._forgeDecrypted||{};
-  const dataKeys=['forge_prod_v1','ledger_v3','forge_settings_v2','forge_settings_v1'];
-  for(const k of dataKeys){
-    try{ const dec=await FORGE_AUTH.get(k); if(dec)window._forgeDecrypted[k]=dec; }catch(e){}
+  _lockSpinner(true, 'Loading…');
+  window._forgeDecrypted = window._forgeDecrypted || {};
+  const dataKeys = ['forge_prod_v1','ledger_v3','forge_settings_v2','forge_settings_v1'];
+  for (const k of dataKeys) {
+    try { const dec = await FORGE_AUTH.get(k); if (dec) window._forgeDecrypted[k] = dec; } catch(e) {}
   }
   _patchLocalStorage();
   _lockSpinner(false);
   _lockHide();
-  if(typeof forgeAppInit==='function') forgeAppInit();
+  if (typeof forgeAppInit === 'function') forgeAppInit();
 }
 
-function _patchLocalStorage(){
-  if(window._lsPatchApplied)return;
-  window._lsPatchApplied=true;
-  const dec=window._forgeDecrypted||{};
-  const og=Storage.prototype.getItem, os=Storage.prototype.setItem, or2=Storage.prototype.removeItem;
-  // Expose original setter globally so FORGE_AUTH.set can write without re-entering the patch
-  window._forgeOrigSetItem = function(k,v){ os.call(localStorage,k,v); };
-  Storage.prototype.getItem=function(k){ if(this===localStorage&&dec[k]!==undefined)return dec[k]; return og.call(this,k); };
-  Storage.prototype.setItem=function(k,v){
-    if(this===localStorage&&FORGE_AUTH.isUnlocked()&&!window._forgeWriting){
-      dec[k]=v;
-      FORGE_AUTH.set(k,v).catch(()=>{});
+function _patchLocalStorage() {
+  if (window._lsPatchApplied) return;
+  window._lsPatchApplied = true;
+  const dec = window._forgeDecrypted || {};
+  const og  = Storage.prototype.getItem;
+  const os  = Storage.prototype.setItem;
+  const or2 = Storage.prototype.removeItem;
+  window._forgeOrigSetItem = function(k, v) { os.call(localStorage, k, v); };
+  Storage.prototype.getItem    = function(k) { if (this === localStorage && dec[k] !== undefined) return dec[k]; return og.call(this, k); };
+  Storage.prototype.setItem    = function(k, v) {
+    if (this === localStorage && FORGE_AUTH.isUnlocked() && !window._forgeWriting) {
+      dec[k] = v;
+      FORGE_AUTH.set(k, v).catch(() => {});
       return;
     }
-    os.call(this,k,v);
+    os.call(this, k, v);
   };
-  Storage.prototype.removeItem=function(k){ if(this===localStorage)delete dec[k]; or2.call(this,k); };
+  Storage.prototype.removeItem = function(k) { if (this === localStorage) delete dec[k]; or2.call(this, k); };
 }
 
 
