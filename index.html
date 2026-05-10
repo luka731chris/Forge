@@ -3285,14 +3285,21 @@ function buildMonthSummary(selMonth, sp) {
     }
   });
 
-  // Pattern B: employer split direct deposit (paycheck-classified income in savings account)
-  // These are already in monthSp as income — move them to auto_save bucket instead
+  // Pattern B: employer split direct deposit to savings.
+  // Guard: skip if Pattern A already captured a transfer to this account — avoid double-count.
   savingsPayDates.forEach(pd => {
     monthSp
       .filter(t => t.date === pd && t.amount > 0
                    && classifyTxn(t) === 'paycheck'
                    && detectAcctType(t.account||'') === 'savings')
       .forEach(t => {
+        // Skip if Pattern A already has a transfer to this savings account near this date
+        const patAAccts = (bktTxns.auto_save||[]).filter(st => !st._splitDeposit);
+        const alreadyCaptured = patAAccts.some(st =>
+          (st._xferTo === t.account || st.account === t.account) &&
+          Math.abs(new Date(st.date) - new Date(t.date)) <= 2 * 864e5
+        );
+        if (alreadyCaptured) return;
         addToBkt('auto_save', Object.assign({}, t, {
           _xferTo: t.account,
           _splitDeposit: true,
@@ -8757,15 +8764,35 @@ function renderIncomeStatement() {
       autoSaveTxns.push(st); addB('auto_save',st);
     }
   });
-  // Pattern B: split direct deposits to savings
-  _svPayDates.forEach(pd=>{
-    monthSp.filter(t=>t.date===pd&&t.amount>0&&classifyTxn(t)==='paycheck'&&detectAcctType(t.account||'')==='savings')
-      .forEach(t=>{
-        const st=Object.assign({},t,{_xferTo:t.account,_splitDeposit:true,amount:-Math.abs(t.amount)});
-        autoSaveTxns.push(st); addB('auto_save',st);
+    // Pattern B: employer split direct deposit (positive paycheck in savings account).
+  // Guard: skip if Pattern A already captured a transfer TO this same savings account
+  // on/near the same date — that would be the credit side of the same transfer, not
+  // a separate direct deposit. Counting both = double-count.
+  const _patADates = new Map(); // acct → Set of dates captured by Pattern A
+  autoSaveTxns.forEach(st => {
+    if (!st._splitDeposit) {
+      const acct = st._xferTo || '';
+      if (!_patADates.has(acct)) _patADates.set(acct, new Set());
+      _patADates.get(acct).add(st._xferTo ? st.date : '');
+    }
+  });
+  _svPayDates.forEach(pd => {
+    monthSp.filter(t => t.date === pd && t.amount > 0
+                        && classifyTxn(t) === 'paycheck'
+                        && detectAcctType(t.account||'') === 'savings')
+      .forEach(t => {
+        // Skip if Pattern A already has a transfer to this account near this date
+        const alreadyCaptured = autoSaveTxns.some(st =>
+          !st._splitDeposit &&
+          (st._xferTo === t.account || st.account === t.account) &&
+          Math.abs(new Date(st.date) - new Date(t.date)) <= 2 * 864e5
+        );
+        if (alreadyCaptured) return; // credit side of Pattern A transfer — skip
+        const st = Object.assign({}, t, {_xferTo: t.account, _splitDeposit: true, amount: -Math.abs(t.amount)});
+        autoSaveTxns.push(st);
+        addB('auto_save', st);
       });
   });
-
   // ── kfmt helper — must be defined before normalization uses it ──────────────
   function kfmt(v) {
     const neg=v<0; const a=Math.abs(v);

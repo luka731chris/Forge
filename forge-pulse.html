@@ -4400,14 +4400,21 @@ function buildMonthSummary(selMonth, sp) {
     }
   });
 
-  // Pattern B: employer split direct deposit (paycheck-classified income in savings account)
-  // These are already in monthSp as income — move them to auto_save bucket instead
+  // Pattern B: employer split direct deposit to savings.
+  // Guard: skip if Pattern A already captured a transfer to this account — avoid double-count.
   savingsPayDates.forEach(pd => {
     monthSp
       .filter(t => t.date === pd && t.amount > 0
                    && classifyTxn(t) === 'paycheck'
                    && detectAcctType(t.account||'') === 'savings')
       .forEach(t => {
+        // Skip if Pattern A already has a transfer to this savings account near this date
+        const patAAccts = (bktTxns.auto_save||[]).filter(st => !st._splitDeposit);
+        const alreadyCaptured = patAAccts.some(st =>
+          (st._xferTo === t.account || st.account === t.account) &&
+          Math.abs(new Date(st.date) - new Date(t.date)) <= 2 * 864e5
+        );
+        if (alreadyCaptured) return;
         addToBkt('auto_save', Object.assign({}, t, {
           _xferTo: t.account,
           _splitDeposit: true,
