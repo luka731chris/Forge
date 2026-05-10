@@ -1,106 +1,84 @@
 # Forge Changelog
 
-## lean_4.0 / Pulse v2.0 — April 26, 2026
+---
 
-### Cloud Sync Layer (new)
-- Cloudflare KV-backed sync via existing Worker
-- `POST /sync/push` and `GET /sync/pull` endpoints added to `forge_worker_v2.js`
-- `getSyncToken()` — prompts once on first use, stores to `forge_sync_token` in localStorage — no hardcoded token in committed files
-- `getWorkerUrl()` in Pulse — same pattern for Worker URL — no hardcoded URL in committed files
-- `syncPush()` reads `forge_prod_v1` → `forge_lean_v1` → `ledger_v3` (priority chain for lean build compat)
-- `syncPull()` writes to both `forge_prod_v1` and `ledger_v3` for cross-build compatibility
-- Push button on Import page (desktop only)
-- Pull from Cloud button always visible on Pulse Gauge (above snap-out, visible before data loads)
-- Pull-to-refresh gesture on all Pulse tabs (72px threshold, gold indicator)
-- No Push button in Pulse — workflow is desktop-import → push → mobile-pull only
+## v4.0.0 — May 2026 · Major Release
 
-### Desktop — Classification Fixes
-- `renderCategories()` now uses `classifyTxn()` + `BUCKET_META` labels — `--Split--` no longer appears as a top expense category
-- Dashboard donut now uses `classifyTxn()` — same fix
-- `renderFinancials()` catTotals now uses `classifyTxn()` — same fix
-- `isTransfer()` expanded: catches `Apple Card`, `Apple Card Payment`, `Credit Card Payment` categories without bracket notation; also catches payee-based CC payment patterns
-- `classifyTxn()` Split block expanded from 6 to 30+ payee patterns: Pennymac, Mr. Cooper, Honda Financial, GM Financial, Liberty Mutual, State Farm, Allstate, Comcast, Spectrum, ADP, Paychex, Gusto, etc.
+Stable baseline for Forge Desktop and Forge Pulse. All prior alpha/lean builds consolidated.
+Data model is stable. Deploy, test with real data, build forward from here.
 
-### Desktop — Transactions Page Sort
-- `txnSort` state — clickable `↑/↓` column headers on Date, Payee, Category, Account, Amount
-- `txnDrillCat` sticky drill filter from Income Statement
-- `txnDrillBanner` visible filter indicator with ✕ Clear button
-- `drillToCategory()` + `clearDrill()` full drill cycle
-- IS section rows: `→ txns` drill link on every section
-- IS bucket rows: `→` drill link on every bucket
+### Income Statement — Complete Rebuild
+- Stepdown layout: Income → Pre-Committed Savings → Deployable → Fixed → After Fixed → Variable → Net → Savings Draw → Reconciliation
+- Two-column format: content left, margin rail with category summaries and comment fields right
+- Collapsible income section: closed months collapse; in-flight stays expanded
+- Income adjustment callout: gold banner explains normalization (early month, 3-pay, bonus exclusion)
+- Pre-committed savings: checking→savings transfers near payday only (Pattern A, source=checking required)
+- Accrual engine: in-flight months show actual + projected; closed months actuals only
+- IS comments: per-section note fields stored in `forge_is_comments` localStorage key
+- Recommendations: KPI card grid — OVER BUDGET · SAVINGS DRAW · SURPLUS · TOP VARIABLE · PACE ALERT
+- Analytics chart selector: Pressure Bar (default) · Stacked Bar · Small Multiples · Slope · Proportion
+- Reconciliation: collapsed, operating accounts only (checking/savings/credit), IS Assembly stepdown
 
-### Desktop — Income Statement
-- `isSort` state with Sort dropdown (Date / Amount / Payee A-Z) and direction toggle
-- 320px cap with scroll on payee transaction lists with more than 8 items
-- `--Split--` display fully unmasked: Mortgage, Auto Loan, Insurance, Internet/Phone, Utility, Retirement, Payroll with descriptive sub-labels
+### Pre-Committed Savings Fix
+- Root cause: both sides of checking→savings transfer were captured (Pattern A debit + Pattern B credit = 2×)
+- Fix: Pattern A only. Source account must be checking. Pattern B removed from IS and buildMonthSummary
+- nearPaycheck() uses checking paychecks only as payday anchor
 
-### Pulse — Full Rebuild from April 21 Session
-- **P&L Tab** (was simplified SECTIONS array): now uses `WATERFALL.map()` — same 7-section structure as desktop IS
-  - 3-level chevron drilldown: Section → Bucket → Payee → Individual Transactions
-  - `piToggleSec()` / `piToggleBkt()` toggle functions
-  - `→` button on every section and bucket → filtered transaction view with `← Back`
-- **Net Worth Tab**: `renderPulseNW()` with `acctMeta` null-safety
-- **Analytics Tab**: Zero Chart.js — all pure SVG
-  - `svgBar()` for Monthly Cash Flow (6 months, Income vs Expenses)
-  - `svgHBar()` for Spending by Person and Day of Week heatmap
-  - `svgLine()` for 12-Month Savings Rate trend
-  - SVG donut for Spending by Category with `data-tip` tap tooltips
-  - `bindChartTips()` post-render event wiring
-  - `initPulseTips()` tap-to-reveal tooltip overlay (mobile-native)
-- **Gauge Tab** branding restored: sister bridges SVG watermark, Forge three-rivers logo, LukaLab badge, goal rings, life-stage banner
-- `cats3m()` uses `spendable()` + `classifyTxn()` — no raw categories in snapshot
-- `renderPulseCategories()` uses `classifyTxn()` + `BUCKET_META`
-- Empty state: updated to reference Pull from Cloud / pull-to-refresh (no Amazon import instructions)
-- All ported from desktop: `WATERFALL`, `BUCKET_META`, `KW_MAP`, `QUICKEN_CAT_MAP`, `COLORS`, `classifyTxn()`, `isTransfer()`, `spendable()`, `svgBar()`, `svgLine()`, `svgHBar()`, `bindChartTips()`, `showChartTip()`
+### Category Classification Rebuilt
+- classifyTxn() uses longest-prefix match instead of substring includes()
+- QUICKEN_CAT_MAP rewritten with 80+ specific subcategory entries
+- Dangerous broad fallbacks removed: 'bills & utilities'→electric, 'financial'→insurance, 'auto & transport'→gas_car
+- New: gas_util, water, internet, dedicated insurance subcategories
 
-### Pulse — Bug Fixes (this session)
-- `QUICKEN_CAT_MAP` was missing — `classifyTxn()` crashed on every call → Gauge black screen
-- `acctMeta` was not declared → `isCreditAcct()` crashed → Net Worth black screen
-- `--card`, `--border`, `--mono`, `--muted`, `--bg`, `--serif` CSS variables undefined → transparent/invisible UI
-- Multiple duplicate function definitions (renderPulseAnalytics, renderPulseNW, destroyPulseAna, renderPulseTrend, etc.) removed
-- Duplicate `renderPulsePL` — old version with `buckets.income.total` was running instead of new WATERFALL version
-- Chart.js CDN missing — analytics tab crashed on `new Chart()` calls
-- `forge_prod_v1` storage key mismatch — `syncPush()` was reading empty legacy keys, pushing null
-- `SID_PROXY_URL` replaced with `getWorkerUrl()` — no URL configuration needed on file upload
-- `document.body.style.display = 'block'` removed — was overriding `display:flex` and breaking scroll layout
+### Import Pipeline Fixed
+- _source stamping: all detail file types now stamped (Amazon, Home Depot, Venmo were broken)
+- firstLine undefined reference removed from processFiles
+- parseMerchantCSV typeSkip check moved to top of row loop
+- recordFileImport stores reg._files[] full upload history
+- isTransfer: handles CC payment subcategory paths, apple.?card, web recur applecard
 
-### Mobile UX
-- `min-height: 44px` on all tappable elements
-- `touch-action: pan-y` on pages, `none` on tab bar
-- `font-size: 16px !important` on inputs/selects — prevents iOS Safari auto-zoom
-- `-webkit-tap-highlight-color` gold flash on tap
-- `env(safe-area-inset-bottom)` bottom padding for iPhone home indicator
+### Balance Sheet Fixed
+- computeBSFromTxns() excludes detail-file source transactions
+- buildBSAccountMap skips Apple Card CSV phantom accounts
+- Liability change colors inverted (decrease = good)
+- Pulse balanceAsOf() has same _BS_DETAIL exclusion
 
-### Infrastructure
-- `forge_worker_v2.js`: `/sync/push` + `/sync/pull` endpoints added; `FORGE_SYNC` KV binding; `SYNC_TOKEN` secret
-- Storage key priority: `forge_prod_v1` (lean build) → `forge_lean_v1` → `ledger_v3` (legacy)
-- All configuration (Worker URL, Sync Token) stored in browser localStorage — zero secrets in committed code
+### Pressure Bar — CSS Rebuild
+- Replaced SVG linearGradient/pattern approach (gradient ID collisions caused black bars)
+- Pure CSS div segments: fixed (red), variable (gold), buffer (teal stripes), overage (red hatching)
+- 3D highlight overlay, income line as 2px div with glow
+
+### Forge Pulse v2.0
+- PIN pad auth: zero inputs on lock screen, iOS credential manager cannot fire
+- Haptic feedback: navigator.vibrate() at digit, backspace, complete, error
+- operatingSpendable() and spendable() alias added (were undefined, causing silent failures)
+- buildMonthSummary synced: OPER_TYPES_BMS, Pattern A checking-only, nearPaycheckBMS
+- renderThermometer synced: CSS div bar, _uid prefix per container
+- classifyTxn, isTransfer, derivedThru all synced with desktop
+- _files[] history in file registry
+
+### CSS / Formatting
+- 285 CSS variable instances normalized: --font-m→--fm, --positive→--pos, --negative→--neg
+- .kpi.negative CSS class added
+- fmt() and fmtK() preserve negative sign with typographic minus (−)
+
+### Other
+- Cash flow 3M/6M/1Y/All range tabs added
+- Scenario Planner overflow-y:auto fixed
+- Settings file inventory: YYYY-MM-DD dates, full upload history, net worth row fix
+- LukaLab branding: strokes #7A7672, subtitle #8A8480, slogan "AI Creative"
+- Canvas accessibility: role="img" and aria-label on dashDonut and catDonut
 
 ---
 
 ## v3.12 — April 3, 2026
-Dead code audit: 11 dead JS functions removed, 22 unused CSS classes, 12 unused CSS vars, duplicate keyframe removed.
+Dead code audit: 11 dead JS functions, 22 unused CSS classes, 12 unused CSS vars removed.
 
-## v3.11 — April 3, 2026
-Analytics/Cash Flow blank fix: Chart.getChart() guard before every canvas creation.
+## v3.9–3.11 — April 2–3, 2026
+Smart Scan, analytics blank fix, black screen div nesting fix.
 
-## v3.10 — April 2, 2026
-Black screen root cause: one missing `</div>` nested page-dashboard inside page-upload.
+## v3.4–3.8 — March 29 – April 2, 2026
+parseCSV() rewrite, Quicken CSV header detection rewrite, black screen fixes.
 
-## v3.9 — April 2, 2026
-Smart Scan added. forge_worker_v2.js adds `/scan` endpoint. Quicken preamble detection fixed.
-
-## v3.8 — April 2, 2026
-Quicken CSV header detection rewrite: scanner loops first 30 lines for date+amount column pair.
-
-## v3.5–3.7 — April 2, 2026
-Multiple black screen fixes: orphan CSS fragments, Chart.defaults at top level, syntax errors.
-
-## v3.4 — March 29, 2026
-parseCSV() comprehensive rewrite: blank columns, BOM, sep=, semicolon/pipe, European decimal.
-
-## v3.2–3.3 — March 28, 2026
-Analytics Studio (8 charts, 8 dims, 6 metrics). Unified import zone. 5 parser bug fixes.
-
-## v3.0–3.1 — March 27–28, 2026
-Purchaser attribution system. Detail Lens multi-format. By Purchaser tab. Apple Card parser.
+## v3.0–3.3 — March 27–28, 2026
+Purchaser attribution, Detail Lens, Analytics Studio, Apple Card parser.
