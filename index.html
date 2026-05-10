@@ -4488,7 +4488,7 @@ function showPage(name) {
     if (name === 'cashflow'     && txns.length) renderCashFlow();
     if (name === 'categories'   && txns.length) renderCategories();
     if (name === 'transactions' && txns.length) renderTxns();
-    if (name === 'income'        && txns.length) { renderIncomeStatement(); try{renderISTrend();}catch(e){} }
+    if (name === 'income'        && txns.length) { renderIncomeStatement(); }
     if (name === 'creditflow'    && txns.length) renderCreditFlow();
     if (name === 'validate'      ) renderValidation();
     if (name === 'budget'        ) renderBudget();
@@ -4756,7 +4756,8 @@ function setISTrendRange(n, btn) {
   isTrendN = n;
   document.querySelectorAll('#isTrendRangeTabs .rtab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
-  renderISTrend();
+  const _mo = document.getElementById('isMonth')?.value || '';
+  renderISTrend(_mo);
 }
 
 function setISTrendType(type) {
@@ -8595,7 +8596,7 @@ function renderISTrend(passedMonth) {
   else if (isTrendType === 'waffle')  chartHtml = renderWaffle();
   else chartHtml = `<div style="padding:8px 8px 4px;position:relative;" id="isTrendChartArea">
     ${renderStack()}
-    <div id="isTrendTip" style="display:none;position:absolute;background:rgba(14,14,16,.98);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px 14px;font-size:11px;font-family:var(--fm);min-width:180px;max-width:240px;max-height:320px;overflow-y:auto;pointer-events:none;z-index:99;box-shadow:0 12px 40px rgba(0,0,0,.7);"></div>
+    <div id="isTrendTip" style="display:none;position:absolute;background:rgba(14,14,16,.98);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px 14px;font-size:11px;font-family:var(--fm);min-width:180px;max-width:260px;max-height:380px;overflow-y:auto;pointer-events:auto;z-index:99;box-shadow:0 12px 40px rgba(0,0,0,.7);"></div>
   </div>`;
 
   el.innerHTML = headerHtml + chartHtml;
@@ -8627,9 +8628,11 @@ function renderISTrend(passedMonth) {
         tip.style.top     = '4px';
         tip.style.display = 'block';
       });
-      rect.addEventListener('mouseleave', () => {
+      rect.addEventListener('mouseleave', (e) => {
+        // Delay hide so user can move cursor into scrollable tooltip
         const tip = el.querySelector('#isTrendTip');
-        if (tip) tip.style.display = 'none';
+        if (!tip) return;
+        tip._hideTimer = setTimeout(() => { tip.style.display = 'none'; }, 300);
       });
       rect.addEventListener('click', function() {
         const mo  = this.dataset.mo;
@@ -8637,6 +8640,21 @@ function renderISTrend(passedMonth) {
         if (sel) for (let i=0;i<sel.options.length;i++) if(sel.options[i].value===mo){sel.selectedIndex=i;break;}
         renderIncomeStatement();
       });
+    });
+    // Allow cursor to move into tooltip to scroll — cancel hide on tipenter
+    el.addEventListener('mouseover', function(e) {
+      const tip = el.querySelector('#isTrendTip');
+      if (!tip) return;
+      if (tip.contains(e.target) || tip === e.target) {
+        clearTimeout(tip._hideTimer);
+      }
+    });
+    el.addEventListener('mouseout', function(e) {
+      const tip = el.querySelector('#isTrendTip');
+      if (!tip) return;
+      if ((tip.contains(e.target) || tip === e.target) && !tip.contains(e.relatedTarget)) {
+        tip._hideTimer = setTimeout(() => { tip.style.display = 'none'; }, 200);
+      }
     });
   }
 }
@@ -9027,13 +9045,20 @@ function renderIncomeStatement() {
     ${isInFlight?`<span style="font-size:11px;color:${C.ink4};">${daysRemaining} days remaining</span>`:''}
   </div>`;
 
-  // ── Recommendations (top) ─────────────────────────────────────────
+  // ── Recommendations — KPI card grid ──────────────────────────────────
   if (recs.length > 0) {
-    out += `<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">`;
+    out += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px;">`;
     recs.forEach(r => {
-      out += `<div style="display:flex;gap:10px;padding:9px 12px;background:${recColors[r.level]||'rgba(255,255,255,.04)'};border-left:3px solid ${recBorders[r.level]||'var(--line)'};border-radius:0 8px 8px 0;align-items:flex-start;">
-        <div style="font-size:15px;flex-shrink:0;">${r.icon}</div>
-        <div style="font-size:12px;color:var(--ink3);line-height:1.5;">${r.text}</div>
+      const bc = recBorders[r.level] || 'rgba(255,255,255,.2)';
+      const bg = recColors[r.level]  || 'rgba(255,255,255,.04)';
+      out += `<div style="background:${bg};border:1px solid ${bc}33;border-top:3px solid ${bc};border-radius:var(--r-lg);padding:12px 14px;position:relative;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <span style="font-size:16px;">${r.icon}</span>
+          <span style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${bc};">${r.label}</span>
+        </div>
+        <div style="font-size:22px;font-weight:700;font-family:var(--fd);color:${bc};line-height:1;margin-bottom:4px;">${r.value}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:2px;">${r.action}</div>
+        <div style="font-size:11px;color:var(--ink4);">${r.sub}</div>
       </div>`;
     });
     out += `</div>`;
@@ -9202,73 +9227,101 @@ function renderIncomeStatement() {
     </div>`;
   }
 
-  // ── Reconciliation (collapsed by default) ─────────────────────────
+  // ── Reconciliation — collapsed, operating accounts only ────────────
   const reconId = 'is-recon-'+selMonth.replace('-','');
-  const acctOrder2 = { checking:0, savings:1, credit:2 };
-  const reconAccts = txns.filter(t => {
+
+  // Only checking, savings, credit — the operating accounts that feed this IS
+  const RECON_TYPES = new Set(['checking','savings','credit']);
+  const acctBals3 = {};
+  txns.forEach(t => {
     const at = detectAcctType(t.account||'');
-    return (at==='checking'||at==='savings'||at==='credit') && t.date<=selMonth+'-31';
+    if (!RECON_TYPES.has(at)) return;          // exclude investment/retirement/HSA/529
+    if (t.date > selMonth + '-31') return;      // only through end of selected month
+    if (t._source && !['quicken','quicken_csv','quicken_qif','quicken_qfx',undefined,''].includes(t._source)) return; // exclude detail-file rows
+    acctBals3[t.account] = (acctBals3[t.account]||0) + t.amount;
   });
-  const acctBals2 = {};
-  reconAccts.forEach(t => { acctBals2[t.account] = (acctBals2[t.account]||0)+t.amount; });
-  const acctList2 = Object.entries(acctBals2)
-    .map(([acct,bal])=>({acct,bal,type:detectAcctType(acct)}))
-    .sort((a,b)=>(acctOrder2[a.type]||3)-(acctOrder2[b.type]||3)||a.acct.localeCompare(b.acct));
-  const totalBal2 = acctList2.reduce((s,a)=>s+a.bal,0);
-  const netCC2 = ccPaid - ccCharges;
+  const TYPE_ORDER = {checking:0, savings:1, credit:2};
+  const reconAccts3 = Object.entries(acctBals3)
+    .map(([acct,bal]) => ({acct, bal, type: detectAcctType(acct)}))
+    .sort((a,b) => (TYPE_ORDER[a.type]||3)-(TYPE_ORDER[b.type]||3) || a.acct.localeCompare(b.acct));
+  const reconTotal = reconAccts3.reduce((s,a) => s+a.bal, 0);
+  // Group by type for summary line
+  const reconByType = {};
+  reconAccts3.forEach(a => { reconByType[a.type] = (reconByType[a.type]||0) + a.bal; });
 
   const reconHtml = `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">
-    <div onclick="var d=document.getElementById('${reconId}');d.style.display=d.style.display==='none'?'block':'none';"
-      style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;"
-      onmouseenter="this.style.background='rgba(255,255,255,.03)'" onmouseleave="this.style.background=''">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${C.ink4};">🔍 RECONCILIATION</span>
-        <span style="font-size:10px;color:${C.ink4};">verify vs Quicken</span>
+    <!-- Header — always visible, click to expand -->
+    <div onclick="var el=document.getElementById('${reconId}');var open=el.style.display!=='none';el.style.display=open?'none':'block';this.querySelector('.recon-chev').textContent=open?'▸':'▾';"
+      style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;cursor:pointer;"
+      onmouseenter="this.style.background='rgba(255,255,255,.025)'" onmouseleave="this.style.background=''">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:13px;">🔍</span>
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${C.ink4};">Quicken Tie-Out</div>
+          <div style="font-size:10px;color:${C.ink4};margin-top:1px;">
+            ${reconByType.checking!=null?'Chk: '+kfmt(reconByType.checking||0):''}
+            ${reconByType.savings!=null?' · Sav: '+kfmt(reconByType.savings||0):''}
+            ${reconByType.credit!=null?' · CC: '+kfmt(reconByType.credit||0):''}
+          </div>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:12px;font-weight:600;font-family:var(--fm);color:${totalBal2>=0?C.pos:C.neg};">${totalBal2>=0?'+':''}${kfmt(totalBal2)}</span>
-        <span style="font-size:11px;color:${C.ink4};">▸</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="text-align:right;">
+          <div style="font-size:14px;font-weight:700;font-family:var(--fm);color:${reconTotal>=0?C.pos:C.neg};">${reconTotal>=0?'+':''}${kfmt(reconTotal)}</div>
+          <div style="font-size:9px;color:${C.ink4};">net position</div>
+        </div>
+        <span class="recon-chev" style="font-size:11px;color:${C.ink4};">▸</span>
       </div>
     </div>
-    <div id="${reconId}" style="display:none;">
-      <div style="padding:8px 12px;font-size:11px;color:${C.ink4};background:rgba(0,0,0,.15);border-top:1px solid rgba(255,255,255,.06);">
-        Open Quicken → Accounts → set date to end of ${monthName} → check these balances:
-      </div>
-      ${acctList2.map((a,i)=>{
-        const tl={checking:'Checking',savings:'Savings',credit:'Credit Card'}[a.type]||a.type;
-        const bc=a.type==='credit'?(a.bal<0?C.neg:C.ink3):(a.bal>=0?C.ink2:C.neg);
-        const disp=a.type==='credit'&&a.bal<0?'('+mfmt(Math.abs(a.bal))+')':mfmt(a.bal);
-        return `<div style="display:grid;grid-template-columns:1fr 70px 80px;gap:4px;align-items:center;padding:5px 12px;border-top:1px solid rgba(255,255,255,.032);background:${i%2?'rgba(255,255,255,.012)':'transparent'};">
-          <div style="font-size:11px;color:${C.ink2};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.acct}</div>
-          <div style="font-size:10px;color:${C.ink4};">${tl}</div>
-          <div style="font-size:12px;font-weight:600;font-family:var(--fm);color:${bc};text-align:right;">${disp}</div>
+
+    <!-- Body — collapsed by default -->
+    <div id="${reconId}" style="display:none;border-top:1px solid rgba(255,255,255,.07);">
+
+      <!-- Account balances -->
+      ${reconAccts3.map((a,i) => {
+        const typeLabel = {checking:'Chk',savings:'Sav',credit:'CC'}[a.type]||a.type;
+        const isCC = a.type==='credit';
+        const valColor = isCC ? (a.bal<0?C.neg:'var(--ink3)') : (a.bal>=0?'var(--ink2)':C.neg);
+        const dispVal  = isCC&&a.bal<0 ? '('+mfmt(Math.abs(a.bal))+')' : (a.bal>=0?'':'-')+mfmt(Math.abs(a.bal));
+        return `<div style="display:grid;grid-template-columns:28px 1fr 70px;gap:4px;align-items:center;padding:5px 14px;background:${i%2?'rgba(255,255,255,.012)':'transparent'};border-bottom:1px solid rgba(255,255,255,.024);">
+          <div style="font-size:9px;font-family:var(--fm);color:${C.ink4};letter-spacing:.06em;">${typeLabel}</div>
+          <div style="font-size:12px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.acct}</div>
+          <div style="font-size:13px;font-weight:600;font-family:var(--fm);color:${valColor};text-align:right;">${dispVal}</div>
         </div>`;
       }).join('')}
-      <div style="display:grid;grid-template-columns:1fr 70px 80px;gap:4px;align-items:center;padding:7px 12px;border-top:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);">
-        <div style="font-size:12px;font-weight:700;color:${C.ink};">Net Position</div>
+
+      <!-- Total row -->
+      <div style="display:grid;grid-template-columns:28px 1fr 70px;gap:4px;align-items:center;padding:7px 14px;background:rgba(255,255,255,.04);border-top:2px solid rgba(255,255,255,.1);">
         <div></div>
-        <div style="font-size:14px;font-weight:700;font-family:var(--fm);color:${totalBal2>=0?C.pos:C.neg};text-align:right;">${totalBal2>=0?'+':''}${kfmt(totalBal2)}</div>
+        <div style="font-size:12px;font-weight:700;color:${C.ink};">Net (checking+savings+CC)</div>
+        <div style="font-size:14px;font-weight:700;font-family:var(--fm);color:${reconTotal>=0?C.pos:C.neg};text-align:right;">${reconTotal>=0?'+':''}${kfmt(reconTotal)}</div>
       </div>
-      <!-- Expense derivation -->
-      <div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,.06);">
-        <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${C.ink4};margin-bottom:8px;">Expense Derivation</div>
-        <div style="display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:11px;">
-          <span style="color:${C.ink3};">Paycheck deposits (checking)</span><span style="color:${C.pos};font-family:var(--fm);">+${kfmt(totalIncome)}</span>
-          ${totalDraw>0?`<span style="color:${C.neg};">Savings draw ⚠</span><span style="color:${C.neg};font-family:var(--fm);">+${kfmt(totalDraw)}</span>`:''}
-          <span style="color:${C.ink3};">Pre-committed savings out</span><span style="color:${C.river};font-family:var(--fm);">−${kfmt(totalAutoSave)}</span>
-          <span style="color:${C.ink3};">CC payments (checking→cards)</span><span style="color:${C.ink4};font-family:var(--fm);">−${kfmt(ccPaid)}</span>
-          <span style="color:${C.ink};font-weight:600;border-top:1px solid rgba(255,255,255,.08);padding-top:4px;margin-top:2px;">Net checking change</span>
-          <span style="color:${(totalIncome+totalDraw-totalAutoSave-ccPaid)>=0?C.pos:C.neg};font-family:var(--fm);font-weight:600;border-top:1px solid rgba(255,255,255,.08);padding-top:4px;margin-top:2px;">${(totalIncome+totalDraw-totalAutoSave-ccPaid)>=0?'+':''}${kfmt(totalIncome+totalDraw-totalAutoSave-ccPaid)}</span>
-          <span style="color:${C.ink3};padding-top:8px;">CC charges this month</span><span style="color:${C.gold};font-family:var(--fm);padding-top:8px;">−${kfmt(ccCharges)}</span>
-          <span style="color:${C.ink3};">CC payments received</span><span style="color:${C.pos};font-family:var(--fm);">+${kfmt(ccPaid)}</span>
-          <span style="color:${netCC2>=0?C.pos:C.neg};font-weight:600;border-top:1px solid rgba(255,255,255,.08);padding-top:4px;margin-top:2px;">Net CC balance change</span>
-          <span style="color:${netCC2>=0?C.pos:C.neg};font-family:var(--fm);font-weight:600;border-top:1px solid rgba(255,255,255,.08);padding-top:4px;margin-top:2px;">${netCC2>=0?'+':''}${kfmt(netCC2)}</span>
-          <span style="color:${C.ink};font-weight:700;border-top:2px solid rgba(255,255,255,.12);padding-top:5px;margin-top:3px;font-size:12px;">Total operating spend</span>
-          <span style="color:${totalFixed+totalVar>deployable?C.neg:C.ink};font-family:var(--fm);font-weight:700;border-top:2px solid rgba(255,255,255,.12);padding-top:5px;margin-top:3px;font-size:12px;">−${kfmt(totalFixed+totalVar)}</span>
+
+      <!-- One-line how-to -->
+      <div style="padding:8px 14px;background:rgba(0,0,0,.18);border-top:1px solid rgba(255,255,255,.05);">
+        <div style="font-size:11px;color:${C.ink4};line-height:1.6;">
+          In Quicken: <strong style="color:var(--ink3);">Reports → Net Worth</strong> → set date to <strong style="color:var(--ink3);">last day of ${monthName}</strong> → filter to Checking, Savings, Credit Cards only → total should equal <strong style="color:${reconTotal>=0?C.pos:C.neg};">${reconTotal>=0?'+':''}${kfmt(reconTotal)}</strong>.
+        </div>
+      </div>
+
+      <!-- IS assembly summary: income → auto-save → fixed → variable → net -->
+      <div style="padding:10px 14px;border-top:1px solid rgba(255,255,255,.06);">
+        <div style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${C.ink4};margin-bottom:8px;">IS Assembly</div>
+        <div style="display:flex;flex-direction:column;gap:3px;font-size:12px;font-family:var(--fm);">
+          <div style="display:flex;justify-content:space-between;"><span style="color:${C.ink4};">Operating income</span><span style="color:${C.pos};">+${kfmt(totalIncome)}</span></div>
+          ${totalAutoSave>0?`<div style="display:flex;justify-content:space-between;"><span style="color:${C.ink4};">Pre-committed savings</span><span style="color:${C.river};">-${kfmt(totalAutoSave)}</span></div>`:''}
+          <div style="display:flex;justify-content:space-between;"><span style="color:${C.ink4};">Fixed expenses</span><span style="color:${C.neg};">-${kfmt(totalFixed)}</span></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:${C.ink4};">Variable expenses</span><span style="color:${C.gold};">-${kfmt(totalVar)}</span></div>
+          ${totalDraw>0?`<div style="display:flex;justify-content:space-between;"><span style="color:${C.neg};">Savings draw</span><span style="color:${C.neg};">+${kfmt(totalDraw)} ⚠</span></div>`:''}
+          <div style="display:flex;justify-content:space-between;padding-top:5px;border-top:1px solid rgba(255,255,255,.1);margin-top:3px;">
+            <span style="color:${C.ink};font-weight:600;">Net remaining</span>
+            <span style="color:${onTrack?C.pos:C.neg};font-weight:700;">${netRemaining>=0?'+':''}${kfmt(netRemaining)}</span>
+          </div>
         </div>
       </div>
     </div>
   </div>`;
+
 
   // ── Margin cards ──────────────────────────────────────────────────
   const fixedMargin = fixedRows.length > 0 ? `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 12px;margin-bottom:8px;">

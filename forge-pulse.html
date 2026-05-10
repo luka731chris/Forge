@@ -4377,7 +4377,7 @@ function buildMonthSummary(selMonth, sp) {
     .filter(t => classifyTxn(t) === 'paycheck' && t.amount > 0
                  && detectAcctType(t.account||'') === 'checking')
     .map(t => t.date);
-  // Also from savings-account paycheck deposits (split direct deposit)
+
   function nearPaycheck(tDate) {
     const d0 = new Date(tDate);
     return paycheckDatesC.some(pd => Math.abs(new Date(pd) - d0) <= 4 * 864e5);
@@ -4391,6 +4391,14 @@ function buildMonthSummary(selMonth, sp) {
       addToBkt('auto_save', Object.assign({}, t, { _xferTo: dest, amount: -Math.abs(t.amount) }));
     }
   });
+
+  // Pattern B removed from BMS — caused double-counting
+
+  // ── Accrual engine (same instance IS uses) ────────────────────────────
+  const accrual    = buildAccrualEngine(selMonth, sp);
+  const isInFlight = !!accrual;
+
+  // ── Raw income and auto-savings (before normalization) ────────────────
   // rawIncome = checking paychecks only (savings-acct paychecks are in auto_save)
   const rawPaycheck  = (bktTxns.paycheck  || []).reduce((s,t) => s + t.amount, 0);
   const rawIncome    = rawPaycheck;
@@ -4453,6 +4461,7 @@ function buildMonthSummary(selMonth, sp) {
     earlyMonth:    normData ? (normData.earlyMonth || false) : false,
   };
 }
+
 
 
 function renderThermometer(containerId, selMonth) {
