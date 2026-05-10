@@ -4378,56 +4378,19 @@ function buildMonthSummary(selMonth, sp) {
                  && detectAcctType(t.account||'') === 'checking')
     .map(t => t.date);
   // Also from savings-account paycheck deposits (split direct deposit)
-  const savingsPayDates = monthSp
-    .filter(t => classifyTxn(t) === 'paycheck' && t.amount > 0
-                 && detectAcctType(t.account||'') === 'savings')
-    .map(t => t.date);
-
-  // All payday dates = checking paychecks + savings direct deposits
-  const allPayDates = [...new Set([...paycheckDatesC, ...savingsPayDates])];
-
   function nearPaycheck(tDate) {
     const d0 = new Date(tDate);
-    return allPayDates.some(pd => Math.abs(new Date(pd) - d0) <= 4 * 864e5);
+    return paycheckDatesC.some(pd => Math.abs(new Date(pd) - d0) <= 4 * 864e5);
   }
 
-  // Pattern A: checking→savings transfers on or near payday
-  monthXfers.forEach(t => {
-    const dest = (t.category||'').replace(/^\[|\]$/g,'').trim();
-    const typ  = detectAcctType(dest);
-    if (typ === 'savings' && nearPaycheck(t.date)) {
+  // Pattern A: transfers FROM CHECKING to savings near payday only
+  monthXfers.filter(t => t.amount < 0).forEach(t => {
+    const dest    = (t.category||'').replace(/^\[|\]$/g,'').trim();
+    const srcType = detectAcctType(t.account||'');
+    if (srcType === 'checking' && detectAcctType(dest) === 'savings' && nearPaycheck(t.date)) {
       addToBkt('auto_save', Object.assign({}, t, { _xferTo: dest, amount: -Math.abs(t.amount) }));
     }
   });
-
-  // Pattern B: employer split direct deposit to savings.
-  // Guard: skip if Pattern A already captured a transfer to this account — avoid double-count.
-  savingsPayDates.forEach(pd => {
-    monthSp
-      .filter(t => t.date === pd && t.amount > 0
-                   && classifyTxn(t) === 'paycheck'
-                   && detectAcctType(t.account||'') === 'savings')
-      .forEach(t => {
-        // Skip if Pattern A already has a transfer to this savings account near this date
-        const patAAccts = (bktTxns.auto_save||[]).filter(st => !st._splitDeposit);
-        const alreadyCaptured = patAAccts.some(st =>
-          (st._xferTo === t.account || st.account === t.account) &&
-          Math.abs(new Date(st.date) - new Date(t.date)) <= 2 * 864e5
-        );
-        if (alreadyCaptured) return;
-        addToBkt('auto_save', Object.assign({}, t, {
-          _xferTo: t.account,
-          _splitDeposit: true,
-          amount: -Math.abs(t.amount)
-        }));
-      });
-  });
-
-  // ── Accrual engine (same instance IS uses) ────────────────────────────
-  const accrual    = buildAccrualEngine(selMonth, sp);
-  const isInFlight = !!accrual;
-
-  // ── Raw income and auto-savings (before normalization) ────────────────
   // rawIncome = checking paychecks only (savings-acct paychecks are in auto_save)
   const rawPaycheck  = (bktTxns.paycheck  || []).reduce((s,t) => s + t.amount, 0);
   const rawIncome    = rawPaycheck;
