@@ -1320,20 +1320,26 @@ select:focus { border-color: var(--gold); }
       <div style="position:relative;display:inline-flex;align-items:center;gap:6px;">
         <div class="is-chart-type-tooltip" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:300px;background:rgba(12,12,14,.97);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:14px;z-index:200;pointer-events:none;box-shadow:0 12px 40px rgba(0,0,0,.6);">
           <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:10px;">Choose a view</div>
-          ${['pressure','stack','trellis','slope','waffle'].map(t => {
-            const TIPS = {
-              pressure:['Budget Pressure Bar','Deployable income vs. fixed + variable spend for the selected month. The primary at-a-glance view.'],
-              stack:   ['Stacked Bar Trend','Fixed vs. variable spending across months. Best for spotting months where overall spend spiked.'],
-              trellis: ['Small Multiples','One sparkline per category. Best for seeing which individual categories are creeping up or staying flat.'],
-              slope:   ['Slope Chart','This month vs. 6-month average per category. Best for active monthly decisions — what changed right now?'],
-              waffle:  ['Proportion Chart','Share of wallet by category this month. Best for understanding portfolio composition at a glance.'],
-            };
-            const [lbl,desc] = TIPS[t];
-            return `<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;" onclick="setISTrendType('${t}')">
-              <div style="width:28px;height:28px;border-radius:6px;background:rgba(245,168,0,.12);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;">${{pressure:'▮',stack:'▦',trellis:'⊞',slope:'╱',waffle:'▩'}[t]}</div>
-              <div><div style="font-size:12px;font-weight:600;color:rgba(238,234,228,.9);">${lbl}</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;line-height:1.4;">${desc}</div></div>
-            </div>`;
-          }).join('')}
+          <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;" onclick="setISTrendType('pressure')">
+            <div style="width:28px;height:28px;border-radius:6px;background:rgba(245,168,0,.12);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;">▮</div>
+            <div><div style="font-size:12px;font-weight:600;color:rgba(238,234,228,.9);">Budget Pressure Bar</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;line-height:1.4;">Deployable income vs. fixed + variable spend. The primary at-a-glance view.</div></div>
+          </div>
+          <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;" onclick="setISTrendType('stack')">
+            <div style="width:28px;height:28px;border-radius:6px;background:rgba(245,168,0,.12);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;">▦</div>
+            <div><div style="font-size:12px;font-weight:600;color:rgba(238,234,228,.9);">Stacked Bar Trend</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;line-height:1.4;">Fixed vs. variable spending across months. Best for spotting overall spend spikes.</div></div>
+          </div>
+          <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;" onclick="setISTrendType('trellis')">
+            <div style="width:28px;height:28px;border-radius:6px;background:rgba(245,168,0,.12);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;">⊞</div>
+            <div><div style="font-size:12px;font-weight:600;color:rgba(238,234,228,.9);">Small Multiples</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;line-height:1.4;">One sparkline per category. Best for seeing which buckets are creeping up.</div></div>
+          </div>
+          <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;" onclick="setISTrendType('slope')">
+            <div style="width:28px;height:28px;border-radius:6px;background:rgba(245,168,0,.12);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;">╱</div>
+            <div><div style="font-size:12px;font-weight:600;color:rgba(238,234,228,.9);">Slope Chart</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;line-height:1.4;">This month vs. 6-month average. Best for active monthly decisions.</div></div>
+          </div>
+          <div style="display:flex;gap:10px;padding:7px 0;cursor:pointer;" onclick="setISTrendType('waffle')">
+            <div style="width:28px;height:28px;border-radius:6px;background:rgba(245,168,0,.12);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;">▩</div>
+            <div><div style="font-size:12px;font-weight:600;color:rgba(238,234,228,.9);">Proportion Chart</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;line-height:1.4;">Share of wallet by category this month. Best for composition understanding.</div></div>
+          </div>
         </div>
         <label style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);font-family:var(--fm);">View</label>
         <select id="isTrendTypeSel" onchange="setISTrendType(this.value)"
@@ -1356,7 +1362,7 @@ select:focus { border-color: var(--gold); }
       </div>
       <div style="width:1px;height:22px;background:rgba(255,255,255,.1);"></div>
       <span style="font-size:11px;color:var(--ink4);font-family:var(--fm);">Month:</span>
-      <select id="isMonth" onchange="renderIncomeStatement(); try{renderISTrend();}catch(e){}" style="font-size:12px;padding:5px 10px;"></select>
+      <select id="isMonth" onchange="renderIncomeStatement();" style="font-size:12px;padding:5px 10px;"></select>
       <span style="font-size:11px;color:var(--ink4);font-family:var(--fm);margin-left:8px;">Sort:</span>
       <select id="isSortField" onchange="isSort.field=this.value;renderIncomeStatement()" style="font-size:12px;padding:5px 10px;">
         <option value="date">Date</option>
@@ -3721,7 +3727,7 @@ function isSavingsTransfer(t) {
 // operatingSpendable — operating cash flow only:
 // Excludes transfers. CC credits remain but are classified as expense offsets by classifyTxn.
 function operatingSpendable(arr) {
-  return (arr || []).filter(t => !isTransfer(t));
+  return (arr || []).filter(t => !isTransfer(t) && !t._masked);
 }
 
 // spendable() — alias for backward compatibility
@@ -5967,6 +5973,78 @@ function renderFileList() {
   `).join('');
 }
 
+// ── _inferItemBucket: infer Forge bucket from detail-file item title ──────────
+// Used to "unmask" lump-sum merchant charges into per-item Forge categories.
+// Each item's title/description is matched against keyword lists.
+// Amazon order: "Outdoor Lighting Transformer 300W" → 'household' (home improvement)
+// Amazon order: "Annie's Organic Mac & Cheese 12-pack" → 'groceries'
+// Apple Card: "Whole Foods Market" → 'groceries'
+// Home Depot: "Milwaukee M18 Drill Kit" → 'household'
+// Falls back to the existing classifyTxn() bucket if no keyword match.
+function _inferItemBucket(t, ftype) {
+  const title = ((t.itemDetail || t.payee || t.category || '') + ' ' +
+                 (t.memo || '')).toLowerCase();
+
+  // ── Home improvement / tools / outdoor ──────────────────────────────────
+  if (/\b(tool|drill|saw|mower|trimmer|blower|chainsaw|generator|compressor|ladder|scaffolding|workbench|vise|clamp|wrench|socket|hammer|screwdriver|level|stud finder|caulk|sealant|adhesive|grout|mortar|cement|concrete|drywall|plywood|lumber|wood|pipe|plumbing|faucet|toilet|shower|bath|tile|flooring|carpet|insulation|roofing|shingles|gutter|downspout|deck|fence|post|railing|door|window|garage|lock|deadbolt|hinge|knob|switch|outlet|wire|cable|conduit|breaker|panel|transformer|lighting|fixture|bulb|led|lamp|chandelier|fan|thermostat|hvac|furnace|filter|duct|vent|attic|basement|crawl|landscape|mulch|soil|fertilizer|seed|sod|sprinkler|hose|irrigation|garden|shovel|rake|wheelbarrow|paint|primer|stain|brush|roller|tape|sandpaper|sander|power wash|pressure wash|storage|shelf|shelving|cabinet|drawer|organizer|bin|container|rack|garage|workbench)\b/.test(title))
+    return 'household';
+
+  // ── Groceries / food ────────────────────────────────────────────────────
+  if (/\b(food|grocery|grocer|organic|produce|fruit|vegetable|meat|chicken|beef|pork|fish|seafood|bread|milk|egg|cheese|butter|yogurt|cereal|oat|rice|pasta|sauce|soup|snack|chip|cracker|cookie|cake|candy|chocolate|coffee|tea|juice|water|soda|beer|wine|protein|vitamin|supplement|baby food|formula|diaper|wipe|whole foods|trader joe|kroger|safeway|publix|aldi|costco|sam's club|bj's|walmart grocery|instacart)\b/.test(title))
+    return 'groceries';
+
+  // ── Restaurants / dining ────────────────────────────────────────────────
+  if (/\b(restaurant|pizza|burger|taco|sushi|ramen|noodle|bbq|grill|cafe|coffee shop|starbucks|dunkin|mcdonald|chick-fil|chipotle|subway|domino|papa john|door.?dash|grubhub|uber eats|instacart restaurant|dining|takeout|takeaway|delivery|bar|pub|brewery|winery|cocktail)\b/.test(title))
+    return 'restaurants';
+
+  // ── Electronics / tech ──────────────────────────────────────────────────
+  if (/\b(iphone|ipad|macbook|apple watch|airpod|galaxy|android|laptop|computer|desktop|monitor|keyboard|mouse|headphone|earphone|speaker|tv|television|roku|fire tv|chromecast|apple tv|camera|lens|tripod|usb|charger|cable|hub|router|wifi|ethernet|hard drive|ssd|memory|ram|gpu|cpu|processor|tablet|kindle|e-reader|gaming|controller|console|playstation|xbox|nintendo|game)\b/.test(title))
+    return 'entertainment';
+
+  // ── Healthcare / pharmacy ────────────────────────────────────────────────
+  if (/\b(medicine|medication|prescription|rx|pharmacy|vitamin|supplement|first aid|bandage|thermometer|blood pressure|glucose|inhaler|nebulizer|brace|wrap|ice pack|heating pad|cpap|cpap mask|dental|toothbrush|toothpaste|floss|retainer|glasses|contacts|lens solution|sunscreen|sunblock|medical|health|wellness|cvs|walgreens|rite aid)\b/.test(title))
+    return 'healthcare';
+
+  // ── Clothing / apparel ───────────────────────────────────────────────────
+  if (/\b(shirt|pant|trouser|jean|shorts|dress|skirt|jacket|coat|sweater|hoodie|sweatshirt|cardigan|blazer|suit|tie|belt|shoe|boot|sneaker|sandal|sock|underwear|bra|swimsuit|swimwear|athletic wear|legging|yoga|gym wear|hat|cap|glove|scarf|wallet|purse|handbag|backpack|luggage|suitcase|kids clothes|children's|toddler clothes|nike|adidas|under armour|lululemon|gap|old navy|h&m|zara|banana republic|j\.crew)\b/.test(title))
+    return 'clothing';
+
+  // ── Personal care / beauty ───────────────────────────────────────────────
+  if (/\b(shampoo|conditioner|soap|body wash|lotion|moisturizer|sunscreen|makeup|foundation|lipstick|mascara|eyeliner|eyeshadow|blush|concealer|powder|perfume|cologne|deodorant|razor|shaving|beard|hair|nail|skin care|face wash|toner|serum|retinol|exfoliant|teeth whitening|oral care|personal care|beauty|cosmetic|grooming)\b/.test(title))
+    return 'personal';
+
+  // ── Auto / vehicle ──────────────────────────────────────────────────────
+  if (/\b(car|auto|vehicle|motor|tire|wheel|rim|brake|oil|fluid|wiper|battery|alternator|starter|transmission|engine|exhaust|muffler|car wash|detail|wax|polish|seat cover|floor mat|gps|dash cam|jumper|tow|parking|garage pass)\b/.test(title))
+    return 'car';
+
+  // ── Kids / childcare / sports ───────────────────────────────────────────
+  if (/\b(kids|children|child|baby|infant|toddler|toy|lego|doll|action figure|board game|puzzle|sport|soccer|baseball|basketball|football|hockey|lacrosse|swim|gymnastics|dance|karate|martial art|camp|school supply|backpack|lunch box|notebook|crayon|marker|colored pencil|art supply|stroller|car seat|crib|playpen|baby monitor|diaper bag)\b/.test(title))
+    return 'childcare';
+
+  // ── Pet ─────────────────────────────────────────────────────────────────
+  if (/\b(dog|cat|pet|puppy|kitten|bird|fish|hamster|rabbit|guinea pig|dog food|cat food|pet food|treat|leash|collar|crate|kennel|litter|scratching|aquarium|tank|filter|vet|flea|tick|heartworm|toy for dog|dog bed|cat bed)\b/.test(title))
+    return 'other';  // pets are in 'other' — no dedicated bucket
+
+  // ── Travel ──────────────────────────────────────────────────────────────
+  if (/\b(hotel|motel|airbnb|vrbo|flight|airline|airport|car rental|rental car|cruise|resort|vacation|travel|trip|luggage|suitcase|passport|visa)\b/.test(title))
+    return 'travel';
+
+  // ── Entertainment / subscriptions ───────────────────────────────────────
+  if (/\b(netflix|hulu|disney\+|hbo|paramount|apple tv\+|prime video|spotify|apple music|tidal|audible|kindle unlimited|youtube premium|game pass|playstation plus|nintendo online|movie|ticket|concert|event|museum|amusement|theme park|book|ebook|magazine|subscription)\b/.test(title))
+    return 'entertainment';
+
+  // ── Gifts / donations ───────────────────────────────────────────────────
+  if (/\b(gift|present|birthday|holiday|christmas|wedding|anniversary|thank you|donation|charity|nonprofit|church|school fundraiser|gift card|gift wrap|ribbon|bow)\b/.test(title))
+    return 'gifts';
+
+  // ── Office / school supplies ─────────────────────────────────────────────
+  if (/\b(office supply|printer|ink|toner|paper|staple|binder|folder|file|desk|chair|monitor stand|keyboard|webcam|headset|microphone|eraser|pencil|pen|highlighter|sticky note|whiteboard|planner|calendar)\b/.test(title))
+    return 'other';
+
+  // Fall back to existing classifyTxn logic
+  return null;  // null = use classifyTxn() as normal
+}
+
 async function processFiles() {
   if (!pendingFiles.length) return;
   const btn = document.getElementById('importBtn');
@@ -5974,32 +6052,29 @@ async function processFiles() {
 
   try {
 
-  // ── Step 1: Parse every file in the batch ────────────────────────
-  const newTxns = [];
-  let nwSuccessCount = 0;  // files that successfully parsed as NW snapshots
+  // ── Step 1: Parse every file into typed batches ───────────────────
+  const newTxns  = [];   // ALL parsed transactions from this batch
+  let nwSuccessCount = 0;
 
   for (const f of pendingFiles) {
     try {
       const text = await readFile(f);
       const ext  = f.name.split('.').pop().toLowerCase();
 
-      // Detect Quicken Net Worth / Investment Performance export
       if (isNetWorthExport(text)) {
-        const nwData = parseNetWorthCSV(text);
+        const nwData  = parseNetWorthCSV(text);
         const nwCount = Object.keys(nwData).length;
         if (nwCount > 0) {
           Object.assign(netWorthOverrides, nwData);
-          // Build history entry keyed by date
           const snapDate = Object.values(nwData)[0]?.date || new Date().toISOString().slice(0,10);
           if (!nwHistory[snapDate]) nwHistory[snapDate] = {};
           Object.entries(nwData).forEach(([k,v]) => { nwHistory[snapDate][k] = v.value; });
           saveNetWorthOverrides();
-          recordFileImport('quicken_networth', f.name, snapDate || new Date().toISOString().slice(0,10), nwCount);
-        toast('✓ ' + f.name + ' — Balance snapshot: ' + nwCount + ' account values loaded (as of ' + snapDate + ')');
+          recordFileImport('quicken_networth', f.name, snapDate, nwCount);
+          toast('✓ ' + f.name + ' — Balance snapshot: ' + nwCount + ' accounts loaded');
           nwSuccessCount++;
-          continue;  // only skip transaction parsing when NW parse actually succeeded
+          continue;
         }
-        // NW detection fired but parse returned 0 accounts — fall through to transaction parser
         toast('⚠ ' + f.name + ' — NW format detected but no accounts found; trying as transaction file');
       }
 
@@ -6008,44 +6083,54 @@ async function processFiles() {
       else if (ext==='qfx'||ext==='ofx') parsed = parseOFX(text, f.name);
       else parsed = parseCSV(text, f.name);
 
-      if (parsed.length === 0) {
-        const preview = text.replace(/^﻿/,'').split('\n').slice(0,3).join(' | ').slice(0,140);
+      if (!parsed.length) {
+        const preview = text.replace(/^\uFEFF/,'').split('\n').slice(0,3).join(' | ').slice(0,140);
         toast('⚠ ' + f.name + ' — 0 rows parsed. Preview: ' + preview);
-        console.warn('[Forge] 0 rows from', f.name);
-      } else {
-        const xfers  = parsed.filter(t => t.isTransfer).length;
-        const spndbl = parsed.length - xfers;
-        const accts  = [...new Set(parsed.map(t => t.account))];
-        parsed.forEach(t => newTxns.push(t));
-        // Detect file type for registry
-      // Detect file type — must run BEFORE _source stamping so all types get correct source
+        continue;
+      }
+
+      // Detect file type
+      const _fl = text.replace(/^\uFEFF/,'').slice(0,400).toLowerCase();
       let _ftype = 'quicken_csv';
-      const _fl = text.replace(/^\uFEFF/, '').slice(0, 400).toLowerCase();
       if      (_fl.includes('clearing date') && _fl.includes('merchant'))     _ftype = 'apple_card';
       else if (_fl.includes('order id') && _fl.includes('asin'))              _ftype = 'amazon_orders';
       else if (_fl.includes('order number') && _fl.includes('items ordered')) _ftype = 'home_depot';
       else if (_fl.includes('funding source') && _fl.includes('destination')) _ftype = 'venmo';
       else if (ext === 'qif')                                                  _ftype = 'quicken_qif';
       else if (ext === 'qfx' || ext === 'ofx')                               _ftype = 'quicken_qfx';
-      // Stamp _source on ALL detail-file transactions AFTER type is determined
-      const _detailSources = new Set(['apple_card','amazon_orders','home_depot','venmo']);
-      if (_detailSources.has(_ftype)) {
-        parsed.forEach(t => { if (!t._source) t._source = _ftype; });
-      }
-      const _thru = parsed.length ? [...parsed].sort((a,b)=>b.date.localeCompare(a.date))[0]?.date || '' : '';
+
+      // Stamp _source and _ftype on every row
+      const _detailSrcs = new Set(['apple_card','amazon_orders','home_depot','venmo']);
+      parsed.forEach(t => {
+        t._ftype = _ftype;
+        if (!t._source) t._source = _ftype;
+        // Infer per-item Forge category for detail-file rows
+        if (_detailSrcs.has(_ftype)) {
+          t._inferredBucket = _inferItemBucket(t, _ftype);
+          t._isDetail = true;
+        }
+      });
+
+      // Register import
+      const _thru = parsed.length
+        ? [...parsed].sort((a,b) => b.date.localeCompare(a.date))[0]?.date || ''
+        : '';
       recordFileImport(_ftype, f.name, _thru, parsed.length);
-      toast('✓ ' + f.name + ' — ' + parsed.length + ' rows (' + spndbl + ' spendable, ' + xfers + ' transfers, ' + accts.length + ' accounts)');
-      }
+
+      const xfers  = parsed.filter(t => t.isTransfer).length;
+      const spndbl = parsed.length - xfers;
+      const accts  = [...new Set(parsed.map(t => t.account))];
+      toast('✓ ' + f.name + ' — ' + parsed.length + ' rows (' + spndbl + ' spendable, ' + xfers + ' transfers, accts: ' + accts.join(', ') + ')');
+      parsed.forEach(t => newTxns.push(t));
+
     } catch(e) {
       console.error('[Forge] parse error', f.name, e);
       toast('✗ ' + f.name + ' — ' + e.message);
     }
   }
 
-  // If ONLY balance snapshot files were uploaded (and all succeeded), go to Balance Sheet
   if (nwSuccessCount > 0 && newTxns.length === 0) {
-    pendingFiles = [];
-    renderFileList();
+    pendingFiles = []; renderFileList();
     document.getElementById('importActions').style.display = 'none';
     btn.textContent = 'Begin Forging →'; btn.disabled = false;
     renderUploadStatus();
@@ -6053,83 +6138,226 @@ async function processFiles() {
     setTimeout(() => showPage('balancesheet'), 600);
     return;
   }
-
   if (newTxns.length === 0) {
-    pendingFiles = [];
-    renderFileList();
+    pendingFiles = []; renderFileList();
     document.getElementById('importActions').style.display = 'none';
     btn.textContent = 'Begin Forging →'; btn.disabled = false;
     return;
   }
 
-  // ── Step 2: This is real data — NEVER touch demo storage ─────────
   isDemoMode = false;
 
-  // ── Step 3: Build dedup key set from existing prod transactions ───
-  const existingKeys = new Set(txns.map(t => t.date+'|'+t.payee+'|'+t.amount+'|'+t.account));
-  const beforeCount  = txns.length;
+  // ── Step 2: Separate new rows by source class ─────────────────────
+  const DETAIL_SRCS = new Set(['apple_card','amazon_orders','home_depot','venmo']);
+  const newDetail   = newTxns.filter(t => DETAIL_SRCS.has(t._ftype));
+  const newQuicken  = newTxns.filter(t => !DETAIL_SRCS.has(t._ftype));
 
-  // ── Step 4: Dedup new batch against itself AND existing data ──────
-  let added = 0, duped = 0, nearDuped = 0;
-  const nearKeyMap = {};  // date|amount → [accounts] for near-dup detection
+  // ── Step 3: Military-grade dedup helpers ──────────────────────────
+  function _normPayee(p) {
+    return (p||'').toLowerCase()
+      .replace(/\s+/g,' ')
+      .replace(/[^a-z0-9 ]/g,'')
+      .trim()
+      .slice(0,20);
+  }
+  function _normAcct(a) {
+    return (a||'').toLowerCase()
+      .replace(/[-–—·*#]/g,' ').replace(/\s+/g,' ')
+      .replace(/\b(checking|savings|credit card|cc|card|account|acct)\b/g,'')
+      .trim().slice(0,16);
+  }
+  // Strict key: exact date + signed amount + normalized payee + normalized account
+  function _strictKey(t) {
+    return t.date+'|'+t.amount.toFixed(2)+'|'+_normPayee(t.payee)+'|'+_normAcct(t.account);
+  }
+  // Fuzzy key: date + absolute amount + payee prefix — catches cross-source same charge
+  function _fuzzyKey(t) {
+    return t.date+'|'+Math.abs(t.amount).toFixed(2)+'|'+_normPayee(t.payee).slice(0,8);
+  }
+  // CC payment key: date + absolute amount — any CC payment on the same date/amount
+  // is the same payment regardless of which side of the ledger or account name
+  function _ccPayKey(t) {
+    return t.date+'|'+Math.abs(t.amount).toFixed(2);
+  }
+  // Lump-sum merchant key: links Quicken lump-sum to detail-file rows
+  // Match on date (±3 days) + absolute amount — the Quicken Amazon charge on Apr 5
+  // matches Amazon CSV items summing to the same total, even if dates are ±1-2 days
+  function _merchantKey(t) {
+    return Math.abs(t.amount).toFixed(2)+'|'+_normPayee(t.payee).slice(0,6);
+  }
 
-  // First pass: dedup within the new batch
-  const batchSeen = new Set();
-  const dedupedNew = newTxns.filter(t => {
-    const k = t.date+'|'+t.payee+'|'+t.amount+'|'+t.account;
-    if (batchSeen.has(k)) { duped++; return false; }
-    batchSeen.add(k);
-    return true;
+  // Existing transaction key sets
+  const existingStrict = new Set(txns.map(_strictKey));
+  const existingFuzzy  = new Set(txns.map(_fuzzyKey));
+  // CC payments in existing data
+  const existingCCPay  = new Set(
+    txns.filter(t => isTransfer(t) && detectAcctType(t.account||'') === 'checking')
+        .map(_ccPayKey)
+  );
+
+  // ── Step 4: Unmasking — link detail rows to Quicken lump-sums ────
+  // For each Quicken row that matches a merchant (Amazon, Apple Card merchant, etc.),
+  // find all detail rows that fall within ±5 days with matching merchant prefix.
+  // Strategy:
+  //   A) Build a map of candidate Quicken lump-sums: payee-prefix + amount → txn
+  //   B) For each detail row group (same merchant/date window), find matching lump-sum
+  //   C) Mark matched Quicken rows as _masked=true; detail rows get _unmasks=lumpSumKey
+  //   D) When building the final txns array, suppress _masked rows where detail rows exist
+
+  // Candidate lump-sums: all Quicken rows where payee matches a known detail merchant
+  const MERCHANT_PATTERNS = {
+    amazon_orders: /\bamazon\b/i,
+    home_depot:    /\bhome.?depot\b/i,
+    venmo:         /\bvenmo\b/i,
+    apple_card:    /\bapple\b|\bapple.?card\b/i,
+  };
+
+  // Build detail group index: ftype|normPayeePrefix6|dateWindow → [detail rows]
+  // "date window" is the week number (floor(daysSinceEpoch/7)) for loose date matching
+  function _weekBucket(dateStr) {
+    return Math.floor(new Date(dateStr).getTime() / (7*24*3600*1000));
+  }
+  const detailGroups = {}; // key → detail rows
+  newDetail.forEach(t => {
+    // Group by ftype + week + merchant prefix
+    const k = t._ftype+'|'+_weekBucket(t.date);
+    if (!detailGroups[k]) detailGroups[k] = [];
+    detailGroups[k].push(t);
   });
 
-  // Second pass: dedup against existing prod data, collect near-dups for warning
+  // For each Quicken row, try to find matching detail group
+  const maskedKeys = new Set();  // strict keys of Quicken rows that are unmasked
+  newQuicken.forEach(qt => {
+    if (qt.isTransfer) return;  // transfers are never unmasked
+    const pattern = Object.entries(MERCHANT_PATTERNS).find(([,rx]) => rx.test(qt.payee));
+    if (!pattern) return;
+    const [detailFtype] = pattern;
+    // Check ±1 week buckets for matching detail rows
+    const weekB = _weekBucket(qt.date);
+    for (const woff of [-1, 0, 1]) {
+      const grpKey = detailFtype+'|'+(weekB+woff);
+      const grp    = detailGroups[grpKey];
+      if (!grp || !grp.length) continue;
+      // Sum the group's absolute amounts — does it match the Quicken charge?
+      const grpTotal = grp.reduce((s,t) => s+Math.abs(t.amount), 0);
+      const qtAmt    = Math.abs(qt.amount);
+      // Match if within 1% or $5 (handles rounding, tax, shipping discrepancies)
+      if (Math.abs(grpTotal - qtAmt) / Math.max(qtAmt, 1) < 0.01 ||
+          Math.abs(grpTotal - qtAmt) < 5.01) {
+        // Mark the Quicken row as masked by this detail group
+        qt._masked    = true;
+        qt._maskedBy  = detailFtype;
+        maskedKeys.add(_strictKey(qt));
+        // Link detail rows back to the Quicken lump-sum
+        grp.forEach(dt => {
+          dt._unmasks = _strictKey(qt);
+          dt._lumpPayee = qt.payee;
+          dt._lumpAcct  = qt.account;
+          dt._lumpDate  = qt.date;
+        });
+        break;  // found match — stop searching week offsets
+      }
+    }
+  });
+
+  // ── Step 5: CC payment dedup — high-confidence bilateral match ────
+  // A CC payment appears in Quicken as:
+  //   Checking account: debit (negative), category=[Credit Card Acct], isTransfer=true
+  //   CC account: credit (positive), category=[Checking Acct], isTransfer=true
+  // Apple Card CSV may also include a "Payment" row (already filtered by typeSkip).
+  // Key rule: if the same date+amount CC payment already exists as a transfer, suppress it.
+  const newCCPay = new Set(
+    newTxns.filter(t => isTransfer(t) && detectAcctType(t.account||'') === 'checking')
+           .map(_ccPayKey)
+  );
+
+  // ── Step 6: Dedup — build final toAdd list ────────────────────────
+  let added = 0, duped = 0, unmasked = 0, detailAdded = 0;
+
+  const batchStrict = new Set();
+  const batchFuzzy  = new Set();
+
+  // First pass: dedup within the batch itself
+  const dedupedNew = [];
+  newTxns.forEach(t => {
+    // Skip Quicken rows that are successfully unmasked by detail rows
+    if (t._masked) { unmasked++; return; }
+
+    const sk = _strictKey(t);
+    const fk = _fuzzyKey(t);
+
+    // Within-batch dedup
+    if (batchStrict.has(sk)) { duped++; return; }
+    batchStrict.add(sk);
+
+    // Cross-file fuzzy dedup (catches overlapping date-range exports of same source)
+    // But DON'T fuzzy-dedup detail rows against each other — detail items are distinct
+    if (!t._isDetail && batchFuzzy.has(fk)) { duped++; return; }
+    if (!t._isDetail) batchFuzzy.add(fk);
+
+    dedupedNew.push(t);
+  });
+
+  // Second pass: dedup against existing prod data
   const toAdd = [];
   dedupedNew.forEach(t => {
-    const k = t.date+'|'+t.payee+'|'+t.amount+'|'+t.account;
-    if (existingKeys.has(k)) { duped++; return; }
-    // Near-dup check: same date + amount, different account
-    const nk = t.date+'|'+Math.abs(t.amount).toFixed(2);
-    if (!nearKeyMap[nk]) nearKeyMap[nk] = [];
-    nearKeyMap[nk].push(t.account);
+    // Exact match
+    if (existingStrict.has(_strictKey(t))) { duped++; return; }
+
+    // Fuzzy cross-source dedup — but not for detail items (they should always be added
+    // if the Quicken lump-sum they unmask is being added fresh)
+    if (!t._isDetail && !t.isTransfer && existingFuzzy.has(_fuzzyKey(t))) { duped++; return; }
+
+    // CC payment dedup: if this is a CC payment transfer, check if the same
+    // payment already exists from the other side of the ledger
+    if (t.isTransfer && detectAcctType(t.account||'') === 'checking') {
+      if (existingCCPay.has(_ccPayKey(t))) { duped++; return; }
+    }
+
     toAdd.push(t);
-    added++;
+    if (t._isDetail) detailAdded++;
+    else added++;
   });
 
-  // Count near-dups (same date+amount across different accounts — could be CC + checking payment)
-  const nearDupWarnings = Object.entries(nearKeyMap)
-    .filter(([,accts]) => accts.length > 1 && new Set(accts).size > 1)
-    .length;
+  // ── Step 7: Apply inferred categories to detail rows ─────────────
+  // Detail rows that unmask a Quicken lump-sum: inherit the Quicken account
+  // so they appear in the right account register for reconciliation
+  toAdd.forEach(t => {
+    if (t._isDetail && t._unmasks) {
+      // Inherit Quicken account so reconciliation works correctly
+      if (!t.account || t.account === 'Apple Card' || t.account === t._ftype) {
+        t.account = t._lumpAcct || t.account;
+      }
+      // Apply inferred bucket as category if no better category exists
+      if (t._inferredBucket && (!t.category || t.category === 'Uncategorized')) {
+        t.category = t._inferredBucket;
+      }
+    }
+  });
 
-  // ── Step 5: Merge and sort ────────────────────────────────────────
+  // ── Step 8: Merge and sort ────────────────────────────────────────
   txns = [...txns, ...toAdd].sort((a,b) => b.date.localeCompare(a.date));
-
-  // ── Step 6: Rebuild accounts from merged set ──────────────────────
   const acctSet = new Set(txns.map(t => t.account));
   accounts = [...acctSet].sort();
   accounts.forEach(a => {
     if (!acctMeta[a]) acctMeta[a] = { type: detectAcctType(a), isCreditCard: isCreditAcct(a) };
   });
 
-  // ── Step 7: Save to PROD_KEY only ────────────────────────────────
   saveData();
-
-  // ── Step 8: Report ────────────────────────────────────────────────
-  pendingFiles = [];
-  renderFileList();
+  pendingFiles = []; renderFileList();
   document.getElementById('importActions').style.display = 'none';
   btn.textContent = 'Begin Forging →'; btn.disabled = false;
-
   updateHeader();
   renderUploadStatus();
 
   const spCount = spendable(txns).length;
-  let msg = '✓ ' + added.toLocaleString() + ' new transactions added';
-  if (duped > 0)           msg += ' · ' + duped + ' duplicates skipped';
-  if (nearDupWarnings > 0) msg += ' · ⚠ ' + nearDupWarnings + ' near-duplicates (review in Validation)';
-  msg += ' · ' + spCount.toLocaleString() + ' spendable total across ' + accounts.length + ' accounts';
+  let msg = '✓ ' + (added + detailAdded).toLocaleString() + ' transactions added';
+  if (unmasked > 0)     msg += ' · ' + unmasked + ' lump-sums unmasked by detail rows';
+  if (detailAdded > 0)  msg += ' · ' + detailAdded + ' item-level detail rows';
+  if (duped > 0)        msg += ' · ' + duped + ' duplicates suppressed';
+  msg += ' · ' + spCount.toLocaleString() + ' spendable across ' + accounts.length + ' accounts';
   toast(msg);
 
-  console.log('[Forge] Import:', added, 'added,', duped, 'duped,', nearDupWarnings, 'near-dups. Total txns:', txns.length);
   setTimeout(() => showPage('dashboard'), 800);
 
   } catch(outerErr) {
@@ -8423,7 +8651,7 @@ function renderISTrend(passedMonth) {
   function renderTrellis() {
     const showBks = ALL_BKS.filter(bk => moData.some(d => (d.fixedByBk[bk]||d.varByBk[bk])>0));
     if (!showBks.length) return '<div style="padding:24px;text-align:center;color:rgba(255,255,255,.3);font-size:13px;">No expense data.</div>';
-    const cols = Math.min(4, showBks.length);
+    const cols = Math.min(3, showBks.length);
     const panels = showBks.map(bk => {
       const isFixed = FIXED_BKS.includes(bk);
       const vals    = moData.map(d => d.fixedByBk[bk] || d.varByBk[bk] || 0);
@@ -8433,9 +8661,10 @@ function renderISTrend(passedMonth) {
       const trend   = vals.length>=2 ? vals[vals.length-1]-vals[vals.length-2] : 0;
       const trendCl = trend>avgV*0.15?'#F87171':trend<-avgV*0.15?'#34D9C3':'rgba(255,255,255,.3)';
       const trendIco= trend>avgV*0.15?'↑':trend<-avgV*0.15?'↓':'→';
-      const fillCol = isFixed?'#C94444':'#C07A00';
-      const lineCol = isFixed?'#F87171':'#F5A800';
-      const bkW=84,bkH=48,n=vals.length;
+      // Muted, dark-room friendly palette — not full red/gold saturation
+      const fillCol = isFixed ? '#7A3030' : '#7A5500';
+      const lineCol = isFixed ? '#C87070' : '#C49030';
+      const bkW=100,bkH=56,n=vals.length;
       const bW2=Math.floor(bkW/n*0.7),gap2=(bkW-bW2*n)/n;
       let sparkBars='';
       vals.forEach((v,i)=>{
@@ -8454,7 +8683,7 @@ function renderISTrend(passedMonth) {
         <div style="display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,.25);font-family:monospace;margin-top:3px;">
           <span>${moLabel(mths[0])}</span><span>avg ${fmtK(Math.round(avgV))}</span><span>${moLabel(mths[mths.length-1])}</span>
         </div>
-        <div style="position:absolute;top:8px;left:8px;width:5px;height:5px;border-radius:50%;background:${isFixed?'#F87171':'#F5A800'};opacity:.7;"></div>
+        <div style="position:absolute;top:8px;left:8px;width:4px;height:4px;border-radius:50%;background:${isFixed?'#C87070':'#C49030'};opacity:.6;"></div>
       </div>`;
     });
     return `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:8px;padding:12px;">${panels.join('')}</div>`;
@@ -8463,45 +8692,78 @@ function renderISTrend(passedMonth) {
   // ══════════════════════════════════════════════════════════════════
   // CHART C: SLOPE (vs 6-mo avg)
   // ══════════════════════════════════════════════════════════════════
-  function renderSlope() {
+    function renderSlope() {
     const cur = monthData(selMo);
     const priorN = Math.min(6, mths.length-1);
-    const priorMths = mths.slice(-priorN-1,-1);
+    const priorMths = mths.slice(-priorN-1, -1);
     const baselines = {};
     ALL_BKS.forEach(bk => {
-      const vals = priorMths.map(m => { const d=moData.find(x=>x.mo===m); return d?(d.fixedByBk[bk]||d.varByBk[bk]||0):0; }).filter(v=>v>0);
+      const vals = priorMths.map(m => {
+        const dd = moData.find(x=>x.mo===m);
+        return dd ? (dd.fixedByBk[bk]||dd.varByBk[bk]||0) : 0;
+      }).filter(v=>v>0);
       baselines[bk] = vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : 0;
     });
-    const showBks = ALL_BKS.filter(bk => (cur.fixedByBk[bk]||cur.varByBk[bk]||0)>0 || baselines[bk]>0);
-    if (!showBks.length) return '<div style="padding:24px;text-align:center;color:rgba(255,255,255,.3);">No data.</div>';
-    const maxAmt = Math.max(...showBks.flatMap(bk=>[cur.fixedByBk[bk]||cur.varByBk[bk]||0, baselines[bk]]), 1);
-    const rows = showBks.map(bk=>{
-      const curV=cur.fixedByBk[bk]||cur.varByBk[bk]||0,basV=baselines[bk],delta=curV-basV,pct=basV>0?delta/basV:0;
-      return {bk,curV,basV,delta,pct};
-    }).sort((a,b)=>Math.abs(b.pct)-Math.abs(a.pct));
-    const W=480,ROW_H=28,PT=36,PB=16,PL=90,PR=90,MID_W=W-PL-PR;
-    const H=PT+rows.length*ROW_H+PB;
-    const xL=PL,xR=PL+MID_W;
-    const yOf=i=>PT+i*ROW_H+ROW_H/2;
+    const rows = ALL_BKS.map(bk => {
+      const curV = cur.fixedByBk[bk]||cur.varByBk[bk]||0;
+      const basV = baselines[bk];
+      const delta = curV - basV;
+      const pct   = basV > 0 ? delta/basV : (curV > 0 ? 1 : 0);
+      return { bk, curV, basV, delta, pct };
+    }).filter(r => r.curV > 0 || r.basV > 0)
+      .sort((a,b) => Math.abs(b.pct) - Math.abs(a.pct));
+    if (!rows.length) return '<div style="padding:24px;text-align:center;color:rgba(255,255,255,.3);">No data for this month.</div>';
+
+    // Shared Y scale — both columns use same axis so line angles reflect real change
+    const allVals = rows.flatMap(r=>[r.basV,r.curV]).filter(v=>v>0);
+    const maxVal  = Math.max(...allVals, 1);
+    const W=520, PT=40, PB=24, PL=112, PR=82, COL_GAP=W-PL-PR;
+    const CHART_H = Math.max(rows.length*26+PT+PB, 200);
+    const xL=PL, xR=PL+COL_GAP;
+    const yScale = v => PT + (1 - v/maxVal)*(CHART_H-PT-PB);
     const [sY,sM]=selMo.split('-');
-    const selName=new Date(sY,sM-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
-    let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:480px;display:block;margin:0 auto;">
-      <text x="${xL}" y="20" text-anchor="middle" font-size="10" fill="rgba(255,255,255,.4)" font-family="monospace">6-mo avg</text>
-      <text x="${xR}" y="20" text-anchor="middle" font-size="10" fill="rgba(255,255,255,.85)" font-family="monospace">${selName.split(' ')[0]}</text>
-      <line x1="${xL}" y1="26" x2="${xL}" y2="${H-PB}" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
-      <line x1="${xR}" y1="26" x2="${xR}" y2="${H-PB}" stroke="rgba(255,255,255,.15)" stroke-width="1"/>`;
-    rows.forEach((r,i)=>{
-      const y=yOf(i),isFixed=FIXED_BKS.includes(r.bk);
-      const lineCol=r.delta>0?'rgba(248,113,113,.7)':r.delta<0?'rgba(52,217,195,.7)':'rgba(255,255,255,.2)';
-      const dotCol=isFixed?'#F87171':'#F5A800';
-      if(i%2===0)svg+=`<rect x="0" y="${(y-ROW_H/2).toFixed(1)}" width="${W}" height="${ROW_H}" fill="rgba(255,255,255,.012)"/>`;
-      svg+=`<text x="${xL-8}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="10" fill="rgba(255,255,255,.65)" font-family="system-ui">${bkLabel(r.bk)}</text>`;
-      svg+=`<circle cx="${xL}" cy="${y.toFixed(1)}" r="4" fill="${dotCol}" opacity=".6"/>`;
-      svg+=`<circle cx="${xR}" cy="${y.toFixed(1)}" r="4" fill="${dotCol}" opacity="${r.curV>0?1:.3}"/>`;
-      if(r.basV>0||r.curV>0)svg+=`<line x1="${xL}" y1="${y.toFixed(1)}" x2="${xR}" y2="${y.toFixed(1)}" stroke="${lineCol}" stroke-width="${Math.min(2.5,0.8+Math.abs(r.pct)*3)}" stroke-dasharray="${r.delta===0?'3,3':''}"/>`;
-      svg+=`<text x="${xL-12}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="10" fill="rgba(255,255,255,.4)" font-family="monospace">${r.basV>0?fmtK(r.basV):''}</text>`;
-      svg+=`<text x="${xR+8}" y="${(y+4).toFixed(1)}" text-anchor="start" font-size="${Math.abs(r.pct)>.2?'11':'10'}" font-weight="${Math.abs(r.pct)>.2?'bold':'normal'}" fill="${r.delta>0?'#F87171':r.delta<0?'#34D9C3':'rgba(255,255,255,.55)'}" font-family="monospace">${r.curV>0?fmtK(r.curV):'—'}</text>`;
-      if(Math.abs(r.pct)>.05&&r.basV>0&&r.curV>0)svg+=`<text x="${(xL+MID_W/2).toFixed(1)}" y="${(y-3).toFixed(1)}" text-anchor="middle" font-size="9" fill="${lineCol}" font-family="monospace">${r.delta>0?'+':''}${(r.pct*100).toFixed(0)}%</text>`;
+    const selName=new Date(sY,sM-1,1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
+
+    let svg=`<svg viewBox="0 0 ${W} ${CHART_H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">`;
+    // Grid
+    [0.25,0.5,0.75,1].forEach(f=>{
+      const y=yScale(maxVal*f);
+      svg+=`<line x1="${xL}" y1="${y.toFixed(1)}" x2="${xR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
+      svg+=`<text x="${xL-5}" y="${(y+3.5).toFixed(1)}" text-anchor="end" font-size="8" fill="rgba(255,255,255,.22)" font-family="monospace">${fmtK(maxVal*f)}</text>`;
+    });
+    // Column headers
+    svg+=`<text x="${xL}" y="22" text-anchor="middle" font-size="10" font-weight="bold" fill="rgba(255,255,255,.38)" font-family="monospace">6-mo avg</text>`;
+    svg+=`<text x="${xR}" y="22" text-anchor="middle" font-size="10" font-weight="bold" fill="rgba(255,255,255,.85)" font-family="monospace">${selName}</text>`;
+    svg+=`<line x1="${xL}" y1="28" x2="${xL}" y2="${CHART_H-PB}" stroke="rgba(255,255,255,.08)" stroke-width="1"/>`;
+    svg+=`<line x1="${xR}" y1="28" x2="${xR}" y2="${CHART_H-PB}" stroke="rgba(255,255,255,.14)" stroke-width="1"/>`;
+    // Slopes (drawn before dots)
+    rows.forEach(r=>{
+      if(r.basV<=0&&r.curV<=0) return;
+      const yL=r.basV>0?yScale(r.basV):yScale(r.curV);
+      const yR=r.curV>0?yScale(r.curV):yScale(r.basV);
+      const lineCol=r.delta>maxVal*.02?'rgba(248,113,113,.65)':r.delta<-maxVal*.02?'rgba(52,217,195,.65)':'rgba(255,255,255,.18)';
+      const lw=Math.min(2.5,0.7+Math.abs(r.pct)*1.8);
+      svg+=`<line x1="${xL}" y1="${yL.toFixed(1)}" x2="${xR}" y2="${yR.toFixed(1)}" stroke="${lineCol}" stroke-width="${lw.toFixed(1)}" stroke-linecap="round" ${r.delta===0?'stroke-dasharray="3,3"':''}/>`;
+    });
+    // Dots and labels
+    rows.forEach(r=>{
+      if(r.basV<=0&&r.curV<=0) return;
+      const yL=r.basV>0?yScale(r.basV):yScale(r.curV);
+      const yR=r.curV>0?yScale(r.curV):yScale(r.basV);
+      const isFixed=FIXED_BKS.includes(r.bk);
+      const dotCol=isFixed?'#C87070':'#C49030';
+      const valCol=r.delta>maxVal*.02?'#F87171':r.delta<-maxVal*.02?'#34D9C3':'rgba(255,255,255,.6)';
+      if(r.basV>0){
+        svg+=`<circle cx="${xL}" cy="${yL.toFixed(1)}" r="3" fill="${dotCol}" opacity=".6"/>`;
+        svg+=`<text x="${xL-9}" y="${(yL+3.5).toFixed(1)}" text-anchor="end" font-size="9" fill="rgba(255,255,255,.4)" font-family="monospace">${fmtK(r.basV)}</text>`;
+      }
+      if(r.curV>0){
+        svg+=`<circle cx="${xR}" cy="${yR.toFixed(1)}" r="3.5" fill="${dotCol}"/>`;
+        svg+=`<text x="${xR+7}" y="${(yR+3.5).toFixed(1)}" text-anchor="start" font-size="${Math.abs(r.pct)>.15?'11':'9'}" font-weight="${Math.abs(r.pct)>.15?'bold':'normal'}" fill="${valCol}" font-family="monospace">${fmtK(r.curV)}</text>`;
+      }
+      const yMid=(yL+yR)/2;
+      const pctBadge=r.basV>0&&r.curV>0?` ${r.delta>0?'+':''}${(r.pct*100).toFixed(0)}%`:'';
+      svg+=`<text x="${xL-11}" y="${(yMid+3.5).toFixed(1)}" text-anchor="end" font-size="9.5" fill="rgba(255,255,255,.7)" font-family="system-ui">${bkLabel(r.bk)}${pctBadge}</text>`;
     });
     svg+='</svg>';
     return `<div style="padding:12px 16px;">${svg}</div>`;
