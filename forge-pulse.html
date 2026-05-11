@@ -2382,8 +2382,73 @@ const fmt  = n => {
   const s = '$' + a.toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
   return neg ? '−' + s : s;
 };
+function _inferItemBucket(t, ftype) {
+  const title = ((t.itemDetail || t.payee || t.category || '') + ' ' +
+                 (t.memo || '')).toLowerCase();
+
+  // ── Home improvement / tools / outdoor ──────────────────────────────────
+  if (/\b(tool|drill|saw|mower|trimmer|blower|chainsaw|generator|compressor|ladder|scaffolding|workbench|vise|clamp|wrench|socket|hammer|screwdriver|level|stud finder|caulk|sealant|adhesive|grout|mortar|cement|concrete|drywall|plywood|lumber|wood|pipe|plumbing|faucet|toilet|shower|bath|tile|flooring|carpet|insulation|roofing|shingles|gutter|downspout|deck|fence|post|railing|door|window|garage|lock|deadbolt|hinge|knob|switch|outlet|wire|cable|conduit|breaker|panel|transformer|lighting|fixture|bulb|led|lamp|chandelier|fan|thermostat|hvac|furnace|filter|duct|vent|attic|basement|crawl|landscape|mulch|soil|fertilizer|seed|sod|sprinkler|hose|irrigation|garden|shovel|rake|wheelbarrow|paint|primer|stain|brush|roller|tape|sandpaper|sander|power wash|pressure wash|storage|shelf|shelving|cabinet|drawer|organizer|bin|container|rack|garage|workbench)\b/.test(title))
+    return 'household';
+
+  // ── Groceries / food ────────────────────────────────────────────────────
+  if (/\b(food|grocery|grocer|organic|produce|fruit|vegetable|meat|chicken|beef|pork|fish|seafood|bread|milk|egg|cheese|butter|yogurt|cereal|oat|rice|pasta|sauce|soup|snack|chip|cracker|cookie|cake|candy|chocolate|coffee|tea|juice|water|soda|beer|wine|protein|vitamin|supplement|baby food|formula|diaper|wipe|whole foods|trader joe|kroger|safeway|publix|aldi|costco|sam's club|bj's|walmart grocery|instacart)\b/.test(title))
+    return 'groceries';
+
+  // ── Restaurants / dining ────────────────────────────────────────────────
+  if (/\b(restaurant|pizza|burger|taco|sushi|ramen|noodle|bbq|grill|cafe|coffee shop|starbucks|dunkin|mcdonald|chick-fil|chipotle|subway|domino|papa john|door.?dash|grubhub|uber eats|instacart restaurant|dining|takeout|takeaway|delivery|bar|pub|brewery|winery|cocktail)\b/.test(title))
+    return 'restaurants';
+
+  // ── Electronics / tech ──────────────────────────────────────────────────
+  if (/\b(iphone|ipad|macbook|apple watch|airpod|galaxy|android|laptop|computer|desktop|monitor|keyboard|mouse|headphone|earphone|speaker|tv|television|roku|fire tv|chromecast|apple tv|camera|lens|tripod|usb|charger|cable|hub|router|wifi|ethernet|hard drive|ssd|memory|ram|gpu|cpu|processor|tablet|kindle|e-reader|gaming|controller|console|playstation|xbox|nintendo|game)\b/.test(title))
+    return 'entertainment';
+
+  // ── Healthcare / pharmacy ────────────────────────────────────────────────
+  if (/\b(medicine|medication|prescription|rx|pharmacy|vitamin|supplement|first aid|bandage|thermometer|blood pressure|glucose|inhaler|nebulizer|brace|wrap|ice pack|heating pad|cpap|cpap mask|dental|toothbrush|toothpaste|floss|retainer|glasses|contacts|lens solution|sunscreen|sunblock|medical|health|wellness|cvs|walgreens|rite aid)\b/.test(title))
+    return 'healthcare';
+
+  // ── Clothing / apparel ───────────────────────────────────────────────────
+  if (/\b(shirt|pant|trouser|jean|shorts|dress|skirt|jacket|coat|sweater|hoodie|sweatshirt|cardigan|blazer|suit|tie|belt|shoe|boot|sneaker|sandal|sock|underwear|bra|swimsuit|swimwear|athletic wear|legging|yoga|gym wear|hat|cap|glove|scarf|wallet|purse|handbag|backpack|luggage|suitcase|kids clothes|children's|toddler clothes|nike|adidas|under armour|lululemon|gap|old navy|h&m|zara|banana republic|j\.crew)\b/.test(title))
+    return 'clothing';
+
+  // ── Personal care / beauty ───────────────────────────────────────────────
+  if (/\b(shampoo|conditioner|soap|body wash|lotion|moisturizer|sunscreen|makeup|foundation|lipstick|mascara|eyeliner|eyeshadow|blush|concealer|powder|perfume|cologne|deodorant|razor|shaving|beard|hair|nail|skin care|face wash|toner|serum|retinol|exfoliant|teeth whitening|oral care|personal care|beauty|cosmetic|grooming)\b/.test(title))
+    return 'personal';
+
+  // ── Auto / vehicle ──────────────────────────────────────────────────────
+  if (/\b(car|auto|vehicle|motor|tire|wheel|rim|brake|oil|fluid|wiper|battery|alternator|starter|transmission|engine|exhaust|muffler|car wash|detail|wax|polish|seat cover|floor mat|gps|dash cam|jumper|tow|parking|garage pass)\b/.test(title))
+    return 'car';
+
+  // ── Kids / childcare / sports ───────────────────────────────────────────
+  if (/\b(kids|children|child|baby|infant|toddler|toy|lego|doll|action figure|board game|puzzle|sport|soccer|baseball|basketball|football|hockey|lacrosse|swim|gymnastics|dance|karate|martial art|camp|school supply|backpack|lunch box|notebook|crayon|marker|colored pencil|art supply|stroller|car seat|crib|playpen|baby monitor|diaper bag)\b/.test(title))
+    return 'childcare';
+
+  // ── Pet ─────────────────────────────────────────────────────────────────
+  if (/\b(dog|cat|pet|puppy|kitten|bird|fish|hamster|rabbit|guinea pig|dog food|cat food|pet food|treat|leash|collar|crate|kennel|litter|scratching|aquarium|tank|filter|vet|flea|tick|heartworm|toy for dog|dog bed|cat bed)\b/.test(title))
+    return 'other';  // pets are in 'other' — no dedicated bucket
+
+  // ── Travel ──────────────────────────────────────────────────────────────
+  if (/\b(hotel|motel|airbnb|vrbo|flight|airline|airport|car rental|rental car|cruise|resort|vacation|travel|trip|luggage|suitcase|passport|visa)\b/.test(title))
+    return 'travel';
+
+  // ── Entertainment / subscriptions ───────────────────────────────────────
+  if (/\b(netflix|hulu|disney\+|hbo|paramount|apple tv\+|prime video|spotify|apple music|tidal|audible|kindle unlimited|youtube premium|game pass|playstation plus|nintendo online|movie|ticket|concert|event|museum|amusement|theme park|book|ebook|magazine|subscription)\b/.test(title))
+    return 'entertainment';
+
+  // ── Gifts / donations ───────────────────────────────────────────────────
+  if (/\b(gift|present|birthday|holiday|christmas|wedding|anniversary|thank you|donation|charity|nonprofit|church|school fundraiser|gift card|gift wrap|ribbon|bow)\b/.test(title))
+    return 'gifts';
+
+  // ── Office / school supplies ─────────────────────────────────────────────
+  if (/\b(office supply|printer|ink|toner|paper|staple|binder|folder|file|desk|chair|monitor stand|keyboard|webcam|headset|microphone|eraser|pencil|pen|highlighter|sticky note|whiteboard|planner|calendar)\b/.test(title))
+    return 'other';
+
+  // Fall back to existing classifyTxn logic
+  return null;  // null = use classifyTxn() as normal
+}
+
+
 function operatingSpendable(arr) {
-  return (arr || []).filter(t => !isTransfer(t));
+  return (arr || []).filter(t => !isTransfer(t) && !t._masked);
 }
 function spendable(arr) { return operatingSpendable(arr); }
 
@@ -5485,7 +5550,8 @@ async function forgePostUnlock() {
   _patchLocalStorage();
   _lockSpinner(false);
   _lockHide();
-  if (typeof forgeAppInit === 'function') forgeAppInit();
+  const _initFn = window.forgeAppInit || (typeof forgeAppInit !== 'undefined' ? forgeAppInit : null);
+  if (typeof _initFn === 'function') _initFn();
 }
 
 function _patchLocalStorage() {
@@ -5509,7 +5575,8 @@ function _patchLocalStorage() {
 }
 
 
-forgeInitAuth();
+// Kick off auth — forgeAppInit is on window, not a declaration
+try { forgeInitAuth(); } catch(e) { console.error('[Forge] Auth init error:', e); }
 });
 </script>
 
