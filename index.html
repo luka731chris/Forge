@@ -8941,9 +8941,15 @@ function renderIncomeStatement() {
       moSel.appendChild(opt);
     });
   }
-  const selMonth = (moSel && moSel.value) || months[0];
-  try { if (typeof renderISTrend==='function') renderISTrend(selMonth); } catch(e){}
+  // Resolve selMonth — fallback chain ensures we always have a valid month
+  let selMonth = (moSel && moSel.value) || '';
+  if (!selMonth && months.length) {
+    selMonth = months[0];                // most recent month with data
+    if (moSel) moSel.value = selMonth;   // ensure selector reflects it
+  }
   if (!selMonth) { el.innerHTML='<p style="color:var(--ink4);padding:20px">No data yet.</p>'; return; }
+  // Render chart AFTER selMonth is confirmed valid
+  try { if (typeof renderISTrend==='function') renderISTrend(selMonth); } catch(e){ console.warn('[IS] trend err', e); }
 
   const [yr,mo]   = selMonth.split('-');
   const monthName = new Date(+yr,+mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
@@ -9193,38 +9199,41 @@ function renderIncomeStatement() {
   // ── Actionable recommendations ─────────────────────────────────────────
   function buildRecs() {
     const recs = [];
-    const vc   = varRows.filter(g=>g.actual+g.proj>0);
-    const topV = vc[0];
+    const topV = varRows.filter(g=>g.actual+g.proj>0)[0];
+    const highVar = varRows.find(g=>(g.actual+g.proj)>deployable*0.12);
+
     if (!onTrack) {
-      const gap = Math.abs(netRemaining);
-      recs.push({ level:'danger', icon:'🚨',
-        text:`You are on track to exceed deployable cash by ${kfmt(gap)} this month. `
-           + `Reduce variable spending to close the gap.` });
+      recs.push({ level:'danger', icon:'🚨', label:'OVER BUDGET',
+        value: kfmt(Math.abs(netRemaining)),
+        action: 'Cut variable spending now',
+        sub: pctOf(Math.abs(netRemaining), deployable) + ' over deployable' });
     }
     if (totalDraw > 0) {
-      recs.push({ level:'warning', icon:'⚠️',
-        text:`Savings draw of ${kfmt(totalDraw)} this month. Your expenses exceeded checking inflows — `
-           + `you needed to pull from savings to cover bills. Review fixed and variable spending.` });
+      recs.push({ level:'warning', icon:'⚠️', label:'SAVINGS DRAW',
+        value: kfmt(totalDraw),
+        action: 'Expenses exceeded checking',
+        sub: 'Pulled from savings to cover bills' });
     }
-    if (isInFlight && daysRemaining > 0 && topV) {
-      const daily = (topV.actual) / Math.max(daysElapsed,1);
-      const pace  = daily * daysRemaining;
-      if (pace > topV.actual * 0.4) {
-        recs.push({ level:'info', icon:'👁️',
-          text:`${topV.label} is running at ${kfmt(topV.actual)} with ${daysRemaining} days left. `
-             + `At current pace, another ${kfmt(Math.round(pace))} is projected.` });
-      }
+    if (onTrack && netRemaining > 100 && !totalDraw) {
+      recs.push({ level:'good', icon:'✅', label:'SURPLUS',
+        value: kfmt(netRemaining),
+        action: 'Deploy to savings / invest',
+        sub: pctOf(netRemaining, deployable) + ' of deployable free' });
     }
-    if (onTrack && netRemaining > 200 && !totalDraw) {
-      recs.push({ level:'good', icon:'✅',
-        text:`${kfmt(netRemaining)} unallocated after all expenses. `
-           + `Consider deploying to emergency fund, brokerage, or 529.` });
-    }
-    const highVar = varRows.find(g=>(g.actual+g.proj)>deployable*0.15);
     if (highVar) {
-      recs.push({ level:'info', icon:'📊',
-        text:`${highVar.label} is ${pctOf(highVar.actual+highVar.proj, deployable)} of deployable — `
-           + `your highest variable category. This is the most impactful place to reduce.` });
+      recs.push({ level:'info', icon:'📊', label:'TOP VARIABLE',
+        value: kfmt(highVar.actual + highVar.proj),
+        action: 'Cut ' + highVar.label,
+        sub: pctOf(highVar.actual + highVar.proj, deployable) + ' of deployable' });
+    }
+    if (isInFlight && topV && daysRemaining > 0) {
+      const pace = (topV.actual / Math.max(daysElapsed,1)) * daysRemaining;
+      if (pace > topV.actual * 0.3) {
+        recs.push({ level:'info', icon:'📈', label:'PACE ALERT',
+          value: '+' + kfmt(Math.round(pace)),
+          action: topV.label + ' on pace to add',
+          sub: daysRemaining + ' days remaining' });
+      }
     }
     return recs;
   }
