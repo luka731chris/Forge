@@ -8254,37 +8254,63 @@ function buildAccrualEngine(selMonth, sp) {
     const oneTimeTotal = oneTimeItems.reduce((s, v) => s + v.amount, 0);
 
     // ── Build normalized income ────────────────────────────────────────
-    // Rules (applied in priority order):
-    // 1. If 3-pay month: use normalPaycheck (strip the extra check)
-    // 2. If bonus detected: use actual minus bonus excess
-    // 3. If no paychecks yet this month (early month, 0 deposits):
-    //      use normalPaycheck (expected, based on history) — prevents bar going all-red
-    // 4. Otherwise: use actual curPaycheck (it will grow as the month progresses)
+    // Expected paychecks this month based on biweekly history
+    const expectedPayCount = Math.max(1, Math.round(avgPayCount));  // typically 2
+    const perCheckNormal   = normalPaycheck / Math.max(1, expectedPayCount);
+
     const curPaycheck    = curPayTxns.reduce((s,t) => s + t.amount, 0);
     const curOtherIncAmt = curOthTxns.reduce((s,t)  => s + t.amount, 0);
     const rawIncome      = curPaycheck + curOtherIncAmt;
     const extraPaycheck  = isThreePayMonth ? Math.max(0, curPaycheck - normalPaycheck) : 0;
 
+    // How many more checks are expected before month end?
+    // Only project if we're in-flight AND have received fewer than expected
+    const checksRemaining = isThreePayMonth ? 0 :
+      Math.max(0, expectedPayCount - curPayCount);
+
+    // The normal (non-bonus) portion of checks already received
+    // Capped at perCheckNormal × checks received to strip bonus excess
+    const normalReceivedAmt = bonusExclusion > 0
+      ? Math.min(curPaycheck, curPayCount * perCheckNormal)   // strip bonus
+      : curPaycheck;
+
+    // Project remaining checks at per-check median
+    const projectedAdditional = checksRemaining * perCheckNormal;
+
+    // ── Priority rules ─────────────────────────────────────────────────
     let incomeBase;
-    if (isThreePayMonth) {
-      // 3-pay month: normalize to 2-check equivalent
+    const earlyMonth = curPaycheck === 0 && normalPaycheck > 0;
+
+    if (earlyMonth) {
+      // No checks yet — use full historical expected
       incomeBase = normalPaycheck;
-    } else if (bonusExclusion > 0 && curPaycheck > normalPaycheck * 1.15) {
-      // Bonus detected: strip bonus excess, keep normal component
-      incomeBase = Math.max(normalPaycheck, curPaycheck - bonusExclusion);
-    } else if (curPaycheck === 0 && normalPaycheck > 0) {
-      // Early month — no checks deposited yet — use historical expected
+    } else if (isThreePayMonth) {
+      // 3-pay month: normalize to standard 2-check equivalent
       incomeBase = normalPaycheck;
+    } else if (checksRemaining > 0) {
+      // Mid-month: have received some but not all expected checks.
+      // Use normal portion of received + project remaining at median per-check amount.
+      incomeBase = normalReceivedAmt + projectedAdditional;
     } else {
-      // Normal: use actual (accumulates as biweekly deposits arrive)
-      incomeBase = curPaycheck;
+      // All expected checks received (or 3-pay month handled above).
+      // Use actual minus any bonus excess.
+      incomeBase = bonusExclusion > 0
+        ? Math.max(normalPaycheck, curPaycheck - bonusExclusion)
+        : curPaycheck;
     }
 
     const normalizedIncome = incomeBase + curOtherIncAmt - oneTimeTotal;
 
+    // Summary note for IS income header
+    let normNote = '';
+    if (earlyMonth)               normNote = 'No deposits yet — using ' + Math.round(normalPaycheck).toLocaleString() + ' from history';
+    else if (isThreePayMonth)     normNote = '3-pay month — normalized to 2-check equivalent';
+    else if (checksRemaining > 0) normNote = checksRemaining + ' of ' + expectedPayCount + ' paychecks projected at +' + Math.round(projectedAdditional).toLocaleString();
+    else if (bonusExclusion > 0)  normNote = Math.round(bonusExclusion).toLocaleString() + ' bonus excluded from income base';
+
     return {
       rawIncome,
-      normalizedIncome:  Math.max(0, normalizedIncome),
+      normalizedIncome:   Math.max(0, normalizedIncome),
       extraPaycheck,
       bonusItems,
       bonusExclusion,
@@ -8293,11 +8319,16 @@ function buildAccrualEngine(selMonth, sp) {
       isThreePayMonth,
       curPayCount,
       curPaycheck,
-      avgPayCount:       Math.round(avgPayCount * 10) / 10,
+      checksRemaining,
+      projectedAdditional,
+      expectedPayCount,
+      perCheckNormal,
+      avgPayCount:        Math.round(avgPayCount * 10) / 10,
       normalPaycheck,
       curAutoSave,
-      normalDeployable:  Math.max(0, normalizedIncome - curAutoSave),
-      earlyMonth:        curPaycheck === 0 && normalPaycheck > 0,
+      normalDeployable:   Math.max(0, normalizedIncome - curAutoSave),
+      earlyMonth,
+      normNote,
     };
   }
 
@@ -9045,20 +9076,26 @@ function renderIncomeStatement() {
   let totalIncome  = actualPaycheckTotal;
   let earlyMonthIS = false;
   let normPaycheck = 0;
-  let normNote     = '';
+  let normNote = '';
+  let normData = null;
   if (isInFlight && accrual && typeof accrual.normalizeIncome === 'function') {
-    const norm = accrual.normalizeIncome();
-    normPaycheck = norm.normalPaycheck;
-    if (norm.earlyMonth) {
-      totalIncome  = norm.normalPaycheck;
+    normData = accrual.normalizeIncome();
+    normPaycheck = normData.normalPaycheck;
+    // Use engine's normNote directly when available
+    if (normData.normNote) normNote = normData.normNote;
+    if (normData.earlyMonth) {
+      totalIncome  = normData.normalPaycheck;
       earlyMonthIS = true;
-      normNote     = 'No deposits yet · using ' + kfmt(norm.normalPaycheck) + ' from 6-mo history';
-    } else if (norm.isThreePayMonth) {
-      totalIncome  = norm.normalPaycheck;
-      normNote     = '3-pay month · normalized to ' + kfmt(norm.normalPaycheck);
-    } else if (norm.bonusExclusion > 0) {
-      totalIncome  = norm.normalizedIncome;
-      normNote     = kfmt(norm.bonusExclusion) + ' bonus excluded from operating income';
+      if (!normNote) normNote = 'No deposits yet · using ' + kfmt(normData.normalPaycheck) + ' from 6-mo history';
+    } else if (normData.isThreePayMonth) {
+      totalIncome  = normData.normalPaycheck;
+      if (!normNote) normNote = '3-pay month · normalized to ' + kfmt(normData.normalPaycheck);
+    } else if (normData.checksRemaining > 0) {
+      // Mid-month projection: use normalizedIncome (actual + projected remaining checks)
+      totalIncome  = normData.normalizedIncome;
+    } else if (normData.bonusExclusion > 0) {
+      totalIncome  = normData.normalizedIncome;
+      if (!normNote) normNote = kfmt(normData.bonusExclusion) + ' bonus excluded from operating income';
     }
   }
 
@@ -9451,7 +9488,20 @@ function renderIncomeStatement() {
 
   incomeHtml += `<div id="${incomeDetailId}" style="display:${incomeOpen?'block':'none'};">`;
   if (earlyMonthIS) {
-    incomeHtml += `<div style="padding:8px 12px;font-size:11px;color:${C.river};background:rgba(96,165,250,.06);border-top:1px solid rgba(96,165,250,.15);">📅 No deposits yet — using ${kfmt(normPaycheck)} from 6-month paycheck history</div>`;
+    incomeHtml += '<div style="padding:8px 12px;font-size:11px;color:'+C.river+';background:rgba(96,165,250,.06);border-top:1px solid rgba(96,165,250,.15);">&#128197; No deposits yet &mdash; projecting '+kfmt(normPaycheck)+' from 6-month history</div>';
+  } else if ((normData?.checksRemaining||0) > 0) {
+    const _cr = normData.checksRemaining;
+    const _pa = normData.projectedAdditional || 0;
+    const _pc = normData.perCheckNormal || 0;
+    incomeHtml += '<div style="padding:6px 12px;background:rgba(96,165,250,.06);border-top:1px solid rgba(96,165,250,.12);">';
+    for (let _ci=0; _ci<_cr; _ci++) {
+      incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:3px 0;">';
+      incomeHtml +=   '<div style="font-size:12px;color:'+C.river+';font-style:italic;">Paycheck ' + (normData.curPayCount+_ci+1) + ' of ' + normData.expectedPayCount + ' (projected)</div>';
+      incomeHtml +=   '<div style="font-size:11px;font-family:var(--fm);color:'+C.ink4+';">est.</div>';
+      incomeHtml +=   '<div style="font-size:13px;font-weight:600;font-family:var(--fm);color:'+C.river+';">+'+mfmt(_pc)+'</div>';
+      incomeHtml += '</div>';
+    }
+    incomeHtml += '</div>';
   }
   incomeRows.forEach((t,i) => {
     incomeHtml += `<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:5px 12px;border-top:1px solid rgba(255,255,255,.032);background:${i%2?'rgba(255,255,255,.012)':'transparent'};">

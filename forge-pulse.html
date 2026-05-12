@@ -3997,7 +3997,7 @@ function buildAccrualEngine(selMonth, sp) {
   // Returns { normalizedIncome, rawIncome, extraPaycheck, bonusItems, oneTimeItems, ... }
   function normalizeIncome() {
     const incTxns    = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'paycheck');
-    const otherIncAll= sp.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc' && !isCCCredit(t));
+    const otherIncAll= sp.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc' && !isNonOperatingCredit(t));
     const curPayTxns = curByBucket['paycheck']  || [];
     const curOthTxns = curByBucket['other_inc'] || [];
     const curAutoSave= (curByBucket['auto_save']||[]).reduce((s,t)=>s+Math.abs(t.amount), 0);
@@ -4073,37 +4073,63 @@ function buildAccrualEngine(selMonth, sp) {
     const oneTimeTotal = oneTimeItems.reduce((s, v) => s + v.amount, 0);
 
     // ── Build normalized income ────────────────────────────────────────
-    // Rules (applied in priority order):
-    // 1. If 3-pay month: use normalPaycheck (strip the extra check)
-    // 2. If bonus detected: use actual minus bonus excess
-    // 3. If no paychecks yet this month (early month, 0 deposits):
-    //      use normalPaycheck (expected, based on history) — prevents bar going all-red
-    // 4. Otherwise: use actual curPaycheck (it will grow as the month progresses)
+    // Expected paychecks this month based on biweekly history
+    const expectedPayCount = Math.max(1, Math.round(avgPayCount));  // typically 2
+    const perCheckNormal   = normalPaycheck / Math.max(1, expectedPayCount);
+
     const curPaycheck    = curPayTxns.reduce((s,t) => s + t.amount, 0);
     const curOtherIncAmt = curOthTxns.reduce((s,t)  => s + t.amount, 0);
     const rawIncome      = curPaycheck + curOtherIncAmt;
     const extraPaycheck  = isThreePayMonth ? Math.max(0, curPaycheck - normalPaycheck) : 0;
 
+    // How many more checks are expected before month end?
+    // Only project if we're in-flight AND have received fewer than expected
+    const checksRemaining = isThreePayMonth ? 0 :
+      Math.max(0, expectedPayCount - curPayCount);
+
+    // The normal (non-bonus) portion of checks already received
+    // Capped at perCheckNormal × checks received to strip bonus excess
+    const normalReceivedAmt = bonusExclusion > 0
+      ? Math.min(curPaycheck, curPayCount * perCheckNormal)   // strip bonus
+      : curPaycheck;
+
+    // Project remaining checks at per-check median
+    const projectedAdditional = checksRemaining * perCheckNormal;
+
+    // ── Priority rules ─────────────────────────────────────────────────
     let incomeBase;
-    if (isThreePayMonth) {
-      // 3-pay month: normalize to 2-check equivalent
+    const earlyMonth = curPaycheck === 0 && normalPaycheck > 0;
+
+    if (earlyMonth) {
+      // No checks yet — use full historical expected
       incomeBase = normalPaycheck;
-    } else if (bonusExclusion > 0 && curPaycheck > normalPaycheck * 1.15) {
-      // Bonus detected: strip bonus excess, keep normal component
-      incomeBase = Math.max(normalPaycheck, curPaycheck - bonusExclusion);
-    } else if (curPaycheck === 0 && normalPaycheck > 0) {
-      // Early month — no checks deposited yet — use historical expected
+    } else if (isThreePayMonth) {
+      // 3-pay month: normalize to standard 2-check equivalent
       incomeBase = normalPaycheck;
+    } else if (checksRemaining > 0) {
+      // Mid-month: have received some but not all expected checks.
+      // Use normal portion of received + project remaining at median per-check amount.
+      incomeBase = normalReceivedAmt + projectedAdditional;
     } else {
-      // Normal: use actual (accumulates as biweekly deposits arrive)
-      incomeBase = curPaycheck;
+      // All expected checks received (or 3-pay month handled above).
+      // Use actual minus any bonus excess.
+      incomeBase = bonusExclusion > 0
+        ? Math.max(normalPaycheck, curPaycheck - bonusExclusion)
+        : curPaycheck;
     }
 
     const normalizedIncome = incomeBase + curOtherIncAmt - oneTimeTotal;
 
+    // Summary note for IS income header
+    let normNote = '';
+    if (earlyMonth)               normNote = 'No deposits yet — using ' + Math.round(normalPaycheck).toLocaleString() + ' from history';
+    else if (isThreePayMonth)     normNote = '3-pay month — normalized to 2-check equivalent';
+    else if (checksRemaining > 0) normNote = checksRemaining + ' of ' + expectedPayCount + ' paychecks projected at +' + Math.round(projectedAdditional).toLocaleString();
+    else if (bonusExclusion > 0)  normNote = Math.round(bonusExclusion).toLocaleString() + ' bonus excluded from income base';
+
     return {
       rawIncome,
-      normalizedIncome:  Math.max(0, normalizedIncome),
+      normalizedIncome:   Math.max(0, normalizedIncome),
       extraPaycheck,
       bonusItems,
       bonusExclusion,
@@ -4112,11 +4138,16 @@ function buildAccrualEngine(selMonth, sp) {
       isThreePayMonth,
       curPayCount,
       curPaycheck,
-      avgPayCount:       Math.round(avgPayCount * 10) / 10,
+      checksRemaining,
+      projectedAdditional,
+      expectedPayCount,
+      perCheckNormal,
+      avgPayCount:        Math.round(avgPayCount * 10) / 10,
       normalPaycheck,
       curAutoSave,
-      normalDeployable:  Math.max(0, normalizedIncome - curAutoSave),
-      earlyMonth:        curPaycheck === 0 && normalPaycheck > 0,
+      normalDeployable:   Math.max(0, normalizedIncome - curAutoSave),
+      earlyMonth,
+      normNote,
     };
   }
 
@@ -4301,6 +4332,7 @@ function buildAccrualEngine(selMonth, sp) {
     FIXED_BUCKETS, UTILITY_BUCKETS, SUBSCRIPTION_BUCKETS, DISCRETIONARY_BUCKETS,
   };
 }
+
 
 
 let _piDrillOpen = {};
