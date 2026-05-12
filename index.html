@@ -278,6 +278,7 @@ main::-webkit-scrollbar-thumb:hover { background: var(--line3); }
 .kpi-sub { font-size: 12px; color: var(--ink3); }
 .kpi.positive .kpi-val { color: var(--pos); }
 .kpi.negative .kpi-val { color: var(--neg); }
+.frh:hover { background: rgba(255,255,255,.025) !important; }
 .kpi.gold     .kpi-val { color: var(--gold); }
 
 /* ── Chart cards ──────────────────────────────────────────────────────────── */
@@ -8949,7 +8950,6 @@ function renderIncomeStatement() {
   }
   if (!selMonth) { el.innerHTML='<p style="color:var(--ink4);padding:20px">No data yet.</p>'; return; }
   // Render chart AFTER selMonth is confirmed valid
-  try { if (typeof renderISTrend==='function') renderISTrend(selMonth); } catch(e){ console.warn('[IS] trend err', e); }
 
   const [yr,mo]   = selMonth.split('-');
   const monthName = new Date(+yr,+mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
@@ -9316,6 +9316,51 @@ function renderIncomeStatement() {
     ${isInFlight?`<span style="font-size:11px;color:${C.ink4};">${daysRemaining} days remaining</span>`:''}
   </div>`;
 
+  // Clear separate chart container; bar is now inline
+  (function(){ var tw=document.getElementById("isTrendWrap"); if(tw) tw.innerHTML=""; })();
+
+  // ── Inline Budget Pressure Bar ─────────────────────────────────────────
+  {
+    var _i=totalIncome>0?totalIncome:(earlyMonthIS?normPaycheck:0);
+    var _s=totalAutoSave,_fx=totalFixed,_vx=totalVar;
+    var _d=Math.max(_i-_s,1),_sp=_fx+_vx,_b=_d-_sp,_ov=_b<0;
+    var _sc=Math.max(_d,_sp,1)*(_ov?1.08:1);
+    var _fp=Math.min(_fx/_sc*100,100);
+    var _vp=Math.min(_vx/_sc*100,Math.max(0,100-_fp));
+    var _bp=!_ov?Math.max(0,Math.min(_d/_sc*100-_fp-_vp,100-_fp-_vp)):0;
+    var _op=_ov?Math.min(Math.abs(_b)/_sc*100,100-_fp-_vp):0;
+    var _il=Math.min(_d/_sc*100,99.5).toFixed(2);
+    var _bc=_ov?"#FF3B3B":(Math.abs(_b)/_d<.08?"#FBBF24":"#34D9C3");
+    var _fk=function(n){var a=Math.abs(n||0);return(n<0?"-":"")+(a>=1000?"$"+(a/1000).toFixed(1).replace(/\.0$/,"")+"K":"$"+Math.round(a));};
+    var _bar="";
+    _bar+="<div style=\"background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px 12px;margin-bottom:14px;\">";
+    _bar+="<div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px;flex-wrap:wrap;\">";
+    _bar+="<div style=\"font-size:15px;font-weight:700;color:var(--ink);\">" + "Budget Pressure &middot; " + monthName + "</div>";
+    _bar+="<div style=\"font-size:20px;font-weight:700;font-family:var(--fd);color:" + _bc + ";letter-spacing:-.01em;\">" + (_ov?"&minus;":"+") + _fk(Math.abs(_b)) + "<span style=\"font-size:11px;font-weight:500;margin-left:4px;opacity:.7;\">" + (_ov?"over":"free") + "</span></div>";
+    _bar+="</div>";
+    _bar+="<div style=\"font-size:11px;color:var(--ink4);font-family:var(--fm);margin-bottom:9px;\">" + _fk(_i) + (earlyMonthIS?" (est.)":"") + (_s>0?" &minus; "+_fk(_s)+" saved ":" ") + "= " + _fk(_d) + " deployable</div>";
+    _bar+="<div style=\"position:relative;height:14px;margin-bottom:3px;\"><div style=\"position:absolute;left:"+_il+"%;transform:translateX(-50%);font-size:9px;font-family:var(--fm);color:rgba(255,255,255,.4);white-space:nowrap;\">&lt; "+_fk(_d)+"</div></div>";
+    _bar+="<div style=\"position:relative;height:44px;border-radius:7px;overflow:hidden;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);box-shadow:0 3px 14px rgba(0,0,0,.5);\">";
+    _bar+="<div style=\"position:absolute;left:0;top:0;height:100%;width:"+_fp.toFixed(2)+"%;background:linear-gradient(to bottom,#FF9494,#C94444);\">";
+    if(_fp>18)_bar+="<div style=\"position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;gap:1px;\"><div style=\"font-size:11px;font-weight:800;color:rgba(255,255,255,.95);\">FIXED</div><div style=\"font-size:13px;font-weight:700;font-family:var(--fm);color:rgba(255,255,255,.9);\">" + _fk(_fx) + "</div></div>";
+    _bar+="</div>";
+    _bar+="<div style=\"position:absolute;top:0;height:100%;left:"+_fp.toFixed(2)+"%;width:"+_vp.toFixed(2)+"%;background:linear-gradient(to bottom,#FFCA40,#C07A00);\">";
+    if(_vp>16)_bar+="<div style=\"position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;gap:1px;\"><div style=\"font-size:11px;font-weight:800;color:rgba(0,0,0,.8);\">VAR</div><div style=\"font-size:13px;font-weight:700;font-family:var(--fm);color:rgba(0,0,0,.75);\">" + _fk(_vx) + "</div></div>";
+    _bar+="</div>";
+    if(!_ov&&_bp>0.5){_bar+="<div style=\"position:absolute;top:0;height:100%;left:"+(_fp+_vp).toFixed(2)+"%;width:"+_bp.toFixed(2)+"%;background:repeating-linear-gradient(-45deg,rgba(52,217,195,.55) 0,rgba(52,217,195,.55) 3px,rgba(52,217,195,.08) 3px,rgba(52,217,195,.08) 14px);\">";if(_bp>10)_bar+="<div style=\"position:absolute;inset:0;display:flex;align-items:center;justify-content:center;\"><span style=\"font-size:12px;font-weight:700;color:rgba(52,217,195,.9);font-family:var(--fm);\">" + _fk(_b) + "</span></div>";_bar+="</div>";}
+    if(_ov&&_op>0){_bar+="<div style=\"position:absolute;top:0;height:100%;left:"+(_fp+_vp).toFixed(2)+"%;width:"+_op.toFixed(2)+"%;background:repeating-linear-gradient(45deg,rgba(255,59,59,.7) 0,rgba(255,59,59,.7) 3px,rgba(255,59,59,.14) 3px,rgba(255,59,59,.14) 12px);\">";if(_op>6)_bar+="<div style=\"position:absolute;inset:0;display:flex;align-items:center;justify-content:center;\"><span style=\"font-size:12px;font-weight:700;color:#FF3B3B;font-family:var(--fm);\">&minus;" + _fk(Math.abs(_b)) + "</span></div>";_bar+="</div>";}
+    _bar+="<div style=\"position:absolute;inset:0;background:linear-gradient(to bottom,rgba(255,255,255,.18),rgba(255,255,255,0) 40%,rgba(0,0,0,.25));pointer-events:none;border-radius:inherit;\"></div>";
+    _bar+="<div style=\"position:absolute;top:0;bottom:0;left:"+_il+"%;width:2px;background:rgba(255,255,255,.75);box-shadow:0 0 6px rgba(255,255,255,.4);pointer-events:none;\"></div>";
+    _bar+="</div>";
+    _bar+="<div style=\"display:flex;gap:12px;margin-top:7px;font-size:11px;font-family:var(--fm);flex-wrap:wrap;\">";
+    _bar+="<span style=\"color:#F87171;\">&#9632; Fixed " + Math.round(_fx/Math.max(_d,1)*100) + "%</span>";
+    _bar+="<span style=\"color:#F5A800;\">&#9632; Variable " + Math.round(_vx/Math.max(_d,1)*100) + "%</span>";
+    _bar+="<span style=\"color:" + _bc + ";\">"+(_ov?"Over":"Free")+" "+Math.round(Math.abs(_b)/Math.max(_d,1)*100)+"%</span>";
+    if(isInFlight)_bar+="<span style=\"color:var(--ink4);margin-left:auto;\">" + daysElapsed + "d actual &middot; " + daysRemaining + "d remaining</span>";
+    _bar+="</div></div>";
+    out += _bar;
+  }
+
   // ── Recommendations — KPI card grid ──────────────────────────────────
   if (recs.length > 0) {
     out += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px;">`;
@@ -9498,101 +9543,73 @@ function renderIncomeStatement() {
     </div>`;
   }
 
-  // ── Reconciliation — collapsed, operating accounts only ────────────
-  const reconId = 'is-recon-'+selMonth.replace('-','');
-
-  // Only checking, savings, credit — the operating accounts that feed this IS
-  const RECON_TYPES = new Set(['checking','savings','credit']);
-  const acctBals3 = {};
-  txns.forEach(t => {
-    const at = detectAcctType(t.account||'');
-    if (!RECON_TYPES.has(at)) return;          // exclude investment/retirement/HSA/529
-    if (t.date > selMonth + '-31') return;      // only through end of selected month
-    if (t._source && !['quicken','quicken_csv','quicken_qif','quicken_qfx',undefined,''].includes(t._source)) return; // exclude detail-file rows
-    acctBals3[t.account] = (acctBals3[t.account]||0) + t.amount;
+  // ── Reconciliation (collapsed, operating accounts only) ────────────
+  var _reconId = "isr-"+selMonth.replace("-","");
+  var _RTYPES  = new Set(["checking","savings","credit"]);
+  var _rb = {};
+  txns.forEach(function(t) {
+    if (!_RTYPES.has(detectAcctType(t.account||""))) return;
+    if (t.date > selMonth+"-31") return;
+    var src = t._source||"";
+    if (["apple_card","amazon_orders","home_depot","venmo"].indexOf(src) >= 0) return;
+    _rb[t.account] = (_rb[t.account]||0) + t.amount;
   });
-  const TYPE_ORDER = {checking:0, savings:1, credit:2};
-  const reconAccts3 = Object.entries(acctBals3)
-    .map(([acct,bal]) => ({acct, bal, type: detectAcctType(acct)}))
-    .sort((a,b) => (TYPE_ORDER[a.type]||3)-(TYPE_ORDER[b.type]||3) || a.acct.localeCompare(b.acct));
-  const reconTotal = reconAccts3.reduce((s,a) => s+a.bal, 0);
-  // Group by type for summary line
-  const reconByType = {};
-  reconAccts3.forEach(a => { reconByType[a.type] = (reconByType[a.type]||0) + a.bal; });
-
-  const reconHtml = `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">
-    <!-- Header — always visible, click to expand -->
-    <div onclick="var el=document.getElementById('${reconId}');var open=el.style.display!=='none';el.style.display=open?'none':'block';this.querySelector('.recon-chev').textContent=open?'▸':'▾';"
-      style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;cursor:pointer;"
-      onmouseenter="this.style.background='rgba(255,255,255,.025)'" onmouseleave="this.style.background=''">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:13px;">🔍</span>
-        <div>
-          <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${C.ink4};">Quicken Tie-Out</div>
-          <div style="font-size:10px;color:${C.ink4};margin-top:1px;">
-            ${reconByType.checking!=null?'Chk: '+kfmt(reconByType.checking||0):''}
-            ${reconByType.savings!=null?' · Sav: '+kfmt(reconByType.savings||0):''}
-            ${reconByType.credit!=null?' · CC: '+kfmt(reconByType.credit||0):''}
-          </div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="text-align:right;">
-          <div style="font-size:14px;font-weight:700;font-family:var(--fm);color:${reconTotal>=0?C.pos:C.neg};">${reconTotal>=0?'+':''}${kfmt(reconTotal)}</div>
-          <div style="font-size:9px;color:${C.ink4};">net position</div>
-        </div>
-        <span class="recon-chev" style="font-size:11px;color:${C.ink4};">▸</span>
-      </div>
-    </div>
-
-    <!-- Body — collapsed by default -->
-    <div id="${reconId}" style="display:none;border-top:1px solid rgba(255,255,255,.07);">
-
-      <!-- Account balances -->
-      ${reconAccts3.map((a,i) => {
-        const typeLabel = {checking:'Chk',savings:'Sav',credit:'CC'}[a.type]||a.type;
-        const isCC = a.type==='credit';
-        const valColor = isCC ? (a.bal<0?C.neg:'var(--ink3)') : (a.bal>=0?'var(--ink2)':C.neg);
-        const dispVal  = isCC&&a.bal<0 ? '('+mfmt(Math.abs(a.bal))+')' : (a.bal>=0?'':'-')+mfmt(Math.abs(a.bal));
-        return `<div style="display:grid;grid-template-columns:28px 1fr 70px;gap:4px;align-items:center;padding:5px 14px;background:${i%2?'rgba(255,255,255,.012)':'transparent'};border-bottom:1px solid rgba(255,255,255,.024);">
-          <div style="font-size:9px;font-family:var(--fm);color:${C.ink4};letter-spacing:.06em;">${typeLabel}</div>
-          <div style="font-size:12px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.acct}</div>
-          <div style="font-size:13px;font-weight:600;font-family:var(--fm);color:${valColor};text-align:right;">${dispVal}</div>
-        </div>`;
-      }).join('')}
-
-      <!-- Total row -->
-      <div style="display:grid;grid-template-columns:28px 1fr 70px;gap:4px;align-items:center;padding:7px 14px;background:rgba(255,255,255,.04);border-top:2px solid rgba(255,255,255,.1);">
-        <div></div>
-        <div style="font-size:12px;font-weight:700;color:${C.ink};">Net (checking+savings+CC)</div>
-        <div style="font-size:14px;font-weight:700;font-family:var(--fm);color:${reconTotal>=0?C.pos:C.neg};text-align:right;">${reconTotal>=0?'+':''}${kfmt(reconTotal)}</div>
-      </div>
-
-      <!-- One-line how-to -->
-      <div style="padding:8px 14px;background:rgba(0,0,0,.18);border-top:1px solid rgba(255,255,255,.05);">
-        <div style="font-size:11px;color:${C.ink4};line-height:1.6;">
-          In Quicken: <strong style="color:var(--ink3);">Reports → Net Worth</strong> → set date to <strong style="color:var(--ink3);">last day of ${monthName}</strong> → filter to Checking, Savings, Credit Cards only → total should equal <strong style="color:${reconTotal>=0?C.pos:C.neg};">${reconTotal>=0?'+':''}${kfmt(reconTotal)}</strong>.
-        </div>
-      </div>
-
-      <!-- IS assembly summary: income → auto-save → fixed → variable → net -->
-      <div style="padding:10px 14px;border-top:1px solid rgba(255,255,255,.06);">
-        <div style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${C.ink4};margin-bottom:8px;">IS Assembly</div>
-        <div style="display:flex;flex-direction:column;gap:3px;font-size:12px;font-family:var(--fm);">
-          <div style="display:flex;justify-content:space-between;"><span style="color:${C.ink4};">Operating income</span><span style="color:${C.pos};">+${kfmt(totalIncome)}</span></div>
-          ${totalAutoSave>0?`<div style="display:flex;justify-content:space-between;"><span style="color:${C.ink4};">Pre-committed savings</span><span style="color:${C.river};">-${kfmt(totalAutoSave)}</span></div>`:''}
-          <div style="display:flex;justify-content:space-between;"><span style="color:${C.ink4};">Fixed expenses</span><span style="color:${C.neg};">-${kfmt(totalFixed)}</span></div>
-          <div style="display:flex;justify-content:space-between;"><span style="color:${C.ink4};">Variable expenses</span><span style="color:${C.gold};">-${kfmt(totalVar)}</span></div>
-          ${totalDraw>0?`<div style="display:flex;justify-content:space-between;"><span style="color:${C.neg};">Savings draw</span><span style="color:${C.neg};">+${kfmt(totalDraw)} ⚠</span></div>`:''}
-          <div style="display:flex;justify-content:space-between;padding-top:5px;border-top:1px solid rgba(255,255,255,.1);margin-top:3px;">
-            <span style="color:${C.ink};font-weight:600;">Net remaining</span>
-            <span style="color:${onTrack?C.pos:C.neg};font-weight:700;">${netRemaining>=0?'+':''}${kfmt(netRemaining)}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>`;
-
+  var _rA = Object.keys(_rb).filter(function(a){ return Math.abs(_rb[a])>0.005; })
+    .map(function(a){ return {a:a, b:_rb[a], tp:detectAcctType(a)}; })
+    .sort(function(x,y){
+      return ({checking:0,savings:1,credit:2}[x.tp]||3) - ({checking:0,savings:1,credit:2}[y.tp]||3);
+    });
+  var _rT  = _rA.reduce(function(s,x){ return s+x.b; }, 0);
+  var _rTF = (_rT>=0?"+":"-") + kfmt(Math.abs(_rT));
+  var _rTC = _rT>=0 ? C.pos : C.neg;
+  var reconHtml = (function(){
+    var h = "";
+    h += "<div style=\"background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;\">";
+    // Collapsed header
+    h += "<div class=\"frh\" data-rb=\"" + _reconId + "\" style=\"display:flex;align-items:center;justify-content:space-between;padding:8px 14px;cursor:pointer;user-select:none;\">";
+    h +=   "<span style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);\">Verify in Quicken</span>";
+    h +=   "<div style=\"display:flex;align-items:center;gap:8px;\"><span style=\"font-size:13px;font-weight:700;font-family:var(--fm);color:" + _rTC + ";\">" + _rTF + "</span><span class=\"frh-c\" style=\"font-size:11px;color:var(--ink4);\">&#9654;</span></div>";
+    h += "</div>";
+    // Body (hidden by default)
+    h += "<div id=\"" + _reconId + "\" style=\"display:none;border-top:1px solid rgba(255,255,255,.07);\">";
+    // One-line instruction
+    h += "<div style=\"padding:7px 14px 5px;font-size:11px;color:var(--ink4);\">";
+    h +=   "Quicken &rarr; Accounts &rarr; <strong style=\"color:var(--ink3);\">" + monthName + "</strong>";
+    h +=   " &rarr; Checking + Savings + Credit Cards &rarr; total = <strong style=\"color:" + _rTC + ";\">" + _rTF + "</strong>";
+    h += "</div>";
+    // Account rows
+    _rA.forEach(function(x, i) {
+      var tl  = ({checking:"Chk", savings:"Sav", credit:"CC"})[x.tp] || x.tp;
+      var col = x.tp==="credit" ? (x.b<0?C.neg:"var(--ink3)") : (x.b>=0?C.ink2:C.neg);
+      var val = (x.b<0?"(":"") + mfmt(Math.abs(x.b)) + (x.b<0?")":"");
+      h += "<div style=\"display:grid;grid-template-columns:28px 1fr 80px;align-items:center;padding:4px 14px;border-top:1px solid rgba(255,255,255,.028);background:" + (i%2?"rgba(255,255,255,.012)":"transparent") + ";\">";
+      h +=   "<span style=\"font-size:10px;color:var(--ink4);font-family:var(--fm);\">" + tl + "</span>";
+      h +=   "<span style=\"font-size:12px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;\">" + x.a + "</span>";
+      h +=   "<span style=\"font-size:12px;font-weight:600;font-family:var(--fm);color:" + col + ";text-align:right;\">" + val + "</span>";
+      h += "</div>";
+    });
+    // Net row
+    h += "<div style=\"display:grid;grid-template-columns:28px 1fr 80px;align-items:center;padding:5px 14px;border-top:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);\">";
+    h +=   "<span></span><span style=\"font-size:12px;font-weight:700;color:var(--ink);\">Net</span>";
+    h +=   "<span style=\"font-size:14px;font-weight:700;font-family:var(--fm);color:" + _rTC + ";text-align:right;\">" + _rTF + "</span>";
+    h += "</div>";
+    // IS Math
+    h += "<div style=\"padding:8px 14px 10px;border-top:1px solid rgba(255,255,255,.06);\">";
+    h +=   "<div style=\"font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;\">IS Math</div>";
+    h +=   "<div style=\"display:flex;flex-direction:column;gap:2px;font-size:11px;font-family:var(--fm);\">";
+    h +=     "<div style=\"display:flex;justify-content:space-between;\"><span style=\"color:var(--ink4);\">Paychecks</span><span style=\"color:var(--pos);\">+" + kfmt(totalIncome) + "</span></div>";
+    if (totalAutoSave>0) h += "<div style=\"display:flex;justify-content:space-between;\"><span style=\"color:var(--ink4);\">Pre-saved</span><span style=\"color:var(--river);\">&minus;" + kfmt(totalAutoSave) + "</span></div>";
+    h +=     "<div style=\"display:flex;justify-content:space-between;\"><span style=\"color:var(--ink4);\">Fixed</span><span style=\"color:var(--neg);\">&minus;" + kfmt(totalFixed) + "</span></div>";
+    h +=     "<div style=\"display:flex;justify-content:space-between;\"><span style=\"color:var(--ink4);\">Variable</span><span style=\"color:var(--gold);\">&minus;" + kfmt(totalVar) + "</span></div>";
+    if (totalDraw>0) h += "<div style=\"display:flex;justify-content:space-between;\"><span style=\"color:var(--neg);\">Savings draw</span><span style=\"color:var(--neg);\">+" + kfmt(totalDraw) + "</span></div>";
+    h +=     "<div style=\"display:flex;justify-content:space-between;padding-top:4px;border-top:1px solid rgba(255,255,255,.08);margin-top:2px;\">" +
+               "<span style=\"color:var(--ink);font-weight:600;\">Net</span>" +
+               "<span style=\"color:" + (onTrack?C.pos:C.neg) + ";font-weight:700;\">" + (netRemaining>=0?"+":"-") + kfmt(Math.abs(netRemaining)) + "</span></div>";
+    h +=   "</div>";
+    h += "</div>";
+    h += "</div></div>";
+    return h;
+  })();
 
   // ── Margin cards ──────────────────────────────────────────────────
   const fixedMargin = fixedRows.length > 0 ? `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
@@ -9640,6 +9657,17 @@ function renderIncomeStatement() {
     el.innerHTML = `<div style="padding:32px;text-align:center;color:var(--ink4);"><div style="font-size:24px;margin-bottom:12px;">⚠️</div><div style="font-size:14px;color:var(--ink2);">Income Statement error</div><div style="font-size:11px;color:var(--ink4);margin-top:6px;font-family:var(--fm);">${e.message}</div></div>`;
   }
 
+
+  el.querySelectorAll(".frh").forEach(function(hdr){
+    hdr.addEventListener("click", function(){
+      var bd = document.getElementById(this.dataset.rb);
+      if (!bd) return;
+      var open = bd.style.display !== "none";
+      bd.style.display = open ? "none" : "block";
+      var ch = this.querySelector(".frh-c");
+      if (ch) ch.innerHTML = open ? "&#9654;" : "&#9660;";
+    });
+  });
 
   // ── Single delegated click handler ─────────────────────────────────────
   if (el.dataset.listenerBound) return;
