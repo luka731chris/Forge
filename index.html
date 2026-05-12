@@ -8177,31 +8177,57 @@ function buildAccrualEngine(selMonth, sp) {
   // per-employer bonus detection, one-time deposits, early-month extrapolation.
   // Returns { normalizedIncome, rawIncome, extraPaycheck, bonusItems, oneTimeItems, ... }
   function normalizeIncome() {
-    const incTxns    = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'paycheck');
-    const otherIncAll= sp.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc' && !isNonOperatingCredit(t));
-    const curPayTxns = curByBucket['paycheck']  || [];
-    const curOthTxns = curByBucket['other_inc'] || [];
-    const curAutoSave= (curByBucket['auto_save']||[]).reduce((s,t)=>s+Math.abs(t.amount), 0);
+    // Checking-account paycheck deposits ONLY for income counting.
+    // Savings-account employer deposits are pre-committed savings, not operating income.
+    const isChk = t => detectAcctType(t.account||'') === 'checking';
+    const isSav = t => detectAcctType(t.account||'') === 'savings';
 
-    // ── Build historical paycheck profile ──────────────────────────────
-    const payByMonth = {}, payCountByMonth = {};
-    incTxns.forEach(t => {
+    const incTxns     = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'paycheck');
+    const incChkTxns  = incTxns.filter(isChk);   // checking deposits → income
+    const incSavTxns  = incTxns.filter(isSav);    // savings deposits → pre-committed savings
+    const otherIncAll = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc' && !isNonOperatingCredit(t));
+    const curPayTxns  = (curByBucket['paycheck'] || []).filter(isChk); // checking only
+    const curSavPayTxns = (curByBucket['paycheck'] || []).filter(isSav); // savings splits
+    const curOthTxns  = curByBucket['other_inc'] || [];
+    const curAutoSave = (curByBucket['auto_save']||[]).reduce((s,t)=>s+Math.abs(t.amount), 0)
+                      + curSavPayTxns.reduce((s,t)=>s+t.amount, 0); // savings deposits count as auto-save
+
+    // ── Build historical paycheck profile (checking deposits only) ─────────
+    // Count DEPOSIT EVENTS per employer per month, not raw transaction count.
+    // Two employers each making one biweekly deposit = 2 events, avgPayCount = 2.
+    const payByMonth = {}, payCountByMonth = {}, payEventsByMonth = {};
+    incChkTxns.forEach(t => {
       const mo = t.date.slice(0,7);
       payByMonth[mo]      = (payByMonth[mo]||0) + t.amount;
       payCountByMonth[mo] = (payCountByMonth[mo]||0) + 1;
+      // Count unique payee+date combinations as "events" (a pay period)
+      const eventKey = mo + '|' + (t.payee||'').toLowerCase().trim();
+      if (!payEventsByMonth[mo]) payEventsByMonth[mo] = new Set();
+      payEventsByMonth[mo].add(eventKey);
     });
 
-    // Per-payee (employer) historical amounts for bonus detection
+    // Per-payee (employer) historical checking-only amounts for bonus detection
     const byPayee = {};
-    incTxns.forEach(t => {
+    incChkTxns.forEach(t => {
       const p = (t.payee||'UNKNOWN').toLowerCase().trim();
-      if (!byPayee[p]) byPayee[p] = { amounts: [] };
-      // Only include prior months in the base profile
-      if (!t.date.startsWith(curMonthStr)) byPayee[p].amounts.push(t.amount);
+      if (!byPayee[p]) byPayee[p] = { amounts: [], months: new Set() };
+      if (!t.date.startsWith(curMonthStr)) {
+        byPayee[p].amounts.push(t.amount);
+        byPayee[p].months.add(t.date.slice(0,7));
+      }
     });
 
-    // Prior monthly totals (6 months, excluding current month)
+    // Per-employer savings deposit history (for showing pre-committed savings per employer)
+    const bySavPayee = {};
+    incSavTxns.forEach(t => {
+      const p = (t.payee||'UNKNOWN').toLowerCase().trim();
+      if (!bySavPayee[p]) bySavPayee[p] = { amounts: [] };
+      if (!t.date.startsWith(curMonthStr)) bySavPayee[p].amounts.push(t.amount);
+    });
+
+    // Prior monthly totals (6 months, checking deposits only)
     const priorPayAmts   = priorMonths6.map(mo => payByMonth[mo] || 0).filter(v => v > 0);
+    // Count pay EVENTS (unique payee+month combos per pay period) not raw txn count
     const priorPayCounts = priorMonths6.map(mo => payCountByMonth[mo] || 0).filter(v => v > 0);
     const avgPayCount    = priorPayCounts.length ? mean(priorPayCounts) : 2;
     const curPayCount    = payCountByMonth[curMonthStr] || 0;
@@ -8308,6 +8334,76 @@ function buildAccrualEngine(selMonth, sp) {
     else if (checksRemaining > 0) normNote = checksRemaining + ' of ' + expectedPayCount + ' paychecks projected at +' + Math.round(projectedAdditional).toLocaleString();
     else if (bonusExclusion > 0)  normNote = Math.round(bonusExclusion).toLocaleString() + ' bonus excluded from income base';
 
+    // ── Per-employer breakdown (for IS income display) ──────────────────
+    // Group current-month checking deposits by employer payee
+    const employerBreakdown = {};
+    curPayTxns.forEach(t => {
+      const key = (t.payee||'Unknown').toLowerCase().trim();
+      if (!employerBreakdown[key]) {
+        const hist = (byPayee[key]||{}).amounts || [];
+        const typicalPerCheck = hist.length >= 2 ? median(removeOutliers(hist)) : (hist[0]||0);
+        employerBreakdown[key] = {
+          payee: t.payee || 'Unknown',
+          received: 0, checkCount: 0,
+          typicalPerCheck,
+          // Expected checks from this employer per month = their payByMonth count
+          expectedChecks: Math.round(mean(priorMonths6.map(mo =>
+            incChkTxns.filter(x => x.date.startsWith(mo) && (x.payee||'').toLowerCase().trim()===key).length
+          ).filter(v => v > 0)) || 1),
+          savingsReceived: 0,
+          typicalSavings: 0,
+        };
+      }
+      employerBreakdown[key].received    += t.amount;
+      employerBreakdown[key].checkCount  += 1;
+    });
+
+    // Add savings deposits per employer
+    curSavPayTxns.forEach(t => {
+      const key = (t.payee||'Unknown').toLowerCase().trim();
+      if (!employerBreakdown[key]) {
+        employerBreakdown[key] = {
+          payee: t.payee||'Unknown', received:0, checkCount:0,
+          typicalPerCheck:0, expectedChecks:1, savingsReceived:0, typicalSavings:0
+        };
+      }
+      employerBreakdown[key].savingsReceived += t.amount;
+    });
+
+    // Compute typical savings per employer from history
+    Object.keys(employerBreakdown).forEach(key => {
+      const hist = (bySavPayee[key]||{}).amounts || [];
+      if (hist.length >= 2) employerBreakdown[key].typicalSavings = median(removeOutliers(hist));
+      else if (hist.length === 1) employerBreakdown[key].typicalSavings = hist[0];
+    });
+
+    // Add projected checks for employers where we haven't seen all expected checks
+    Object.values(employerBreakdown).forEach(emp => {
+      emp.projectedChecks = Math.max(0, emp.expectedChecks - emp.checkCount);
+      emp.projectedAmount = emp.projectedChecks * emp.typicalPerCheck;
+      emp.projectedSavings = emp.projectedChecks * emp.typicalSavings;
+    });
+
+    // Also add employers from history who haven't paid yet this month
+    Object.entries(byPayee).forEach(([key, data]) => {
+      if (employerBreakdown[key]) return; // already have them
+      if (!data.amounts.length) return;
+      const typicalPerCheck = median(removeOutliers(data.amounts));
+      if (typicalPerCheck < 100) return; // filter noise
+      const expChecks = Math.round(mean(priorMonths6.map(mo =>
+        incChkTxns.filter(x => x.date.startsWith(mo) && (x.payee||'').toLowerCase().trim()===key).length
+      ).filter(v => v > 0)) || 1);
+      const savHist = (bySavPayee[key]||{}).amounts || [];
+      const typSav  = savHist.length >= 2 ? median(removeOutliers(savHist)) : (savHist[0]||0);
+      employerBreakdown[key] = {
+        payee: incChkTxns.find(t => (t.payee||'').toLowerCase().trim()===key)?.payee || key,
+        received: 0, checkCount: 0, typicalPerCheck, expectedChecks: expChecks,
+        projectedChecks: expChecks, projectedAmount: expChecks * typicalPerCheck,
+        savingsReceived: 0, typicalSavings: typSav,
+        projectedSavings: expChecks * typSav,
+      };
+    });
+
     return {
       rawIncome,
       normalizedIncome:   Math.max(0, normalizedIncome),
@@ -8329,6 +8425,8 @@ function buildAccrualEngine(selMonth, sp) {
       normalDeployable:   Math.max(0, normalizedIncome - curAutoSave),
       earlyMonth,
       normNote,
+      employerBreakdown,   // per-employer income + savings breakdown
+      curSavPayTotal: curSavPayTxns.reduce((s,t)=>s+t.amount, 0),
     };
   }
 
@@ -9458,79 +9556,114 @@ function renderIncomeStatement() {
   }
 
   // ── INCOME BLOCK ─────────────────────────────────────────────────
-  const incomeRows = (bkt.paycheck||[]).slice().sort((a,b)=>b.amount-a.amount);
-  const incomeCKey = 'income';
+  const incomeCKey    = 'income';
   const incomeComment = commentWidget(incomeCKey, 'e.g. "Expecting bonus next week"');
 
-  // Income adjustment explanation
+  // Income adjustment callout
   let adjNote = '';
   if (normNote) {
     const adjIcon = earlyMonthIS ? '📅' : normNote.includes('3-pay') ? '📊' : '💡';
-    adjNote = `<div style="font-size:11px;background:rgba(245,168,0,.08);border:1px solid rgba(245,168,0,.2);border-radius:6px;padding:6px 10px;margin-top:6px;color:${C.gold};">${adjIcon} <strong>Income adjusted:</strong> ${normNote}</div>`;
+    adjNote = '<div style="font-size:11px;background:rgba(245,168,0,.08);border:1px solid rgba(245,168,0,.2);border-radius:6px;padding:6px 10px;margin-top:6px;color:'+C.gold+';">'+adjIcon+' <strong>Income adjusted:</strong> '+normNote+'</div>';
   }
 
-  // Closed months: collapsible income detail
-  const incomeDetailId = 'is-inc-detail-'+selMonth.replace('-','');
-  const incomeOpen = isInFlight; // in-flight always expanded; closed months collapsed
-  let incomeHtml = `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">`;
-  incomeHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;${!isInFlight?'cursor:pointer;':''}"
-    ${!isInFlight?`onclick="var d=document.getElementById('${incomeDetailId}');d.style.display=d.style.display==='none'?'block':'none';"`:''}
-    onmouseenter="if(this.style.cursor==='pointer')this.style.background='rgba(255,255,255,.03)'" onmouseleave="this.style.background=''">
-    <span style="font-size:14px;">💰</span>
-    <div style="flex:1;">
-      <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${C.ink4};">OPERATING INCOME</span>
-      ${earlyMonthIS?`<span style="font-size:10px;color:${C.river};margin-left:6px;">estimated</span>`:''}
-      ${isInFlight?'':` <span style="font-size:10px;color:${C.ink4};margin-left:4px;">${incomeRows.length} deposit${incomeRows.length!==1?'s':''}</span>`}
-    </div>
-    <div style="font-size:16px;font-weight:700;font-family:var(--fd);color:${C.pos};">+${kfmt(totalIncome)}</div>
-    ${!isInFlight?`<div style="font-size:11px;color:${C.ink4};margin-left:4px;">▸</div>`:''}
-  </div>`;
-
-  incomeHtml += `<div id="${incomeDetailId}" style="display:${incomeOpen?'block':'none'};">`;
-  if (earlyMonthIS) {
-    incomeHtml += '<div style="padding:8px 12px;font-size:11px;color:'+C.river+';background:rgba(96,165,250,.06);border-top:1px solid rgba(96,165,250,.15);">&#128197; No deposits yet &mdash; projecting '+kfmt(normPaycheck)+' from 6-month history</div>';
-  } else if ((normData?.checksRemaining||0) > 0) {
-    const _cr = normData.checksRemaining;
-    const _pa = normData.projectedAdditional || 0;
-    const _pc = normData.perCheckNormal || 0;
-    incomeHtml += '<div style="padding:6px 12px;background:rgba(96,165,250,.06);border-top:1px solid rgba(96,165,250,.12);">';
-    for (let _ci=0; _ci<_cr; _ci++) {
-      incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:3px 0;">';
-      incomeHtml +=   '<div style="font-size:12px;color:'+C.river+';font-style:italic;">Paycheck ' + (normData.curPayCount+_ci+1) + ' of ' + normData.expectedPayCount + ' (projected)</div>';
-      incomeHtml +=   '<div style="font-size:11px;font-family:var(--fm);color:'+C.ink4+';">est.</div>';
-      incomeHtml +=   '<div style="font-size:13px;font-weight:600;font-family:var(--fm);color:'+C.river+';">+'+mfmt(_pc)+'</div>';
-      incomeHtml += '</div>';
-    }
-    incomeHtml += '</div>';
-  }
-  incomeRows.forEach((t,i) => {
-    incomeHtml += `<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:5px 12px;border-top:1px solid rgba(255,255,255,.032);background:${i%2?'rgba(255,255,255,.012)':'transparent'};">
-      <div style="font-size:14px;color:${C.ink};">${t.payee||'Paycheck'}</div>
-      <div style="font-size:11px;font-family:var(--fm);color:${C.ink4};">${t.date}</div>
-      <div style="font-size:15px;font-weight:700;font-family:var(--fm);color:${C.pos};">+${mfmt(t.amount)}</div>
-    </div>`;
+  // Per-employer breakdown from normalizeIncome engine
+  const empBreakdown = (normData && normData.employerBreakdown) ? normData.employerBreakdown : {};
+  // Get family member → employer mapping from settings (accountOwners maps account→person)
+  const settings = (function(){ try { return JSON.parse(localStorage.getItem('forge_settings_v2')||'{}'); } catch(e){ return {}; } })();
+  const acctOwners = settings.accountOwners || {};
+  // Build payee → person map from checking deposits in current month
+  const payeeToMember = {};
+  (bkt.paycheck||[]).filter(t => detectAcctType(t.account||'')==='checking').forEach(t => {
+    const owner = acctOwners[t.account] || '';
+    if (owner && t.payee) payeeToMember[(t.payee||'').toLowerCase().trim()] = owner;
   });
-  if (!incomeRows.length && !earlyMonthIS) {
-    incomeHtml += `<div style="padding:8px 12px;font-size:11px;color:${C.ink4};font-style:italic;border-top:1px solid rgba(255,255,255,.032);">No paycheck deposits in Quicken export for this month.</div>`;
-  }
-  if (autoSaveTxns.length > 0) {
-    incomeHtml += `<div style="padding:6px 12px 4px;border-top:1px solid rgba(255,255,255,.06);background:rgba(96,165,250,.04);">
-      <div style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${C.ink4};margin-bottom:4px;">PRE-COMMITTED SAVINGS</div>`;
-    autoSaveTxns.forEach(t => {
-      incomeHtml += `<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:3px 0;">
-        <div style="font-size:12px;color:${C.ink};">→ ${t._xferTo||'Savings'}</div>
-        <div style="font-size:11px;font-family:var(--fm);color:${C.ink4};">${t.date}</div>
-        <div style="font-size:12px;font-weight:600;font-family:var(--fm);color:${C.river};">−${mfmt(Math.abs(t.amount))}</div>
-      </div>`;
+
+  const incomeDetailId = 'is-inc-detail-'+selMonth.replace('-','');
+  const incomeOpen = isInFlight;
+  let incomeHtml = '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">';
+
+  // Header — data attribute for event-delegated collapse
+  incomeHtml += '<div class="is-inc-hdr" data-iid="'+incomeDetailId+'" style="display:flex;align-items:center;gap:8px;padding:8px 12px;'+(!isInFlight?'cursor:pointer;user-select:none;':'')+'">';
+
+  incomeHtml += '<span style="font-size:14px;">&#128176;</span>';
+  incomeHtml += '<div style="flex:1;"><span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:'+C.ink4+';">OPERATING INCOME</span>'
+    + (earlyMonthIS ? '<span style="font-size:10px;color:'+C.river+';margin-left:6px;">estimated</span>' : '')
+    + '</div>';
+  incomeHtml += '<div style="font-size:16px;font-weight:700;font-family:var(--fd);color:'+C.pos+';">+'+kfmt(totalIncome)+'</div>';
+  if (!isInFlight) incomeHtml += '<div style="font-size:11px;color:'+C.ink4+';margin-left:4px;">&#9658;</div>';
+  incomeHtml += '</div>';
+
+  // Detail body
+  incomeHtml += '<div id="'+incomeDetailId+'" style="display:'+(incomeOpen?'block':'none')+';">';
+
+  const empKeys = Object.keys(empBreakdown).sort();
+
+  if (earlyMonthIS && !empKeys.length) {
+    // Full early-month: no deposits at all
+    incomeHtml += '<div style="padding:8px 12px;font-size:12px;color:'+C.river+';background:rgba(96,165,250,.06);border-top:1px solid rgba(96,165,250,.15);">&#128197; No deposits yet &mdash; projecting '+kfmt(normPaycheck)+' from 6-month history</div>';
+  } else {
+    // Show per-employer rows
+    empKeys.forEach(function(key, ei) {
+      const emp    = empBreakdown[key];
+      const member = payeeToMember[key] || '';
+      const label  = emp.payee + (member ? ' &middot; ' + member : '');
+      const total  = emp.received + emp.projectedAmount;
+      const rowBg  = ei%2 ? 'rgba(255,255,255,.012)' : 'transparent';
+
+      // Income row for this employer
+      incomeHtml += '<div style="border-top:1px solid rgba(255,255,255,.04);">';
+      incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:7px 12px;background:'+rowBg+';">';
+      incomeHtml +=   '<div>';
+      incomeHtml +=     '<div style="font-size:13px;font-weight:600;color:'+C.ink+';">'+label+'</div>';
+      if (emp.checkCount > 0 && emp.projectedAmount > 0) {
+        incomeHtml += '<div style="font-size:11px;color:'+C.ink4+';margin-top:1px;">'+emp.checkCount+' received +'+emp.projectedChecks+' projected</div>';
+      } else if (emp.checkCount > 0) {
+        incomeHtml += '<div style="font-size:11px;color:'+C.ink4+';margin-top:1px;">'+emp.checkCount+(emp.checkCount===1?' paycheck':' paychecks')+' received</div>';
+      } else {
+        incomeHtml += '<div style="font-size:11px;color:'+C.river+';margin-top:1px;font-style:italic;">'+emp.projectedChecks+' paycheck'+(emp.projectedChecks!==1?'s':'')+' projected</div>';
+      }
+      incomeHtml +=   '</div>';
+      incomeHtml +=   '<div style="text-align:right;">';
+      incomeHtml +=     '<div style="font-size:15px;font-weight:700;font-family:var(--fm);color:'+C.pos+';">+'+kfmt(total)+'</div>';
+      if (emp.projectedAmount > 0) {
+        incomeHtml += '<div style="font-size:10px;color:'+C.river+';">+'+kfmt(emp.projectedAmount)+' proj</div>';
+      }
+      incomeHtml +=   '</div>';
+      incomeHtml += '</div>';
+
+      // Pre-committed savings row for this employer
+      const savTotal = emp.savingsReceived + emp.projectedSavings;
+      if (savTotal > 0) {
+        incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:4px 12px 5px 28px;background:rgba(96,165,250,.04);border-top:1px solid rgba(255,255,255,.04);">';
+        incomeHtml +=   '<div>';
+        incomeHtml +=     '<div style="font-size:11px;color:'+C.river+';">&#8594; Pre-committed savings</div>';
+        if (emp.projectedSavings > 0) incomeHtml += '<div style="font-size:10px;color:'+C.ink4+';">+'+kfmt(emp.projectedSavings)+' projected</div>';
+        incomeHtml +=   '</div>';
+        incomeHtml +=   '<div style="font-size:12px;font-weight:600;font-family:var(--fm);color:'+C.river+';">&#8722;'+kfmt(savTotal)+'</div>';
+        incomeHtml += '</div>';
+      }
+      incomeHtml += '</div>';
     });
-    incomeHtml += `</div>`;
+
+    // If no employer breakdown available (fallback)
+    if (!empKeys.length) {
+      (bkt.paycheck||[]).filter(t=>detectAcctType(t.account||'')==='checking').slice().sort((a,b)=>b.amount-a.amount).forEach((t,i) => {
+        incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:5px 12px;border-top:1px solid rgba(255,255,255,.032);background:'+(i%2?'rgba(255,255,255,.012)':'transparent')+';">';
+        incomeHtml += '<div style="font-size:14px;color:'+C.ink+';">'+(t.payee||'Paycheck')+'</div>';
+        incomeHtml += '<div style="font-size:11px;font-family:var(--fm);color:'+C.ink4+';">'+t.date+'</div>';
+        incomeHtml += '<div style="font-size:15px;font-weight:700;font-family:var(--fm);color:'+C.pos+';">+'+mfmt(t.amount)+'</div>';
+        incomeHtml += '</div>';
+      });
+    }
   }
-  incomeHtml += `</div>`; // close detail div
-  if (adjNote) incomeHtml += `<div style="padding:0 12px 8px;">${adjNote}</div>`;
-  incomeHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.08);">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${C.ink};">💵 Deployable</div>
-    <div style="font-size:22px;font-weight:700;font-family:var(--fd);color:${C.ink};">${kfmt(deployable)}${totalAutoSave>0?`<span style="font-size:10px;font-weight:400;color:${C.ink4};margin-left:6px;">(${kfmt(totalIncome)} − ${kfmt(totalAutoSave)} saved)</span>`:''}</div>
-  </div></div>`;
+
+  incomeHtml += '</div>'; // close detail
+  if (adjNote) incomeHtml += '<div style="padding:0 12px 8px;">'+adjNote+'</div>';
+  incomeHtml += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.08);">';
+  incomeHtml +=   '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:'+C.ink+';">&#128181; Deployable</div>';
+  incomeHtml +=   '<div style="font-size:22px;font-weight:700;font-family:var(--fd);color:'+C.ink+';">'+kfmt(deployable)+(totalAutoSave>0?'<span style="font-size:10px;font-weight:400;color:'+C.ink4+';margin-left:6px;">('+kfmt(totalIncome)+' &#8722; '+kfmt(totalAutoSave)+' saved)</span>':'')+'</div>';
+  incomeHtml += '</div>';
+  incomeHtml += '</div>';
 
   // ── Margin for income ──────────────────────────────────────────────
   const incomeMargin = `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 12px;font-size:11px;">
@@ -9707,6 +9840,16 @@ function renderIncomeStatement() {
     el.innerHTML = `<div style="padding:32px;text-align:center;color:var(--ink4);"><div style="font-size:24px;margin-bottom:12px;">⚠️</div><div style="font-size:14px;color:var(--ink2);">Income Statement error</div><div style="font-size:11px;color:var(--ink4);margin-top:6px;font-family:var(--fm);">${e.message}</div></div>`;
   }
 
+
+  // Income header collapse (closed months)
+  if (!isInFlight) {
+    el.querySelectorAll(".is-inc-hdr").forEach(function(hdr) {
+      hdr.addEventListener("click", function() {
+        var bd = document.getElementById(this.dataset.iid);
+        if (bd) bd.style.display = bd.style.display === "none" ? "block" : "none";
+      });
+    });
+  }
 
   el.querySelectorAll(".frh").forEach(function(hdr){
     hdr.addEventListener("click", function(){

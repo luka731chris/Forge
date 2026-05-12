@@ -3996,31 +3996,57 @@ function buildAccrualEngine(selMonth, sp) {
   // per-employer bonus detection, one-time deposits, early-month extrapolation.
   // Returns { normalizedIncome, rawIncome, extraPaycheck, bonusItems, oneTimeItems, ... }
   function normalizeIncome() {
-    const incTxns    = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'paycheck');
-    const otherIncAll= sp.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc' && !isNonOperatingCredit(t));
-    const curPayTxns = curByBucket['paycheck']  || [];
-    const curOthTxns = curByBucket['other_inc'] || [];
-    const curAutoSave= (curByBucket['auto_save']||[]).reduce((s,t)=>s+Math.abs(t.amount), 0);
+    // Checking-account paycheck deposits ONLY for income counting.
+    // Savings-account employer deposits are pre-committed savings, not operating income.
+    const isChk = t => detectAcctType(t.account||'') === 'checking';
+    const isSav = t => detectAcctType(t.account||'') === 'savings';
 
-    // ── Build historical paycheck profile ──────────────────────────────
-    const payByMonth = {}, payCountByMonth = {};
-    incTxns.forEach(t => {
+    const incTxns     = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'paycheck');
+    const incChkTxns  = incTxns.filter(isChk);   // checking deposits → income
+    const incSavTxns  = incTxns.filter(isSav);    // savings deposits → pre-committed savings
+    const otherIncAll = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc' && !isNonOperatingCredit(t));
+    const curPayTxns  = (curByBucket['paycheck'] || []).filter(isChk); // checking only
+    const curSavPayTxns = (curByBucket['paycheck'] || []).filter(isSav); // savings splits
+    const curOthTxns  = curByBucket['other_inc'] || [];
+    const curAutoSave = (curByBucket['auto_save']||[]).reduce((s,t)=>s+Math.abs(t.amount), 0)
+                      + curSavPayTxns.reduce((s,t)=>s+t.amount, 0); // savings deposits count as auto-save
+
+    // ── Build historical paycheck profile (checking deposits only) ─────────
+    // Count DEPOSIT EVENTS per employer per month, not raw transaction count.
+    // Two employers each making one biweekly deposit = 2 events, avgPayCount = 2.
+    const payByMonth = {}, payCountByMonth = {}, payEventsByMonth = {};
+    incChkTxns.forEach(t => {
       const mo = t.date.slice(0,7);
       payByMonth[mo]      = (payByMonth[mo]||0) + t.amount;
       payCountByMonth[mo] = (payCountByMonth[mo]||0) + 1;
+      // Count unique payee+date combinations as "events" (a pay period)
+      const eventKey = mo + '|' + (t.payee||'').toLowerCase().trim();
+      if (!payEventsByMonth[mo]) payEventsByMonth[mo] = new Set();
+      payEventsByMonth[mo].add(eventKey);
     });
 
-    // Per-payee (employer) historical amounts for bonus detection
+    // Per-payee (employer) historical checking-only amounts for bonus detection
     const byPayee = {};
-    incTxns.forEach(t => {
+    incChkTxns.forEach(t => {
       const p = (t.payee||'UNKNOWN').toLowerCase().trim();
-      if (!byPayee[p]) byPayee[p] = { amounts: [] };
-      // Only include prior months in the base profile
-      if (!t.date.startsWith(curMonthStr)) byPayee[p].amounts.push(t.amount);
+      if (!byPayee[p]) byPayee[p] = { amounts: [], months: new Set() };
+      if (!t.date.startsWith(curMonthStr)) {
+        byPayee[p].amounts.push(t.amount);
+        byPayee[p].months.add(t.date.slice(0,7));
+      }
     });
 
-    // Prior monthly totals (6 months, excluding current month)
+    // Per-employer savings deposit history (for showing pre-committed savings per employer)
+    const bySavPayee = {};
+    incSavTxns.forEach(t => {
+      const p = (t.payee||'UNKNOWN').toLowerCase().trim();
+      if (!bySavPayee[p]) bySavPayee[p] = { amounts: [] };
+      if (!t.date.startsWith(curMonthStr)) bySavPayee[p].amounts.push(t.amount);
+    });
+
+    // Prior monthly totals (6 months, checking deposits only)
     const priorPayAmts   = priorMonths6.map(mo => payByMonth[mo] || 0).filter(v => v > 0);
+    // Count pay EVENTS (unique payee+month combos per pay period) not raw txn count
     const priorPayCounts = priorMonths6.map(mo => payCountByMonth[mo] || 0).filter(v => v > 0);
     const avgPayCount    = priorPayCounts.length ? mean(priorPayCounts) : 2;
     const curPayCount    = payCountByMonth[curMonthStr] || 0;
@@ -4127,6 +4153,76 @@ function buildAccrualEngine(selMonth, sp) {
     else if (checksRemaining > 0) normNote = checksRemaining + ' of ' + expectedPayCount + ' paychecks projected at +' + Math.round(projectedAdditional).toLocaleString();
     else if (bonusExclusion > 0)  normNote = Math.round(bonusExclusion).toLocaleString() + ' bonus excluded from income base';
 
+    // ── Per-employer breakdown (for IS income display) ──────────────────
+    // Group current-month checking deposits by employer payee
+    const employerBreakdown = {};
+    curPayTxns.forEach(t => {
+      const key = (t.payee||'Unknown').toLowerCase().trim();
+      if (!employerBreakdown[key]) {
+        const hist = (byPayee[key]||{}).amounts || [];
+        const typicalPerCheck = hist.length >= 2 ? median(removeOutliers(hist)) : (hist[0]||0);
+        employerBreakdown[key] = {
+          payee: t.payee || 'Unknown',
+          received: 0, checkCount: 0,
+          typicalPerCheck,
+          // Expected checks from this employer per month = their payByMonth count
+          expectedChecks: Math.round(mean(priorMonths6.map(mo =>
+            incChkTxns.filter(x => x.date.startsWith(mo) && (x.payee||'').toLowerCase().trim()===key).length
+          ).filter(v => v > 0)) || 1),
+          savingsReceived: 0,
+          typicalSavings: 0,
+        };
+      }
+      employerBreakdown[key].received    += t.amount;
+      employerBreakdown[key].checkCount  += 1;
+    });
+
+    // Add savings deposits per employer
+    curSavPayTxns.forEach(t => {
+      const key = (t.payee||'Unknown').toLowerCase().trim();
+      if (!employerBreakdown[key]) {
+        employerBreakdown[key] = {
+          payee: t.payee||'Unknown', received:0, checkCount:0,
+          typicalPerCheck:0, expectedChecks:1, savingsReceived:0, typicalSavings:0
+        };
+      }
+      employerBreakdown[key].savingsReceived += t.amount;
+    });
+
+    // Compute typical savings per employer from history
+    Object.keys(employerBreakdown).forEach(key => {
+      const hist = (bySavPayee[key]||{}).amounts || [];
+      if (hist.length >= 2) employerBreakdown[key].typicalSavings = median(removeOutliers(hist));
+      else if (hist.length === 1) employerBreakdown[key].typicalSavings = hist[0];
+    });
+
+    // Add projected checks for employers where we haven't seen all expected checks
+    Object.values(employerBreakdown).forEach(emp => {
+      emp.projectedChecks = Math.max(0, emp.expectedChecks - emp.checkCount);
+      emp.projectedAmount = emp.projectedChecks * emp.typicalPerCheck;
+      emp.projectedSavings = emp.projectedChecks * emp.typicalSavings;
+    });
+
+    // Also add employers from history who haven't paid yet this month
+    Object.entries(byPayee).forEach(([key, data]) => {
+      if (employerBreakdown[key]) return; // already have them
+      if (!data.amounts.length) return;
+      const typicalPerCheck = median(removeOutliers(data.amounts));
+      if (typicalPerCheck < 100) return; // filter noise
+      const expChecks = Math.round(mean(priorMonths6.map(mo =>
+        incChkTxns.filter(x => x.date.startsWith(mo) && (x.payee||'').toLowerCase().trim()===key).length
+      ).filter(v => v > 0)) || 1);
+      const savHist = (bySavPayee[key]||{}).amounts || [];
+      const typSav  = savHist.length >= 2 ? median(removeOutliers(savHist)) : (savHist[0]||0);
+      employerBreakdown[key] = {
+        payee: incChkTxns.find(t => (t.payee||'').toLowerCase().trim()===key)?.payee || key,
+        received: 0, checkCount: 0, typicalPerCheck, expectedChecks: expChecks,
+        projectedChecks: expChecks, projectedAmount: expChecks * typicalPerCheck,
+        savingsReceived: 0, typicalSavings: typSav,
+        projectedSavings: expChecks * typSav,
+      };
+    });
+
     return {
       rawIncome,
       normalizedIncome:   Math.max(0, normalizedIncome),
@@ -4148,6 +4244,8 @@ function buildAccrualEngine(selMonth, sp) {
       normalDeployable:   Math.max(0, normalizedIncome - curAutoSave),
       earlyMonth,
       normNote,
+      employerBreakdown,   // per-employer income + savings breakdown
+      curSavPayTotal: curSavPayTxns.reduce((s,t)=>s+t.amount, 0),
     };
   }
 
@@ -4332,6 +4430,7 @@ function buildAccrualEngine(selMonth, sp) {
     FIXED_BUCKETS, UTILITY_BUCKETS, SUBSCRIPTION_BUCKETS, DISCRETIONARY_BUCKETS,
   };
 }
+
 
 
 
