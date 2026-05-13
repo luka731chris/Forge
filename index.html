@@ -6175,6 +6175,9 @@ async function processFiles() {
   function _fuzzyKey(t) {
     return t.date+'|'+Math.abs(t.amount).toFixed(2)+'|'+_normPayee(t.payee).slice(0,8);
   }
+  function _detailKey(t) {
+    return t.date+'|'+Math.abs(t.amount).toFixed(2)+'|'+_normPayee(t.payee).slice(0,12);
+  }
   // CC payment key: date + absolute amount — any CC payment on the same date/amount
   // is the same payment regardless of which side of the ledger or account name
   function _ccPayKey(t) {
@@ -6190,6 +6193,11 @@ async function processFiles() {
   // Existing transaction key sets
   const existingStrict = new Set(txns.map(_strictKey));
   const existingFuzzy  = new Set(txns.map(_fuzzyKey));
+  const existingByFtype = {};
+  txns.filter(t => t._isDetail && t._ftype).forEach(t => {
+    if (!existingByFtype[t._ftype]) existingByFtype[t._ftype] = new Set();
+    existingByFtype[t._ftype].add(_detailKey(t));
+  });
   // CC payments in existing data
   const existingCCPay  = new Set(
     txns.filter(t => isTransfer(t) && detectAcctType(t.account||'') === 'checking')
@@ -6277,6 +6285,7 @@ async function processFiles() {
 
   const batchStrict = new Set();
   const batchFuzzy  = new Set();
+  const batchDetailByFtype = {};
 
   // First pass: dedup within the batch itself
   const dedupedNew = [];
@@ -6291,10 +6300,17 @@ async function processFiles() {
     if (batchStrict.has(sk)) { duped++; return; }
     batchStrict.add(sk);
 
-    // Cross-file fuzzy dedup (catches overlapping date-range exports of same source)
-    // But DON'T fuzzy-dedup detail rows against each other — detail items are distinct
-    if (!t._isDetail && batchFuzzy.has(fk)) { duped++; return; }
-    if (!t._isDetail) batchFuzzy.add(fk);
+    // Detail rows: per-source abs-amount dedup (handles Apple Card overlapping date ranges)
+    if (t._isDetail) {
+      const ft = t._ftype||'det';
+      if (!batchDetailByFtype[ft]) batchDetailByFtype[ft] = new Set();
+      const dk = _detailKey(t);
+      if (batchDetailByFtype[ft].has(dk)) { duped++; return; }
+      batchDetailByFtype[ft].add(dk);
+    } else {
+      if (batchFuzzy.has(fk)) { duped++; return; }
+      batchFuzzy.add(fk);
+    }
 
     dedupedNew.push(t);
   });
@@ -6305,9 +6321,14 @@ async function processFiles() {
     // Exact match
     if (existingStrict.has(_strictKey(t))) { duped++; return; }
 
-    // Fuzzy cross-source dedup — but not for detail items (they should always be added
-    // if the Quicken lump-sum they unmask is being added fresh)
-    if (!t._isDetail && !t.isTransfer && existingFuzzy.has(_fuzzyKey(t))) { duped++; return; }
+    // Detail: same-source dedup vs existing (abs-amount, handles CSV sign differences)
+    if (t._isDetail) {
+      const ft2 = t._ftype||'det';
+      const dk2 = _detailKey(t);
+      if (existingByFtype[ft2] && existingByFtype[ft2].has(dk2)) { duped++; return; }
+    } else if (!t.isTransfer) {
+      if (existingFuzzy.has(_fuzzyKey(t))) { duped++; return; }
+    }
 
     // CC payment dedup: if this is a CC payment transfer, check if the same
     // payment already exists from the other side of the ledger
@@ -9557,113 +9578,130 @@ function renderIncomeStatement() {
 
   // ── INCOME BLOCK ─────────────────────────────────────────────────
   const incomeCKey    = 'income';
-  const incomeComment = commentWidget(incomeCKey, 'e.g. "Expecting bonus next week"');
+  const incomeComment = commentWidget(incomeCKey, 'Overall income note...');
 
-  // Income adjustment callout
+  // Adjustment note from accrual engine
   let adjNote = '';
   if (normNote) {
-    const adjIcon = earlyMonthIS ? '📅' : normNote.includes('3-pay') ? '📊' : '💡';
-    adjNote = '<div style="font-size:11px;background:rgba(245,168,0,.08);border:1px solid rgba(245,168,0,.2);border-radius:6px;padding:6px 10px;margin-top:6px;color:'+C.gold+';">'+adjIcon+' <strong>Income adjusted:</strong> '+normNote+'</div>';
+    const adjIcon = earlyMonthIS ? '&#128197;' : normNote.includes('3-pay') ? '&#128202;' : '&#128161;';
+    adjNote = '<div style="font-size:11px;background:rgba(245,168,0,.08);border:1px solid rgba(245,168,0,.2);border-radius:6px;padding:6px 10px;margin-top:6px;color:'+C.gold+';">'+adjIcon+' <strong>Note:</strong> '+normNote+'</div>';
   }
 
-  // Per-employer breakdown from normalizeIncome engine
+  // Per-employer breakdown
   const empBreakdown = (normData && normData.employerBreakdown) ? normData.employerBreakdown : {};
-  // Get family member → employer mapping from settings (accountOwners maps account→person)
-  const settings = (function(){ try { return JSON.parse(localStorage.getItem('forge_settings_v2')||'{}'); } catch(e){ return {}; } })();
-  const acctOwners = settings.accountOwners || {};
-  // Build payee → person map from checking deposits in current month
-  const payeeToMember = {};
+  const settingsObj  = (function(){ try{ return JSON.parse(localStorage.getItem('forge_settings_v2')||'{}'); }catch(e){return{};} })();
+  const acctOwners   = settingsObj.accountOwners || {};
+  const payeeToMember= {};
   (bkt.paycheck||[]).filter(t => detectAcctType(t.account||'')==='checking').forEach(t => {
     const owner = acctOwners[t.account] || '';
     if (owner && t.payee) payeeToMember[(t.payee||'').toLowerCase().trim()] = owner;
   });
 
-  const incomeDetailId = 'is-inc-detail-'+selMonth.replace('-','');
-  const incomeOpen = isInFlight;
-  let incomeHtml = '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">';
+  // Gross pay (checking deposits only) + projections
+  const grossPayChk  = (bkt.paycheck||[]).filter(t=>detectAcctType(t.account||'')==='checking').reduce((s,t)=>s+t.amount,0);
+  const savDepAmt    = (bkt.paycheck||[]).filter(t=>detectAcctType(t.account||'')==='savings').reduce((s,t)=>s+t.amount,0);
+  const projGross    = Object.values(empBreakdown).reduce((s,e)=>s+(e.projectedAmount||0),0);
+  const projSav      = Object.values(empBreakdown).reduce((s,e)=>s+(e.projectedSavings||0),0);
+  const displayGross = earlyMonthIS && normData ? normData.normalPaycheck : grossPayChk + projGross;
+  const preSaveTotal = savDepAmt + totalAutoSave;
+  const displaySave  = preSaveTotal + projSav;
+  const empKeys2     = Object.keys(empBreakdown).sort();
 
-  // Header — data attribute for event-delegated collapse
-  incomeHtml += '<div class="is-inc-hdr" data-iid="'+incomeDetailId+'" style="display:flex;align-items:center;gap:8px;padding:8px 12px;'+(!isInFlight?'cursor:pointer;user-select:none;':'')+'">';
+  // Detail collapse IDs
+  const incPayId  = 'isp-'+selMonth.replace('-','');
+  const incSavId  = 'iss-'+selMonth.replace('-','');
 
-  incomeHtml += '<span style="font-size:14px;">&#128176;</span>';
-  incomeHtml += '<div style="flex:1;"><span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:'+C.ink4+';">OPERATING INCOME</span>'
-    + (earlyMonthIS ? '<span style="font-size:10px;color:'+C.river+';margin-left:6px;">estimated</span>' : '')
-    + '</div>';
-  incomeHtml += '<div style="font-size:16px;font-weight:700;font-family:var(--fd);color:'+C.pos+';">+'+kfmt(totalIncome)+'</div>';
-  if (!isInFlight) incomeHtml += '<div style="font-size:11px;color:'+C.ink4+';margin-left:4px;">&#9658;</div>';
+  let incomeHtml = '';
+
+  // ── STEP 1: Net Pay ───────────────────────────────────────────────
+  incomeHtml += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:4px;">';
+  incomeHtml += '<div style="padding:5px 14px 0;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:'+C.ink4+';">STEP 1 &mdash; NET PAY</div>';
+  incomeHtml += '<div class="is-inc-hdr" data-iid="'+incPayId+'" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px 10px;cursor:pointer;user-select:none;">';
+  incomeHtml +=   '<div>';
+  const grossLabel = earlyMonthIS ? 'Gross Pay <span style="font-size:11px;color:'+C.river+';">(estimated)</span>' : 'Gross Pay';
+  incomeHtml +=     '<div style="font-size:16px;font-weight:700;color:'+C.ink+';">'+grossLabel+'</div>';
+  const memberList = empKeys2.map(k => payeeToMember[k] || empBreakdown[k].payee).join(' + ');
+  if (memberList) incomeHtml += '<div style="font-size:11px;color:'+C.ink4+';margin-top:1px;">'+memberList+'</div>';
+  incomeHtml +=   '</div>';
+  incomeHtml +=   '<div style="display:flex;align-items:center;gap:8px;"><div style="font-size:22px;font-weight:700;font-family:var(--fd);color:'+C.pos+';">+'+kfmt(displayGross)+'</div><span style="font-size:11px;color:'+C.ink4+';">&#9660;</span></div>';
   incomeHtml += '</div>';
-
-  // Detail body
-  incomeHtml += '<div id="'+incomeDetailId+'" style="display:'+(incomeOpen?'block':'none')+';">';
-
-  const empKeys = Object.keys(empBreakdown).sort();
-
-  if (earlyMonthIS && !empKeys.length) {
-    // Full early-month: no deposits at all
-    incomeHtml += '<div style="padding:8px 12px;font-size:12px;color:'+C.river+';background:rgba(96,165,250,.06);border-top:1px solid rgba(96,165,250,.15);">&#128197; No deposits yet &mdash; projecting '+kfmt(normPaycheck)+' from 6-month history</div>';
-  } else {
-    // Show per-employer rows
-    empKeys.forEach(function(key, ei) {
-      const emp    = empBreakdown[key];
-      const member = payeeToMember[key] || '';
-      const label  = emp.payee + (member ? ' &middot; ' + member : '');
-      const total  = emp.received + emp.projectedAmount;
-      const rowBg  = ei%2 ? 'rgba(255,255,255,.012)' : 'transparent';
-
-      // Income row for this employer
-      incomeHtml += '<div style="border-top:1px solid rgba(255,255,255,.04);">';
-      incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:7px 12px;background:'+rowBg+';">';
-      incomeHtml +=   '<div>';
-      incomeHtml +=     '<div style="font-size:13px;font-weight:600;color:'+C.ink+';">'+label+'</div>';
-      if (emp.checkCount > 0 && emp.projectedAmount > 0) {
-        incomeHtml += '<div style="font-size:11px;color:'+C.ink4+';margin-top:1px;">'+emp.checkCount+' received +'+emp.projectedChecks+' projected</div>';
-      } else if (emp.checkCount > 0) {
-        incomeHtml += '<div style="font-size:11px;color:'+C.ink4+';margin-top:1px;">'+emp.checkCount+(emp.checkCount===1?' paycheck':' paychecks')+' received</div>';
-      } else {
-        incomeHtml += '<div style="font-size:11px;color:'+C.river+';margin-top:1px;font-style:italic;">'+emp.projectedChecks+' paycheck'+(emp.projectedChecks!==1?'s':'')+' projected</div>';
-      }
-      incomeHtml +=   '</div>';
-      incomeHtml +=   '<div style="text-align:right;">';
-      incomeHtml +=     '<div style="font-size:15px;font-weight:700;font-family:var(--fm);color:'+C.pos+';">+'+kfmt(total)+'</div>';
-      if (emp.projectedAmount > 0) {
-        incomeHtml += '<div style="font-size:10px;color:'+C.river+';">+'+kfmt(emp.projectedAmount)+' proj</div>';
-      }
-      incomeHtml +=   '</div>';
-      incomeHtml += '</div>';
-
-      // Pre-committed savings row for this employer
-      const savTotal = emp.savingsReceived + emp.projectedSavings;
-      if (savTotal > 0) {
-        incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:4px 12px 5px 28px;background:rgba(96,165,250,.04);border-top:1px solid rgba(255,255,255,.04);">';
-        incomeHtml +=   '<div>';
-        incomeHtml +=     '<div style="font-size:11px;color:'+C.river+';">&#8594; Pre-committed savings</div>';
-        if (emp.projectedSavings > 0) incomeHtml += '<div style="font-size:10px;color:'+C.ink4+';">+'+kfmt(emp.projectedSavings)+' projected</div>';
-        incomeHtml +=   '</div>';
-        incomeHtml +=   '<div style="font-size:12px;font-weight:600;font-family:var(--fm);color:'+C.river+';">&#8722;'+kfmt(savTotal)+'</div>';
-        incomeHtml += '</div>';
-      }
+  // Drill-down
+  incomeHtml += '<div id="'+incPayId+'" style="display:'+(isInFlight?'block':'none')+';border-top:1px solid rgba(255,255,255,.06);">';
+  if (!empKeys2.length) {
+    (bkt.paycheck||[]).filter(t=>detectAcctType(t.account||'')==='checking').sort((a,b)=>b.amount-a.amount).forEach((t,i) => {
+      incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:4px 14px;border-top:1px solid rgba(255,255,255,.028);background:'+(i%2?'rgba(255,255,255,.012)':'transparent')+';">';
+      incomeHtml += '<div style="font-size:12px;color:'+C.ink3+';">'+(t.payee||'Paycheck')+'</div>';
+      incomeHtml += '<div style="font-size:11px;color:'+C.ink4+';font-family:var(--fm);">'+t.date+'</div>';
+      incomeHtml += '<div style="font-size:13px;font-weight:600;color:'+C.pos+';font-family:var(--fm);">+'+mfmt(t.amount)+'</div>';
       incomeHtml += '</div>';
     });
+  } else {
+    empKeys2.forEach(function(key, ei) {
+      const emp = empBreakdown[key];
+      const mbr = payeeToMember[key] || '';
+      const lbl = emp.payee + (mbr ? ' &middot; <span style="color:'+C.river+';">'+mbr+'</span>' : '');
+      const tot = emp.received + emp.projectedAmount;
+      const sub = emp.checkCount > 0 && emp.projectedAmount > 0
+        ? emp.checkCount+' received + '+emp.projectedChecks+' projected'
+        : emp.checkCount > 0 ? emp.checkCount+' paycheck'+(emp.checkCount!==1?'s':'')
+        : emp.projectedChecks+' paycheck'+(emp.projectedChecks!==1?'s':'')+' projected';
+      incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:5px 14px;border-top:1px solid rgba(255,255,255,.028);background:'+(ei%2?'rgba(255,255,255,.012)':'transparent')+';">';
+      incomeHtml +=   '<div><div style="font-size:13px;font-weight:600;color:'+C.ink+';">'+lbl+'</div><div style="font-size:11px;color:'+C.ink4+';margin-top:1px;">'+sub+'</div></div>';
+      incomeHtml +=   '<div style="text-align:right;"><div style="font-size:14px;font-weight:700;color:'+C.pos+';font-family:var(--fm);">+'+kfmt(tot)+'</div>'+(emp.projectedAmount>0?'<div style="font-size:10px;color:'+C.river+';">+'+kfmt(emp.projectedAmount)+' est.</div>':'')+'</div>';
+      incomeHtml += '</div>';
+    });
+  }
+  if (adjNote) incomeHtml += '<div style="padding:0 14px 8px;">'+adjNote+'</div>';
+  incomeHtml += '</div></div>'; // close detail + card
 
-    // If no employer breakdown available (fallback)
-    if (!empKeys.length) {
-      (bkt.paycheck||[]).filter(t=>detectAcctType(t.account||'')==='checking').slice().sort((a,b)=>b.amount-a.amount).forEach((t,i) => {
-        incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:5px 12px;border-top:1px solid rgba(255,255,255,.032);background:'+(i%2?'rgba(255,255,255,.012)':'transparent')+';">';
-        incomeHtml += '<div style="font-size:14px;color:'+C.ink+';">'+(t.payee||'Paycheck')+'</div>';
-        incomeHtml += '<div style="font-size:11px;font-family:var(--fm);color:'+C.ink4+';">'+t.date+'</div>';
-        incomeHtml += '<div style="font-size:15px;font-weight:700;font-family:var(--fm);color:'+C.pos+';">+'+mfmt(t.amount)+'</div>';
+  // ── STEP 2: Direct Savings ────────────────────────────────────────
+  if (displaySave > 1) {
+    const savPct    = displayGross > 0 ? (displaySave/displayGross*100).toFixed(0) : 0;
+    const savTarget = settingsObj.savingsTarget || settingsObj.savingsRate || 0;
+    const savSub    = savTarget > 0 ? savPct+'% of gross (target '+savTarget+'%)' : savPct+'% of gross pay';
+    incomeHtml += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:4px;">';
+    incomeHtml += '<div style="padding:5px 14px 0;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:'+C.ink4+';">STEP 2 &mdash; DIRECT SAVINGS</div>';
+    incomeHtml += '<div class="is-inc-hdr" data-iid="'+incSavId+'" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px 10px;cursor:pointer;user-select:none;">';
+    incomeHtml +=   '<div><div style="font-size:16px;font-weight:700;color:'+C.ink+';">Pre-Committed Savings</div><div style="font-size:11px;color:'+C.ink4+';margin-top:1px;">'+savSub+'</div></div>';
+    incomeHtml +=   '<div style="display:flex;align-items:center;gap:8px;"><div style="font-size:22px;font-weight:700;font-family:var(--fd);color:'+C.river+';">&minus;'+kfmt(displaySave)+'</div><span style="font-size:11px;color:'+C.ink4+';">&#9660;</span></div>';
+    incomeHtml += '</div>';
+    incomeHtml += '<div id="'+incSavId+'" style="display:none;border-top:1px solid rgba(255,255,255,.06);">';
+    empKeys2.forEach(function(key, ei) {
+      const emp = empBreakdown[key];
+      const mbr = payeeToMember[key] || '';
+      const st  = emp.savingsReceived + emp.projectedSavings;
+      if (st < 1) return;
+      const lbl = emp.payee + (mbr ? ' &middot; <span style="color:'+C.river+';">'+mbr+'</span>' : '');
+      incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:5px 14px;border-top:1px solid rgba(255,255,255,.028);background:'+(ei%2?'rgba(255,255,255,.012)':'transparent')+';">';
+      incomeHtml +=   '<div style="font-size:13px;color:'+C.ink3+';">'+lbl+'</div>';
+      incomeHtml +=   '<div style="text-align:right;"><div style="font-size:13px;font-weight:600;color:'+C.river+';font-family:var(--fm);">&minus;'+kfmt(st)+'</div>'+(emp.projectedSavings>0?'<div style="font-size:10px;color:'+C.ink4+';">+'+kfmt(emp.projectedSavings)+' est.</div>':'')+'</div>';
+      incomeHtml += '</div>';
+    });
+    if (!empKeys2.length && autoSaveTxns.length > 0) {
+      autoSaveTxns.forEach((t,i) => {
+        incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:4px 14px;border-top:1px solid rgba(255,255,255,.028);background:'+(i%2?'rgba(255,255,255,.012)':'transparent')+';">';
+        incomeHtml += '<div style="font-size:12px;color:'+C.ink3+';">&rarr; '+(t._xferTo||'Savings')+'</div>';
+        incomeHtml += '<div style="font-size:11px;color:'+C.ink4+';font-family:var(--fm);">'+t.date+'</div>';
+        incomeHtml += '<div style="font-size:13px;font-weight:600;color:'+C.river+';font-family:var(--fm);">&minus;'+mfmt(Math.abs(t.amount))+'</div>';
         incomeHtml += '</div>';
       });
     }
+    incomeHtml += '</div></div>'; // close detail + card
   }
 
-  incomeHtml += '</div>'; // close detail
-  if (adjNote) incomeHtml += '<div style="padding:0 12px 8px;">'+adjNote+'</div>';
-  incomeHtml += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.08);">';
-  incomeHtml +=   '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:'+C.ink+';">&#128181; Deployable</div>';
-  incomeHtml +=   '<div style="font-size:22px;font-weight:700;font-family:var(--fd);color:'+C.ink+';">'+kfmt(deployable)+(totalAutoSave>0?'<span style="font-size:10px;font-weight:400;color:'+C.ink4+';margin-left:6px;">('+kfmt(totalIncome)+' &#8722; '+kfmt(totalAutoSave)+' saved)</span>':'')+'</div>';
+  // ── STEP 3: Operating Income ──────────────────────────────────────
+  incomeHtml += '<div style="border:2px solid rgba(52,217,195,.35);border-radius:var(--r-lg);margin-bottom:8px;padding:10px 14px;background:rgba(52,217,195,.04);">';
+  incomeHtml += '<div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:'+C.ink4+';margin-bottom:4px;">= OPERATING INCOME &mdash; DEPLOYABLE TO EXPENSES</div>';
+  incomeHtml += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+  incomeHtml +=   '<div>';
+  incomeHtml +=     '<div style="font-size:15px;font-weight:600;color:'+C.ink+';">Available for monthly expenses</div>';
+  if (displaySave > 1) incomeHtml += '<div style="font-size:11px;color:'+C.ink4+';margin-top:2px;">'+kfmt(displayGross)+' gross &minus; '+kfmt(displaySave)+' to savings</div>';
+  incomeHtml +=   '</div>';
+  incomeHtml +=   '<div style="font-size:30px;font-weight:700;font-family:var(--fd);color:'+C.pos+';">'+kfmt(deployable)+'</div>';
   incomeHtml += '</div>';
+  if (incomeComment) incomeHtml += incomeComment;
   incomeHtml += '</div>';
+
 
   // ── Margin for income ──────────────────────────────────────────────
   const incomeMargin = `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 12px;font-size:11px;">
