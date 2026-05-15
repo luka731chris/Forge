@@ -9256,23 +9256,49 @@ function renderIncomeStatement() {
     return null;
   }
 
-  // Expenses pass 1: Quicken rows only (excludes detail rows in both directions).
-  // If detail rows exist for a merchant this month, suppress ALL that merchant's Quicken rows.
+  // ── Unmasking status ─────────────────────────────────────────────────────
+  const _unmaskablePayees = {};
   monthSp.filter(t => t.amount < 0 && !_isDetailRow(t)).forEach(t => {
     const ft = _lumpFtype(t);
-    if (ft && _hasDetailForMonth[ft]) return;  // this merchant is unmasked by detail rows
+    if (ft) {
+      if (!_unmaskablePayees[ft]) _unmaskablePayees[ft] = new Set();
+      _unmaskablePayees[ft].add(t.payee);
+    }
+  });
+  const _unmaskStatus = [];
+  const FTYPE_LABELS = {
+    amazon_orders:'Amazon Order History CSV',
+    apple_card:'Apple Card CSV',
+    home_depot:'Home Depot CSV',
+    venmo:'Venmo CSV'
+  };
+  Object.entries(UNMASK_PAT).forEach(function(_pair) {
+    const ft = _pair[0];
+    const hasDetail  = !!_hasDetailForMonth[ft];
+    const hasQkRows  = !!_unmaskablePayees[ft];
+    if (hasDetail) {
+      const n = txns.filter(function(t){ return _isDetailRow(t) && (t._source===ft||t._ftype===ft) && t.date.startsWith(selMonth) && t.amount < 0; }).length;
+      _unmaskStatus.push({ ft: ft, label: FTYPE_LABELS[ft], active: true, items: n });
+    } else if (hasQkRows) {
+      _unmaskStatus.push({ ft: ft, label: FTYPE_LABELS[ft], active: false, payees: [..._unmaskablePayees[ft]].slice(0,2).join(', ') });
+    }
+  });
+
+  // Expenses pass 1: Quicken rows only.
+  monthSp.filter(t => t.amount < 0 && !_isDetailRow(t)).forEach(t => {
+    const ft = _lumpFtype(t);
+    if (ft && _hasDetailForMonth[ft]) return;
     addB(classifyTxn(t), t);
   });
 
-  // Expenses pass 2: detail rows for this month, exactly once, from txns (not monthSp).
-  // Also stamp _isDetail=true so tableSection groups them correctly.
+  // Expenses pass 2: detail rows exactly once, from txns.
   txns.filter(t =>
     _isDetailRow(t) &&
     t.date.startsWith(selMonth) &&
     t.amount < 0 &&
     !t._masked
   ).forEach(t => {
-    t._isDetail = true;  // ensure flag is set for tableSection grouping logic
+    t._isDetail = true;
     const acct = t._lumpAcct || t.account || '';
     if (acct && !OPER_TYPES.has(detectAcctType(acct))) return;
     addB(classifyTxn(t), t);
@@ -9961,6 +9987,28 @@ function renderIncomeStatement() {
   </div>`;
 
   // ── Fixed & Variable sections ──────────────────────────────────────
+  // ── Unmasking status banner ─────────────────────────────────────────────
+  let unmaskBannerHtml = '';
+  if (_unmaskStatus.length) {
+    unmaskBannerHtml = '<div style="margin-bottom:10px;">';
+    _unmaskStatus.forEach(function(s) {
+      if (s.active) {
+        unmaskBannerHtml += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(52,217,195,.07);border:1px solid rgba(52,217,195,.2);border-radius:6px;margin-bottom:4px;font-size:11px;">';
+        unmaskBannerHtml += '<span style="font-size:13px;">&#128279;</span>';
+        unmaskBannerHtml += '<span style="color:var(--pos);font-weight:600;">'+s.label+'</span>';
+        unmaskBannerHtml += '<span style="color:var(--ink4);">active &mdash; '+s.items+' item'+(s.items!==1?'s':'')+' replacing Quicken lump-sums</span>';
+        unmaskBannerHtml += '</div>';
+      } else {
+        unmaskBannerHtml += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(245,168,0,.06);border:1px solid rgba(245,168,0,.2);border-radius:6px;margin-bottom:4px;font-size:11px;">';
+        unmaskBannerHtml += '<span style="font-size:13px;">&#128258;</span>';
+        unmaskBannerHtml += '<span style="color:var(--gold);font-weight:600;">'+s.label+'</span>';
+        unmaskBannerHtml += '<span style="color:var(--ink4);">not loaded &mdash; Quicken shows: <em>'+s.payees+'</em> &mdash; import '+s.label+' to unmask</span>';
+        unmaskBannerHtml += '</div>';
+      }
+    });
+    unmaskBannerHtml += '</div>';
+  }
+
   const fixedSub = isInFlight && fixedRows.some(g=>g.proj>0) ? `${kfmt(fixedRows.reduce((s,g)=>s+g.actual,0))} posted` : '';
   const varSub   = isInFlight && varRows.some(g=>g.proj>0) ? `${kfmt(varRows.reduce((s,g)=>s+g.actual,0))} posted` : '';
 
@@ -10150,6 +10198,7 @@ function renderIncomeStatement() {
   out += `<div style="display:grid;grid-template-columns:1fr minmax(0,196px);gap:12px;align-items:start;">
     <div>
       ${incomeHtml}
+      ${unmaskBannerHtml}
       ${fixedHtml}
       ${runningHtml}
       ${varHtml}
