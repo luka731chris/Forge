@@ -7584,6 +7584,11 @@ function isNonOperatingCredit(t) {
 
 
 function classifyTxn(t) {
+  // 0. Detail-file rows: use inferred bucket from keyword analysis (set at import time)
+  //    This allows Amazon "Outdoor Lighting Transformer" to land in 'household',
+  //    not the generic Quicken catch-all category.
+  if (t._inferredBucket) return t._inferredBucket;
+
   const cat  = (t.category || '').toLowerCase().trim();
   const pay  = (t.payee    || '').toLowerCase().trim();
 
@@ -9143,8 +9148,63 @@ function renderIncomeStatement() {
     return detectAcctType(t.account||'') === 'checking';
   }).forEach(t => addB('paycheck', t));
 
-  // Expenses: all negative operating transactions
-  monthSp.filter(t => t.amount < 0).forEach(t => addB(classifyTxn(t), t));
+  // ── IS-level unmasking: merchant-level monthly suppression ──────────────
+  // If ANY detail rows (Amazon CSV, Apple Card CSV, etc.) exist for a given
+  // merchant for this month, suppress ALL Quicken lump-sums for that merchant.
+  // This is merchant-month level, not per-charge — avoids fragile amount matching
+  // and handles multiple charges per week reliably.
+  //
+  // Key principle: detail rows are NEVER added from monthSp (avoids double-add).
+  // They are added exactly once from txns, after the monthSp expense pass.
+
+  // ── IS-level unmasking ───────────────────────────────────────────────────
+  // Use _source (set at import, preserved in localStorage) to identify detail rows.
+  // _source is more reliable than _isDetail which may be missing on older imports.
+  const DETAIL_SRCS_IS = new Set(['apple_card','amazon_orders','home_depot','venmo']);
+  function _isDetailRow(t) { return DETAIL_SRCS_IS.has(t._source||t._ftype||''); }
+
+  const UNMASK_PAT = {
+    amazon_orders: /\bamazon\b/i,
+    home_depot:    /\bhome.?depot\b/i,
+    venmo:         /\bvenmo\b/i,
+    apple_card:    /\bapple\b|\bapple.?card\b/i,
+  };
+
+  // Which detail sources have rows for this month? (checked by source type, not _isDetail flag)
+  const _hasDetailForMonth = {};
+  txns.filter(t => _isDetailRow(t) && t.date.startsWith(selMonth) && t.amount < 0).forEach(t => {
+    _hasDetailForMonth[t._source||t._ftype||'det'] = true;
+  });
+
+  // Determine which ftype (if any) would unmask a given Quicken payee
+  function _lumpFtype(t) {
+    for (const [ft, rx] of Object.entries(UNMASK_PAT)) {
+      if (rx.test(t.payee)) return ft;
+    }
+    return null;
+  }
+
+  // Expenses pass 1: Quicken rows only (excludes detail rows in both directions).
+  // If detail rows exist for a merchant this month, suppress ALL that merchant's Quicken rows.
+  monthSp.filter(t => t.amount < 0 && !_isDetailRow(t)).forEach(t => {
+    const ft = _lumpFtype(t);
+    if (ft && _hasDetailForMonth[ft]) return;  // this merchant is unmasked by detail rows
+    addB(classifyTxn(t), t);
+  });
+
+  // Expenses pass 2: detail rows for this month, exactly once, from txns (not monthSp).
+  // Also stamp _isDetail=true so tableSection groups them correctly.
+  txns.filter(t =>
+    _isDetailRow(t) &&
+    t.date.startsWith(selMonth) &&
+    t.amount < 0 &&
+    !t._masked
+  ).forEach(t => {
+    t._isDetail = true;  // ensure flag is set for tableSection grouping logic
+    const acct = t._lumpAcct || t.account || '';
+    if (acct && !OPER_TYPES.has(detectAcctType(acct))) return;
+    addB(classifyTxn(t), t);
+  });
 
   // CC credits as expense offsets (NOT income)
   monthSp.filter(t => isCCCredit(t))
@@ -9290,24 +9350,67 @@ function renderIncomeStatement() {
     return `<div style="height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:4px;overflow:hidden;">
       <div style="height:100%;width:${w.toFixed(1)}%;background:${color};border-radius:2px;"></div></div>`;
   }
-  function txnRows(txns) {
-    if (!txns.length) return '';
-    const sorted = txns.slice().sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount));
-    return sorted.map(t => {
-      const det = t.itemDetail && t.itemDetail!==t.payee ? `<div style="font-size:11px;color:${C.river};font-style:italic;margin-top:1px;">${t.itemDetail}</div>` : '';
-      const meta = [t.category, t.account].filter(Boolean).join(' · ');
-      return `<div style="display:grid;grid-template-columns:80px 1fr auto;gap:6px;padding:5px 12px 5px 32px;border-bottom:1px solid rgba(255,255,255,.03);">
-        <div style="font-family:var(--fm);font-size:11px;color:${C.ink4};padding-top:2px;">${t.date}</div>
-        <div>
-          <div style="font-size:13px;color:#C8C4BE;">${t.payee||t._xferTo||'—'}</div>
-          ${det}
-          <div style="font-size:10px;color:${C.ink4};">${meta}</div>
-        </div>
-        <div style="font-family:var(--fm);font-size:13px;font-weight:600;color:${t.amount<0?C.gold:C.pos};white-space:nowrap;padding-top:2px;">
-          ${t.amount<0?'−':'+'}${mfmt(Math.abs(t.amount))}
-        </div>
-      </div>`;
-    }).join('');
+  function txnRows(txnList) {
+    if (!txnList.length) return '';
+
+    // Separate detail rows (Amazon items, Apple Card items) from plain register rows
+    const detailRows = txnList.filter(t => t._isDetail);
+    const plainRows  = txnList.filter(t => !t._isDetail);
+    let html = '';
+
+    // ── Detail rows: group by payee/merchant, then sort by date within each ──
+    if (detailRows.length) {
+      const groups = {};
+      detailRows.forEach(t => {
+        const key = (t.payee||t.itemDetail||'Unknown').trim();
+        if (!groups[key]) groups[key] = { payee:key, txns:[], total:0, source:t._ftype||'' };
+        groups[key].txns.push(t);
+        groups[key].total += Math.abs(t.amount);
+      });
+      // Sort groups by total spend desc
+      const sortedGroups = Object.values(groups).sort((a,b) => b.total - a.total);
+      sortedGroups.forEach(g => {
+        // Merchant header row
+        const srcBadge = g.source ? '<span style="font-size:9px;background:rgba(96,165,250,.15);color:'+C.river+';padding:1px 5px;border-radius:4px;font-family:var(--fm);letter-spacing:.04em;margin-left:6px;">'
+          + {apple_card:'Apple Card',amazon_orders:'Amazon',home_depot:'Home Depot',venmo:'Venmo'}[g.source]+' detail'
+          + '</span>' : '';
+        const datRange = g.txns.length > 1
+          ? g.txns.map(t=>t.date).sort()[0].slice(5)+' – '+g.txns.map(t=>t.date).sort().pop().slice(5)
+          : g.txns[0]?.date || '';
+        html += '<div style="display:grid;grid-template-columns:1fr auto;gap:6px;padding:5px 12px 4px 32px;border-bottom:1px solid rgba(255,255,255,.05);background:rgba(255,255,255,.018);">';
+        html +=   '<div><div style="font-size:13px;font-weight:600;color:var(--ink);">'+g.payee+srcBadge+'</div>';
+        html +=   '<div style="font-size:10px;color:'+C.ink4+';">'+g.txns.length+(g.txns.length===1?' item':' items')+' · '+datRange+'</div></div>';
+        html +=   '<div style="font-size:14px;font-weight:700;color:'+C.gold+';font-family:var(--fm);text-align:right;white-space:nowrap;">−'+mfmt(g.total)+'</div>';
+        html += '</div>';
+        // Individual items under this merchant, sorted by date then by title
+        g.txns.slice().sort((a,b) => a.date.localeCompare(b.date) || (a.itemDetail||a.payee||'').localeCompare(b.itemDetail||b.payee||'')).forEach((t,i) => {
+          const title = (t.itemDetail && t.itemDetail !== t.payee) ? t.itemDetail : (t.payee||'—');
+          html += '<div style="display:grid;grid-template-columns:72px 1fr auto;gap:6px;padding:3px 12px 3px 44px;border-bottom:1px solid rgba(255,255,255,.025);background:'+(i%2?'rgba(0,0,0,.08)':'rgba(0,0,0,.04)') +';">';
+          html +=   '<div style="font-family:var(--fm);font-size:10px;color:'+C.ink4+';padding-top:1px;">'+t.date.slice(5)+'</div>';
+          html +=   '<div style="font-size:12px;color:#C8C4BE;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+title+'</div>';
+          html +=   '<div style="font-family:var(--fm);font-size:12px;font-weight:600;color:'+C.gold+';white-space:nowrap;text-align:right;">−'+mfmt(Math.abs(t.amount))+'</div>';
+          html += '</div>';
+        });
+      });
+    }
+
+    // ── Plain Quicken rows: sort by date desc, then amount ────────────────
+    if (plainRows.length) {
+      plainRows.slice().sort((a,b) => b.date.localeCompare(a.date) || Math.abs(b.amount)-Math.abs(a.amount)).forEach(t => {
+        const det  = t.itemDetail && t.itemDetail!==t.payee ? '<div style="font-size:11px;color:'+C.river+';font-style:italic;margin-top:1px;">'+t.itemDetail+'</div>' : '';
+        const meta = [t.category, t.account].filter(Boolean).join(' · ');
+        html += '<div style="display:grid;grid-template-columns:80px 1fr auto;gap:6px;padding:5px 12px 5px 32px;border-bottom:1px solid rgba(255,255,255,.032);">';
+        html +=   '<div style="font-family:var(--fm);font-size:11px;color:'+C.ink4+';padding-top:2px;">'+t.date+'</div>';
+        html +=   '<div>';
+        html +=     '<div style="font-size:13px;color:#C8C4BE;">'+(t.payee||t._xferTo||'—')+'</div>';
+        html +=     det;
+        html +=     '<div style="font-size:10px;color:'+C.ink4+';">'+meta+'</div>';
+        html +=   '</div>';
+        html +=   '<div style="font-family:var(--fm);font-size:13px;font-weight:600;color:'+(t.amount<0?C.gold:C.pos)+';white-space:nowrap;text-align:right;">'+(t.amount<0?'−':'+')+mfmt(Math.abs(t.amount))+'</div>';
+        html += '</div>';
+      });
+    }
+    return html;
   }
 
   function sectionHeader(label, icon, total, base, color, sub) {
@@ -9550,24 +9653,97 @@ function renderIncomeStatement() {
         <div style="font-size:20px;font-weight:700;font-family:var(--fd);color:${color};">${kfmt(total)}</div>
         <div style="font-size:10px;color:${C.ink4};min-width:36px;text-align:right;">${pct}</div>
       </div>`;
+    // ── 3-level drill-down render ────────────────────────────────────────
+    // Level 1: Bucket row (click toggles Level 2)
+    // Level 2: Merchant group rows (click toggles Level 3)
+    // Level 3: Individual item rows (inline, no further nesting)
     rows.forEach((g,i) => {
-      const tot = g.actual + g.proj;
-      const gPct = pctBase>0 ? (tot/pctBase*100).toFixed(0)+'%' : '';
-      const barW = pctBase>0 ? Math.min(100,tot/pctBase*100) : 0;
+      const tot    = g.actual + g.proj;
+      const gPct   = pctBase>0 ? (tot/pctBase*100).toFixed(0)+'%' : '';
+      const barW   = pctBase>0 ? Math.min(100,tot/pctBase*100) : 0;
       const isOpen = !!isBucketOpen[g.key];
-      html += `<div data-bkid="${g.key}" class="is-bk-row" style="cursor:${g.txns.length?'pointer':'default'};border-bottom:1px solid rgba(255,255,255,.024);background:${i%2===0?'transparent':'rgba(255,255,255,.012)'};"
-        onmouseenter="this.style.background='rgba(255,255,255,.04)'" onmouseleave="this.style.background='${i%2===0?'transparent':'rgba(255,255,255,.012)'}'">
-        <div style="display:grid;grid-template-columns:18px 1fr 56px 36px;gap:4px;align-items:center;padding:6px 12px;">
-          <span style="font-size:12px;">${g.icon}</span>
-          <div>
-            <div style="font-size:14px;color:${C.ink};">${g.label}${g.proj>0?` <span style="font-size:10px;color:${C.river};">+${kfmt(g.proj)} proj</span>`:''}</div>
-            <div style="height:2px;background:rgba(255,255,255,.06);border-radius:1px;margin-top:3px;overflow:hidden;"><div style="height:100%;width:${barW.toFixed(1)}%;background:${color};border-radius:1px;opacity:.7;"></div></div>
-          </div>
-          <div style="font-size:15px;font-weight:700;font-family:var(--fm);color:${color};text-align:right;">${kfmt(tot)}</div>
-          <div style="font-size:12px;color:${C.ink4};text-align:right;">${gPct}</div>
-        </div>
-        ${g.txns.length&&isOpen?`<div style="background:rgba(0,0,0,.2);border-top:1px solid rgba(255,255,255,.04);">${txnRows(g.txns)}</div>`:''}
-      </div>`;
+      const bkId   = 'bk-'+g.key+'-'+selMonth;
+
+      // Bucket-level row (Level 1)
+      html += '<div data-bkid="'+g.key+'" class="is-bk-row" style="border-bottom:1px solid rgba(255,255,255,.024);background:'+(i%2===0?'transparent':'rgba(255,255,255,.012)')+';cursor:'+(g.txns.length?'pointer':'default')+';">';
+      html +=   '<div style="display:grid;grid-template-columns:18px 1fr 56px 36px;gap:4px;align-items:center;padding:6px 12px;">';
+      html +=     '<span style="font-size:12px;">'+g.icon+'</span>';
+      html +=     '<div>';
+      html +=       '<div style="font-size:14px;color:'+C.ink+';">'+g.label+(g.proj>0?' <span style="font-size:10px;color:'+C.river+';">+'+kfmt(g.proj)+' proj</span>':'')+'</div>';
+      html +=       '<div style="height:2px;background:rgba(255,255,255,.06);border-radius:1px;margin-top:3px;overflow:hidden;"><div style="height:100%;width:'+barW.toFixed(1)+'%;background:'+color+';border-radius:1px;opacity:.7;"></div></div>';
+      html +=     '</div>';
+      html +=     '<div style="font-size:15px;font-weight:700;font-family:var(--fm);color:'+color+';text-align:right;">'+kfmt(tot)+'</div>';
+      html +=     '<div style="font-size:12px;color:'+C.ink4+';text-align:right;">'+gPct+'</div>';
+      html +=   '</div>';
+
+      // Level 2: Merchant groups (only when bucket is open)
+      if (g.txns.length && isOpen) {
+        html += '<div style="background:rgba(0,0,0,.18);border-top:1px solid rgba(255,255,255,.04);">';
+
+        // Separate detail vs plain
+        const _dRows = g.txns.filter(t => t._isDetail);
+        const _pRows = g.txns.filter(t => !t._isDetail);
+
+        // Build merchant groups from detail rows
+        const _mGroups = {};
+        _dRows.forEach(t => {
+          const mk = (t.payee||t.itemDetail||'Unknown').trim();
+          const ft = t._ftype || t._source || '';
+          if (!_mGroups[mk]) _mGroups[mk] = { payee:mk, txns:[], total:0, ftype:ft, source:ft };
+          _mGroups[mk].txns.push(t);
+          _mGroups[mk].total += Math.abs(t.amount);
+        });
+        const _mKeys = Object.keys(_mGroups).sort((a,b) => _mGroups[b].total - _mGroups[a].total);
+
+        // Level 2 merchant rows
+        _mKeys.forEach((mk, mi) => {
+          const mg    = _mGroups[mk];
+          const mgId  = 'mg-'+g.key+'-'+mk.replace(/[^a-z0-9]/gi,'')+'-'+selMonth;
+          const isOpenM = !!document.getElementById(mgId);
+          const _ft = mg.ftype || mg.source || '';
+          const ftypeLbl = {apple_card:'Apple Card',amazon_orders:'Amazon',home_depot:'Home Depot',venmo:'Venmo'}[_ft]||_ft;
+          const srcBadge = _ft ? ' <span style="font-size:9px;background:rgba(96,165,250,.15);color:'+C.river+';padding:1px 5px;border-radius:4px;font-family:var(--fm);">'+ftypeLbl+'</span>' : '';
+          const dates = mg.txns.map(t=>t.date).sort();
+          const dateRange = dates.length>1 ? dates[0].slice(5)+' – '+dates[dates.length-1].slice(5) : dates[0]?.slice(5)||'';
+
+          html += '<div class="is-mg-row" data-mgid="'+mgId+'" style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:6px 12px 5px 28px;border-bottom:1px solid rgba(255,255,255,.04);background:'+(mi%2?'rgba(255,255,255,.02)':'transparent')+';cursor:pointer;">';
+          html +=   '<div>';
+          html +=     '<div style="font-size:13px;font-weight:600;color:var(--ink);">'+mk+srcBadge+'</div>';
+          html +=     '<div style="font-size:10px;color:'+C.ink4+';margin-top:1px;">'+mg.txns.length+(mg.txns.length===1?' item':' items')+' · '+dateRange+'</div>';
+          html +=   '</div>';
+          html +=   '<div style="display:flex;align-items:center;gap:6px;">';
+          html +=     '<div style="font-size:13px;font-weight:700;color:'+color+';font-family:var(--fm);">−'+kfmt(mg.total)+'</div>';
+          html +=     '<span class="mg-chev" style="font-size:10px;color:'+C.ink4+';">▸</span>';
+          html +=   '</div>';
+          html += '</div>';
+
+          // Level 3: Individual items (rendered but collapsed)
+          html += '<div id="'+mgId+'" style="display:none;background:rgba(0,0,0,.14);">';
+          mg.txns.slice().sort((a,b)=>a.date.localeCompare(b.date)||(a.itemDetail||a.payee||'').localeCompare(b.itemDetail||b.payee||'')).forEach((t,ti) => {
+            const title = (t.itemDetail && t.itemDetail!==t.payee) ? t.itemDetail : (t.payee||'—');
+            html += '<div style="display:grid;grid-template-columns:60px 1fr auto;gap:6px;padding:3px 12px 3px 40px;border-bottom:1px solid rgba(255,255,255,.02);background:'+(ti%2?'rgba(255,255,255,.015)':'transparent')+';">';
+            html +=   '<div style="font-family:var(--fm);font-size:10px;color:'+C.ink4+';padding-top:2px;">'+t.date.slice(5)+'</div>';
+            html +=   '<div style="font-size:12px;color:#B8B4AE;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+title+'</div>';
+            html +=   '<div style="font-family:var(--fm);font-size:12px;font-weight:600;color:'+color+';white-space:nowrap;text-align:right;">−'+mfmt(Math.abs(t.amount))+'</div>';
+            html += '</div>';
+          });
+          html += '</div>';
+        });
+
+        // Plain Quicken rows (no merchant grouping needed) — date desc
+        _pRows.slice().sort((a,b)=>b.date.localeCompare(a.date)||Math.abs(b.amount)-Math.abs(a.amount)).forEach(t => {
+          const det  = t.itemDetail && t.itemDetail!==t.payee ? '<div style="font-size:11px;color:'+C.river+';font-style:italic;margin-top:1px;">'+t.itemDetail+'</div>' : '';
+          const meta = [t.category, t.account].filter(Boolean).join(' · ');
+          html += '<div style="display:grid;grid-template-columns:80px 1fr auto;gap:6px;padding:5px 12px 5px 32px;border-bottom:1px solid rgba(255,255,255,.028);">';
+          html +=   '<div style="font-family:var(--fm);font-size:11px;color:'+C.ink4+';padding-top:2px;">'+t.date+'</div>';
+          html +=   '<div><div style="font-size:13px;color:#C8C4BE;">'+(t.payee||t._xferTo||'—')+'</div>'+det+'<div style="font-size:10px;color:'+C.ink4+';">'+meta+'</div></div>';
+          html +=   '<div style="font-family:var(--fm);font-size:13px;font-weight:600;color:'+(t.amount<0?color:C.pos)+';white-space:nowrap;text-align:right;">'+(t.amount<0?'−':'+')+mfmt(Math.abs(t.amount))+'</div>';
+          html += '</div>';
+        });
+
+        html += '</div>'; // end Level 2 container
+      }
+      html += '</div>'; // end Level 1 bucket row
     });
     html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 12px;background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.08);">
       <div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:.08em;">${totalLabel}</div>
@@ -9764,9 +9940,11 @@ function renderIncomeStatement() {
     </div>`;
   }
 
-  // ── Reconciliation (collapsed, operating accounts only) ────────────
+  // ── Reconciliation — income/expense tie-out to Quicken ─────────────────
   var _reconId = "isr-"+selMonth.replace("-","");
   var _RTYPES  = new Set(["checking","savings","credit"]);
+
+  // Account balances (cumulative through end of month, Quicken rows only)
   var _rb = {};
   txns.forEach(function(t) {
     if (!_RTYPES.has(detectAcctType(t.account||""))) return;
@@ -9783,22 +9961,44 @@ function renderIncomeStatement() {
   var _rT  = _rA.reduce(function(s,x){ return s+x.b; }, 0);
   var _rTF = (_rT>=0?"+":"-") + kfmt(Math.abs(_rT));
   var _rTC = _rT>=0 ? C.pos : C.neg;
+
+  // Quicken income and expense for this month (for IS math section)
+  var _qkIncome   = 0;
+  var _qkExpense  = 0;
+  var _suppressed = 0;
+  var _detailCount= 0;
+  txns.forEach(function(t) {
+    if (!t.date.startsWith(selMonth)) return;
+    if (_isDetailRow(t)) { _detailCount++; return; }  // use same helper as expense pipeline
+    if (!_RTYPES.has(detectAcctType(t.account||""))) return;
+    if (t._masked) { _suppressed++; return; }
+    var ft = _lumpFtype(t);
+    if (ft && _hasDetailForMonth[ft]) { _suppressed++; return; }
+    if (isTransfer(t)) return;
+    if (t.amount > 0 && classifyTxn(t) === "paycheck") _qkIncome += t.amount;
+    if (t.amount < 0) _qkExpense += Math.abs(t.amount);
+  });
+  var _isExpense = totalFixed + totalVar;
+  var _isDelta   = Math.abs(_isExpense - _qkExpense);
+
   var reconHtml = (function(){
     var h = "";
     h += "<div style=\"background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;\">";
+
     // Collapsed header
     h += "<div class=\"frh\" data-rb=\"" + _reconId + "\" style=\"display:flex;align-items:center;justify-content:space-between;padding:8px 14px;cursor:pointer;user-select:none;\">";
     h +=   "<span style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);\">Verify in Quicken</span>";
     h +=   "<div style=\"display:flex;align-items:center;gap:8px;\"><span style=\"font-size:13px;font-weight:700;font-family:var(--fm);color:" + _rTC + ";\">" + _rTF + "</span><span class=\"frh-c\" style=\"font-size:11px;color:var(--ink4);\">&#9654;</span></div>";
     h += "</div>";
-    // Body (hidden by default)
+
+    // Body
     h += "<div id=\"" + _reconId + "\" style=\"display:none;border-top:1px solid rgba(255,255,255,.07);\">";
-    // One-line instruction
-    h += "<div style=\"padding:7px 14px 5px;font-size:11px;color:var(--ink4);\">";
-    h +=   "Quicken &rarr; Accounts &rarr; <strong style=\"color:var(--ink3);\">" + monthName + "</strong>";
-    h +=   " &rarr; Checking + Savings + Credit Cards &rarr; total = <strong style=\"color:" + _rTC + ";\">" + _rTF + "</strong>";
+
+    // SECTION A: Account balances
+    h += "<div style=\"padding:7px 14px 5px;\">";
+    h +=   "<div style=\"font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;\">A. Account Balances</div>";
+    h +=   "<div style=\"font-size:11px;color:var(--ink4);margin-bottom:6px;\">Quicken &rarr; Accounts &rarr; <strong style=\"color:var(--ink3);\">" + monthName + "</strong> &rarr; Checking + Savings + Credit Cards &rarr; total should = <strong style=\"color:" + _rTC + ";\">" + _rTF + "</strong></div>";
     h += "</div>";
-    // Account rows
     _rA.forEach(function(x, i) {
       var tl  = ({checking:"Chk", savings:"Sav", credit:"CC"})[x.tp] || x.tp;
       var col = x.tp==="credit" ? (x.b<0?C.neg:"var(--ink3)") : (x.b>=0?C.ink2:C.neg);
@@ -9809,28 +10009,55 @@ function renderIncomeStatement() {
       h +=   "<span style=\"font-size:12px;font-weight:600;font-family:var(--fm);color:" + col + ";text-align:right;\">" + val + "</span>";
       h += "</div>";
     });
-    // Net row
-    h += "<div style=\"display:grid;grid-template-columns:28px 1fr 80px;align-items:center;padding:5px 14px;border-top:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);\">";
-    h +=   "<span></span><span style=\"font-size:12px;font-weight:700;color:var(--ink);\">Net</span>";
-    h +=   "<span style=\"font-size:14px;font-weight:700;font-family:var(--fm);color:" + _rTC + ";text-align:right;\">" + _rTF + "</span>";
+    h += "<div style=\"display:grid;grid-template-columns:28px 1fr 80px;align-items:center;padding:5px 14px;border-top:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);\"><span></span><span style=\"font-size:12px;font-weight:700;color:var(--ink);\">Net position</span><span style=\"font-size:14px;font-weight:700;font-family:var(--fm);color:" + _rTC + ";text-align:right;\">" + _rTF + "</span></div>";
+
+    // SECTION B: Income/Expense tie-out
+    h += "<div style=\"padding:10px 14px;border-top:1px solid rgba(255,255,255,.08);\">";
+    h +=   "<div style=\"font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;\">B. Income &amp; Expense Tie-Out</div>";
+    h +=   "<div style=\"font-size:11px;color:var(--ink4);margin-bottom:8px;\">Quicken &rarr; Reports &rarr; Income &amp; Expense &rarr; <strong style=\"color:var(--ink3);\">" + monthName + "</strong></div>";
+    // Income row
+    h += "<div style=\"display:grid;grid-template-columns:1fr 80px 80px;gap:4px;font-size:11px;font-family:var(--fm);margin-bottom:3px;\">";
+    h +=   "<span style=\"color:var(--ink4);\">Income (Quicken)</span><span style=\"color:var(--pos);text-align:right;\">+" + kfmt(_qkIncome) + "</span><span></span>";
     h += "</div>";
-    // IS Math
+    h += "<div style=\"display:grid;grid-template-columns:1fr 80px 80px;gap:4px;font-size:11px;font-family:var(--fm);margin-bottom:3px;\">";
+    h +=   "<span style=\"color:var(--ink4);\">Income (IS)</span><span style=\"color:var(--pos);text-align:right;\">+" + kfmt(totalIncome) + "</span>";
+    var incDiff = Math.abs(_qkIncome - totalIncome);
+    h +=   "<span style=\"font-size:10px;text-align:right;color:" + (incDiff < 1 ? C.pos : C.neg) + ";\">" + (incDiff < 1 ? "&#10003;" : "&#916;" + kfmt(incDiff)) + "</span>";
+    h += "</div>";
+    h += "<div style=\"height:6px;\"></div>";
+    // Expense row
+    h += "<div style=\"display:grid;grid-template-columns:1fr 80px 80px;gap:4px;font-size:11px;font-family:var(--fm);margin-bottom:3px;\">";
+    h +=   "<span style=\"color:var(--ink4);\">Expenses (Quicken)</span><span style=\"color:var(--neg);text-align:right;\">-" + kfmt(_qkExpense) + "</span><span></span>";
+    h += "</div>";
+    h += "<div style=\"display:grid;grid-template-columns:1fr 80px 80px;gap:4px;font-size:11px;font-family:var(--fm);margin-bottom:3px;\">";
+    h +=   "<span style=\"color:var(--ink4);\">Expenses (IS)</span><span style=\"color:var(--neg);text-align:right;\">-" + kfmt(_isExpense) + "</span>";
+    h +=   "<span style=\"font-size:10px;text-align:right;color:" + (_isDelta < 1 ? C.pos : C.neg) + ";\">" + (_isDelta < 1 ? "&#10003;" : "&#916;" + kfmt(_isDelta)) + "</span>";
+    h += "</div>";
+    // Unmasking note if applicable
+    if (_suppressed > 0 || _detailCount > 0) {
+      h += "<div style=\"margin-top:7px;padding:6px 8px;background:rgba(96,165,250,.07);border-radius:5px;font-size:10px;color:" + C.river + ";\">";
+      h +=   "&#128279; " + _suppressed + " Quicken lump-sum charge" + (_suppressed!==1?"s":"") + " replaced by " + _detailCount + " item-level detail rows. Quicken expenses will be higher than IS expenses by the lump-sum amounts; IS expenses reflect the unmasked item breakdown.";
+      h += "</div>";
+    }
+    h += "</div>";
+
+    // SECTION C: IS Math (compact)
     h += "<div style=\"padding:8px 14px 10px;border-top:1px solid rgba(255,255,255,.06);\">";
-    h +=   "<div style=\"font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;\">IS Math</div>";
+    h +=   "<div style=\"font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;\">C. IS Math</div>";
     h +=   "<div style=\"display:flex;flex-direction:column;gap:2px;font-size:11px;font-family:var(--fm);\">";
     h +=     "<div style=\"display:flex;justify-content:space-between;\"><span style=\"color:var(--ink4);\">Paychecks</span><span style=\"color:var(--pos);\">+" + kfmt(totalIncome) + "</span></div>";
     if (totalAutoSave>0) h += "<div style=\"display:flex;justify-content:space-between;\"><span style=\"color:var(--ink4);\">Pre-saved</span><span style=\"color:var(--river);\">&minus;" + kfmt(totalAutoSave) + "</span></div>";
     h +=     "<div style=\"display:flex;justify-content:space-between;\"><span style=\"color:var(--ink4);\">Fixed</span><span style=\"color:var(--neg);\">&minus;" + kfmt(totalFixed) + "</span></div>";
     h +=     "<div style=\"display:flex;justify-content:space-between;\"><span style=\"color:var(--ink4);\">Variable</span><span style=\"color:var(--gold);\">&minus;" + kfmt(totalVar) + "</span></div>";
     if (totalDraw>0) h += "<div style=\"display:flex;justify-content:space-between;\"><span style=\"color:var(--neg);\">Savings draw</span><span style=\"color:var(--neg);\">+" + kfmt(totalDraw) + "</span></div>";
-    h +=     "<div style=\"display:flex;justify-content:space-between;padding-top:4px;border-top:1px solid rgba(255,255,255,.08);margin-top:2px;\">" +
-               "<span style=\"color:var(--ink);font-weight:600;\">Net</span>" +
-               "<span style=\"color:" + (onTrack?C.pos:C.neg) + ";font-weight:700;\">" + (netRemaining>=0?"+":"-") + kfmt(Math.abs(netRemaining)) + "</span></div>";
+    h +=     "<div style=\"display:flex;justify-content:space-between;padding-top:4px;border-top:1px solid rgba(255,255,255,.08);margin-top:2px;\"><span style=\"color:var(--ink);font-weight:600;\">Net</span><span style=\"color:" + (onTrack?C.pos:C.neg) + ";font-weight:700;\">" + (netRemaining>=0?"+":"-") + kfmt(Math.abs(netRemaining)) + "</span></div>";
     h +=   "</div>";
     h += "</div>";
+
     h += "</div></div>";
     return h;
   })();
+
 
   // ── Margin cards ──────────────────────────────────────────────────
   const fixedMargin = fixedRows.length > 0 ? `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
@@ -9900,12 +10127,26 @@ function renderIncomeStatement() {
     });
   });
 
-  // ── Single delegated click handler ─────────────────────────────────────
+  // ── Single delegated click handler (3 levels) ─────────────────────────
   if (el.dataset.listenerBound) return;
   el.dataset.listenerBound = '1';
   el.addEventListener('click', function(e) {
     let node = e.target;
     while (node && node !== el) {
+      // Level 2: merchant group row expand/collapse (innermost — check first)
+      if (node.classList && node.classList.contains('is-mg-row')) {
+        const mgid = node.dataset.mgid;
+        const body = document.getElementById(mgid);
+        if (body) {
+          const open = body.style.display !== 'none';
+          body.style.display = open ? 'none' : 'block';
+          const chev = node.querySelector('.mg-chev');
+          if (chev) chev.textContent = open ? '▸' : '▾';
+        }
+        e.stopPropagation();
+        return;
+      }
+      // Level 1: bucket row expand/collapse
       if (node.dataset && node.dataset.bkid) {
         e.stopPropagation();
         toggleBucket(node.dataset.bkid);
