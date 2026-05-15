@@ -2175,6 +2175,7 @@ function isTransfer(t) {
 // not household income. Genuine income (paycheck, cashback tagged as income) is preserved.
 
 function classifyTxn(t) {
+  if (t._inferredBucket) return t._inferredBucket;
   const cat  = (t.category || '').toLowerCase().trim();
   const pay  = (t.payee    || '').toLowerCase().trim();
 

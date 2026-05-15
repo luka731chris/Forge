@@ -6604,7 +6604,8 @@ function parseCSV(text, fname) {
     return parseMerchantCSV(cleanText, acctName, {
       dateCol:'transaction date', payeeCol:'merchant', amtCol:'amount (usd)',
       catCol:'category', detailCol:'description', sign: -1,
-      typeCol:'type', typeSkip: /^payment$/i   // exclude payment rows — covered by Quicken CC payment
+      typeCol:'type', typeSkip: /^payment$/i,
+      source: 'apple_card'
     });
   }
 
@@ -6612,7 +6613,8 @@ function parseCSV(text, fname) {
   if (firstLine.includes('order id') && firstLine.includes('asin') && firstLine.includes('total charged')) {
     return parseMerchantCSV(cleanText, acctName, {
       dateCol:'order date', payeeCol:'title', amtCol:'total charged',
-      catCol:'category', detailCol:'title', sign: -1
+      catCol:'category', detailCol:'title', sign: -1,
+      source: 'amazon_orders'
     });
   }
 
@@ -6620,7 +6622,8 @@ function parseCSV(text, fname) {
   if (firstLine.includes('order number') && firstLine.includes('items ordered') && firstLine.includes('order total')) {
     return parseMerchantCSV(cleanText, acctName, {
       dateCol:'order date', payeeCol:'items ordered', amtCol:'order total',
-      catCol:null, detailCol:'items ordered', sign: -1
+      catCol:null, detailCol:'items ordered', sign: -1,
+      source: 'home_depot'
     });
   }
 
@@ -6628,7 +6631,8 @@ function parseCSV(text, fname) {
   if (firstLine.includes('funding source') && firstLine.includes('destination') && firstLine.includes('amount (total)')) {
     return parseMerchantCSV(cleanText, acctName, {
       dateCol:'datetime', payeeCol:'from', payeeColAlt:'to',
-      amtCol:'amount (total)', detailCol:'note', catCol:'type', sign: 0
+      amtCol:'amount (total)', detailCol:'note', catCol:'type', sign: 0,
+      source: 'venmo'
     });
   }
 
@@ -9083,6 +9087,55 @@ function renderIncomeStatement() {
   const el = document.getElementById('incomeStatement');
   if (!el) return;
 
+  // ── One-time migration: repair _source and _isDetail on rows loaded from
+  // localStorage that pre-date the source-stamping fix. Rows from parseMerchantCSV
+  // always have itemDetail set; rows from generic Quicken CSV never do.
+  // We run this once per IS render (fast — O(n) with early continue).
+  const _DETAIL_SRCS_KNOWN = new Set(['apple_card','amazon_orders','home_depot','venmo']);
+  (function repairDetailFlags() {
+    let repaired = 0;
+    txns.forEach(t => {
+      // Already correctly flagged — skip
+      if (_DETAIL_SRCS_KNOWN.has(t._source)) { t._isDetail = true; return; }
+      // Has itemDetail but no recognized _source → came from parseMerchantCSV pre-fix
+      if (t.itemDetail && !_DETAIL_SRCS_KNOWN.has(t._source)) {
+        // Infer source from what we know about the row:
+        // Apple Card: payee is a merchant name (not an item title), has 'apple' or 'card' in account
+        // Amazon: payee IS the item title (same as itemDetail), often has 'amazon' in account/payee
+        // Home Depot: itemDetail starts with 'items ordered'
+        // Venmo: has funding source characteristics
+        const acctLc  = (t.account||'').toLowerCase();
+        const payLc   = (t.payee||'').toLowerCase();
+        const detLc   = (t.itemDetail||'').toLowerCase();
+        let inferred  = 'amazon_orders';  // most common — safe default
+        if (/apple|card/.test(acctLc) || (t.payee !== t.itemDetail && !/^items order/i.test(detLc))) {
+          inferred = 'apple_card';
+        }
+        if (/home.?depot|homedepot/.test(acctLc) || /^items order/i.test(detLc)) {
+          inferred = 'home_depot';
+        }
+        if (/venmo/.test(acctLc)) inferred = 'venmo';
+        if (/amazon/.test(acctLc) || /amazon/.test(payLc)) {
+          // This could be a Quicken Amazon row (payee = AMAZON.COM) — don't flag it as detail
+          // Amazon DETAIL rows have payee = item title, not "amazon..."
+          // If payee IS amazon-like, this is a Quicken lump-sum, not a detail row
+          if (!/amazon/i.test(t.payee) || t.payee === t.itemDetail) {
+            inferred = 'amazon_orders';
+          } else {
+            return;  // Quicken Amazon lump-sum — leave it alone
+          }
+        }
+        t._source   = inferred;
+        t._isDetail = true;
+        repaired++;
+      }
+    });
+    if (repaired > 0) {
+      saveData();  // persist the repair so we don't re-run every render
+      console.log('[Forge] Migrated ' + repaired + ' detail rows to add _source/_isDetail');
+    }
+  })();
+
   // ── Month selector ──────────────────────────────────────────────────────────
   const moSel  = document.getElementById('isMonth');
   const sp     = spendable(txns);
@@ -9161,7 +9214,19 @@ function renderIncomeStatement() {
   // Use _source (set at import, preserved in localStorage) to identify detail rows.
   // _source is more reliable than _isDetail which may be missing on older imports.
   const DETAIL_SRCS_IS = new Set(['apple_card','amazon_orders','home_depot','venmo']);
-  function _isDetailRow(t) { return DETAIL_SRCS_IS.has(t._source||t._ftype||''); }
+  function _isDetailRow(t) {
+    // Primary: _source or _ftype (set at import, repaired by migration above)
+    if (DETAIL_SRCS_IS.has(t._source||t._ftype||'')) return true;
+    // Fallback: itemDetail is ONLY set by parseMerchantCSV, never by Quicken CSV parser
+    // But exclude rows where payee looks like a Quicken merchant name (e.g. "AMAZON.COM*XY123")
+    if (t.itemDetail && t.payee === t.itemDetail) return true;  // item title == payee = Amazon-style row
+    if (t.itemDetail && t.payee !== t.itemDetail) {
+      // Apple Card style: payee = merchant, itemDetail = description — check it's not a Quicken row
+      // Quicken rows never have itemDetail set at all
+      return true;
+    }
+    return false;
+  }
 
   const UNMASK_PAT = {
     amazon_orders: /\bamazon\b/i,
@@ -9170,10 +9235,17 @@ function renderIncomeStatement() {
     apple_card:    /\bapple\b|\bapple.?card\b/i,
   };
 
-  // Which detail sources have rows for this month? (checked by source type, not _isDetail flag)
+  // Which detail sources have rows for this month?
   const _hasDetailForMonth = {};
   txns.filter(t => _isDetailRow(t) && t.date.startsWith(selMonth) && t.amount < 0).forEach(t => {
-    _hasDetailForMonth[t._source||t._ftype||'det'] = true;
+    const src = t._source || t._ftype || '';
+    if (src) {
+      _hasDetailForMonth[src] = true;
+    } else {
+      // Source still unknown after migration — mark ALL merchant types as having detail
+      // so no Quicken lump-sum for any known merchant slips through
+      Object.keys(UNMASK_PAT).forEach(k => { _hasDetailForMonth[k] = true; });
+    }
   });
 
   // Determine which ftype (if any) would unmask a given Quicken payee
