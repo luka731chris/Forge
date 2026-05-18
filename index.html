@@ -1077,6 +1077,62 @@ select:focus { border-color: var(--gold); }
           </div>
         </div>
       </div>
+
+      <!-- Detail CSV export instructions -->
+      <div style="padding:12px 16px;border-top:1px solid var(--line);">
+        <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:8px;">Detail CSV exports <span style="font-size:10px;font-weight:400;color:var(--ink4);">&mdash; import these to unmask lump-sum charges into item-level categories</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:11px;color:var(--ink3);line-height:1.9;">
+
+          <div style="background:rgba(255,255,255,.025);border-radius:8px;padding:12px 14px;border:1px solid rgba(255,255,255,.06);">
+            <div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">&#128722; Amazon Order History</div>
+            <div style="padding:5px 8px;background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.2);border-radius:5px;font-size:10px;color:var(--neg);margin-bottom:10px;">
+              Amazon removed its built-in CSV export for personal accounts in 2023. Two working methods remain.
+            </div>
+
+            <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:3px;">Method A &mdash; Free Chrome extension (recommended)</div>
+            <div style="color:var(--ink3);margin-bottom:8px;">
+              1. In Chrome, search <strong style="color:var(--ink2);">&ldquo;Amazon Order History Reporter&rdquo;</strong> in the Chrome Web Store and install it (by Philip Mulcahy &mdash; free, open source)<br>
+              2. Go to <strong style="color:var(--ink2);">amazon.com &rarr; Your Account &rarr; Your Orders</strong><br>
+              3. Click the extension icon (orange <strong style="color:var(--gold);">A</strong>) in your browser toolbar<br>
+              4. Select the year(s) to export<br>
+              5. Click <strong style="color:var(--ink2);">Download Items CSV</strong> (not Orders CSV &mdash; Items has per-item detail)<br>
+              6. Drop the <code style="background:var(--float);padding:1px 4px;border-radius:3px;font-size:10px;">.csv</code> here
+            </div>
+
+            <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:3px;">Method B &mdash; Amazon Privacy Central (no extension needed)</div>
+            <div style="color:var(--ink3);margin-bottom:8px;">
+              1. Go to <code style="background:var(--float);padding:1px 4px;border-radius:3px;font-size:10px;">amazon.com/hz/privacy-central</code><br>
+              2. Click <strong style="color:var(--ink2);">Request Your Information</strong> &rarr; select <strong style="color:var(--ink2);">Your Orders</strong><br>
+              3. Submit &rarr; click the confirmation link in the first email Amazon sends<br>
+              4. Wait for a second email with your download link (can take 6&ndash;36 hours)<br>
+              5. Download the ZIP &rarr; unzip &rarr; find the <code style="background:var(--float);padding:1px 4px;border-radius:3px;font-size:10px;">Retail.OrderHistory.1/</code> folder<br>
+              6. Drop the <code style="background:var(--float);padding:1px 4px;border-radius:3px;font-size:10px;">.csv</code> inside that folder here
+            </div>
+
+            <div style="padding:5px 8px;background:rgba(245,168,0,.07);border-radius:5px;font-size:10px;color:var(--gold);">
+              &#9432; Forge reads columns: Order Date, Title, Category, ASIN, Total Charged. Each item becomes its own transaction, keyword-categorized into Forge buckets.
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,.025);border-radius:8px;padding:12px 14px;border:1px solid rgba(255,255,255,.06);">
+            <div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--river);margin-bottom:6px;">&#127822; Apple Card Statement</div>
+            <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:6px;">Wallet app on iPhone</div>
+            <div style="color:var(--ink3);">
+              1. Open <strong style="color:var(--ink2);">Wallet</strong> app &rarr; tap your <strong style="color:var(--ink2);">Apple Card</strong><br>
+              2. Tap the <strong style="color:var(--ink2);">three dots (&#8943;)</strong> &rarr; <strong style="color:var(--ink2);">Statements</strong><br>
+              3. Select any month or scroll to the full year view<br>
+              4. Tap <strong style="color:var(--ink2);">Export Transactions</strong> (CSV format)<br>
+              5. AirDrop or email the file to your computer<br>
+              6. Drop the <code style="background:var(--float);padding:1px 4px;border-radius:3px;font-size:10px;">.csv</code> file here
+            </div>
+            <div style="margin-top:8px;padding:6px 8px;background:rgba(96,165,250,.07);border-radius:5px;font-size:10px;color:var(--river);">
+              &#9432; Apple Card payments (the monthly payoff) are automatically excluded. Only purchases appear. Overlapping date ranges are deduplicated.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -2859,7 +2915,7 @@ function renderSettings() {
       <span style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Storage</span>
       <span style="font-size:18px;font-weight:600;font-family:var(--fd);color:var(--ink);">${storageKB} KB</span>
     </div>
-    <div style="margin-left:auto;font-size:10px;color:var(--ink4);font-family:var(--fm);">Color: ● fresh &lt;7d &nbsp; ● &lt;30d &nbsp; ● stale &nbsp; ○ not loaded</div>
+    <div style="margin-left:auto;font-size:10px;color:var(--ink4);font-family:var(--fm);"><span style="display:inline-flex;align-items:center;gap:5px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pos);"></span><span style="color:var(--pos);">Fresh &lt;7d</span></span>&nbsp;&nbsp;<span style="display:inline-flex;align-items:center;gap:5px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);"></span><span style="color:var(--gold);">&lt;30d</span></span>&nbsp;&nbsp;<span style="display:inline-flex;align-items:center;gap:5px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--neg);"></span><span style="color:var(--neg);">Stale</span></span>&nbsp;&nbsp;<span style="display:inline-flex;align-items:center;gap:5px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;border:1px solid var(--line2);"></span><span style="color:var(--ink4);">Not loaded</span></span></div>
   </div>
 
   <!-- Header row -->
@@ -6153,13 +6209,9 @@ async function processFiles() {
   const newDetail   = newTxns.filter(t => DETAIL_SRCS.has(t._ftype));
   const newQuicken  = newTxns.filter(t => !DETAIL_SRCS.has(t._ftype));
 
-  // ── Step 3: Military-grade dedup helpers ──────────────────────────
+  // ── Step 3: Dedup key functions ─────────────────────────────────────
   function _normPayee(p) {
-    return (p||'').toLowerCase()
-      .replace(/\s+/g,' ')
-      .replace(/[^a-z0-9 ]/g,'')
-      .trim()
-      .slice(0,20);
+    return (p||'').toLowerCase().replace(/\s+/g,' ').replace(/[^a-z0-9 ]/g,'').trim().slice(0,24);
   }
   function _normAcct(a) {
     return (a||'').toLowerCase()
@@ -6167,53 +6219,75 @@ async function processFiles() {
       .replace(/\b(checking|savings|credit card|cc|card|account|acct)\b/g,'')
       .trim().slice(0,16);
   }
-  // Strict key: exact date + signed amount + normalized payee + normalized account
+
+  // Strict key: exact match within same source (signed amount + account)
   function _strictKey(t) {
     return t.date+'|'+t.amount.toFixed(2)+'|'+_normPayee(t.payee)+'|'+_normAcct(t.account);
   }
-  // Fuzzy key: date + absolute amount + payee prefix — catches cross-source same charge
+
+  // Fuzzy key: cross-source Quicken match (abs amount, drops account)
   function _fuzzyKey(t) {
     return t.date+'|'+Math.abs(t.amount).toFixed(2)+'|'+_normPayee(t.payee).slice(0,8);
   }
+
+  // Detail key: same-source detail dedup.
+  // Uses abs amount (handles sign differences between exports).
+  // Uses 24-char payee to minimize false collisions (two different $9.99 items on same day).
+  // When Order ID is available (Amazon), appends it for perfect precision.
   function _detailKey(t) {
+    const base = t.date+'|'+Math.abs(t.amount).toFixed(2)+'|'+_normPayee(t.payee).slice(0,24);
+    // Amazon Privacy Central exports include Order ID — use it when present for exact match
+    if (t.orderId) return base+'|'+t.orderId;
+    return base;
+  }
+
+  // Cross-source detail key: catches same transaction from two different export formats
+  // (e.g. AZAD extension CSV + Privacy Central CSV for the same Amazon item).
+  // Uses shorter payee prefix (12 chars) to tolerate title format differences.
+  function _crossDetailKey(t) {
     return t.date+'|'+Math.abs(t.amount).toFixed(2)+'|'+_normPayee(t.payee).slice(0,12);
   }
-  // CC payment key: date + absolute amount — any CC payment on the same date/amount
-  // is the same payment regardless of which side of the ledger or account name
+
+  // CC payment key: date + abs amount only (works across both sides of the ledger)
   function _ccPayKey(t) {
     return t.date+'|'+Math.abs(t.amount).toFixed(2);
   }
-  // Lump-sum merchant key: links Quicken lump-sum to detail-file rows
-  // Match on date (±3 days) + absolute amount — the Quicken Amazon charge on Apr 5
-  // matches Amazon CSV items summing to the same total, even if dates are ±1-2 days
-  function _merchantKey(t) {
-    return Math.abs(t.amount).toFixed(2)+'|'+_normPayee(t.payee).slice(0,6);
+
+  // Canonical detail source for a transaction (prefers _source, falls back to _ftype)
+  function _detailSrc(t) {
+    return t._source || t._ftype || '';
   }
 
-  // Existing transaction key sets
+  // Is this a detail-source row? Checks _source/_ftype AND itemDetail as fallback
+  // for rows imported before source-stamping was added.
+  function _isDetailSrc(t) {
+    if (DETAIL_SRCS.has(_detailSrc(t))) return true;
+    // itemDetail is only ever set by parseMerchantCSV, never by Quicken CSV parser
+    if (t.itemDetail) return true;
+    return false;
+  }
+
+  // ── Step 4: Build existing key sets (all three tiers) ────────────────
   const existingStrict = new Set(txns.map(_strictKey));
   const existingFuzzy  = new Set(txns.map(_fuzzyKey));
-  const existingByFtype = {};
-  txns.filter(t => t._isDetail && t._ftype).forEach(t => {
-    if (!existingByFtype[t._ftype]) existingByFtype[t._ftype] = new Set();
-    existingByFtype[t._ftype].add(_detailKey(t));
+
+  // Per-source detail sets — catches re-import of same CSV with overlapping date range.
+  // Uses _isDetailSrc (not just _isDetail flag) to catch rows from older imports.
+  const existingBySource = {};      // source → Set of _detailKey
+  const existingCrossDetail = new Set(); // all detail rows by _crossDetailKey
+  txns.filter(t => _isDetailSrc(t)).forEach(t => {
+    const src = _detailSrc(t) || 'det';
+    if (!existingBySource[src]) existingBySource[src] = new Set();
+    existingBySource[src].add(_detailKey(t));
+    existingCrossDetail.add(_crossDetailKey(t));
   });
+
   // CC payments in existing data
-  const existingCCPay  = new Set(
-    txns.filter(t => isTransfer(t) && detectAcctType(t.account||'') === 'checking')
-        .map(_ccPayKey)
+  const existingCCPay = new Set(
+    txns.filter(t => isTransfer(t) && detectAcctType(t.account||'') === 'checking').map(_ccPayKey)
   );
 
-  // ── Step 4: Unmasking — link detail rows to Quicken lump-sums ────
-  // For each Quicken row that matches a merchant (Amazon, Apple Card merchant, etc.),
-  // find all detail rows that fall within ±5 days with matching merchant prefix.
-  // Strategy:
-  //   A) Build a map of candidate Quicken lump-sums: payee-prefix + amount → txn
-  //   B) For each detail row group (same merchant/date window), find matching lump-sum
-  //   C) Mark matched Quicken rows as _masked=true; detail rows get _unmasks=lumpSumKey
-  //   D) When building the final txns array, suppress _masked rows where detail rows exist
-
-  // Candidate lump-sums: all Quicken rows where payee matches a known detail merchant
+  // ── Step 5: Merchant patterns for Quicken lump-sum suppression ───────
   const MERCHANT_PATTERNS = {
     amazon_orders: /\bamazon\b/i,
     home_depot:    /\bhome.?depot\b/i,
@@ -6221,123 +6295,111 @@ async function processFiles() {
     apple_card:    /\bapple\b|\bapple.?card\b/i,
   };
 
-  // Build detail group index: ftype|normPayeePrefix6|dateWindow → [detail rows]
-  // "date window" is the week number (floor(daysSinceEpoch/7)) for loose date matching
   function _weekBucket(dateStr) {
     return Math.floor(new Date(dateStr).getTime() / (7*24*3600*1000));
   }
-  const detailGroups = {}; // key → detail rows
+
+  // Build week-bucket index of new detail rows for lump-sum matching
+  const detailGroups = {};
   newDetail.forEach(t => {
-    // Group by ftype + week + merchant prefix
-    const k = t._ftype+'|'+_weekBucket(t.date);
+    const k = _detailSrc(t)+'|'+_weekBucket(t.date);
     if (!detailGroups[k]) detailGroups[k] = [];
     detailGroups[k].push(t);
   });
 
-  // For each Quicken row, try to find matching detail group
-  const maskedKeys = new Set();  // strict keys of Quicken rows that are unmasked
+  // Mark Quicken lump-sums that are covered by detail rows in this batch
+  const maskedKeys = new Set();
   newQuicken.forEach(qt => {
-    if (qt.isTransfer) return;  // transfers are never unmasked
+    if (qt.isTransfer) return;
     const pattern = Object.entries(MERCHANT_PATTERNS).find(([,rx]) => rx.test(qt.payee));
     if (!pattern) return;
     const [detailFtype] = pattern;
-    // Check ±1 week buckets for matching detail rows
     const weekB = _weekBucket(qt.date);
     for (const woff of [-1, 0, 1]) {
-      const grpKey = detailFtype+'|'+(weekB+woff);
-      const grp    = detailGroups[grpKey];
+      const grp = detailGroups[detailFtype+'|'+(weekB+woff)];
       if (!grp || !grp.length) continue;
-      // Sum the group's absolute amounts — does it match the Quicken charge?
       const grpTotal = grp.reduce((s,t) => s+Math.abs(t.amount), 0);
       const qtAmt    = Math.abs(qt.amount);
-      // Match if within 1% or $5 (handles rounding, tax, shipping discrepancies)
-      if (Math.abs(grpTotal - qtAmt) / Math.max(qtAmt, 1) < 0.01 ||
-          Math.abs(grpTotal - qtAmt) < 5.01) {
-        // Mark the Quicken row as masked by this detail group
-        qt._masked    = true;
-        qt._maskedBy  = detailFtype;
+      if (Math.abs(grpTotal-qtAmt)/Math.max(qtAmt,1) < 0.01 || Math.abs(grpTotal-qtAmt) < 5.01) {
+        qt._masked = true; qt._maskedBy = detailFtype;
         maskedKeys.add(_strictKey(qt));
-        // Link detail rows back to the Quicken lump-sum
         grp.forEach(dt => {
           dt._unmasks = _strictKey(qt);
-          dt._lumpPayee = qt.payee;
-          dt._lumpAcct  = qt.account;
-          dt._lumpDate  = qt.date;
+          dt._lumpPayee = qt.payee; dt._lumpAcct = qt.account; dt._lumpDate = qt.date;
         });
-        break;  // found match — stop searching week offsets
+        break;
       }
     }
   });
 
-  // ── Step 5: CC payment dedup — high-confidence bilateral match ────
-  // A CC payment appears in Quicken as:
-  //   Checking account: debit (negative), category=[Credit Card Acct], isTransfer=true
-  //   CC account: credit (positive), category=[Checking Acct], isTransfer=true
-  // Apple Card CSV may also include a "Payment" row (already filtered by typeSkip).
-  // Key rule: if the same date+amount CC payment already exists as a transfer, suppress it.
+  // CC payment set from new batch
   const newCCPay = new Set(
-    newTxns.filter(t => isTransfer(t) && detectAcctType(t.account||'') === 'checking')
-           .map(_ccPayKey)
+    newTxns.filter(t => isTransfer(t) && detectAcctType(t.account||'') === 'checking').map(_ccPayKey)
   );
 
-  // ── Step 6: Dedup — build final toAdd list ────────────────────────
+  // ── Step 6: Dedup — within-batch then vs existing ─────────────────────
   let added = 0, duped = 0, unmasked = 0, detailAdded = 0;
 
-  const batchStrict = new Set();
-  const batchFuzzy  = new Set();
-  const batchDetailByFtype = {};
+  const batchStrict      = new Set();
+  const batchFuzzy       = new Set();
+  const batchBySource    = {};  // source → Set of _detailKey (within-batch per-source)
+  const batchCrossDetail = new Set(); // all detail in batch by _crossDetailKey
 
-  // First pass: dedup within the batch itself
+  // Pass 1: dedup within the new batch
   const dedupedNew = [];
   newTxns.forEach(t => {
-    // Skip Quicken rows that are successfully unmasked by detail rows
     if (t._masked) { unmasked++; return; }
 
     const sk = _strictKey(t);
-    const fk = _fuzzyKey(t);
-
-    // Within-batch dedup
     if (batchStrict.has(sk)) { duped++; return; }
     batchStrict.add(sk);
 
-    // Detail rows: per-source abs-amount dedup (handles Apple Card overlapping date ranges)
-    if (t._isDetail) {
-      const ft = t._ftype||'det';
-      if (!batchDetailByFtype[ft]) batchDetailByFtype[ft] = new Set();
-      const dk = _detailKey(t);
-      if (batchDetailByFtype[ft].has(dk)) { duped++; return; }
-      batchDetailByFtype[ft].add(dk);
+    if (_isDetailSrc(t)) {
+      const src = _detailSrc(t) || 'det';
+      const dk  = _detailKey(t);
+      const cdk = _crossDetailKey(t);
+
+      // Same-source dedup (handles overlapping date ranges from same export type)
+      if (!batchBySource[src]) batchBySource[src] = new Set();
+      if (batchBySource[src].has(dk)) { duped++; return; }
+      batchBySource[src].add(dk);
+
+      // Cross-source dedup (AZAD extension + Privacy Central for same Amazon item)
+      if (batchCrossDetail.has(cdk)) { duped++; return; }
+      batchCrossDetail.add(cdk);
     } else {
-      if (batchFuzzy.has(fk)) { duped++; return; }
-      batchFuzzy.add(fk);
+      if (batchFuzzy.has(_fuzzyKey(t))) { duped++; return; }
+      batchFuzzy.add(_fuzzyKey(t));
     }
 
     dedupedNew.push(t);
   });
 
-  // Second pass: dedup against existing prod data
+  // Pass 2: dedup against existing stored transactions
   const toAdd = [];
   dedupedNew.forEach(t => {
-    // Exact match
     if (existingStrict.has(_strictKey(t))) { duped++; return; }
 
-    // Detail: same-source dedup vs existing (abs-amount, handles CSV sign differences)
-    if (t._isDetail) {
-      const ft2 = t._ftype||'det';
-      const dk2 = _detailKey(t);
-      if (existingByFtype[ft2] && existingByFtype[ft2].has(dk2)) { duped++; return; }
+    if (_isDetailSrc(t)) {
+      const src = _detailSrc(t) || 'det';
+      const dk  = _detailKey(t);
+      const cdk = _crossDetailKey(t);
+
+      // Same-source: exact detail key match
+      if (existingBySource[src] && existingBySource[src].has(dk)) { duped++; return; }
+
+      // Cross-source: shorter key catches same item from different export format
+      if (existingCrossDetail.has(cdk)) { duped++; return; }
     } else if (!t.isTransfer) {
       if (existingFuzzy.has(_fuzzyKey(t))) { duped++; return; }
     }
 
-    // CC payment dedup: if this is a CC payment transfer, check if the same
-    // payment already exists from the other side of the ledger
     if (t.isTransfer && detectAcctType(t.account||'') === 'checking') {
       if (existingCCPay.has(_ccPayKey(t))) { duped++; return; }
     }
 
     toAdd.push(t);
-    if (t._isDetail) detailAdded++;
+    if (_isDetailSrc(t)) detailAdded++;
     else added++;
   });
 
@@ -6461,6 +6523,8 @@ function parseDate(s) {
   if (!s) return null;
   // ISO: 2026-01-15
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // ISO timestamp: 2025-12-29T12:55:34Z or 2025-12-29T12:55:34.000Z
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.slice(0, 10);
   // M/D/YYYY or M-D-YYYY
   let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if (m) return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
@@ -6580,11 +6644,16 @@ function parseMerchantCSV(text, acctName, opts) {
 
 
 
+    // Capture Order ID when available (Amazon Privacy Central has it)
+    const orderIdC = fc('order id');
+    const orderId  = orderIdC >= 0 ? (row[orderIdC]||'').replace(/^["'\s]+|["'\s]+$/g,'').trim() : undefined;
+
     results.push({
       date, payee, amount: rawAmt,
       category: cat, account: acctName,
       memo: itemDetail || '', isTransfer: false,
       itemDetail,
+      orderId: orderId || undefined,
       _source: opts.source || undefined,
     });
   }
@@ -6609,11 +6678,23 @@ function parseCSV(text, fname) {
     });
   }
 
-  // Amazon Order History CSV: "Order ID,Order Date,Title,Category,ASIN,Quantity,Unit Price,Total Charged"
+  // Amazon Order History CSV (AZAD extension format):
+  // "Order ID,Order Date,Title,Category,ASIN,Quantity,Unit Price,Total Charged"
   if (firstLine.includes('order id') && firstLine.includes('asin') && firstLine.includes('total charged')) {
     return parseMerchantCSV(cleanText, acctName, {
       dateCol:'order date', payeeCol:'title', amtCol:'total charged',
       catCol:'category', detailCol:'title', sign: -1,
+      source: 'amazon_orders'
+    });
+  }
+
+  // Amazon Order History (Privacy Central format):
+  // "ASIN,Billing Address,...,Order Date,Order ID,...,Product Name,...,Shipment Item Subtotal,...,Total Amount,..."
+  if (firstLine.includes('order id') && firstLine.includes('asin') && firstLine.includes('product name') && firstLine.includes('shipment item subtotal')) {
+    return parseMerchantCSV(cleanText, acctName, {
+      dateCol:'order date', payeeCol:'product name', amtCol:'shipment item subtotal',
+      catCol:null, detailCol:'product name', sign: -1,
+      typeCol:'order status', typeSkip: /^cancelled$/i,
       source: 'amazon_orders'
     });
   }
