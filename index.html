@@ -3829,7 +3829,9 @@ function bindChartTips(container) {
 }
 document.addEventListener('mousemove', positionChartTip);
 
-function svgBar(elId, labels, datasets) {
+function svgBar(elId, labels, datasets, opts) {
+  opts = opts || {};
+  var _pIdx = (opts && opts.projectedIdx >= 0) ? opts.projectedIdx : -1;
   const el = document.getElementById(elId);
   if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
   const W = Math.max(el.offsetWidth || 0, 300);
@@ -3868,21 +3870,35 @@ function svgBar(elId, labels, datasets) {
   const off  = (grpW - barW * nDS) / 2;
   let bars = '', hitAreas = '', legend = '';
 
-  datasets.forEach((ds, di) => {
-    const color = ds.backgroundColor || COLORS[di % COLORS.length];
-    const safeLabel = (ds.label||'').replace(/'/g, '&apos;');
-    legend += `<rect x="${di*90+PAD.l}" y="${H-16}" width="10" height="8" rx="2" fill="${color}"/>
-               <text x="${di*90+PAD.l+14}" y="${H-8}" fill="rgba(255,255,255,.5)" font-size="10" font-family="'DM Mono',monospace">${safeLabel}</text>`;
-    (ds.data || []).forEach((v, i) => {
+  var _htchId = 'h'+elId.replace(/[^a-z0-9]/gi,'');
+  var _defs2  = '<defs><pattern id="'+_htchId+'" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="rgba(255,255,255,0.28)" stroke-width="2.5"/></pattern></defs>';
+
+  datasets.forEach(function(ds, di) {
+    var color     = ds.backgroundColor || COLORS[di % COLORS.length];
+    var safeLabel = (ds.label||'').replace(/'/g, '&apos;');
+    legend += '<rect x="'+(di*90+PAD.l)+'" y="'+(H-16)+'" width="10" height="8" rx="2" fill="'+color+'"/>'
+            + '<text x="'+(di*90+PAD.l+14)+'" y="'+(H-8)+'" fill="rgba(255,255,255,.5)" font-size="10" font-family="var(--fm)">'+safeLabel+'</text>';
+    (ds.data || []).forEach(function(v, i) {
       if (!isFinite(v)) return;
-      const x  = (PAD.l + i * grpW + off + di * barW).toFixed(1);
-      const bH = Math.max((Math.abs(v) / span * cH).toFixed(1), 1);
-      const y  = (PAD.t + (v >= 0 ? zeroY - Math.abs(v)/span*cH : zeroY)).toFixed(1);
-      const fmtV = Math.abs(v)>=1000?'$'+(v/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
-      const tip = `${labels[i]} · ${safeLabel}: ${fmtV}`;
-      bars += `<rect x="${x}" y="${y}" width="${barW.toFixed(1)}" height="${bH}" rx="2" fill="${color}" opacity=".85"/>`;
+      var isP  = (i === _pIdx);
+      var x    = (PAD.l + i * grpW + off + di * barW).toFixed(1);
+      var bH   = Math.max((Math.abs(v) / span * cH).toFixed(1), 1);
+      var y    = (PAD.t + (v >= 0 ? zeroY - Math.abs(v)/span*cH : zeroY)).toFixed(1);
+      var fmtV = Math.abs(v)>=1000?'$'+(v/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
+      var tip  = labels[i]+' · '+safeLabel+': '+fmtV+(isP?' (projected)':'');
+      var bRx = Math.min(parseFloat(bH)/2, 3);
+      bars += '<rect x="'+x+'" y="'+(parseFloat(y)+2)+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="'+bRx+'" fill="'+color+'" opacity="'+(isP?'0.1':'0.18')+'"/>'; // shadow bloom
+      bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="'+bRx+'" fill="'+color+'" opacity="'+(isP?'0.45':'0.88')+'" data-tip="'+tip+'"/>';
+      bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+(parseFloat(bH)*0.32).toFixed(1)+'" rx="'+bRx+'" fill="rgba(255,255,255,0.13)" style="pointer-events:none;"/>'; // top-lit
+      if (isP) {
+        bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="'+bRx+'" fill="url(#'+_htchId+')" opacity="0.75"/>';
+        bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="'+bRx+'" fill="none" stroke="'+color+'" stroke-width="1" stroke-dasharray="3 2" opacity="0.8"/>';
+        var ely = (parseFloat(y)-5).toFixed(1);
+        bars += '<text x="'+(parseFloat(x)+barW/2).toFixed(1)+'" y="'+ely+'" text-anchor="middle" font-size="8" font-family="var(--fm)" fill="'+color+'" opacity="0.85" font-style="italic">est.</text>';
+      }
     });
   });
+
 
   // Per-column hit areas — all dataset values + computed net in one tooltip
   labels.forEach(function(colLbl, ci) {
@@ -3919,133 +3935,219 @@ function svgBar(elId, labels, datasets) {
   const zeroLine = `<line x1="${PAD.l}" y1="${zY}" x2="${W-PAD.r}" y2="${zY}" stroke="rgba(255,255,255,.18)" stroke-width="1"/>`;
 
   el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:hidden;">
-    ${grid}${zeroLine}${bars}${yLbls}${xLbls}${legend}${hitAreas}
+    ${_defs2}${grid}${zeroLine}${bars}${yLbls}${xLbls}${legend}${hitAreas}
   </svg>`;
   bindChartTips(el);
 }
 
-function svgLine(elId, labels, datasets) {
+function svgLine(elId, labels, datasets, opts) {
+  opts = opts || {};
+  const projectedIdx = (opts.projectedIdx !== undefined && opts.projectedIdx >= 0) ? opts.projectedIdx : -1;
   const el = document.getElementById(elId);
   if (!el) return;
   const W = Math.max(el.offsetWidth || 0, 300);
-  const H = Math.max(el.offsetHeight || 0, 140);
+  const H = Math.max(el.offsetHeight || 0, 160);
   if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>'; return; }
 
-  const PAD = { t:10, r:16, b:30, l:58 };
-  const cW  = W - PAD.l - PAD.r;
-  const cH  = H - PAD.t - PAD.b;
-  const n   = labels.length;
+  const PAD = { t:16, r:18, b:32, l:58 };
+  const cW = W - PAD.l - PAD.r;
+  const cH = H - PAD.t - PAD.b;
+  const n  = labels.length;
   const allVals = datasets.flatMap(d => d.data || []).filter(v => isFinite(v));
   if (!allVals.length) return;
 
-  const maxV = Math.max(...allVals, 1);
-  const minV = Math.min(0, ...allVals);
-  const span = maxV - minV || 1;
+  const rawMax  = Math.max(...allVals, 0);
+  const rawMin  = Math.min(0, ...allVals);
+  const rawSpan = rawMax - rawMin || 1;
+  const pad2    = rawSpan * 0.16;
+  const maxV    = rawMax + Math.max(pad2, rawMax * 0.1) || 1;
+  const minV    = rawMin - Math.max(pad2, Math.abs(rawMin) * 0.1);
+  const span    = maxV - minV || 1;
+  const yOf = v => PAD.t + cH - cH * (v - minV) / span;
+  const xOf = i => PAD.l + (n < 2 ? cW / 2 : (i / (n-1)) * cW);
+  const y0  = yOf(0);
 
+  // Defs: glow filters, gradients
+  const uid = elId.replace(/[^a-z0-9]/gi,'');
+  let defs = `<defs>`;
+  datasets.forEach((ds, di) => {
+    const col = ds.color || ds.borderColor || COLORS[di % COLORS.length];
+    const hex = col.replace('#','');
+    defs += `<filter id="slGlow${uid}${di}" x="-20%" y="-60%" width="140%" height="220%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="slDotGlow${uid}${di}" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="slFill${uid}${di}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${col}" stop-opacity="0.38"/>
+      <stop offset="100%" stop-color="${col}" stop-opacity="0.02"/>
+    </linearGradient>`;
+  });
+  defs += `</defs>`;
+
+  // Grid
   let grid = '', yLbls = '';
   for (let i = 0; i <= 4; i++) {
     const v = minV + (span / 4) * i;
-    const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
-    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
-    const _lneg = v < 0;
-    const _la = Math.abs(v);
-    const lbl = (_lneg ? '−$' : '$') + (_la>=1000 ? (_la/1000).toFixed(0)+'K' : Math.round(_la));
-    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="10" font-family="'DM Mono',monospace">${lbl}</text>`;
+    const y = yOf(v).toFixed(1);
+    const isZ = Math.abs(v) < span * 0.04;
+    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="${isZ?'rgba(255,255,255,.2)':'rgba(255,255,255,.05)'}" stroke-width="${isZ?1.5:1}"/>`;
+    const neg = v < 0, a = Math.abs(v);
+    const lbl = (neg?'−$':'$') + (a>=1000?(a/1000).toFixed(0)+'K':Math.round(a));
+    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="${isZ?'rgba(255,255,255,.55)':'rgba(255,255,255,.35)'}" font-size="10" font-family="var(--fm)">${lbl}</text>`;
   }
 
-  let paths = '', areas = '', dots = '', hitAreas = '';
+  let paths = '', fills = '', dots = '', hitAreas = '';
   datasets.forEach((ds, di) => {
-    const color = ds.color || ds.borderColor || COLORS[di];
-    const pts = (ds.data || []).map((v, i) => {
-      const x = (PAD.l + (i / Math.max(n-1,1)) * cW).toFixed(1);
-      const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
-      return {x, y, v, lbl:labels[i]};
-    });
-    if (pts.length < 2) return;
-    const d = 'M' + pts.map(p=>p.x+','+p.y).join(' L');
-    paths += `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
-    if (ds.fill) {
-      const last = pts[pts.length-1];
-      areas += `<path d="${d} L${last.x},${PAD.t+cH} L${PAD.l},${PAD.t+cH} Z" fill="${color}" opacity=".12"/>`;
+    const col = ds.color || ds.borderColor || COLORS[di % COLORS.length];
+    const pts = (ds.data || []).map((v, i) => ({ x: xOf(i), y: yOf(v), v, i }));
+    if (pts.length < 1) return;
+    const lineD = 'M' + pts.map(p => p.x.toFixed(1)+','+p.y.toFixed(1)).join(' L');
+
+    // 3D line: shadow bloom + glow + crisp main
+    paths += `<path d="${lineD}" fill="none" stroke="${col}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.12"/>`;
+    paths += `<path d="${lineD}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#slGlow${uid}${di})" opacity="0.65"/>`;
+    paths += `<path d="${lineD}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+    // Projected dashed segment
+    if (projectedIdx >= 1 && projectedIdx < pts.length) {
+      const pa = pts[projectedIdx-1], pb = pts[projectedIdx];
+      const dd = `M${pa.x.toFixed(1)},${pa.y.toFixed(1)} L${pb.x.toFixed(1)},${pb.y.toFixed(1)}`;
+      paths += `<path d="${dd}" fill="none" stroke="${col}" stroke-width="2" stroke-dasharray="5 4" opacity="0.5" stroke-linecap="round"/>`;
+      paths += `<path d="${dd}" fill="none" stroke="${col}" stroke-width="2" stroke-dasharray="5 4" filter="url(#slGlow${uid}${di})" opacity="0.55" stroke-linecap="round"/>`;
     }
-    pts.forEach(function(p) {
-      dots += '<circle cx="'+p.x+'" cy="'+p.y+'" r="3" fill="'+color+'" opacity=".8"/>';
+
+    // Fill area
+    if (ds.fill && pts.length >= 2) {
+      const lastP = pts[pts.length-1], firstP = pts[0];
+      fills += `<path d="${lineD} L${lastP.x.toFixed(1)},${(PAD.t+cH).toFixed(1)} L${firstP.x.toFixed(1)},${(PAD.t+cH).toFixed(1)} Z" fill="url(#slFill${uid}${di})"/>`;
+    }
+
+    // 3D dots
+    pts.forEach((p, pi) => {
+      const isProj = pi === projectedIdx;
+      const r = 3.5;
+      if (isProj) {
+        dots += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r+3}" fill="${col}" opacity="0.08" filter="url(#slDotGlow${uid}${di})"/>`;
+        dots += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r+1.5}" fill="none" stroke="${col}" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.5"/>`;
+        dots += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r-1}" fill="${col}" opacity="0.3"/>`;
+        dots += `<text x="${p.x.toFixed(1)}" y="${(p.y-r-7).toFixed(1)}" text-anchor="middle" font-size="9" font-family="var(--fm)" fill="${col}" opacity="0.7" font-style="italic">est.</text>`;
+      } else {
+        dots += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r+1.5}" fill="${col}" opacity="0.15" filter="url(#slDotGlow${uid}${di})"/>`;
+        dots += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}" fill="${col}" opacity="0.9"/>`;
+        dots += `<circle cx="${p.x.toFixed(1)}" cy="${(p.y-r*0.35).toFixed(1)}" r="${(r*0.38).toFixed(1)}" fill="rgba(255,255,255,.6)" opacity="0.5"/>`;
+      }
     });
   });
 
+  // X labels
   const minStep = Math.ceil(n / Math.max(1, Math.floor(cW / 48)));
   let xLbls = '';
   labels.forEach((lbl, i) => {
     if (i % minStep !== 0 && i !== n-1) return;
-    const x = (PAD.l + (i / Math.max(n-1,1)) * cW).toFixed(1);
-    xLbls += `<text x="${x}" y="${H-4}" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10" font-family="'DM Mono',monospace">${String(lbl).slice(-5)}</text>`;
-  });
-  // Vertical strip hit areas — show all datasets at each x position
-  var slotPx = n > 1 ? cW / (n-1) : cW;
-  labels.forEach(function(lbl2, ii) {
-    var stripCx = PAD.l + (ii / Math.max(n-1,1)) * cW;
-    var tp = [String(lbl2)];
-    datasets.forEach(function(ds) {
-      var v=(ds.data||[])[ii];
-      if(v===undefined||!isFinite(v))return;
-      var av=Math.abs(v),fv=av>=1000?(av/1000).toFixed(1)+'K':Math.round(av).toString();
-      tp.push((ds.label||ds.color||'').replace(/['"&<>]/g,' ')+(v<0?' -':' +')+'$'+fv);
-    });
-    var sw=Math.max(slotPx*0.9,12);
-    hitAreas+='<rect x="'+(stripCx-sw/2).toFixed(1)+'" y="'+PAD.t+'" width="'+sw.toFixed(1)+'" height="'+cH+'" fill="transparent" style="cursor:crosshair;" data-tip="'+tp.join('  |  ').replace(/"/g,'&quot;')+'"/>';
+    xLbls += `<text x="${xOf(i).toFixed(1)}" y="${H-4}" text-anchor="middle" fill="rgba(255,255,255,.38)" font-size="10" font-family="var(--fm)">${lbl}</text>`;
   });
 
-  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:hidden;">
-    ${grid}${areas}${paths}${dots}${yLbls}${xLbls}${hitAreas}
+  // Hit areas
+  const slotW = n > 1 ? cW / (n-1) : cW;
+  labels.forEach((lbl2, ii) => {
+    const cx = xOf(ii);
+    const tp = [String(lbl2)];
+    datasets.forEach(ds => {
+      const v = (ds.data||[])[ii];
+      if (!isFinite(v)) return;
+      const av = Math.abs(v), fv = av>=1000?(av/1000).toFixed(1)+'K':Math.round(av).toString();
+      tp.push((ds.label||'').replace(/['\"&<>]/g,' ')+(v<0?' −':' +')+'$'+fv+(ii===projectedIdx?' (projected)':''));
+    });
+    const sw = Math.max(slotW * 0.9, 12);
+    hitAreas += `<rect x="${(cx-sw/2).toFixed(1)}" y="${PAD.t}" width="${sw.toFixed(1)}" height="${cH}" fill="transparent" data-tip="${tp.join('  |  ').replace(/'/g,'&#39;')}" style="cursor:crosshair;"/>`;
+  });
+
+  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:visible;">
+    ${defs}${grid}${fills}${paths}${dots}${yLbls}${xLbls}${hitAreas}
   </svg>`;
   bindChartTips(el);
 }
+
 
 function svgHBar(elId, labels, values, colors, bucketKeys) {
   const el = document.getElementById(elId);
   if (!el) return;
   if (!labels.length) { el.innerHTML = '<div style="padding:20px;color:var(--ink4);font-size:12px;">No data</div>'; return; }
   const W    = Math.max(el.offsetWidth || 0, 300);
-  const rowH = 34;
-  const H    = labels.length * rowH + 16;
-  const PAD  = { l:150, r:70, t:8, b:8 };
+  const rowH = 36;
+  const H    = labels.length * rowH + 20;
+  const PAD  = { l:148, r:72, t:10, b:10 };
   const cW   = W - PAD.l - PAD.r;
   const maxV = Math.max(...values.map(Math.abs), 1);
-  let rows   = '';
+  const uid  = elId.replace(/[^a-z0-9]/gi,'');
+
+  // Defs: per-color gradients + glow
+  let defs = '<defs>';
+  const usedColors = labels.map((_,i) => (colors ? colors[i % colors.length] : COLORS[i % COLORS.length]));
+  const uniqueCols = [...new Set(usedColors)];
+  uniqueCols.forEach((col, ci) => {
+    defs += `<linearGradient id="hbGrad${uid}${ci}" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="${col}" stop-opacity="0.95"/>
+      <stop offset="80%" stop-color="${col}" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="${col}" stop-opacity="0.45"/>
+    </linearGradient>
+    <filter id="hbGlow${uid}${ci}" x="-5%" y="-40%" width="115%" height="180%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>`;
+  });
+  defs += '</defs>';
+
+  let rows = '';
   labels.forEach((lbl, i) => {
-    const v     = values[i] || 0;
-    const bW    = Math.max((Math.abs(v) / maxV * cW), 2).toFixed(1);
-    const y     = PAD.t + i * rowH;
-    const color = colors ? colors[i % colors.length] : COLORS[i % COLORS.length];
-    const valS  = Math.abs(v)>=1000?'$'+(Math.abs(v)/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
-    const lShort= String(lbl).length > 20 ? String(lbl).slice(0,19)+'…' : String(lbl);
-    const tip   = `${lbl}: ${valS}`;
-    rows += `<text x="${PAD.l-10}" y="${(y+rowH/2).toFixed(1)}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.7)" font-size="11" font-family="'DM Sans',sans-serif">${lShort}</text>`;
+    const v      = values[i] || 0;
+    const pct    = Math.abs(v) / maxV;
+    const bW     = Math.max(pct * cW, 2);
+    const y      = PAD.t + i * rowH;
+    const barTop = y + rowH * 0.16;
+    const barH   = rowH * 0.68;
+    const bR     = Math.min(barH/2, 4);
+    const color  = usedColors[i];
+    const ci     = uniqueCols.indexOf(color);
+    const valS   = Math.abs(v)>=1000?'$'+(Math.abs(v)/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
+    const lShort = String(lbl).length > 19 ? String(lbl).slice(0,18)+'…' : String(lbl);
+    const tip    = `${lbl}: ${valS}`;
     const drillKey = (bucketKeys && bucketKeys[i]) ? String(bucketKeys[i]) : String(lbl);
     const catDrill = JSON.stringify({cat: drillKey}).replace(/"/g,'&quot;');
-    rows += `<rect x="${PAD.l}" y="${(y+rowH*.18).toFixed(1)}" width="${bW}" height="${(rowH*.64).toFixed(1)}" rx="3" fill="${color}" opacity=".85"
-      style="cursor:pointer;"
-      data-tip="${tip.replace(/'/g,'&apos;').replace(/"/g,'&quot;')}"
-      data-drill="${catDrill}"/>`;
-    rows += `<text x="${(PAD.l+parseFloat(bW)+6).toFixed(1)}" y="${(y+rowH/2).toFixed(1)}" dominant-baseline="middle" fill="rgba(255,255,255,.5)" font-size="10" font-family="'DM Mono',monospace">${valS}</text>`;
+    const barMid = barTop + barH/2;
+
+    // Label
+    rows += `<text x="${PAD.l-10}" y="${barMid.toFixed(1)}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.65)" font-size="11" font-family="var(--fm)">${lShort}</text>`;
+
+    // 3D bar: shadow bloom + gradient fill + top-lit highlight + crisp outline
+    const bx = PAD.l.toFixed(1), by = barTop.toFixed(1), bw = bW.toFixed(1), bh = barH.toFixed(1);
+    rows += `<rect x="${bx}" y="${barTop+2}" width="${bw}" height="${bh}" rx="${bR}" fill="${color}" opacity="0.18" filter="url(#hbGlow${uid}${ci})"/>`; // shadow
+    rows += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="${bR}" fill="url(#hbGrad${uid}${ci})" style="cursor:pointer;" data-tip="${tip.replace(/'/g,'&apos;')}" data-drill="${catDrill}"/>`;
+    // Top-lit highlight strip
+    rows += `<rect x="${bx}" y="${by}" width="${bw}" height="${(barH*0.35).toFixed(1)}" rx="${bR}" fill="rgba(255,255,255,0.12)" style="pointer-events:none;"/>`;
+    // Value label
+    rows += `<text x="${(PAD.l+parseFloat(bw)+7).toFixed(1)}" y="${barMid.toFixed(1)}" dominant-baseline="middle" fill="${color}" font-size="11" font-family="var(--fm)" font-weight="600">${valS}</text>`;
   });
-  el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;">${rows}</svg>`;
+
+  el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;">${defs}${rows}</svg>`;
   bindChartTips(el);
 }
 
-// ════════════════════════════════════════════════
-// CHART.JS DONUT (still using Chart.js — works fine)
-// ════════════════════════════════════════════════
+
 function svgWaterfall(elId, items) {
   var el = document.getElementById(elId);
   if (!el) return;
   var W = Math.max(el.offsetWidth || 0, 300);
-  var H = Math.max(el.offsetHeight || 0, 220);
+  var H = Math.max(el.offsetHeight || 0, 240);
   if (!items || !items.length) {
     el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
     return;
   }
-  var PAD = {t:20,r:16,b:52,l:64};
+  var PAD = {t:24,r:16,b:56,l:64};
   var cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b, n = items.length;
   var running = 0;
   var segs = items.map(function(item) {
@@ -4056,51 +4158,91 @@ function svgWaterfall(elId, items) {
     return {label:item.label, value:val, type:item.type, color:item.color, start:start, end:end2};
   });
   var allV = [];
-  segs.forEach(function(s){allV.push(s.start,s.end);});
+  segs.forEach(function(s){allV.push(s.start, s.end);});
   allV = allV.filter(isFinite);
   var minV = Math.min.apply(null,[0].concat(allV));
   var maxV = Math.max.apply(null,allV.concat([1]));
+  var rawSpan = maxV - minV || 1;
+  var pad3 = rawSpan * 0.12;
+  maxV += pad3; minV -= (minV < 0 ? pad3 : 0);
   var span = maxV - minV || 1;
   function toY(v){return PAD.t + cH - cH*(v-minV)/span;}
   function fmtM(v){var a=Math.abs(v);return a>=1000?'$'+(a/1000).toFixed(1)+'K':'$'+Math.round(a);}
-  var gap=cW/n, barW=Math.max(Math.min(gap*0.65,52),6);
+  var gap = cW/n, barW = Math.max(Math.min(gap*0.62, 54), 8);
+  var uid = elId.replace(/[^a-z0-9]/gi,'');
+
+  // Defs
+  var defs = '<defs>'
+    + '<filter id="wfGlowPos'+uid+'" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+    + '<filter id="wfGlowNeg'+uid+'" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+    + '<linearGradient id="wfGradPos'+uid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5EEFD8" stop-opacity="1"/><stop offset="100%" stop-color="#1DA892" stop-opacity="1"/></linearGradient>'
+    + '<linearGradient id="wfGradNeg'+uid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF9494" stop-opacity="1"/><stop offset="100%" stop-color="#C93333" stop-opacity="1"/></linearGradient>'
+    + '<linearGradient id="wfGradTot'+uid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFCA40" stop-opacity="1"/><stop offset="100%" stop-color="#C07A00" stop-opacity="1"/></linearGradient>'
+    + '</defs>';
+
   var grid='',yLbls='',connectors='',bars='',hitAreas='',xLbls='';
-  for(var gi=0;gi<=5;gi++){
-    var gv=minV+span*gi/5, gy=toY(gv).toFixed(1);
-    grid+='<line x1="'+PAD.l+'" y1="'+gy+'" x2="'+(W-PAD.r)+'" y2="'+gy+'" stroke="rgba(255,255,255,.05)" stroke-width="1"/>';
-    var gl=(gv<0?'-':'')+fmtM(gv);
-    yLbls+='<text x="'+(PAD.l-6)+'" y="'+gy+'" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="10" font-family="monospace">'+gl+'</text>';
+
+  // Grid
+  for(var gi=0;gi<=4;gi++){
+    var gv=minV+span*gi/4, gy=toY(gv).toFixed(1);
+    var isZ=Math.abs(gv)<span*0.04;
+    grid+='<line x1="'+PAD.l+'" y1="'+gy+'" x2="'+(W-PAD.r)+'" y2="'+gy+'" stroke="'+(isZ?'rgba(255,255,255,.2)':'rgba(255,255,255,.05)')+'" stroke-width="'+(isZ?1.5:1)+'"/>';
+    yLbls+='<text x="'+(PAD.l-6)+'" y="'+gy+'" text-anchor="end" dominant-baseline="middle" fill="'+(isZ?'rgba(255,255,255,.55)':'rgba(255,255,255,.3)')+'" font-size="10" font-family="var(--fm)">'+(gv<0?'-':'')+fmtM(gv)+'</text>';
   }
-  var zY=toY(0).toFixed(1);
-  var zeroLine='<line x1="'+PAD.l+'" y1="'+zY+'" x2="'+(W-PAD.r)+'" y2="'+zY+'" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>';
-  for(var ci=1;ci<segs.length;ci++){
-    var prev=segs[ci-1],cur2=segs[ci];
-    var cx1=(PAD.l+(ci-1)*gap+gap/2+barW/2).toFixed(1);
-    var cx2=(PAD.l+ci*gap+gap/2-barW/2).toFixed(1);
+
+  // Connectors between bars
+  for(var ci2=1;ci2<segs.length;ci2++){
+    var prev=segs[ci2-1], cur2=segs[ci2];
+    var cx1=(PAD.l+(ci2-1)*gap+gap/2+barW/2).toFixed(1);
+    var cx2=(PAD.l+ci2*gap+gap/2-barW/2).toFixed(1);
     var connY=cur2.type==='total'?toY(0).toFixed(1):toY(prev.end).toFixed(1);
-    connectors+='<line x1="'+cx1+'" y1="'+connY+'" x2="'+cx2+'" y2="'+connY+'" stroke="rgba(255,255,255,.12)" stroke-width="1" stroke-dasharray="3,2"/>';
+    connectors+='<line x1="'+cx1+'" y1="'+connY+'" x2="'+cx2+'" y2="'+connY+'" stroke="rgba(255,255,255,.15)" stroke-width="1" stroke-dasharray="3 2"/>';
   }
+
   segs.forEach(function(s,i){
     var cx=PAD.l+i*gap+gap/2, x=(cx-barW/2).toFixed(1);
     var yTop=toY(Math.max(s.start,s.end)).toFixed(1);
     var yBot=toY(Math.min(s.start,s.end)).toFixed(1);
-    var bH=Math.max(parseFloat(yBot)-parseFloat(yTop),2).toFixed(1);
-    var dc=s.value>=0?'rgba(45,212,191,.85)':'rgba(248,113,113,.85)';
-    var color=s.type==='total'?'rgba(245,168,0,.9)':(s.color||dc);
-    bars+='<rect x="'+x+'" y="'+yTop+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="2" fill="'+color+'"/>';
-    var valY=s.value>=0?(parseFloat(yTop)-4).toFixed(1):(parseFloat(yTop)+parseFloat(bH)+11).toFixed(1);
+    var bH=Math.max(parseFloat(yBot)-parseFloat(yTop),3);
+    var isPos=s.value>=0, isTot=s.type==='total';
+    var grad=isTot?'url(#wfGradTot'+uid+')':isPos?'url(#wfGradPos'+uid+')':'url(#wfGradNeg'+uid+')';
+    var glowF=isTot?'url(#wfGlowPos'+uid+')':isPos?'url(#wfGlowPos'+uid+')':'url(#wfGlowNeg'+uid+')';
+    var flatCol=isTot?'rgba(245,168,0,.9)':isPos?'rgba(45,212,191,.85)':'rgba(248,113,113,.85)';
+    var rx=Math.min(bH/2,4);
+
+    // 3D: shadow bloom
+    bars+='<rect x="'+x+'" y="'+(parseFloat(yTop)+2)+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="'+rx+'" fill="'+flatCol+'" opacity="0.2" filter="'+glowF+'"/>';
+    // Main gradient bar
+    bars+='<rect x="'+x+'" y="'+yTop+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="'+rx+'" fill="'+grad+'" opacity="0.92"/>';
+    // Top-lit highlight
+    bars+='<rect x="'+x+'" y="'+yTop+'" width="'+barW.toFixed(1)+'" height="'+(bH*0.35).toFixed(1)+'" rx="'+rx+'" fill="rgba(255,255,255,0.15)" style="pointer-events:none;"/>';
+    // Specular edge line
+    bars+='<rect x="'+x+'" y="'+yTop+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="'+rx+'" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>';
+
+    // Value label
     var sign=s.value>=0?'+':'';
-    bars+='<text x="'+cx.toFixed(1)+'" y="'+valY+'" text-anchor="middle" fill="rgba(255,255,255,.75)" font-size="9" font-family="monospace">'+sign+fmtM(s.value)+'</text>';
-    if(s.type!=='total'){bars+='<circle cx="'+cx.toFixed(1)+'" cy="'+toY(s.end).toFixed(1)+'" r="3" fill="rgba(245,168,0,.8)"/>';}
-    var tipT=s.type==='total'?'Net total':(s.value>=0?'Adds':'Reduces');
-    var tip=s.label+': '+sign+fmtM(s.value)+' | '+tipT+' | Running: '+(s.type!=='total'?fmtM(s.end):'final');
-    hitAreas+='<rect x="'+(PAD.l+i*gap).toFixed(1)+'" y="'+PAD.t+'" width="'+gap.toFixed(1)+'" height="'+cH+'" fill="transparent" style="cursor:default;" data-tip="'+tip.replace(/"/g,"'")+'" />';
+    var valY=isPos?(parseFloat(yTop)-6).toFixed(1):(parseFloat(yTop)+bH+13).toFixed(1);
+    bars+='<text x="'+cx.toFixed(1)+'" y="'+valY+'" text-anchor="middle" fill="rgba(255,255,255,.9)" font-size="10" font-weight="700" font-family="var(--fm)">'+sign+fmtM(s.value)+'</text>';
+
+    // End-of-bar dot
+    if(s.type!=='total'){
+      var dotY=toY(s.end).toFixed(1), dotCol=isPos?'#34D9C3':'#F87171';
+      bars+='<circle cx="'+cx.toFixed(1)+'" cy="'+dotY+'" r="4" fill="'+dotCol+'" opacity="0.9"/>';
+      bars+='<circle cx="'+cx.toFixed(1)+'" cy="'+(parseFloat(dotY)-1.2).toFixed(1)+'" r="1.5" fill="rgba(255,255,255,.6)" opacity="0.6"/>';
+    }
+
+    // Hit area + x label
+    var tipT=isTot?'Net total':isPos?'Adds':'Reduces';
+    var tip=s.label+': '+sign+fmtM(s.value)+' | '+tipT+'| Running: '+(isTot?'final':fmtM(s.end));
+    hitAreas+='<rect x="'+(PAD.l+i*gap).toFixed(1)+'" y="'+PAD.t+'" width="'+gap.toFixed(1)+'" height="'+cH+'" fill="transparent" data-tip="'+tip.replace(/'/g,'&apos;').replace(/"/g,'&quot;')+'" style="cursor:crosshair;"/>';
     var sl=s.label.length>11?s.label.slice(0,10)+String.fromCharCode(8230):s.label;
-    xLbls+='<text x="'+cx.toFixed(1)+'" y="'+(H-PAD.b+16)+'" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="9" font-family="monospace">'+sl+'</text>';
+    xLbls+='<text x="'+cx.toFixed(1)+'" y="'+(H-PAD.b+18)+'" text-anchor="middle" fill="rgba(255,255,255,.42)" font-size="10" font-family="var(--fm)">'+sl+'</text>';
   });
-  el.innerHTML='<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'+grid+zeroLine+connectors+bars+yLbls+xLbls+hitAreas+'</svg>';
+
+  el.innerHTML='<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'+defs+grid+connectors+bars+yLbls+xLbls+hitAreas+'</svg>';
   bindChartTips(el);
 }
+
 
 function makeDonut(canvasId, labels, values, existingChart) {
   const canvas = document.getElementById(canvasId);
@@ -4950,6 +5092,32 @@ window._C = {
   void: 'var(--void)'
 };
 
+// buildMonthProjection — shared accrual projection for current month
+function buildMonthProjection(curMo, sp) {
+  if (!curMo || !txns.length) return null;
+  const today = new Date().toISOString().slice(0,7);
+  if (curMo !== today) return null;
+  try {
+    const _sp = sp || operatingSpendable(txns);
+    const accrual = buildAccrualEngine && buildAccrualEngine(curMo, _sp);
+    if (!accrual) return null;
+    const norm = accrual.normalizeIncome ? accrual.normalizeIncome() : null;
+    if (!norm) return null;
+    const projIncome = norm.normalizedIncome > 0 ? norm.normalizedIncome
+                     : norm.earlyMonth            ? norm.normalPaycheck : 0;
+    const ALL_BKS = ['mortgage','car','insurance','education','childcare',
+      'electric','gas_util','water','internet','streaming',
+      'restaurants','groceries','gas_car','transit','healthcare',
+      'entertainment','household','personal','clothing','travel','gifts','other'];
+    let projExpenses = 0;
+    ALL_BKS.forEach(function(bk) {
+      try { projExpenses += (accrual.accrueAmount(bk) || 0); } catch(e) {}
+    });
+    return { income:projIncome, expenses:projExpenses, net:projIncome-projExpenses,
+             daysElapsed:accrual.daysElapsed||1, daysRemaining:accrual.daysRemaining||0, norm:norm };
+  } catch(e) { console.warn('[Forge] projection error', e); return null; }
+}
+
 // ════════════════════════════════════════════════
 // RENDER DASHBOARD
 // ════════════════════════════════════════════════
@@ -5001,10 +5169,16 @@ function renderDashboard() {
 
   // Monthly bar chart (SVG)
   const md = monthlyData(filtered);
+  const _dCurMo = new Date().toISOString().slice(0,7);
+  const _dProjIdx = md.fullKeys[md.fullKeys.length-1] === _dCurMo ? md.fullKeys.length-1 : -1;
+  if (_dProjIdx >= 0) {
+    const _dP = buildMonthProjection(_dCurMo, spendable(txns));
+    if (_dP) { md.income[_dProjIdx] = _dP.income; md.expenses[_dProjIdx] = _dP.expenses; }
+  }
   svgBar('dashBarWrap', md.labels, [
     { label:'Income',   data:md.income,   backgroundColor:'rgba(45,212,191,.75)' },
     { label:'Expenses', data:md.expenses, backgroundColor:'rgba(248,113,113,.75)' },
-  ]);
+  ], { projectedIdx: _dProjIdx });
 
   // Category donut (Chart.js)
   try {
@@ -5049,20 +5223,29 @@ function renderDashboard() {
 // Above zero: teal glowing surplus. Below zero: red glowing deficit.
 // Zero line acts as the water surface — above is air, below is ocean.
 // ═══════════════════════════════════════════════════════════════════════════
-function renderNetSavingsChart(elId, labels, data) {
+function renderNetSavingsChart(elId, labels, data, opts) {
+  opts = opts || {};
+  const projectedIdx = (opts.projectedIdx !== undefined && opts.projectedIdx >= 0) ? opts.projectedIdx : -1;
   const el = document.getElementById(elId);
   if (!el || !labels.length) return;
   if (!data || !data.length) { el.innerHTML = ''; return; }
 
   const W  = Math.max(el.offsetWidth || 520, 320);
-  const H  = 220;
+  const H  = 240;
   const PT = 22, PB = 34, PL = 62, PR = 18;
   const cW = W - PL - PR, cH = H - PT - PB;
 
-  const n    = data.length;
-  const maxV = Math.max(...data, 0) * 1.12 || 1;
-  const minV = Math.min(...data, 0) * 1.12;
-  const span = maxV - minV || 1;
+  const n       = data.length;
+  const rawMax  = Math.max(...data, 0);
+  const rawMin  = Math.min(...data, 0);
+  // Pad each side by 18% of the total data range so points breathe.
+  // Then ensure at least 10% headroom on each side even if all data
+  // is on one side of zero (e.g. all surplus months).
+  const rawSpan = rawMax - rawMin || 1;
+  const pad     = rawSpan * 0.18;
+  const maxV    = rawMax + Math.max(pad, rawMax * 0.12) || 1;
+  const minV    = rawMin - Math.max(pad, Math.abs(rawMin) * 0.12);
+  const span    = maxV - minV || 1;
   const yOf  = v => PT + cH - cH * (v - minV) / span;
   const xOf  = i => PL + (n < 2 ? cW / 2 : (i / (n - 1)) * cW);
   const y0   = yOf(0);  // zero line y-position
@@ -5188,6 +5371,23 @@ function renderNetSavingsChart(elId, labels, data) {
   }
 
   // ── 3D line rendering: shadow + glow + main stroke ────────────────────────
+  // If a projected point exists, rebuild its segment as dashed separately.
+  let projSegSvg = '';
+  if (projectedIdx >= 1 && projectedIdx < pts.length) {
+    const pa = pts[projectedIdx - 1], pb = pts[projectedIdx];
+    const pos  = pb.v >= 0;
+    const col  = pos ? '#34D9C3' : '#FF5C5C';
+    const glow = pos ? 'url(#ngGlowPos)' : 'url(#ngGlowNeg)';
+    const dd   = `M${pa.x.toFixed(1)},${pa.y.toFixed(1)} L${pb.x.toFixed(1)},${pb.y.toFixed(1)}`;
+    projSegSvg = `
+      <path d="${dd}" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round"
+        stroke-dasharray="5 4" opacity="0.4"/>
+      <path d="${dd}" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round"
+        stroke-dasharray="5 4" filter="${glow}" opacity="0.6"/>
+      <path d="${dd}" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1" stroke-linecap="round"
+        stroke-dasharray="5 4" opacity="0.3"/>`;
+  }
+
   let linesSvg = '';
   if (posPath) {
     linesSvg += `
@@ -5201,18 +5401,30 @@ function renderNetSavingsChart(elId, labels, data) {
       <path d="${negPath}" fill="none" stroke="#FF5C5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#ngGlowNeg)" opacity="0.7"/>
       <path d="${negPath}" fill="none" stroke="#FF5C5C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
   }
+  linesSvg += projSegSvg;
 
   // ── Data dots with glow and 3D appearance ─────────────────────────────────
   let dotsSvg = '';
-  pts.forEach(p => {
+  pts.forEach((p, pi) => {
     const pos   = p.v >= 0;
     const col   = pos ? '#34D9C3' : '#FF5C5C';
     const inner = pos ? 'rgba(180,255,240,.9)' : 'rgba(255,180,180,.9)';
-    const r     = Math.abs(p.v) < span * 0.04 ? 3 : 4;  // smaller dot near zero
-    dotsSvg += `
-      <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r+2.5}" fill="${col}" opacity="0.18" filter="url(#ngDotGlow)"/>
-      <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}" fill="${col}" opacity="0.9"/>
-      <circle cx="${p.x.toFixed(1)}" cy="${(p.y-r*0.35).toFixed(1)}" r="${(r*0.4).toFixed(1)}" fill="${inner}" opacity="0.6"/>`;
+    const r     = Math.abs(p.v) < span * 0.04 ? 3 : 4;
+    const isProj = pi === projectedIdx;
+    if (isProj) {
+      // Projected point: hollow ring with dashed circumference + "est." label
+      dotsSvg += `
+        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r+5}" fill="${col}" opacity="0.07" filter="url(#ngDotGlow)"/>
+        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r+2}" fill="none" stroke="${col}" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.5"/>
+        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}" fill="${col}" opacity="0.35"/>
+        <text x="${p.x.toFixed(1)}" y="${(p.y - r - 9).toFixed(1)}" text-anchor="middle" font-size="9"
+          font-family="var(--fm)" fill="${col}" opacity="0.75" font-style="italic">est.</text>`;
+    } else {
+      dotsSvg += `
+        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r+2.5}" fill="${col}" opacity="0.18" filter="url(#ngDotGlow)"/>
+        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}" fill="${col}" opacity="0.9"/>
+        <circle cx="${p.x.toFixed(1)}" cy="${(p.y-r*0.35).toFixed(1)}" r="${(r*0.4).toFixed(1)}" fill="${inner}" opacity="0.6"/>`;
+    }
   });
 
   // ── X-axis labels ──────────────────────────────────────────────────────────
@@ -5232,7 +5444,8 @@ function renderNetSavingsChart(elId, labels, data) {
     const pos   = p.v >= 0;
     const a     = Math.abs(p.v);
     const valFmt = (a >= 1000 ? '$'+(a/1000).toFixed(1)+'K' : '$'+Math.round(a));
-    const tip   = `${labels[i]}|Net: ${pos?'+':'−'}${valFmt} ${pos?'surplus':'deficit'}`;
+    const isProj2 = i === projectedIdx;
+    const tip   = `${labels[i]}|Net: ${pos?'+':'−'}${valFmt} ${isProj2?'(projected)':pos?'surplus':'deficit'}`;
     const sw    = Math.max(slotW * 0.9, 14);
     hits += `<rect x="${(p.x-sw/2).toFixed(1)}" y="${PT}" width="${sw.toFixed(1)}" height="${cH}"
       fill="transparent" data-tip="${tip.replace(/'/g,'&#39;')}" style="cursor:crosshair;"/>`;
@@ -5277,11 +5490,41 @@ function renderCashFlow() {
   const md  = monthlyData(src);
   const net = md.income.map((v,i) => v - md.expenses[i]);
 
+  // ── Project the current in-flight month ──────────────────────────────────
+  const _curMo = new Date().toISOString().slice(0,7);
+  let _projIdx = -1, _projNet = null;
+  const _lastKey = md.fullKeys[md.fullKeys.length - 1];
+  if (_lastKey === _curMo) {
+    _projIdx = md.fullKeys.length - 1;
+    try {
+      const _accrual = buildAccrualEngine && buildAccrualEngine(_curMo, operatingSpendable(txns));
+      if (_accrual && _accrual.normalizeIncome) {
+        const _norm = _accrual.normalizeIncome();
+        if (_norm) {
+          // Project income: normalizedIncome (actual + estimated remaining paychecks)
+          const _projInc = _norm.normalizedIncome || 0;
+          // Project expenses: actual so far + accrued remaining days via accrual engine
+          const _actualExp = md.expenses[_projIdx] || 0;
+          const _allBks = ['mortgage','car','insurance','education','childcare',
+            'electric','gas_util','water','internet','streaming',
+            'restaurants','groceries','gas_car','transit','healthcare',
+            'entertainment','household','personal','clothing','travel','gifts','other'];
+          let _projExp = _actualExp;
+          _allBks.forEach(bk => {
+            try { _projExp += (_accrual.accrueAmount(bk) || 0); } catch(e) {}
+          });
+          _projNet = _projInc - _projExp;
+          net[_projIdx] = _projNet;
+        }
+      }
+    } catch(e) { console.warn('[CF] projection error', e); }
+  }
+
   svgBar('cfBarWrap', md.labels, [
     { label:'Income',   data:md.income,   backgroundColor:'rgba(45,212,191,.75)' },
     { label:'Expenses', data:md.expenses, backgroundColor:'rgba(248,113,113,.75)' },
-  ]);
-  renderNetSavingsChart('cfLineWrap', md.labels, net);
+  ], { projectedIdx: _projIdx });
+  renderNetSavingsChart('cfLineWrap', md.labels, net, { projectedIdx: _projIdx });
 
   // Waterfall: cumulative flow from income through each spending category
   (function() {
@@ -9144,7 +9387,8 @@ function renderISTrend(passedMonth) {
     return { mo, fixed, variable, income, deployable, autoSave, fixedByBk, varByBk, total: fixed+variable, isCurrentMo };
   }
 
-  const moData = mths.map(monthData);
+  const moData   = mths.map(monthData);
+  const _isCurIdx = moData.findIndex(function(m){ return m.isCurrentMo; });
   const fmtK = v => { const neg=v<0; const a=Math.abs(v); const s=a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a); return neg?'−'+s:s; };
   const moLabel = mo => { const [y,m]=mo.split('-'); return new Date(y,m-1,1).toLocaleDateString('en-US',{month:'short'}); };
   const isCur   = mo => mo === curMo;
@@ -9168,7 +9412,8 @@ function renderISTrend(passedMonth) {
   // ══════════════════════════════════════════════════════════════════
   // CHART A: STACKED BAR
   // ══════════════════════════════════════════════════════════════════
-  function renderStack() {
+  function renderStack(projIdx) {
+    projIdx = (projIdx !== undefined && projIdx >= 0) ? projIdx : -1;
     const maxY = Math.max(...moData.map(d => Math.max(d.total, d.deployable)), 1);
     const W=600,H=210,PT=14,PB=34,PL=46,PR=10;
     const iW=W-PL-PR, iH=H-PT-PB;
@@ -9183,8 +9428,14 @@ function renderISTrend(passedMonth) {
       // Highlight selected month
       if(isSel(d.mo)) barsSvg+=`<rect x="${(x-2).toFixed(1)}" y="${PT}" width="${(bW+4).toFixed(1)}" height="${iH}" fill="rgba(255,255,255,.07)" rx="2"/>`;
       else if(isCur(d.mo)) barsSvg+=`<rect x="${(x-1).toFixed(1)}" y="${PT}" width="${(bW+2).toFixed(1)}" height="${iH}" fill="rgba(255,255,255,.03)" rx="2"/>`;
-      if(vH>0.5) barsSvg+=`<rect class="ist-bar" data-mo="${d.mo}" x="${x.toFixed(1)}" y="${(bY-tot).toFixed(1)}" width="${bW}" height="${vH.toFixed(1)}" fill="url(#istGold)" rx="2" style="cursor:pointer;" opacity="${d.isCurrentMo?'0.75':'1'}"/>`;
-      if(fH>0.5) barsSvg+=`<rect class="ist-bar" data-mo="${d.mo}" x="${x.toFixed(1)}" y="${(bY-fH).toFixed(1)}" width="${bW}" height="${fH.toFixed(1)}" fill="url(#istRed)" rx="2" style="cursor:pointer;" opacity="${d.isCurrentMo?'0.75':'1'}"/>`;
+      const _iP = (i === projIdx);
+      const _bOp = _iP ? '0.45' : (d.isCurrentMo ? '0.75' : '1');
+      if(vH>0.5) barsSvg+='<rect class="ist-bar" data-mo="'+d.mo+'" x="'+x.toFixed(1)+'" y="'+(bY-tot).toFixed(1)+'" width="'+bW+'" height="'+vH.toFixed(1)+'" fill="url(#istGold)" rx="2" style="cursor:pointer;" opacity="'+_bOp+'"/>';
+      if(fH>0.5) barsSvg+='<rect class="ist-bar" data-mo="'+d.mo+'" x="'+x.toFixed(1)+'" y="'+(bY-fH).toFixed(1)+'" width="'+bW+'" height="'+fH.toFixed(1)+'" fill="url(#istRed)" rx="2" style="cursor:pointer;" opacity="'+_bOp+'"/>';
+      if(_iP && tot>0.5) {
+        barsSvg+='<rect x="'+x.toFixed(1)+'" y="'+(bY-tot).toFixed(1)+'" width="'+bW+'" height="'+tot.toFixed(1)+'" fill="url(#istHatch)" opacity="0.6"/>';
+        barsSvg+='<rect x="'+x.toFixed(1)+'" y="'+(bY-tot).toFixed(1)+'" width="'+bW+'" height="'+tot.toFixed(1)+'" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1" stroke-dasharray="3 2"/>';
+      }
       // Accrual marker for current month
       if(d.isCurrentMo && d.total > 0) barsSvg+=`<text x="${(x+bW/2).toFixed(1)}" y="${(bY-tot-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(96,165,250,.7)" font-family="monospace">proj</text>`;
       barsSvg+=`<text x="${(x+bW/2).toFixed(1)}" y="${H-PB+13}" text-anchor="middle" font-size="9" fill="${isSel(d.mo)?'rgba(245,168,0,1)':isCur(d.mo)?'rgba(245,168,0,.7)':'rgba(255,255,255,.38)'}" font-family="monospace">${moLabel(d.mo)}</text>`;
@@ -9199,6 +9450,7 @@ function renderISTrend(passedMonth) {
       linePts.forEach(pt=>{const[px,py]=pt.split(',');lineSvg+=`<circle cx="${px}" cy="${py}" r="2.5" fill="#34D9C3" stroke="rgba(0,0,0,.4)" stroke-width="1.5"/>`;});
     }
     return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;"><defs>
+      <pattern id="istHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="rgba(255,255,255,0.3)" stroke-width="2.5"/></pattern>
       <linearGradient id="istRed" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF9494"/><stop offset="100%" stop-color="#C94444"/></linearGradient>
       <linearGradient id="istGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFCA40"/><stop offset="100%" stop-color="#C07A00"/></linearGradient>
     </defs>${axisSvg}${lineSvg}${barsSvg}</svg>`;
@@ -9416,7 +9668,7 @@ function renderISTrend(passedMonth) {
   // slope removed
   else if (isTrendType === 'waffle')  chartHtml = renderWaffle();
   else chartHtml = `<div style="padding:8px 8px 4px;position:relative;" id="isTrendChartArea">
-    ${renderStack()}
+    ${renderStack(_isCurIdx)}
     <div id="isTrendTip" style="display:none;position:absolute;background:rgba(14,14,16,.98);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px 14px;font-size:11px;font-family:var(--fm);min-width:180px;max-width:260px;max-height:380px;overflow-y:auto;pointer-events:auto;z-index:99;box-shadow:0 12px 40px rgba(0,0,0,.7);"></div>
   </div>`;
 
