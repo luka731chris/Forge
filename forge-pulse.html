@@ -14,10 +14,13 @@ function svgBar(elId, labels, datasets, opts) {
   const allVals = datasets.flatMap(d => d.data || []).filter(v => isFinite(v));
   if (!allVals.length) return;
 
-  const maxV = Math.max(...allVals.map(Math.abs), 1);
-  const minV = Math.min(0, ...allVals);
-  const span = maxV - minV || 1;
-  const zeroY = cH * (maxV / span);
+  const _bMax  = Math.max(...allVals.map(Math.abs), 1);
+  const _bMin  = Math.min(0, ...allVals);
+  const _bPad  = _bMax * 0.12;
+  const maxV   = _bMax + _bPad;
+  const minV   = _bMin < 0 ? _bMin - _bPad * 0.5 : 0;
+  const span   = Math.max(maxV - minV, 1);
+  const zeroY  = cH * (maxV / span);
 
   // Y grid + labels
   const YTICKS = 4;
@@ -101,13 +104,14 @@ function svgBar(elId, labels, datasets, opts) {
   });
 
   const zY = (PAD.t + zeroY).toFixed(1);
-  const zeroLine = `<line x1="${PAD.l}" y1="${zY}" x2="${W-PAD.r}" y2="${zY}" stroke="rgba(255,255,255,.18)" stroke-width="1"/>`;
+  const zeroLine = `<line x1="${PAD.l}" y1="${(parseFloat(zY)+2).toFixed(1)}" x2="${W-PAD.r}" y2="${(parseFloat(zY)+2).toFixed(1)}" stroke="rgba(0,0,0,.35)" stroke-width="2"/><line x1="${PAD.l}" y1="${zY}" x2="${W-PAD.r}" y2="${zY}" stroke="rgba(255,255,255,.6)" stroke-width="1"/>`;
 
   el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:hidden;">
     ${_defs2}${grid}${zeroLine}${bars}${yLbls}${xLbls}${legend}${hitAreas}
   </svg>`;
   bindChartTips(el);
 }
+
 
 
 <!DOCTYPE html>
@@ -2662,13 +2666,13 @@ function svgLine(elId, labels, datasets, opts) {
   const allVals = datasets.flatMap(d => d.data || []).filter(v => isFinite(v));
   if (!allVals.length) return;
 
-  const rawMax  = Math.max(...allVals, 0);
-  const rawMin  = Math.min(0, ...allVals);
-  const rawSpan = rawMax - rawMin || 1;
-  const pad2    = rawSpan * 0.16;
-  const maxV    = rawMax + Math.max(pad2, rawMax * 0.1) || 1;
-  const minV    = rawMin - Math.max(pad2, Math.abs(rawMin) * 0.1);
-  const span    = maxV - minV || 1;
+  const _slMax  = allVals.reduce((m,v) => Math.max(m,v), allVals[0]);
+  const _slMin  = allVals.reduce((m,v) => Math.min(m,v), allVals[0]);
+  const _slSpan = Math.max(_slMax - _slMin, 1);
+  const _slPad  = Math.max(_slSpan * 0.18, Math.abs(_slMax) * 0.10, Math.abs(_slMin) * 0.10, 1);
+  const maxV    = Math.max(_slMax + _slPad, 0);
+  const minV    = Math.min(_slMin - _slPad, 0);
+  const span    = Math.max(maxV - minV, 1);
   const yOf = v => PAD.t + cH - cH * (v - minV) / span;
   const xOf = i => PAD.l + (n < 2 ? cW / 2 : (i / (n-1)) * cW);
   const y0  = yOf(0);
@@ -2700,7 +2704,7 @@ function svgLine(elId, labels, datasets, opts) {
     const v = minV + (span / 4) * i;
     const y = yOf(v).toFixed(1);
     const isZ = Math.abs(v) < span * 0.04;
-    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="${isZ?'rgba(255,255,255,.2)':'rgba(255,255,255,.05)'}" stroke-width="${isZ?1.5:1}"/>`;
+    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="${isZ?'rgba(255,255,255,.6)':'rgba(255,255,255,.05)'}" stroke-width="${isZ?2.5:1}"/>`;
     const neg = v < 0, a = Math.abs(v);
     const lbl = (neg?'−$':'$') + (a>=1000?(a/1000).toFixed(0)+'K':Math.round(a));
     yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="${isZ?'rgba(255,255,255,.55)':'rgba(255,255,255,.35)'}" font-size="10" font-family="var(--fm)">${lbl}</text>`;
@@ -2779,6 +2783,7 @@ function svgLine(elId, labels, datasets, opts) {
 }
 
 
+
 function svgHBar(elId, labels, values, colors, bucketKeys) {
   const el = document.getElementById(elId);
   if (!el) return;
@@ -2844,6 +2849,7 @@ function svgHBar(elId, labels, values, colors, bucketKeys) {
 }
 
 
+
 function svgWaterfall(elId, items) {
   var el = document.getElementById(elId);
   if (!el) return;
@@ -2869,9 +2875,9 @@ function svgWaterfall(elId, items) {
   var minV = Math.min.apply(null,[0].concat(allV));
   var maxV = Math.max.apply(null,allV.concat([1]));
   var rawSpan = maxV - minV || 1;
-  var pad3 = rawSpan * 0.12;
-  maxV += pad3; minV -= (minV < 0 ? pad3 : 0);
-  var span = maxV - minV || 1;
+  var pad3 = Math.max(rawSpan * 0.16, maxV * 0.10, 1);
+  maxV += pad3; minV -= (minV < 0 ? pad3 * 0.5 : 0);
+  var span = Math.max(maxV - minV, 1);
   function toY(v){return PAD.t + cH - cH*(v-minV)/span;}
   function fmtM(v){var a=Math.abs(v);return a>=1000?'$'+(a/1000).toFixed(1)+'K':'$'+Math.round(a);}
   var gap = cW/n, barW = Math.max(Math.min(gap*0.62, 54), 8);
@@ -2948,6 +2954,7 @@ function svgWaterfall(elId, items) {
   el.innerHTML='<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'+defs+grid+connectors+bars+yLbls+xLbls+hitAreas+'</svg>';
   bindChartTips(el);
 }
+
 
 
 function renderPulseSettings() {
@@ -6294,16 +6301,14 @@ function renderNetSavingsChart(elId, labels, data, opts) {
   const cW = W - PL - PR, cH = H - PT - PB;
 
   const n       = data.length;
-  const rawMax  = Math.max(...data, 0);
-  const rawMin  = Math.min(...data, 0);
-  // Pad each side by 18% of the total data range so points breathe.
-  // Then ensure at least 10% headroom on each side even if all data
-  // is on one side of zero (e.g. all surplus months).
-  const rawSpan = rawMax - rawMin || 1;
-  const pad     = rawSpan * 0.18;
-  const maxV    = rawMax + Math.max(pad, rawMax * 0.12) || 1;
-  const minV    = rawMin - Math.max(pad, Math.abs(rawMin) * 0.12);
-  const span    = maxV - minV || 1;
+  // Scale: actual data extents + symmetric padding, zero always visible
+  const _dMax  = data.reduce((m,v) => Math.max(m,v), data[0]);
+  const _dMin  = data.reduce((m,v) => Math.min(m,v), data[0]);
+  const _dSpan = Math.max(_dMax - _dMin, 1);
+  const _dPad  = Math.max(_dSpan * 0.18, Math.abs(_dMax) * 0.10, Math.abs(_dMin) * 0.10, 10);
+  const maxV   = Math.max(_dMax + _dPad, 0);
+  const minV   = Math.min(_dMin - _dPad, 0);
+  const span   = Math.max(maxV - minV, 1);
   const yOf  = v => PT + cH - cH * (v - minV) / span;
   const xOf  = i => PL + (n < 2 ? cW / 2 : (i / (n - 1)) * cW);
   const y0   = yOf(0);  // zero line y-position
@@ -6383,7 +6388,7 @@ function renderNetSavingsChart(elId, labels, data, opts) {
       stroke="rgba(0,0,0,0.4)" stroke-width="2"/>
     <!-- Main water surface -->
     <line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W-PR}" y2="${y0.toFixed(1)}"
-      stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+      stroke="rgba(255,255,255,0.6)" stroke-width="2.5"/>
     <!-- Shimmer highlight on surface -->
     <line x1="${PL}" y1="${(y0-0.5).toFixed(1)}" x2="${W-PR}" y2="${(y0-0.5).toFixed(1)}"
       stroke="url(#ngZeroShimmer)" stroke-width="1"/>
@@ -6391,11 +6396,11 @@ function renderNetSavingsChart(elId, labels, data, opts) {
     <text x="${PL-8}" y="${y0.toFixed(1)}" text-anchor="end" dominant-baseline="middle"
       fill="rgba(255,255,255,0.55)" font-size="10" font-family="var(--fm)" font-weight="700">$0</text>
     <!-- ABOVE label -->
-    ${y0 > PT + 20 ? `<text x="${(W-PR-4).toFixed(1)}" y="${(y0-8).toFixed(1)}" text-anchor="end"
-      fill="rgba(52,217,195,.4)" font-size="9" font-family="var(--fm)" letter-spacing=".1em">SURPLUS ▲</text>` : ''}
+    ${y0 > PT + 8 ? `<text x="${(W-PR-4).toFixed(1)}" y="${(y0-8).toFixed(1)}" text-anchor="end"
+      fill="rgba(52,217,195,.65)" font-size="9" font-weight="700" font-family="var(--fm)" letter-spacing=".1em">SURPLUS ▲</text>` : ''}
     <!-- BELOW label -->
-    ${y0 < PT + cH - 20 ? `<text x="${(W-PR-4).toFixed(1)}" y="${(y0+14).toFixed(1)}" text-anchor="end"
-      fill="rgba(255,59,59,.4)" font-size="9" font-family="var(--fm)" letter-spacing=".1em">DEFICIT ▼</text>` : ''}`;
+    ${y0 < PT + cH - 8 ? `<text x="${(W-PR-4).toFixed(1)}" y="${(y0+14).toFixed(1)}" text-anchor="end"
+      fill="rgba(255,59,59,.65)" font-size="9" font-weight="700" font-family="var(--fm)" letter-spacing=".1em">DEFICIT ▼</text>` : ''}`;
 
   // ── Area fills (clipped to above / below zero) ─────────────────────────────
   const fullPath = `M${firstX},${y0.toFixed(1)} L${pStr} L${lastX},${y0.toFixed(1)} Z`;
@@ -6523,6 +6528,7 @@ function renderNetSavingsChart(elId, labels, data, opts) {
   </svg>`;
   bindChartTips(el);
 }
+
 
 
 
