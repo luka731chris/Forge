@@ -1187,6 +1187,7 @@ select:focus { border-color: var(--gold); }
     </div>
   </div>
 </div>
+  <div id="recon-dashboard" style="padding:0 16px;"></div>
 
 <!-- ══ CASH FLOW ══ -->
 <div id="page-cashflow" class="page">
@@ -1219,6 +1220,7 @@ select:focus { border-color: var(--gold); }
   </div>
   <div class="kpi-grid" id="cfKPIs"></div>
 </div>
+  <div id="recon-cashflow" style="padding:0 16px;"></div>
 
 <!-- ══ CATEGORIES ══ -->
 <div id="page-categories" class="page">
@@ -1303,6 +1305,7 @@ select:focus { border-color: var(--gold); }
 </div>
 
 
+  <div id="recon-creditflow" style="padding:0 16px;"></div>
 
 <!-- ══ BALANCE SHEET ══ -->
 <div id="page-balancesheet" class="page">
@@ -1320,6 +1323,7 @@ select:focus { border-color: var(--gold); }
   </div>
   <div id="balanceSheetContent"></div>
 </div>
+  <div id="recon-balancesheet" style="padding:0 16px;"></div>
 
 <!-- ══ FAMILY FINANCIALS ══ -->
 <div id="page-financials" class="page">
@@ -1334,6 +1338,7 @@ select:focus { border-color: var(--gold); }
   </div>
   <div id="financialsContent"></div>
 </div>
+  <div id="recon-financials" style="padding:0 16px;"></div>
 
 <!-- ══ BUDGET VS ACTUAL ══ -->
 <div id="page-budget" class="page">
@@ -1389,10 +1394,6 @@ select:focus { border-color: var(--gold); }
             <div style="width:28px;height:28px;border-radius:6px;background:rgba(245,168,0,.12);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;">⊞</div>
             <div><div style="font-size:12px;font-weight:600;color:rgba(238,234,228,.9);">Small Multiples</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;line-height:1.4;">One sparkline per category. Best for seeing which buckets are creeping up.</div></div>
           </div>
-          <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;" onclick="setISTrendType('slope')">
-            <div style="width:28px;height:28px;border-radius:6px;background:rgba(245,168,0,.12);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;">╱</div>
-            <div><div style="font-size:12px;font-weight:600;color:rgba(238,234,228,.9);">Slope Chart</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;line-height:1.4;">This month vs. 6-month average. Best for active monthly decisions.</div></div>
-          </div>
           <div style="display:flex;gap:10px;padding:7px 0;cursor:pointer;" onclick="setISTrendType('waffle')">
             <div style="width:28px;height:28px;border-radius:6px;background:rgba(245,168,0,.12);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;">▩</div>
             <div><div style="font-size:12px;font-weight:600;color:rgba(238,234,228,.9);">Proportion Chart</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;line-height:1.4;">Share of wallet by category this month. Best for composition understanding.</div></div>
@@ -1404,7 +1405,6 @@ select:focus { border-color: var(--gold); }
           <option value="pressure">Budget Pressure Bar</option>
           <option value="stack">Stacked Bar Trend</option>
           <option value="trellis">Small Multiples</option>
-          <option value="slope">Slope Chart</option>
           <option value="waffle">Proportion</option>
         </select>
         <div style="width:18px;height:18px;border-radius:50%;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.4);cursor:help;flex-shrink:0;font-family:var(--fm);"
@@ -1434,6 +1434,7 @@ select:focus { border-color: var(--gold); }
   <div id="isTrendWrap" style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;"></div>
   <div id="incomeStatement"></div>
 </div>
+  <div id="recon-income" style="padding:0 16px;"></div>
 
 <!-- ══ RECONCILE ══ -->
 <div id="page-reconcile" class="page">
@@ -2291,214 +2292,147 @@ function cwExportExcel() {
 function renderReconcile() {
   const el = document.getElementById('reconContent');
   if (!el) return;
+
   if (!txns.length) {
-    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">Import data to reconcile.</div>';
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);font-size:14px;">Import data to use reconciliation.</div>';
     return;
   }
 
-  const moSel   = document.getElementById('reconMonth');
-  const acctSel = document.getElementById('reconAcct');
-  const sp      = operatingSpendable(txns);
+  const moSel = document.getElementById('reconMonth');
+  const sp    = operatingSpendable(txns);
+  const allMonths = [...new Set(sp.map(t=>t.date.slice(0,7)))].sort().reverse();
 
   // Populate month dropdown
-  const allMonths = [...new Set(txns.map(t=>t.date.slice(0,7)))].sort().reverse();
   if (moSel && moSel.options.length === 0) {
     allMonths.forEach(m => {
       const [yr,mo] = m.split('-');
       const opt = document.createElement('option');
       opt.value = m;
-      opt.textContent = new Date(yr,parseInt(mo)-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      opt.textContent = new Date(+yr,+mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
       moSel.appendChild(opt);
     });
   }
-  const selMonth = moSel ? (moSel.value || allMonths[0]) : allMonths[0];
-  const prevMonth = allMonths[allMonths.indexOf(selMonth)+1] || null;
-
-  // Populate account dropdown
-  if (acctSel && acctSel.options.length <= 1) {
-    const accts = [...new Set(txns.map(t=>t.account).filter(Boolean))].sort();
-    accts.forEach(a => {
-      const opt = document.createElement('option');
-      opt.value = a; opt.textContent = a;
-      acctSel.appendChild(opt);
-    });
-  }
-  const acctFilter = acctSel ? acctSel.value : 'all';
-
-  // Month transactions
-  const monthTxns = txns.filter(t => t.date.startsWith(selMonth));
-  const prevTxns  = prevMonth ? txns.filter(t => t.date.startsWith(prevMonth)) : [];
-  const accounts  = acctFilter === 'all'
-    ? [...new Set(monthTxns.map(t=>t.account).filter(Boolean))].sort()
-    : [acctFilter];
-
-  // P&L totals for this month (for tie-out)
-  const plSp     = sp.filter(t => t.date.startsWith(selMonth));
-  const plIncome = plSp.filter(t => t.amount > 0 && !isCCCredit(t)).reduce((s,t)=>s+t.amount,0);
-  const plExp    = plSp.filter(t => t.amount < 0).reduce((s,t)=>s+t.amount,0);
-  const plCCCred = plSp.filter(t => isCCCredit(t)).reduce((s,t)=>s+t.amount,0);
-  const plXfer   = txns.filter(t => t.date.startsWith(selMonth) && isTransfer(t)).reduce((s,t)=>s+t.amount,0);
-  const plNet    = plIncome + plExp + plCCCred;
-
-  // Discrepancy detection
-  const allMonthAmt = monthTxns.reduce((s,t)=>s+t.amount,0);
-  const reconDiff   = allMonthAmt - plXfer;   // after removing transfers, should tie to plNet
-  const isDiff      = Math.abs(reconDiff - plNet) > 0.01;
+  const selMonth = (moSel && moSel.value) || allMonths[0];
+  if (!selMonth) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">No data available.</div>'; return; }
 
   const [yr,mo] = selMonth.split('-');
-  const monthName = new Date(yr,parseInt(mo)-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const monthName = new Date(+yr,+mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const prevMo    = allMonths[allMonths.indexOf(selMonth)+1] || null;
 
-  let html = '';
+  const C = window._C || {
+    ink:'var(--ink)',ink2:'var(--ink2)',ink3:'var(--ink3)',ink4:'var(--ink4)',
+    pos:'var(--pos)',neg:'var(--neg)',gold:'var(--gold)',river:'var(--river)'
+  };
+  function mfmt(n) { const a=Math.abs(n||0); return (n<0?'−':'')+'$'+a.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+  function kfmt(n) { const a=Math.abs(n||0); return (n<0?'−':'')+(a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a)); }
+  function pct(v,t) { return t>0?(v/t*100).toFixed(1)+'%':'—'; }
 
-  // ── P&L Summary tie-out ────────────────────────────────────────────────────
-  html += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:16px;">';
-  html += '<div style="font-family:var(--font-d);font-size:16px;font-weight:600;color:var(--ink);margin-bottom:14px;">P&L Tie-Out · '+monthName+'</div>';
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;">';
-
-  const tileStyle = 'padding:14px 16px;border-right:1px solid var(--line);';
-  const last = 'padding:14px 16px;';
-
-  html += '<div style="'+tileStyle+'">';
-  html += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Operating Income</div>';
-  html += '<div style="font-size:20px;font-weight:700;color:var(--pos);">'+fmt(plIncome)+'</div>';
-  html += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">payroll + income</div></div>';
-
-  html += '<div style="'+tileStyle+'">';
-  html += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Operating Expenses</div>';
-  html += '<div style="font-size:20px;font-weight:700;color:var(--neg);">'+fmt(Math.abs(plExp))+'</div>';
-  html += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">excl. savings transfers</div></div>';
-
-  html += '<div style="'+tileStyle+'">';
-  html += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">CC Credits / Returns</div>';
-  html += '<div style="font-size:20px;font-weight:700;color:var(--river);">'+fmt(plCCCred)+'</div>';
-  html += '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">expense offsets</div></div>';
-
-  const netCol = plNet>=0?'var(--pos)':'var(--neg)';
-  html += '<div style="'+last+'">';
-  html += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Net Operating</div>';
-  html += '<div style="font-size:20px;font-weight:700;color:'+netCol+';">'+(plNet>=0?'+':'')+fmt(plNet)+'</div>';
-  html += '<div style="font-size:10px;color:'+(isDiff?'var(--neg)':'var(--pos)')+';margin-top:2px;">'+(isDiff?'⚠ check discrepancy':'✓ reconciled')+'</div></div>';
-  html += '</div>';
-
-  // Transfers excluded note
-  html += '<div style="margin-top:10px;font-size:11px;color:var(--ink4);line-height:1.6;">';
-  html += '⤷ <strong>'+fmt(Math.abs(plXfer))+'</strong> in transfers excluded from P&L ';
-  html += '(savings, 401k, CC payments, account moves) · ';
-  html += 'Total register activity: <strong>'+fmt(allMonthAmt)+'</strong>';
-  if (isDiff) html += ' · <span style="color:var(--neg);">⚠ Discrepancy: '+fmt(Math.abs(reconDiff-plNet))+'</span>';
-  html += '</div></div>';
-
-  // ── Per-Account Register ───────────────────────────────────────────────────
-  html += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px;">';
-  html += '<div style="font-family:var(--font-d);font-size:16px;font-weight:600;color:var(--ink);padding:16px 20px;border-bottom:1px solid var(--line);">Account Register</div>';
-
-  accounts.forEach(acct => {
-    const acctTxns    = monthTxns.filter(t => t.account === acct).sort((a,b)=>a.date.localeCompare(b.date));
-    const prevAmt     = prevTxns.filter(t => t.account === acct).reduce((s,t)=>s+t.amount,0);
-    const closingBal  = acctTxns.reduce((s,t)=>s+t.amount, prevAmt);
-    const isCC        = isCreditAcct(acct);
-    const acctType    = detectAcctType(acct);
-    const totalDebits = acctTxns.filter(t=>t.amount<0).reduce((s,t)=>s+t.amount,0);
-    const totalCreds  = acctTxns.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
-    const operating   = acctTxns.filter(t=>!isTransfer(t));
-    const transfers   = acctTxns.filter(t=>isTransfer(t));
-    const ccCredits   = acctTxns.filter(t=>isCCCredit(t));
-
-    html += '<div style="border-bottom:1px solid var(--line);padding:14px 20px;">';
-
-    // Account header
-    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">';
-    html += '<div style="flex:1;">';
-    html += '<div style="font-size:13px;font-weight:600;color:var(--ink2);">'+acct+'</div>';
-    html += '<div style="font-size:10px;color:var(--ink4);">'+acctType.replace(/_/g,' ')+' · '+acctTxns.length+' transactions</div>';
-    html += '</div>';
-    html += '<div style="display:grid;grid-template-columns:repeat(4,84px);gap:8px;text-align:right;">';
-    [['Opening', prevAmt, 'var(--ink4)'], ['Credits', totalCreds, 'var(--pos)'], ['Debits', totalDebits, 'var(--neg)'], ['Closing', closingBal, closingBal>=0?'var(--pos)':'var(--neg)']].forEach(([l,v,c]) => {
-      html += '<div><div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">'+l+'</div>';
-      html += '<div style="font-size:13px;font-weight:600;color:'+c+';">'+(l!=='Opening'&&l!=='Closing'?'':v>=0?'+':'')+fmt(v)+'</div></div>';
-    });
-    html += '</div></div>';
-
-    // Category summary for this account
-    const catSummary = {};
-    operating.forEach(t => {
-      const bk = classifyTxn(t);
-      const lbl = (BUCKET_META[bk]||{label:bk}).label;
-      catSummary[lbl] = (catSummary[lbl]||0) + t.amount;
-    });
-    const catRows = Object.entries(catSummary).sort((a,b)=>a[1]-b[1]);
-
-    if (catRows.length) {
-      html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">';
-      catRows.forEach(([cat,amt]) => {
-        const col = amt>0?'var(--pos)':'var(--neg)';
-        html += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:5px;padding:4px 8px;font-size:10px;">';
-        html += '<span style="color:var(--ink4);">'+cat+'</span> ';
-        html += '<span style="font-family:var(--fm);color:'+col+';font-weight:600;">'+(amt>0?'+':'')+fmt(amt)+'</span></div>';
-      });
-      html += '</div>';
-    }
-
-    // Flags
-    const flags = [];
-    if (ccCredits.length) flags.push('💳 '+ccCredits.length+' CC credit'+(ccCredits.length>1?'s':'')+' ('+fmt(ccCredits.reduce((s,t)=>s+t.amount,0))+') — excluded from income, offsets expenses');
-    if (transfers.length) flags.push('⇄ '+transfers.length+' transfer'+(transfers.length>1?'s':'')+' ('+fmt(transfers.reduce((s,t)=>s+t.amount,0))+') — excluded from P&L');
-
-    if (flags.length) {
-      html += '<div style="margin-top:6px;">';
-      flags.forEach(f => {
-        html += '<div style="font-size:10px;color:var(--river);background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.2);border-radius:4px;padding:3px 8px;margin-bottom:3px;">'+f+'</div>';
-      });
-      html += '</div>';
-    }
-
-    // Transaction ledger (expandable)
-    const detailId = 'recon_' + acct.replace(/[^a-zA-Z0-9]/g,'_');
-    html += '<div style="margin-top:8px;">';
-    html += '<button onclick="const el=document.getElementById(\''+detailId+'\');el.style.display=el.style.display===\'none\'?\'block\':\'none\';" ';
-    html += 'style="font-size:10px;color:var(--ink4);background:transparent;border:1px solid var(--line);padding:3px 10px;border-radius:4px;cursor:pointer;">▼ Show register</button>';
-    html += '</div>';
-
-    html += '<div id="'+detailId+'" style="display:none;margin-top:8px;border:1px solid var(--line);border-radius:6px;overflow:hidden;">';
-    // Register header
-    html += '<div style="display:grid;grid-template-columns:90px 1fr 140px 90px 90px;padding:6px 12px;background:var(--lift);gap:8px;">';
-    ['Date','Payee / Description','Category','P&L Role','Amount'].forEach(h => {
-      html += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">'+h+'</div>';
-    });
-    html += '</div>';
-
-    acctTxns.forEach((t,i) => {
-      const isTxr    = isTransfer(t);
-      const isCCCr   = isCCCredit(t);
-      const bk       = classifyTxn(t);
-      const bMeta    = BUCKET_META[bk]||{label:bk,icon:'·'};
-      const role     = isTxr ? 'Transfer (excluded)' : isCCCr ? 'CC Credit (offset)' : t.amount>0 ? 'Income' : 'Expense';
-      const roleCol  = isTxr?'var(--ink4)':isCCCr?'var(--river)':t.amount>0?'var(--pos)':'var(--ink3)';
-      const bg       = i%2===0?'':'background:rgba(255,255,255,.015);';
-
-      html += '<div style="display:grid;grid-template-columns:90px 1fr 140px 90px 90px;padding:6px 12px;gap:8px;border-top:1px solid rgba(255,255,255,.04);'+bg+'">';
-      html += '<div style="font-size:10px;color:var(--ink4);">'+t.date+'</div>';
-      html += '<div style="font-size:11px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+((t.payee||'—'))+'</div>';
-      html += '<div style="font-size:10px;color:var(--ink4);">'+bMeta.icon+' '+bMeta.label+'</div>';
-      html += '<div style="font-size:10px;color:'+roleCol+';">'+role+'</div>';
-      html += '<div style="font-size:11px;font-family:var(--fm);text-align:right;color:'+(t.amount>0?'var(--pos)':'var(--neg)')+';">'+(t.amount>0?'+':'')+fmt(t.amount)+'</div>';
-      html += '</div>';
-    });
-    html += '</div></div>';
+  // ── Build IS summary for the selected month ──────────────────────────────
+  // Compute from txns directly (mirrors IS logic without re-rendering IS)
+  const OPER   = new Set(['checking','savings','credit']);
+  const DETAIL = new Set(['apple_card','amazon_orders','home_depot','venmo']);
+  const monthSp = sp.filter(t => t.date.startsWith(selMonth) && OPER.has(detectAcctType(t.account||'')));
+  const UNMASK_PAT2 = {
+    amazon_orders:/\bamazon\b/i, home_depot:/\bhome.?depot\b/i,
+    venmo:/\bvenmo\b/i, apple_card:/\bapple\b|\bapple.?card\b/i
+  };
+  const hasDetailMo = {};
+  txns.filter(t => (t.itemDetail||DETAIL.has(t._source||t._ftype||'')) && t.date.startsWith(selMonth) && t.amount<0).forEach(t => {
+    hasDetailMo[t._source||t._ftype||'det'] = true;
   });
-  html += '</div>';
+  function lumpFtype2(t) {
+    for (const [ft,rx] of Object.entries(UNMASK_PAT2)) if (rx.test(t.payee)) return ft;
+    return null;
+  }
 
-  document.getElementById('reconSub').textContent =
-    'Reconciliation · '+monthName+' · '+monthTxns.length+' transactions across '+accounts.length+' accounts';
-  el.innerHTML = html;
+  let isIncome=0, isFixed=0, isVar=0, isAutoSave=0;
+  const FIXED_BKS2 = new Set(['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','streaming']);
+  // Income
+  monthSp.filter(t=>t.amount>0&&classifyTxn(t)==='paycheck'&&detectAcctType(t.account||'')==='checking').forEach(t=>{ isIncome+=t.amount; });
+  // Auto-save
+  const payChdates = [...new Set(monthSp.filter(t=>t.amount>0&&classifyTxn(t)==='paycheck'&&detectAcctType(t.account||'')==='checking').map(t=>t.date))];
+  txns.filter(t=>t.date.startsWith(selMonth)&&isTransfer(t)&&t.amount<0).forEach(t=>{
+    const dest=(t.category||'').replace(/^\[|\]$/g,'').trim();
+    if (detectAcctType(dest)==='savings'&&payChdates.some(pd=>Math.abs(new Date(pd)-new Date(t.date))<=4*864e5)) isAutoSave+=Math.abs(t.amount);
+  });
+  sp.filter(t=>t.date.startsWith(selMonth)&&t.amount>0&&classifyTxn(t)==='paycheck'&&detectAcctType(t.account||'')==='savings').forEach(t=>{ isAutoSave+=t.amount; });
+  // Expenses
+  monthSp.filter(t=>t.amount<0&&!t.itemDetail&&!DETAIL.has(t._source||t._ftype||'')).forEach(t=>{
+    const ft=lumpFtype2(t); if(ft&&hasDetailMo[ft]) return;
+    const bk=classifyTxn(t), a=Math.abs(t.amount);
+    if(FIXED_BKS2.has(bk)) isFixed+=a; else isVar+=a;
+  });
+  txns.filter(t=>t.date.startsWith(selMonth)&&t.amount<0&&!t._masked&&(t.itemDetail||DETAIL.has(t._source||t._ftype||''))).forEach(t=>{
+    const bk=classifyTxn(t), a=Math.abs(t.amount);
+    if(FIXED_BKS2.has(bk)) isFixed+=a; else isVar+=a;
+  });
+  const isDeploy = Math.max(isIncome - isAutoSave, 0);
+  const isNet    = isDeploy - isFixed - isVar;
+  const isData   = { income:isIncome, autoSave:isAutoSave, fixed:isFixed, variable:isVar, net:isNet, draw:0, earlyMonth:false };
+
+  const recon = buildMonthRecon(selMonth);
+  const reconOpts = { monthName, isData, C, mfmt, kfmt };
+
+  // ── Month-over-month summary ──────────────────────────────────────────────
+  const prevRecon = prevMo ? buildMonthRecon(prevMo) : null;
+  const [pyr,pmo] = prevMo ? prevMo.split('-') : ['',''];
+  const prevMonthName = prevMo ? new Date(+pyr,+pmo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}) : '';
+
+  let momHtml = '';
+  if (prevRecon) {
+    const cur = recon.totals.all, prv = prevRecon.totals.all;
+    const incChg  = cur.income  - prv.income;
+    const expChg  = cur.charges - prv.charges;
+    const netChg  = isNet - 0;  // simplified
+    momHtml = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">`;
+    const kpiBlock = (label, cur, chg, col) =>
+      `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:12px 14px;">
+        <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${C.ink4};margin-bottom:6px;">${label}</div>
+        <div style="font-size:22px;font-weight:700;font-family:var(--fd);color:${col};">${kfmt(cur)}</div>
+        <div style="font-size:11px;color:${chg>=0?'var(--pos)':C.neg};margin-top:3px;">${chg>=0?'+':''}${kfmt(chg)} vs ${prevMonthName}</div>
+      </div>`;
+    momHtml += kpiBlock('Income', isIncome, incChg, 'var(--pos)');
+    momHtml += kpiBlock('Expenses', isFixed+isVar, expChg, 'var(--neg)');
+    momHtml += kpiBlock('Net', isNet, isNet, isNet>=0?'var(--pos)':C.neg);
+    momHtml += `</div>`;
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  let out = '';
+
+  // Month-over-month KPIs
+  if (momHtml) out += momHtml;
+
+  // Master recon table
+  out += `<div style="margin-bottom:24px;">`;
+  out += `<div style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:${C.ink4};margin-bottom:8px;">Account Register Reconciliation</div>`;
+  out += `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">`;
+  out += renderReconTable(recon, reconOpts);
+  out += `</div></div>`;
+
+  // Verification checklist
+  out += `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px;margin-bottom:16px;">`;
+  out += `<div style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:${C.ink4};margin-bottom:12px;">Verification Checklist</div>`;
+  const checks = [
+    { tab:'Income Statement', desc:`Gross pay ${kfmt(isIncome)} · Pre-saved ${kfmt(isAutoSave)} · Fixed ${kfmt(isFixed)} · Variable ${kfmt(isVar)} · Net ${kfmt(isNet)}`, ok: Math.abs(isNet) < 99999 },
+    { tab:'Checking Close', desc:`Checking accounts close at ${mfmt(recon.totals.checking.close)}`, ok: recon.totals.checking.close >= 0 },
+    { tab:'Savings Close',  desc:`Savings accounts close at ${mfmt(recon.totals.savings.close)}`, ok: recon.totals.savings.close >= 0 },
+    { tab:'Credit Balance', desc:`Credit card balances total ${mfmt(recon.totals.credit.close)}`, ok: recon.totals.credit.close <= 0 },
+  ];
+  checks.forEach(c => {
+    const icon = c.ok ? '✓' : '⚠';
+    const col  = c.ok ? 'var(--pos)' : 'var(--gold)';
+    out += `<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);">`;
+    out +=   `<span style="font-size:14px;color:${col};flex-shrink:0;line-height:1.4;">${icon}</span>`;
+    out +=   `<div><div style="font-size:12px;font-weight:600;color:var(--ink);">${c.tab}</div>`;
+    out +=   `<div style="font-size:11px;color:${C.ink4};margin-top:1px;">${c.desc}</div></div>`;
+    out += `</div>`;
+  });
+  out += `</div>`;
+
+  el.innerHTML = out;
 }
 
-
-// ════════════════════════════════════════════════════════════════════════════
-// SETTINGS & CUSTOMIZATIONS
-// ════════════════════════════════════════════════════════════════════════════
-
-// Fix toggle visual state after settings render
 function updateAccountOwner(sel) {
   const acct  = sel.getAttribute('data-acct');
   const owner = sel.value;
@@ -4670,6 +4604,7 @@ function renderFinancials() {
     </div>`;
 
   el.innerHTML = `
+  renderMasterRecon('recon-financials', (operatingSpendable(txns).map(t=>t.date.slice(0,7)).sort().reverse()[0] || new Date().toISOString().slice(0,7)), {isData:null});
     <div>
 
       <!-- Header banner -->
@@ -4843,6 +4778,178 @@ function setCfRange(r, btn) {
   if (txns.length) renderCashFlow();
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// MASTER RECONCILIATION ENGINE
+// Shared across all tabs. Computes per-account Open/In/Out/Close for a month.
+// ════════════════════════════════════════════════════════════════════════════
+
+// buildMonthRecon(selMonth) → { groups, totals, isData }
+// groups: { checking:[], savings:[], credit:[] }  each entry: {name,open,income,charges,close,type}
+// totals: { checking:{open,income,charges,close}, savings:{...}, credit:{...}, all:{...} }
+// isData: IS summary fields if available (pass null to skip)
+function buildMonthRecon(selMonth) {
+  if (!selMonth || !txns.length) return null;
+  const RTYPES  = new Set(['checking','savings','credit']);
+  const DETAIL  = new Set(['apple_card','amazon_orders','home_depot','venmo']);
+
+  const accts = {};
+  txns.forEach(t => {
+    const tp = detectAcctType(t.account||'');
+    if (!RTYPES.has(tp)) return;
+    if (t.itemDetail) return;                          // skip detail CSV rows
+    if (DETAIL.has(t._source||t._ftype||'')) return;  // skip detail source rows
+    const a = t.account;
+    if (!accts[a]) accts[a] = { name:a, type:tp, open:0, income:0, charges:0 };
+    if      (t.date <  selMonth+'-01') accts[a].open    += t.amount;
+    else if (t.date <= selMonth+'-31') {
+      if (t.amount > 0) accts[a].income  += t.amount;
+      else              accts[a].charges += Math.abs(t.amount);
+    }
+  });
+
+  const TYPE_ORDER = { checking:0, savings:1, credit:2 };
+  const groups = { checking:[], savings:[], credit:[] };
+  Object.values(accts).forEach(a => {
+    a.close = a.open + a.income - a.charges;
+    if (groups[a.type]) groups[a.type].push(a);
+  });
+  ['checking','savings','credit'].forEach(tp => {
+    groups[tp].sort((a,b) => a.name.localeCompare(b.name));
+  });
+
+  const totals = {};
+  ['checking','savings','credit','all'].forEach(tp => {
+    totals[tp] = { open:0, income:0, charges:0, close:0 };
+  });
+  Object.values(accts).forEach(a => {
+    ['open','income','charges'].forEach(f => {
+      totals[a.type][f] += a[f];
+      totals.all[f]     += a[f];
+    });
+  });
+  ['checking','savings','credit','all'].forEach(tp => {
+    totals[tp].close = totals[tp].open + totals[tp].income - totals[tp].charges;
+  });
+
+  return { groups, totals, selMonth };
+}
+
+// renderReconTable(recon, opts) → HTML string
+// Renders the per-account-type Open/In/Out/Close grid.
+// opts: { showIS, isData, monthName, mfmt, kfmt, C }
+function renderReconTable(recon, opts) {
+  if (!recon) return '<div style="padding:20px;text-align:center;color:var(--ink4);">No data for this month.</div>';
+  const { groups, totals } = recon;
+  const { monthName, isData, C } = opts;
+  const mf = opts.mfmt || (n => '$'+Math.abs(n).toFixed(0));
+  const kf = opts.kfmt || mf;
+  const TYPE_LBL = { checking:'Checking', savings:'Savings', credit:'Credit Cards' };
+  const COL = 'grid-template-columns:1fr 76px 76px 84px 88px';
+
+  let h = '';
+  // Column headers
+  h += `<div style="display:grid;${COL};gap:4px;padding:5px 16px 4px;border-bottom:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);">`;
+  h +=   `<span style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${C.ink4};">Account</span>`;
+  h +=   `<span style="font-size:9px;font-weight:700;color:${C.ink4};text-align:right;">Open</span>`;
+  h +=   `<span style="font-size:9px;font-weight:700;color:var(--pos);text-align:right;">In</span>`;
+  h +=   `<span style="font-size:9px;font-weight:700;color:var(--neg);text-align:right;">Out</span>`;
+  h +=   `<span style="font-size:9px;font-weight:700;color:${C.ink2};text-align:right;">Close</span>`;
+  h += `</div>`;
+
+  ['checking','savings','credit'].forEach(tp => {
+    const grp = groups[tp];
+    if (!grp || !grp.length) return;
+    // Section header
+    h += `<div style="padding:3px 16px 2px;background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.06);">`;
+    h +=   `<span style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${C.ink4};">${TYPE_LBL[tp]}</span>`;
+    h += `</div>`;
+    grp.forEach((a,i) => {
+      const cc      = tp==='credit' ? (a.close<0?C.neg:C.ink3) : (a.close>=0?C.ink2:C.neg);
+      const bg      = i%2 ? 'rgba(255,255,255,.012)' : 'transparent';
+      h += `<div style="display:grid;${COL};gap:4px;align-items:center;padding:3px 16px;border-top:1px solid rgba(255,255,255,.028);background:${bg};">`;
+      h +=   `<span style="font-size:12px;color:${C.ink3};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.name}</span>`;
+      h +=   `<span style="font-size:11px;font-family:var(--fm);color:${C.ink4};text-align:right;">${mf(a.open)}</span>`;
+      h +=   `<span style="font-size:11px;font-family:var(--fm);color:${a.income>0?'var(--pos)':C.ink4};text-align:right;">${a.income>0?'+'+mf(a.income):'—'}</span>`;
+      h +=   `<span style="font-size:11px;font-family:var(--fm);color:${a.charges>0?'var(--neg)':C.ink4};text-align:right;">${a.charges>0?'−'+mf(a.charges):'—'}</span>`;
+      h +=   `<span style="font-size:12px;font-weight:600;font-family:var(--fm);color:${cc};text-align:right;">${mf(a.close)}</span>`;
+      h += `</div>`;
+    });
+    // Section total
+    const t = totals[tp];
+    const tc = tp==='credit' ? (t.close<0?C.neg:C.ink) : (t.close>=0?C.ink:C.neg);
+    h += `<div style="display:grid;${COL};gap:4px;align-items:center;padding:4px 16px;border-top:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);">`;
+    h +=   `<span style="font-size:12px;font-weight:700;color:var(--ink);">${TYPE_LBL[tp]} total</span>`;
+    h +=   `<span style="font-size:11px;font-family:var(--fm);color:${C.ink3};text-align:right;">${mf(t.open)}</span>`;
+    h +=   `<span style="font-size:12px;font-family:var(--fm);color:var(--pos);text-align:right;">+${mf(t.income)}</span>`;
+    h +=   `<span style="font-size:12px;font-family:var(--fm);color:var(--neg);text-align:right;">−${mf(t.charges)}</span>`;
+    h +=   `<span style="font-size:14px;font-weight:700;font-family:var(--fm);color:${tc};text-align:right;">${mf(t.close)}</span>`;
+    h += `</div>`;
+  });
+
+  // IS summary if provided
+  if (isData) {
+    h += `<div style="padding:10px 16px 12px;border-top:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.02);">`;
+    h +=   `<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${C.ink4};margin-bottom:7px;">Income Statement Summary</div>`;
+    h +=   `<div style="display:grid;grid-template-columns:1fr auto;row-gap:3px;font-size:12px;font-family:var(--fm);">`;
+    h +=     `<span style="color:${C.ink4};">Gross pay${isData.earlyMonth?' (est.)':''}</span><span style="color:var(--pos);text-align:right;">+${kf(isData.income)}</span>`;
+    if (isData.autoSave>0)  h += `<span style="color:${C.ink4};">Pre-committed savings</span><span style="color:var(--river);text-align:right;">−${kf(isData.autoSave)}</span>`;
+    h +=     `<span style="color:${C.ink4};">Fixed expenses</span><span style="color:var(--neg);text-align:right;">−${kf(isData.fixed)}</span>`;
+    h +=     `<span style="color:${C.ink4};">Variable expenses</span><span style="color:var(--gold);text-align:right;">−${kf(isData.variable)}</span>`;
+    if (isData.draw>0)      h += `<span style="color:var(--neg);">Savings draw</span><span style="color:var(--neg);text-align:right;">+${kf(isData.draw)}</span>`;
+    h +=     `<div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,.08);margin:4px 0;"></div>`;
+    h +=     `<span style="color:var(--ink);font-weight:600;">Net remaining</span>`;
+    const netCol = isData.net >= 0 ? 'var(--pos)' : 'var(--neg)';
+    h +=     `<span style="font-size:14px;font-weight:700;color:${netCol};text-align:right;">${isData.net>=0?'+':'−'}${kf(Math.abs(isData.net))}</span>`;
+    h +=   `</div></div>`;
+  }
+
+  // Quicken instruction footer
+  h += `<div style="padding:8px 16px 10px;border-top:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);">`;
+  h +=   `<span style="font-size:10px;color:${C.ink4};">Quicken → Reports → Account Balances → `;
+  h +=   `<strong style="color:${C.ink3};">${monthName}</strong> → `;
+  h +=   `compare Ending Balance per account type above</span>`;
+  h += `</div>`;
+
+  return h;
+}
+
+// renderMasterRecon(containerId, selMonth, opts) — renders full recon panel into a container
+function renderMasterRecon(containerId, selMonth, opts) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  opts = opts || {};
+  const C = window._C || {
+    ink:'var(--ink)', ink2:'var(--ink2)', ink3:'var(--ink3)', ink4:'var(--ink4)',
+    pos:'var(--pos)', neg:'var(--neg)', gold:'var(--gold)', river:'var(--river)'
+  };
+  const mfmt = opts.mfmt || (n => { const a=Math.abs(n||0); return (n<0?'−':'')+'$'+a.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,','); });
+  const kfmt = opts.kfmt || (n => { const a=Math.abs(n||0); return (n<0?'−':'')+(a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a)); });
+  const [yr,mo] = (selMonth||'').split('-');
+  const monthName = selMonth ? new Date(+yr,+mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}) : '';
+
+  const recon = buildMonthRecon(selMonth);
+  if (!recon) { el.innerHTML = '<div style="padding:16px;color:var(--ink4);font-size:12px;">No Quicken data for this month.</div>'; return; }
+
+  const reconOpts = { monthName, isData: opts.isData||null, C, mfmt, kfmt };
+
+  el.innerHTML =
+    `<div style="border-top:1px solid var(--line);margin-top:24px;">`
+  + `<div style="padding:12px 16px 8px;display:flex;align-items:center;justify-content:space-between;">`
+  +   `<div style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);">Quicken Reconciliation — ${monthName}</div>`
+  +   `<div style="font-size:10px;color:var(--ink4);">Open · In · Out · Close per account type</div>`
+  + `</div>`
+  + `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin:0 0 16px;">`
+  + renderReconTable(recon, reconOpts)
+  + `</div></div>`;
+}
+
+// Global color constants used by renderMasterRecon and other helpers
+window._C = {
+  ink:  'var(--ink)',  ink2: 'var(--ink2)', ink3: 'var(--ink3)', ink4: 'var(--ink4)',
+  pos:  'var(--pos)', neg:  'var(--neg)',   gold: 'var(--gold)', river:'var(--river)',
+  void: 'var(--void)'
+};
+
 // ════════════════════════════════════════════════
 // RENDER DASHBOARD
 // ════════════════════════════════════════════════
@@ -4930,12 +5037,223 @@ function renderDashboard() {
     console.error('[Forge] renderDashboard error:', e);
     const _el = document.getElementById('dashKPIs');
     if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--neg);font-family:var(--fm);font-size:12px;">⚠ Render error in renderDashboard: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+  renderMasterRecon('recon-dashboard', (operatingSpendable(txns).map(t=>t.date.slice(0,7)).sort().reverse()[0] || new Date().toISOString().slice(0,7)), {isData:null});
   }
 }
 
 // ════════════════════════════════════════════════
 // RENDER CASH FLOW
 // ════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// renderNetSavingsChart — 3D above/underwater net savings area chart
+// Above zero: teal glowing surplus. Below zero: red glowing deficit.
+// Zero line acts as the water surface — above is air, below is ocean.
+// ═══════════════════════════════════════════════════════════════════════════
+function renderNetSavingsChart(elId, labels, data) {
+  const el = document.getElementById(elId);
+  if (!el || !labels.length) return;
+  if (!data || !data.length) { el.innerHTML = ''; return; }
+
+  const W  = Math.max(el.offsetWidth || 520, 320);
+  const H  = 220;
+  const PT = 22, PB = 34, PL = 62, PR = 18;
+  const cW = W - PL - PR, cH = H - PT - PB;
+
+  const n    = data.length;
+  const maxV = Math.max(...data, 0) * 1.12 || 1;
+  const minV = Math.min(...data, 0) * 1.12;
+  const span = maxV - minV || 1;
+  const yOf  = v => PT + cH - cH * (v - minV) / span;
+  const xOf  = i => PL + (n < 2 ? cW / 2 : (i / (n - 1)) * cW);
+  const y0   = yOf(0);  // zero line y-position
+
+  // ── Build SVG polyline point strings ──────────────────────────────────────
+  const pts = data.map((v, i) => ({ x: xOf(i), y: yOf(v), v }));
+  const pStr = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const firstX = pts[0].x.toFixed(1);
+  const lastX  = pts[pts.length - 1].x.toFixed(1);
+
+  // ── SVG defs: gradients for above/below fills and 3D glow effects ─────────
+  const defs = `<defs>
+    <!-- Above-water fill: deep teal at zero fading to bright teal at top -->
+    <linearGradient id="ngAboveFill" x1="0" y1="${y0.toFixed(1)}" x2="0" y2="${PT}" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#34D9C3" stop-opacity="0.08"/>
+      <stop offset="40%"  stop-color="#34D9C3" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#34D9C3" stop-opacity="0.55"/>
+    </linearGradient>
+    <!-- Below-water fill: bright red near zero fading deeper red below -->
+    <linearGradient id="ngBelowFill" x1="0" y1="${y0.toFixed(1)}" x2="0" y2="${(PT+cH).toFixed(1)}" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#FF3B3B" stop-opacity="0.08"/>
+      <stop offset="40%"  stop-color="#FF3B3B" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FF3B3B" stop-opacity="0.60"/>
+    </linearGradient>
+    <!-- Line glow: positive -->
+    <filter id="ngGlowPos" x="-20%" y="-60%" width="140%" height="220%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- Line glow: negative -->
+    <filter id="ngGlowNeg" x="-20%" y="-60%" width="140%" height="220%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- Dot glow -->
+    <filter id="ngDotGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- 3D surface shimmer on zero line -->
+    <linearGradient id="ngZeroShimmer" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="rgba(255,255,255,0)"/>
+      <stop offset="30%"  stop-color="rgba(255,255,255,0.18)"/>
+      <stop offset="70%"  stop-color="rgba(255,255,255,0.18)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+    <!-- Clip paths for above/below fills -->
+    <clipPath id="ngClipAbove">
+      <rect x="${PL}" y="${PT}" width="${cW}" height="${(y0-PT).toFixed(1)}"/>
+    </clipPath>
+    <clipPath id="ngClipBelow">
+      <rect x="${PL}" y="${y0.toFixed(1)}" width="${cW}" height="${(PT+cH-y0).toFixed(1)}"/>
+    </clipPath>
+  </defs>`;
+
+  // ── Grid lines ─────────────────────────────────────────────────────────────
+  let grid = '', yAxis = '';
+  const ticks = 5;
+  for (let i = 0; i <= ticks; i++) {
+    const v = minV + (span / ticks) * i;
+    const y = yOf(v).toFixed(1);
+    const isZero = Math.abs(v) < span * 0.04;
+    if (isZero) continue;  // zero line drawn separately
+    grid += `<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}"
+      stroke="${v > 0 ? 'rgba(52,217,195,.08)' : 'rgba(255,59,59,.08)'}" stroke-width="1"/>`;
+    const neg = v < 0, a = Math.abs(v);
+    const lbl = (neg ? '−$' : '$') + (a >= 1000 ? (a/1000).toFixed(0)+'K' : Math.round(a));
+    yAxis += `<text x="${PL-8}" y="${y}" text-anchor="end" dominant-baseline="middle"
+      fill="${v > 0 ? 'rgba(52,217,195,.45)' : 'rgba(255,99,99,.45)'}"
+      font-size="10" font-family="var(--fm)">${lbl}</text>`;
+  }
+
+  // ── Zero line — the "water surface" ───────────────────────────────────────
+  const zeroLine = `
+    <!-- Shadow below the surface line for 3D depth -->
+    <line x1="${PL}" y1="${(y0+3).toFixed(1)}" x2="${W-PR}" y2="${(y0+3).toFixed(1)}"
+      stroke="rgba(0,0,0,0.4)" stroke-width="2"/>
+    <!-- Main water surface -->
+    <line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W-PR}" y2="${y0.toFixed(1)}"
+      stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+    <!-- Shimmer highlight on surface -->
+    <line x1="${PL}" y1="${(y0-0.5).toFixed(1)}" x2="${W-PR}" y2="${(y0-0.5).toFixed(1)}"
+      stroke="url(#ngZeroShimmer)" stroke-width="1"/>
+    <!-- $0 label -->
+    <text x="${PL-8}" y="${y0.toFixed(1)}" text-anchor="end" dominant-baseline="middle"
+      fill="rgba(255,255,255,0.55)" font-size="10" font-family="var(--fm)" font-weight="700">$0</text>
+    <!-- ABOVE label -->
+    ${y0 > PT + 20 ? `<text x="${(W-PR-4).toFixed(1)}" y="${(y0-8).toFixed(1)}" text-anchor="end"
+      fill="rgba(52,217,195,.4)" font-size="9" font-family="var(--fm)" letter-spacing=".1em">SURPLUS ▲</text>` : ''}
+    <!-- BELOW label -->
+    ${y0 < PT + cH - 20 ? `<text x="${(W-PR-4).toFixed(1)}" y="${(y0+14).toFixed(1)}" text-anchor="end"
+      fill="rgba(255,59,59,.4)" font-size="9" font-family="var(--fm)" letter-spacing=".1em">DEFICIT ▼</text>` : ''}`;
+
+  // ── Area fills (clipped to above / below zero) ─────────────────────────────
+  const fullPath = `M${firstX},${y0.toFixed(1)} L${pStr} L${lastX},${y0.toFixed(1)} Z`;
+  const areaAbove = `<path d="${fullPath}" fill="url(#ngAboveFill)" clip-path="url(#ngClipAbove)"/>`;
+  const areaBelow = `<path d="${fullPath}" fill="url(#ngBelowFill)" clip-path="url(#ngClipBelow)"/>`;
+
+  // ── Line: draw positive and negative segments separately for color ─────────
+  // Build segment paths by crossing the zero line
+  let posPath = '', negPath = '';
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i+1];
+    // Both positive
+    if (a.v >= 0 && b.v >= 0) {
+      posPath += (posPath ? ' L' : 'M') + `${a.x.toFixed(1)},${a.y.toFixed(1)} L${b.x.toFixed(1)},${b.y.toFixed(1)}`;
+    // Both negative
+    } else if (a.v < 0 && b.v < 0) {
+      negPath += (negPath ? ' L' : 'M') + `${a.x.toFixed(1)},${a.y.toFixed(1)} L${b.x.toFixed(1)},${b.y.toFixed(1)}`;
+    // Crossing zero: interpolate crossing point
+    } else {
+      const t  = Math.abs(a.v) / (Math.abs(a.v) + Math.abs(b.v));
+      const cx = (a.x + t * (b.x - a.x)).toFixed(1);
+      const cy = y0.toFixed(1);
+      if (a.v >= 0) {  // positive → negative
+        posPath += (posPath ? ' L' : 'M') + `${a.x.toFixed(1)},${a.y.toFixed(1)} L${cx},${cy}`;
+        negPath += (negPath ? ' L' : 'M') + `${cx},${cy} L${b.x.toFixed(1)},${b.y.toFixed(1)}`;
+      } else {          // negative → positive
+        negPath += (negPath ? ' L' : 'M') + `${a.x.toFixed(1)},${a.y.toFixed(1)} L${cx},${cy}`;
+        posPath += (posPath ? ' L' : 'M') + `${cx},${cy} L${b.x.toFixed(1)},${b.y.toFixed(1)}`;
+      }
+    }
+  }
+
+  // ── 3D line rendering: shadow + glow + main stroke ────────────────────────
+  let linesSvg = '';
+  if (posPath) {
+    linesSvg += `
+      <path d="${posPath}" fill="none" stroke="rgba(52,217,195,.15)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="${posPath}" fill="none" stroke="#34D9C3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#ngGlowPos)" opacity="0.7"/>
+      <path d="${posPath}" fill="none" stroke="#34D9C3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  if (negPath) {
+    linesSvg += `
+      <path d="${negPath}" fill="none" stroke="rgba(255,59,59,.15)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="${negPath}" fill="none" stroke="#FF5C5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#ngGlowNeg)" opacity="0.7"/>
+      <path d="${negPath}" fill="none" stroke="#FF5C5C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+
+  // ── Data dots with glow and 3D appearance ─────────────────────────────────
+  let dotsSvg = '';
+  pts.forEach(p => {
+    const pos   = p.v >= 0;
+    const col   = pos ? '#34D9C3' : '#FF5C5C';
+    const inner = pos ? 'rgba(180,255,240,.9)' : 'rgba(255,180,180,.9)';
+    const r     = Math.abs(p.v) < span * 0.04 ? 3 : 4;  // smaller dot near zero
+    dotsSvg += `
+      <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r+2.5}" fill="${col}" opacity="0.18" filter="url(#ngDotGlow)"/>
+      <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}" fill="${col}" opacity="0.9"/>
+      <circle cx="${p.x.toFixed(1)}" cy="${(p.y-r*0.35).toFixed(1)}" r="${(r*0.4).toFixed(1)}" fill="${inner}" opacity="0.6"/>`;
+  });
+
+  // ── X-axis labels ──────────────────────────────────────────────────────────
+  const step = Math.ceil(n / Math.max(1, Math.floor(cW / 52)));
+  let xAxis = '';
+  labels.forEach((lbl, i) => {
+    if (i % step !== 0 && i !== n-1) return;
+    const x = xOf(i).toFixed(1);
+    xAxis += `<text x="${x}" y="${H-4}" text-anchor="middle"
+      fill="rgba(255,255,255,.38)" font-size="10" font-family="var(--fm)">${lbl}</text>`;
+  });
+
+  // ── Hit areas for tooltips ─────────────────────────────────────────────────
+  let hits = '';
+  const slotW = n > 1 ? cW / (n-1) : cW;
+  pts.forEach((p, i) => {
+    const pos   = p.v >= 0;
+    const a     = Math.abs(p.v);
+    const valFmt = (a >= 1000 ? '$'+(a/1000).toFixed(1)+'K' : '$'+Math.round(a));
+    const tip   = `${labels[i]}|Net: ${pos?'+':'−'}${valFmt} ${pos?'surplus':'deficit'}`;
+    const sw    = Math.max(slotW * 0.9, 14);
+    hits += `<rect x="${(p.x-sw/2).toFixed(1)}" y="${PT}" width="${sw.toFixed(1)}" height="${cH}"
+      fill="transparent" data-tip="${tip.replace(/'/g,'&#39;')}" style="cursor:crosshair;"/>`;
+  });
+
+  // ── Assemble ───────────────────────────────────────────────────────────────
+  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"
+    style="width:100%;height:${H}px;display:block;overflow:visible;">
+    ${defs}
+    ${grid}
+    ${areaBelow}${areaAbove}
+    ${zeroLine}
+    ${linesSvg}
+    ${dotsSvg}
+    ${yAxis}${xAxis}
+    ${hits}
+  </svg>`;
+  bindChartTips(el);
+}
+
+
 function renderCashFlow() {
   try {
   if (!txns.length) return;
@@ -4963,9 +5281,7 @@ function renderCashFlow() {
     { label:'Income',   data:md.income,   backgroundColor:'rgba(45,212,191,.75)' },
     { label:'Expenses', data:md.expenses, backgroundColor:'rgba(248,113,113,.75)' },
   ]);
-  svgLine('cfLineWrap', md.labels, [
-    { data:net, color:'#60A5FA', fill:true, label:'Net' }
-  ]);
+  renderNetSavingsChart('cfLineWrap', md.labels, net);
 
   // Waterfall: cumulative flow from income through each spending category
   (function() {
@@ -5009,6 +5325,7 @@ function renderCashFlow() {
     console.error('[Forge] renderCashFlow error:', e);
     const _el = document.getElementById('cfBarWrap');
     if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--neg);font-family:var(--fm);font-size:12px;">⚠ Render error in renderCashFlow: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+  renderMasterRecon('recon-cashflow', (operatingSpendable(txns).map(t=>t.date.slice(0,7)).sort().reverse()[0] || new Date().toISOString().slice(0,7)), {isData:null});
   }
 }
 
@@ -8813,12 +9130,13 @@ function renderISTrend(passedMonth) {
 
     // Normalized income for current month
     let income = mIn.reduce((s,t)=>s+t.amount, 0);
-    if (isCurrentMo && income === 0) {
+    if (isCurrentMo) {
       try {
         const accrual = buildAccrualEngine && buildAccrualEngine(mo, sp);
         if (accrual && accrual.normalizeIncome) {
           const norm = accrual.normalizeIncome();
-          if (norm.earlyMonth) income = norm.normalPaycheck;
+          if (norm && norm.normalizedIncome > 0) income = norm.normalizedIncome;
+          else if (norm && norm.earlyMonth) income = norm.normalPaycheck;
         }
       } catch(e) {}
     }
@@ -9095,7 +9413,7 @@ function renderISTrend(passedMonth) {
   // ── Dispatch ──────────────────────────────────────────────────────
   let chartHtml = '';
   if      (isTrendType === 'trellis') chartHtml = renderTrellis();
-  else if (isTrendType === 'slope')   chartHtml = renderSlope();
+  // slope removed
   else if (isTrendType === 'waffle')  chartHtml = renderWaffle();
   else chartHtml = `<div style="padding:8px 8px 4px;position:relative;" id="isTrendChartArea">
     ${renderStack()}
@@ -9757,6 +10075,28 @@ function renderIncomeStatement() {
   // Clear separate chart container; bar is now inline
   (function(){ var tw=document.getElementById("isTrendWrap"); if(tw) tw.innerHTML=""; })();
 
+  // ── Break-even indicator ────────────────────────────────────────────────
+  {
+    const _broke = !onTrack;
+    const _col   = _broke ? C.neg : netRemaining < 50 ? C.gold : C.pos;
+    const _emoji = _broke ? '🔴' : netRemaining < 50 ? '🟡' : '🟢';
+    const _label = isInFlight
+      ? (_broke ? 'On pace to be '+kfmt(Math.abs(netRemaining))+' over budget'
+                : netRemaining<50?'Essentially break-even':'On pace for '+kfmt(netRemaining)+' surplus')
+      : (_broke ? 'Closed '+kfmt(Math.abs(netRemaining))+' over budget'
+                : netRemaining<50?'Closed break-even':'Closed with '+kfmt(netRemaining)+' surplus');
+    out += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;'
+         + 'border-radius:var(--r-lg);margin-bottom:10px;border:1px solid rgba(255,255,255,.08);'
+         + 'background:'+(_broke?'rgba(248,113,113,.09)':netRemaining<50?'rgba(245,168,0,.08)':'rgba(52,217,195,.07)')+';">'
+         + '<div style="display:flex;align-items:center;gap:8px;">'
+           + '<span style="font-size:16px;">'+_emoji+'</span>'
+           + '<span style="font-size:13px;color:'+_col+';font-weight:600;">'+_label+'</span>'
+         + '</div>'
+         + '<div style="font-size:24px;font-weight:700;font-family:var(--fd);color:'+_col+';">'
+           + (_broke?'−':'+') + kfmt(Math.abs(netRemaining))
+         + '</div></div>';
+  }
+
   // ── Inline Budget Pressure Bar ─────────────────────────────────────────
   {
     var _i=totalIncome>0?totalIncome:(earlyMonthIS?normPaycheck:0);
@@ -10142,120 +10482,86 @@ function renderIncomeStatement() {
   }
 
   // ── Reconciliation — income/expense tie-out to Quicken ─────────────────
-  var _reconId = "isr-"+selMonth.replace("-","");
-  var _RTYPES  = new Set(["checking","savings","credit"]);
-
-  // Account balances (cumulative through end of month, Quicken rows only)
-  var _rb = {};
+  // ── Reconciliation ────────────────────────────────────────────────────────
+  var _reconId  = 'isr-'+selMonth.replace('-','');
+  var _RTYPES   = new Set(['checking','savings','credit']);
+  var _TYPE_LBL = {checking:'Checking', savings:'Savings', credit:'Credit Cards'};
+  var _raccts   = {};
   txns.forEach(function(t) {
-    if (!_RTYPES.has(detectAcctType(t.account||""))) return;
-    if (t.date > selMonth+"-31") return;
-    var src = t._source||"";
-    if (["apple_card","amazon_orders","home_depot","venmo"].indexOf(src) >= 0) return;
-    _rb[t.account] = (_rb[t.account]||0) + t.amount;
-  });
-  var _rA = Object.keys(_rb).filter(function(a){ return Math.abs(_rb[a])>0.005; })
-    .map(function(a){ return {a:a, b:_rb[a], tp:detectAcctType(a)}; })
-    .sort(function(x,y){
-      return ({checking:0,savings:1,credit:2}[x.tp]||3) - ({checking:0,savings:1,credit:2}[y.tp]||3);
-    });
-  var _rT  = _rA.reduce(function(s,x){ return s+x.b; }, 0);
-  var _rTF = (_rT>=0?"+":"-") + kfmt(Math.abs(_rT));
-  var _rTC = _rT>=0 ? C.pos : C.neg;
-
-  // Quicken income and expense for this month (for IS math section)
-  var _qkIncome   = 0;
-  var _qkExpense  = 0;
-  var _suppressed = 0;
-  var _detailCount= 0;
-  txns.forEach(function(t) {
-    if (!t.date.startsWith(selMonth)) return;
-    if (_isDetailRow(t)) { _detailCount++; return; }  // use same helper as expense pipeline
-    if (!_RTYPES.has(detectAcctType(t.account||""))) return;
-    if (t._masked) { _suppressed++; return; }
-    var ft = _lumpFtype(t);
-    if (ft && _hasDetailForMonth[ft]) { _suppressed++; return; }
-    if (isTransfer(t)) return;
-    if (t.amount > 0 && classifyTxn(t) === "paycheck") _qkIncome += t.amount;
-    if (t.amount < 0) _qkExpense += Math.abs(t.amount);
-  });
-  var _isExpense = totalFixed + totalVar;
-  var _isDelta   = Math.abs(_isExpense - _qkExpense);
-
-  var reconHtml = (function(){
-    var h = "";
-    h += "<div style=\"background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;\">";
-
-    // Collapsed header
-    h += "<div class=\"frh\" data-rb=\"" + _reconId + "\" style=\"display:flex;align-items:center;justify-content:space-between;padding:8px 14px;cursor:pointer;user-select:none;\">";
-    h +=   "<span style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);\">Verify in Quicken</span>";
-    h +=   "<div style=\"display:flex;align-items:center;gap:8px;\"><span style=\"font-size:13px;font-weight:700;font-family:var(--fm);color:" + _rTC + ";\">" + _rTF + "</span><span class=\"frh-c\" style=\"font-size:11px;color:var(--ink4);\">&#9654;</span></div>";
-    h += "</div>";
-
-    // Body
-    h += "<div id=\"" + _reconId + "\" style=\"display:none;border-top:1px solid rgba(255,255,255,.07);\">";
-
-    // SECTION A: Account balances
-    h += "<div style=\"padding:7px 14px 5px;\">";
-    h +=   "<div style=\"font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;\">A. Account Balances</div>";
-    h +=   "<div style=\"font-size:11px;color:var(--ink4);margin-bottom:6px;\">Quicken &rarr; Accounts &rarr; <strong style=\"color:var(--ink3);\">" + monthName + "</strong> &rarr; Checking + Savings + Credit Cards &rarr; total should = <strong style=\"color:" + _rTC + ";\">" + _rTF + "</strong></div>";
-    h += "</div>";
-    _rA.forEach(function(x, i) {
-      var tl  = ({checking:"Chk", savings:"Sav", credit:"CC"})[x.tp] || x.tp;
-      var col = x.tp==="credit" ? (x.b<0?C.neg:"var(--ink3)") : (x.b>=0?C.ink2:C.neg);
-      var val = (x.b<0?"(":"") + mfmt(Math.abs(x.b)) + (x.b<0?")":"");
-      h += "<div style=\"display:grid;grid-template-columns:28px 1fr 80px;align-items:center;padding:4px 14px;border-top:1px solid rgba(255,255,255,.028);background:" + (i%2?"rgba(255,255,255,.012)":"transparent") + ";\">";
-      h +=   "<span style=\"font-size:10px;color:var(--ink4);font-family:var(--fm);\">" + tl + "</span>";
-      h +=   "<span style=\"font-size:12px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;\">" + x.a + "</span>";
-      h +=   "<span style=\"font-size:12px;font-weight:600;font-family:var(--fm);color:" + col + ";text-align:right;\">" + val + "</span>";
-      h += "</div>";
-    });
-    h += "<div style=\"display:grid;grid-template-columns:28px 1fr 80px;align-items:center;padding:5px 14px;border-top:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);\"><span></span><span style=\"font-size:12px;font-weight:700;color:var(--ink);\">Net position</span><span style=\"font-size:14px;font-weight:700;font-family:var(--fm);color:" + _rTC + ";text-align:right;\">" + _rTF + "</span></div>";
-
-    // SECTION B: Income/Expense tie-out
-    h += "<div style=\"padding:10px 14px;border-top:1px solid rgba(255,255,255,.08);\">";
-    h +=   "<div style=\"font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;\">B. Income &amp; Expense Tie-Out</div>";
-    h +=   "<div style=\"font-size:11px;color:var(--ink4);margin-bottom:8px;\">Quicken &rarr; Reports &rarr; Income &amp; Expense &rarr; <strong style=\"color:var(--ink3);\">" + monthName + "</strong></div>";
-    // Income row
-    h += "<div style=\"display:grid;grid-template-columns:1fr 80px 80px;gap:4px;font-size:11px;font-family:var(--fm);margin-bottom:3px;\">";
-    h +=   "<span style=\"color:var(--ink4);\">Income (Quicken)</span><span style=\"color:var(--pos);text-align:right;\">+" + kfmt(_qkIncome) + "</span><span></span>";
-    h += "</div>";
-    h += "<div style=\"display:grid;grid-template-columns:1fr 80px 80px;gap:4px;font-size:11px;font-family:var(--fm);margin-bottom:3px;\">";
-    h +=   "<span style=\"color:var(--ink4);\">Income (IS)</span><span style=\"color:var(--pos);text-align:right;\">+" + kfmt(totalIncome) + "</span>";
-    var incDiff = Math.abs(_qkIncome - totalIncome);
-    h +=   "<span style=\"font-size:10px;text-align:right;color:" + (incDiff < 1 ? C.pos : C.neg) + ";\">" + (incDiff < 1 ? "&#10003;" : "&#916;" + kfmt(incDiff)) + "</span>";
-    h += "</div>";
-    h += "<div style=\"height:6px;\"></div>";
-    // Expense row
-    h += "<div style=\"display:grid;grid-template-columns:1fr 80px 80px;gap:4px;font-size:11px;font-family:var(--fm);margin-bottom:3px;\">";
-    h +=   "<span style=\"color:var(--ink4);\">Expenses (Quicken)</span><span style=\"color:var(--neg);text-align:right;\">-" + kfmt(_qkExpense) + "</span><span></span>";
-    h += "</div>";
-    h += "<div style=\"display:grid;grid-template-columns:1fr 80px 80px;gap:4px;font-size:11px;font-family:var(--fm);margin-bottom:3px;\">";
-    h +=   "<span style=\"color:var(--ink4);\">Expenses (IS)</span><span style=\"color:var(--neg);text-align:right;\">-" + kfmt(_isExpense) + "</span>";
-    h +=   "<span style=\"font-size:10px;text-align:right;color:" + (_isDelta < 1 ? C.pos : C.neg) + ";\">" + (_isDelta < 1 ? "&#10003;" : "&#916;" + kfmt(_isDelta)) + "</span>";
-    h += "</div>";
-    // Unmasking note if applicable
-    if (_suppressed > 0 || _detailCount > 0) {
-      h += "<div style=\"margin-top:7px;padding:6px 8px;background:rgba(96,165,250,.07);border-radius:5px;font-size:10px;color:" + C.river + ";\">";
-      h +=   "&#128279; " + _suppressed + " Quicken lump-sum charge" + (_suppressed!==1?"s":"") + " replaced by " + _detailCount + " item-level detail rows. Quicken expenses will be higher than IS expenses by the lump-sum amounts; IS expenses reflect the unmasked item breakdown.";
-      h += "</div>";
+    var tp = detectAcctType(t.account||'');
+    if (!_RTYPES.has(tp)) return;
+    if (t.itemDetail) return;
+    var src = t._source||'';
+    if (['apple_card','amazon_orders','home_depot','venmo'].indexOf(src)>=0) return;
+    var a = t.account;
+    if (!_raccts[a]) _raccts[a] = {name:a, type:tp, open:0, income:0, charges:0};
+    if (t.date < selMonth+'-01')        _raccts[a].open    += t.amount;
+    else if (t.date <= selMonth+'-31') {
+      if (t.amount > 0) _raccts[a].income  += t.amount;
+      else              _raccts[a].charges += Math.abs(t.amount);
     }
-    h += "</div>";
+  });
+  var _rgroups = {checking:[], savings:[], credit:[]};
+  Object.values(_raccts).forEach(function(a) { if(_rgroups[a.type]) _rgroups[a.type].push(a); });
+  ['checking','savings','credit'].forEach(function(tp) {
+    _rgroups[tp].sort(function(a,b){ return a.name.localeCompare(b.name); });
+  });
 
-    // SECTION C: IS Math (compact)
-    h += "<div style=\"padding:8px 14px 10px;border-top:1px solid rgba(255,255,255,.06);\">";
-    h +=   "<div style=\"font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;\">C. IS Math</div>";
-    h +=   "<div style=\"display:flex;flex-direction:column;gap:2px;font-size:11px;font-family:var(--fm);\">";
-    h +=     "<div style=\"display:flex;justify-content:space-between;\"><span style=\"color:var(--ink4);\">Paychecks</span><span style=\"color:var(--pos);\">+" + kfmt(totalIncome) + "</span></div>";
-    if (totalAutoSave>0) h += "<div style=\"display:flex;justify-content:space-between;\"><span style=\"color:var(--ink4);\">Pre-saved</span><span style=\"color:var(--river);\">&minus;" + kfmt(totalAutoSave) + "</span></div>";
-    h +=     "<div style=\"display:flex;justify-content:space-between;\"><span style=\"color:var(--ink4);\">Fixed</span><span style=\"color:var(--neg);\">&minus;" + kfmt(totalFixed) + "</span></div>";
-    h +=     "<div style=\"display:flex;justify-content:space-between;\"><span style=\"color:var(--ink4);\">Variable</span><span style=\"color:var(--gold);\">&minus;" + kfmt(totalVar) + "</span></div>";
-    if (totalDraw>0) h += "<div style=\"display:flex;justify-content:space-between;\"><span style=\"color:var(--neg);\">Savings draw</span><span style=\"color:var(--neg);\">+" + kfmt(totalDraw) + "</span></div>";
-    h +=     "<div style=\"display:flex;justify-content:space-between;padding-top:4px;border-top:1px solid rgba(255,255,255,.08);margin-top:2px;\"><span style=\"color:var(--ink);font-weight:600;\">Net</span><span style=\"color:" + (onTrack?C.pos:C.neg) + ";font-weight:700;\">" + (netRemaining>=0?"+":"-") + kfmt(Math.abs(netRemaining)) + "</span></div>";
-    h +=   "</div>";
-    h += "</div>";
-
-    h += "</div></div>";
+  var reconHtml = (function buildRecon(){
+    var h = '';
+    h += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">';
+    h += '<div class="frh" data-rb="'+_reconId+'" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;cursor:pointer;user-select:none;">';
+    h +=   '<span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Quicken Tie-Out &mdash; '+monthName+'</span>';
+    h +=   '<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:var(--ink4);font-family:var(--fm);">verify in Quicken</span><span class="frh-c" style="font-size:11px;color:var(--ink4);">&#9654;</span></div>';
+    h += '</div>';
+    h += '<div id="'+_reconId+'" style="display:none;border-top:1px solid rgba(255,255,255,.07);">';
+    h += '<div style="display:grid;grid-template-columns:1fr 72px 72px 76px 80px;gap:4px;padding:4px 14px;border-bottom:1px solid rgba(255,255,255,.08);">';
+    h +=   '<span style="font-size:9px;font-weight:700;color:var(--ink4);">Account</span>';
+    h +=   '<span style="font-size:9px;font-weight:700;color:var(--ink4);text-align:right;">Open</span>';
+    h +=   '<span style="font-size:9px;font-weight:700;color:var(--pos);text-align:right;">In</span>';
+    h +=   '<span style="font-size:9px;font-weight:700;color:var(--neg);text-align:right;">Out</span>';
+    h +=   '<span style="font-size:9px;font-weight:700;color:var(--ink2);text-align:right;">Close</span>';
+    h += '</div>';
+    ['checking','savings','credit'].forEach(function(tp) {
+      var grp = _rgroups[tp];
+      if (!grp || !grp.length) return;
+      h += '<div style="padding:3px 14px 2px;background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.06);">';
+      h +=   '<span style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">'+_TYPE_LBL[tp]+'</span>';
+      h += '</div>';
+      var tO=0,tI=0,tX=0;
+      grp.forEach(function(a,i) {
+        var close = a.open + a.income - a.charges;
+        tO+=a.open; tI+=a.income; tX+=a.charges;
+        var closeCol = tp==='credit'?(close<0?C.neg:'var(--ink3)'):(close>=0?C.ink2:C.neg);
+        h += '<div style="display:grid;grid-template-columns:1fr 72px 72px 76px 80px;gap:4px;align-items:center;padding:3px 14px;border-top:1px solid rgba(255,255,255,.028);background:'+(i%2?'rgba(255,255,255,.012)':'transparent')+'">';
+        h +=   '<span style="font-size:11px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+a.name+'</span>';
+        h +=   '<span style="font-size:11px;font-family:var(--fm);color:var(--ink4);text-align:right;">'+mfmt(a.open)+'</span>';
+        h +=   '<span style="font-size:11px;font-family:var(--fm);color:'+(a.income>0?'var(--pos)':'var(--ink4)')+';text-align:right;">'+(a.income>0?'+'+mfmt(a.income):'&mdash;')+'</span>';
+        h +=   '<span style="font-size:11px;font-family:var(--fm);color:'+(a.charges>0?'var(--neg)':'var(--ink4)')+';text-align:right;">'+(a.charges>0?'&minus;'+mfmt(a.charges):'&mdash;')+'</span>';
+        h +=   '<span style="font-size:12px;font-weight:600;font-family:var(--fm);color:'+closeCol+';text-align:right;">'+mfmt(close)+'</span>';
+        h += '</div>';
+      });
+      var tC=tO+tI-tX;
+      h += '<div style="display:grid;grid-template-columns:1fr 72px 72px 76px 80px;gap:4px;align-items:center;padding:3px 14px;border-top:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);">';
+      h +=   '<span style="font-size:11px;font-weight:700;color:var(--ink);">'+_TYPE_LBL[tp]+' total</span>';
+      h +=   '<span style="font-size:11px;font-family:var(--fm);color:var(--ink3);text-align:right;">'+mfmt(tO)+'</span>';
+      h +=   '<span style="font-size:11px;font-family:var(--fm);color:var(--pos);text-align:right;">+'+mfmt(tI)+'</span>';
+      h +=   '<span style="font-size:11px;font-family:var(--fm);color:var(--neg);text-align:right;">&minus;'+mfmt(tX)+'</span>';
+      h +=   '<span style="font-size:13px;font-weight:700;font-family:var(--fm);color:var(--ink);text-align:right;">'+mfmt(tC)+'</span>';
+      h += '</div>';
+    });
+    h += '<div style="padding:8px 14px 10px;border-top:1px solid rgba(255,255,255,.08);">';
+    h +=   '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;">IS Summary</div>';
+    h +=   '<div style="display:grid;grid-template-columns:1fr auto;gap:2px;font-size:11px;font-family:var(--fm);">';
+    h +=     '<span style="color:var(--ink4);">Gross pay</span><span style="color:var(--pos);text-align:right;">+'+kfmt(totalIncome)+'</span>';
+    if(totalAutoSave>0){h+='<span style="color:var(--ink4);">Pre-saved</span><span style="color:var(--river);text-align:right;">&minus;'+kfmt(totalAutoSave)+'</span>';}
+    h +=     '<span style="color:var(--ink4);">Fixed</span><span style="color:var(--neg);text-align:right;">&minus;'+kfmt(totalFixed)+'</span>';
+    h +=     '<span style="color:var(--ink4);">Variable</span><span style="color:var(--gold);text-align:right;">&minus;'+kfmt(totalVar)+'</span>';
+    if(totalDraw>0){h+='<span style="color:var(--neg);">Savings draw</span><span style="color:var(--neg);text-align:right;">+'+kfmt(totalDraw)+'</span>';}
+    h +=     '<div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,.08);margin:3px 0;"></div>';
+    h +=     '<span style="color:var(--ink);font-weight:600;">Net</span>';
+    h +=     '<span style="font-size:13px;font-weight:700;color:'+(onTrack?C.pos:C.neg)+';text-align:right;">'+(netRemaining>=0?'+':'&minus;')+kfmt(Math.abs(netRemaining))+'</span>';
+    h +=   '</div></div></div></div>';
     return h;
   })();
 
@@ -10301,6 +10607,9 @@ function renderIncomeStatement() {
   </div>`;
 
   el.innerHTML = out;
+  // Recon container on Income tab is rendered inline in `out` via reconHtml variable
+  // Also update the standalone recon-income container (for consistency with other tabs)
+  renderMasterRecon('recon-income', selMonth);
 
   } catch(e) {
     console.error('[IS] render error:', e);
@@ -10483,6 +10792,7 @@ function renderCreditFlow() {
     console.error('[Forge] renderCreditFlow error:', e);
     const _el = document.getElementById('creditFlowContent');
     if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--neg);font-family:var(--fm);font-size:12px;">⚠ Render error in renderCreditFlow: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+  renderMasterRecon('recon-creditflow', (operatingSpendable(txns).map(t=>t.date.slice(0,7)).sort().reverse()[0] || new Date().toISOString().slice(0,7)), {isData:null});
   }
 }
 
@@ -11123,6 +11433,7 @@ function renderBalanceSheet() {
   out += '</div>';
 
   el.innerHTML = out;
+  renderMasterRecon('recon-balancesheet', (operatingSpendable(txns).map(t=>t.date.slice(0,7)).sort().reverse()[0] || new Date().toISOString().slice(0,7)), {isData:null});
 }
 
 // ════════════════════════════════════════════════
