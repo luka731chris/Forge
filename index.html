@@ -3846,29 +3846,36 @@ function svgBar(elId, labels, datasets, opts) {
   const allVals = datasets.flatMap(d => d.data || []).filter(v => isFinite(v));
   if (!allVals.length) return;
 
-  // Dynamic scale: bars need zero baseline, 15% span headroom above tallest
-  const _sbAll = allVals.filter(isFinite);
-  const _sbMax = _sbAll.length ? Math.max.apply(null,_sbAll.map(Math.abs)) : 1;
-  const _sbMin = _sbAll.length ? Math.min.apply(null,_sbAll) : 0;
-  const _sbSc  = computeScale(_sbAll, { showZero:true, padPct:0.15 });
+  // Dynamic scale with smart zero + nice ticks
+  const _sbSc  = computeScale(allVals, { showZero:true, padPct:0.15 });
   const maxV   = _sbSc.maxV;
   const minV   = _sbSc.minV;
   const span   = _sbSc.span;
-  const zeroY  = cH * (maxV / span);  // pixel y for zero
+  const zeroY  = cH * (maxV / span);
 
-  // Y grid + labels
-  const YTICKS = 4;
-  let grid = '', yLbls = '';
-  for (let i = 0; i <= YTICKS; i++) {
-    const v = minV + (span / YTICKS) * i;
-    const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
-    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
-    const _neg = v < 0;
-    const _a = Math.abs(v);
-    const lbl = (_neg ? '−$' : '$') + (_a>=1000 ? (_a/1000).toFixed(0)+'K' : Math.round(_a));
-    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="10" font-family="'DM Mono',monospace">${lbl}</text>`;
+  let grid = '', yLbls = '', truncNote = '';
+  (_sbSc.ticks || []).forEach(function(v) {
+    var y   = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
+    var isZ = Math.abs(v) < span * 0.015;
+    if (parseFloat(y) < PAD.t - 4 || parseFloat(y) > PAD.t + cH + 4) return;
+    grid += '<line x1="'+PAD.l+'" y1="'+y+'" x2="'+(W-PAD.r)+'" y2="'+y+'"'
+         + ' stroke="'+(isZ?'rgba(255,255,255,.55)':'rgba(255,255,255,.06)')+'"'
+         + ' stroke-width="'+(isZ?2:1)+'"/>';
+    if (isZ) {
+      grid += '<line x1="'+PAD.l+'" y1="'+(parseFloat(y)+2)+'" x2="'+(W-PAD.r)+'" y2="'+(parseFloat(y)+2)+'"'
+           + ' stroke="rgba(0,0,0,.35)" stroke-width="2"/>';
+    }
+    var neg = v < 0, av = Math.abs(v);
+    var lbl = (neg?'−$':'$') + (av>=1000?(av/1000).toFixed(1).replace(/\.0$/,'')+'K':Math.round(av));
+    yLbls += '<text x="'+(PAD.l-6)+'" y="'+y+'" text-anchor="end" dominant-baseline="middle"'
+          + ' fill="'+(isZ?'rgba(255,255,255,.65)':'rgba(255,255,255,.38)')+'"'
+          + ' font-size="10" font-family="var(--fm)"'+(isZ?' font-weight="700"':'')+'>'+lbl+'</text>';
+  });
+  if (_sbSc.truncated) {
+    truncNote = '<text x="'+PAD.l+'" y="'+(PAD.t+cH+12)+'" text-anchor="start"'
+              + ' fill="rgba(255,255,255,.28)" font-size="9" font-family="var(--fm)" font-style="italic">'
+              + 'axis truncated — $0 not shown</text>';
   }
-
   // Bars + invisible hit areas for tooltip
   const nDS  = datasets.length;
   const grpW = cW / n;
@@ -3941,7 +3948,7 @@ function svgBar(elId, labels, datasets, opts) {
   const zeroLine = `<line x1="${PAD.l}" y1="${(parseFloat(zY)+2).toFixed(1)}" x2="${W-PAD.r}" y2="${(parseFloat(zY)+2).toFixed(1)}" stroke="rgba(0,0,0,.35)" stroke-width="2"/><line x1="${PAD.l}" y1="${zY}" x2="${W-PAD.r}" y2="${zY}" stroke="rgba(255,255,255,.6)" stroke-width="1"/>`;
 
   el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:hidden;">
-    ${_defs2}${grid}${zeroLine}${bars}${yLbls}${xLbls}${legend}${hitAreas}
+    ${_defs2}${grid}${bars}${yLbls}${xLbls}${legend}${truncNote}${hitAreas}
   </svg>`;
   bindChartTips(el);
 }
@@ -3990,17 +3997,22 @@ function svgLine(elId, labels, datasets, opts) {
   });
   defs += `</defs>`;
 
-  // Grid
+  // Grid using nice ticks from computeScale
   let grid = '', yLbls = '';
-  for (let i = 0; i <= 4; i++) {
-    const v = minV + (span / 4) * i;
-    const y = yOf(v).toFixed(1);
-    const isZ = Math.abs(v) < span * 0.04;
-    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="${isZ?'rgba(255,255,255,.6)':'rgba(255,255,255,.05)'}" stroke-width="${isZ?2.5:1}"/>`;
+  (_slSc.ticks || []).forEach(v => {
+    const y   = yOf(v).toFixed(1);
+    const isZ = Math.abs(v) < span * 0.015;
+    if (parseFloat(y) < PAD.t - 4 || parseFloat(y) > PAD.t + cH + 4) return;
+    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}"
+      stroke="${isZ?'rgba(255,255,255,.6)':'rgba(255,255,255,.05)'}"
+      stroke-width="${isZ?2.5:1}"/>`;
+    if (isZ) grid += `<line x1="${PAD.l}" y1="${(parseFloat(y)+2).toFixed(1)}" x2="${W-PAD.r}" y2="${(parseFloat(y)+2).toFixed(1)}" stroke="rgba(0,0,0,.3)" stroke-width="1.5"/>`;
     const neg = v < 0, a = Math.abs(v);
-    const lbl = (neg?'−$':'$') + (a>=1000?(a/1000).toFixed(0)+'K':Math.round(a));
-    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="${isZ?'rgba(255,255,255,.55)':'rgba(255,255,255,.35)'}" font-size="10" font-family="var(--fm)">${lbl}</text>`;
-  }
+    const lbl = (neg?'−$':'$') + (a>=1000?(a/1000).toFixed(1).replace(/\.0$/,'')+'K':Math.round(a));
+    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle"
+      fill="${isZ?'rgba(255,255,255,.65)':'rgba(255,255,255,.38)'}"
+      font-size="10" font-family="var(--fm)" ${isZ?'font-weight="700"':''}>${lbl}</text>`;
+  });
 
   let paths = '', fills = '', dots = '', hitAreas = '';
   datasets.forEach((ds, di) => {
@@ -4166,7 +4178,6 @@ function svgWaterfall(elId, items) {
   allV = allV.filter(isFinite);
   var minV = Math.min.apply(null,[0].concat(allV));
   var maxV = Math.max.apply(null,allV.concat([1]));
-  // Dynamic scale via shared engine (waterfall shows running total)
   var _wfSc = computeScale(allV, { showZero:true, padPct:0.15 });
   maxV = _wfSc.maxV; minV = _wfSc.minV;
   var span = _wfSc.span;
@@ -4186,14 +4197,19 @@ function svgWaterfall(elId, items) {
 
   var grid='',yLbls='',connectors='',bars='',hitAreas='',xLbls='';
 
-  // Grid
-  for(var gi=0;gi<=4;gi++){
-    var gv=minV+span*gi/4, gy=toY(gv).toFixed(1);
-    var isZ=Math.abs(gv)<span*0.04;
-    grid+='<line x1="'+PAD.l+'" y1="'+gy+'" x2="'+(W-PAD.r)+'" y2="'+gy+'" stroke="'+(isZ?'rgba(255,255,255,.2)':'rgba(255,255,255,.05)')+'" stroke-width="'+(isZ?1.5:1)+'"/>';
-    yLbls+='<text x="'+(PAD.l-6)+'" y="'+gy+'" text-anchor="end" dominant-baseline="middle" fill="'+(isZ?'rgba(255,255,255,.55)':'rgba(255,255,255,.3)')+'" font-size="10" font-family="var(--fm)">'+(gv<0?'-':'')+fmtM(gv)+'</text>';
-  }
-
+  // Grid using nice ticks from computeScale
+  (_wfSc.ticks||[]).forEach(function(gv){
+    var gy=toY(gv).toFixed(1);
+    var isZ=Math.abs(gv)<span*0.015;
+    if(parseFloat(gy)<PAD.t-4||parseFloat(gy)>PAD.t+cH+4) return;
+    grid+='<line x1="'+PAD.l+'" y1="'+gy+'" x2="'+(W-PAD.r)+'" y2="'+gy+'"'
+         +' stroke="'+(isZ?'rgba(255,255,255,.6)':'rgba(255,255,255,.05)')+'"'
+         +' stroke-width="'+(isZ?2.5:1)+'"'+'/>';
+    if(isZ){grid+='<line x1="'+PAD.l+'" y1="'+(parseFloat(gy)+2)+'" x2="'+(W-PAD.r)+'" y2="'+(parseFloat(gy)+2)+'" stroke="rgba(0,0,0,.3)" stroke-width="1.5"/>'; }
+    var neg=gv<0,av=Math.abs(gv);
+    var wlbl=(neg?'−$':'$')+(av>=1000?(av/1000).toFixed(1).replace(/\.0$/,'')+'K':Math.round(av));
+    yLbls+='<text x="'+(PAD.l-6)+'" y="'+gy+'" text-anchor="end" dominant-baseline="middle" fill="'+(isZ?'rgba(255,255,255,.65)':'rgba(255,255,255,.35)')+'" font-size="10" font-family="var(--fm)"'+(isZ?' font-weight="700"':'')+'>'+wlbl+'</text>';
+  });
   // Connectors between bars
   for(var ci2=1;ci2<segs.length;ci2++){
     var prev=segs[ci2-1], cur2=segs[ci2];
@@ -5127,25 +5143,67 @@ function buildMonthProjection(curMo, sp) {
 // so data always fills ~75% of the chart area.
 function computeScale(vals, opts) {
   opts = opts || {};
-  var showZero = opts.showZero !== false;   // keep zero in view (default true)
-  var padPct   = opts.padPct   || 0.15;    // breathing room as % of data span
-  var minPad   = opts.minPad   || 0;       // minimum absolute padding
+  var showZero = opts.showZero !== false;
+  var padPct   = opts.padPct != null ? opts.padPct : 0.15;
   var finite   = vals.filter(isFinite);
-  if (!finite.length) return { maxV:1, minV:0, span:1, y0Pct:0 };
+  if (!finite.length) return { maxV:1, minV:0, span:1, y0Pct:0, ticks:[], zero:true };
+
   var dMax  = finite.reduce(function(m,v){ return Math.max(m,v); }, finite[0]);
   var dMin  = finite.reduce(function(m,v){ return Math.min(m,v); }, finite[0]);
-  var dSpan = Math.max(Math.abs(dMax - dMin), minPad || 1);
-  var pad   = Math.max(dSpan * padPct, minPad);
-  var maxV  = dMax + pad;
-  var minV  = dMin - pad;
-  // Pull zero into view if needed (never let it disappear)
-  if (showZero) { maxV = Math.max(maxV, 0); minV = Math.min(minV, 0); }
-  var span  = Math.max(maxV - minV, 1);
-  // y0Pct: where zero sits as fraction from bottom (0=bottom, 1=top)
-  var y0Pct = (0 - minV) / span;
-  return { maxV:maxV, minV:minV, span:span, y0Pct:y0Pct };
-}
+  var dSpan = Math.max(Math.abs(dMax - dMin), 1);
 
+  // Padding: 15% of actual data span — never based on absolute values
+  var pad  = dSpan * padPct;
+  var rawMax = dMax + pad;
+  var rawMin = dMin - pad;
+
+  // Smart zero inclusion:
+  //   Include zero ONLY if it is within 1× the data span of the data range.
+  //   This prevents $7,400–$8,100 income data from being anchored to $0.
+  //   But it always includes zero when data is mixed-sign or near zero.
+  var zeroIncluded = false;
+  if (showZero) {
+    var distToZero = dMin > 0 ? dMin : (dMax < 0 ? Math.abs(dMax) : 0);
+    if (distToZero <= dSpan * 1.0) {   // zero is within 1× span → include it
+      rawMax = Math.max(rawMax, 0);
+      rawMin = Math.min(rawMin, 0);
+      zeroIncluded = true;
+    } else {
+      // Zero is far away — don't pull it in; just ensure sign doesn't flip
+      zeroIncluded = false;
+    }
+  }
+
+  var span = Math.max(rawMax - rawMin, 1);
+
+  // Nice tick generation: find a tick interval that gives 4–6 readable labels
+  function niceTicks(lo, hi) {
+    var range = hi - lo;
+    var rough = range / 5;
+    var mag   = Math.pow(10, Math.floor(Math.log10(rough)));
+    var candidates = [mag * 0.5, mag, mag * 2, mag * 2.5, mag * 5, mag * 10];
+    var interval = candidates.find(function(c){ return range / c >= 3 && range / c <= 7; }) || (range / 5);
+    var start = Math.ceil(lo / interval) * interval;
+    var ticks = [];
+    for (var v = start; v <= hi + interval * 0.01; v += interval) {
+      ticks.push(Math.round(v * 1000) / 1000);
+    }
+    return ticks;
+  }
+
+  var ticks = niceTicks(rawMin, rawMax);
+  var y0Pct = (0 - rawMin) / span;
+
+  return {
+    maxV:         rawMax,
+    minV:         rawMin,
+    span:         span,
+    y0Pct:        y0Pct,
+    ticks:        ticks,
+    zero:         zeroIncluded,
+    truncated:    !zeroIncluded && dMin > 0    // true when axis doesn't start at 0
+  };
+}
 
 // ── Demo detail CSV files (embedded for test build) ──────────────────────────
 // Calling loadDemoDetails() parses these through the live import pipeline,
@@ -5435,22 +5493,21 @@ function renderNetSavingsChart(elId, labels, data, opts) {
     </clipPath>
   </defs>`;
 
-  // ── Grid lines ─────────────────────────────────────────────────────────────
+  // ── Grid lines: use nice ticks from computeScale ───────────────────────────
   let grid = '', yAxis = '';
-  const ticks = 5;
-  for (let i = 0; i <= ticks; i++) {
-    const v = minV + (span / ticks) * i;
-    const y = yOf(v).toFixed(1);
-    const isZero = Math.abs(v) < span * 0.04;
-    if (isZero) continue;  // zero line drawn separately
+  (_sc.ticks || []).forEach(v => {
+    const y   = yOf(v).toFixed(1);
+    const isZ = Math.abs(v) < span * 0.015;
+    if (parseFloat(y) < PT - 4 || parseFloat(y) > PT + cH + 4) return;
+    if (isZ) return;  // zero drawn separately with 3D treatment
+    const pos = v > 0, neg = v < 0, a = Math.abs(v);
     grid += `<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}"
-      stroke="${v > 0 ? 'rgba(52,217,195,.08)' : 'rgba(255,59,59,.08)'}" stroke-width="1"/>`;
-    const neg = v < 0, a = Math.abs(v);
-    const lbl = (neg ? '−$' : '$') + (a >= 1000 ? (a/1000).toFixed(0)+'K' : Math.round(a));
+      stroke="${pos ? 'rgba(52,217,195,.09)' : 'rgba(255,59,59,.09)'}" stroke-width="1"/>`;
+    const lbl = (neg?'−$':'$') + (a>=1000?(a/1000).toFixed(1).replace(/\.0$/,'')+'K':Math.round(a));
     yAxis += `<text x="${PL-8}" y="${y}" text-anchor="end" dominant-baseline="middle"
-      fill="${v > 0 ? 'rgba(52,217,195,.45)' : 'rgba(255,99,99,.45)'}"
+      fill="${pos ? 'rgba(52,217,195,.5)' : 'rgba(255,99,99,.5)'}"
       font-size="10" font-family="var(--fm)">${lbl}</text>`;
-  }
+  });
 
   // ── Zero line — the "water surface" ───────────────────────────────────────
   const zeroLine = `
