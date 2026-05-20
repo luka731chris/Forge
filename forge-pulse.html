@@ -117,6 +117,7 @@ function svgBar(elId, labels, datasets, opts) {
 
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1326,6 +1327,7 @@ function computeScale(vals, opts) {
   var y0Pct = (0 - minV) / span;
   return { maxV:maxV, minV:minV, span:span, y0Pct:y0Pct };
 }
+
 
 
 function detectAcctType(name) {
@@ -2806,6 +2808,7 @@ function svgLine(elId, labels, datasets, opts) {
 
 
 
+
 function svgHBar(elId, labels, values, colors, bucketKeys) {
   const el = document.getElementById(elId);
   if (!el) return;
@@ -2871,6 +2874,7 @@ function svgHBar(elId, labels, values, colors, bucketKeys) {
   el.innerHTML = `<svg width="${W}" height="${H}" style="width:100%;height:${H}px;display:block;">${defs}${rows}</svg>`;
   bindChartTips(el);
 }
+
 
 
 
@@ -2980,6 +2984,401 @@ function svgWaterfall(elId, items) {
   bindChartTips(el);
 }
 
+
+
+
+
+function loadDemo() {
+  // DEMO: The Henderson Family — Glenshaw, PA (Shaler Township / North Hills)
+  // Alex (41, Operations Manager) + Morgan (38, Registered Nurse) + 3 kids ages 9, 6, 3
+  // North Hills suburban family: two cars, heavy driving, chain dining, DIY homeowners
+  // Breakeven household: take-home ~$7,600/mo, expenses ~$7,400-8,100/mo
+  txns=[]; accounts=[]; isDemoMode=true; netWorthOverrides={};
+
+  // ── Accounts (North Hills Community Credit Union) ─────────────────────────
+  const CHK  = 'North Hills Community CU - Checking';
+  const SAV  = 'North Hills Community CU - Savings';
+  const CC1  = 'PNC Cash Rewards Visa';
+  const CC2  = 'Allegheny County Credit Card';
+
+  // ── Employers ─────────────────────────────────────────────────────────────
+  // Alex: Operations Manager at a North Hills manufacturer — $74K gross → $1,978/check
+  // Morgan: RN at AHN Allegheny General, nights/weekends — $68K gross → $1,822/check
+  const EMP1 = 'Pittsburgh Fabrications Co.';
+  const EMP2 = 'AHN Allegheny General Hospital';
+  const A_CHK = 1978.14, A_SAV = 150.00;
+  const M_CHK = 1822.50, M_SAV = 140.00;
+
+  // ── Fixed monthly expenses ─────────────────────────────────────────────────
+  // Glenshaw home, bought 2019 — $198K purchase, current payment on 30yr
+  const FIXED = [
+    { day:'01', payee:'Keystone Federal Mortgage',    amt:1623.00, acct:CHK,  cat:'Home:Mortgage' },
+    { day:'01', payee:'Shaler Township Tax Collector', amt:287.00,  acct:CHK,  cat:'Home:Property Tax' },
+    { day:'03', payee:'Ally Auto Finance',             amt:487.00,  acct:CHK,  cat:'Auto:Loan' },   // Alex — F-150
+    { day:'05', payee:'Ally Auto Finance',             amt:362.00,  acct:CHK,  cat:'Auto:Loan' },   // Morgan — Odyssey
+    { day:'08', payee:'Erie Insurance',                amt:312.00,  acct:CHK,  cat:'Auto:Insurance' },
+    { day:'09', payee:'Northwestern Mutual',           amt:98.00,   acct:CHK,  cat:'Insurance:Life' },
+    { day:'15', payee:'Shaler Area School District',   amt:45.00,   acct:CHK,  cat:'Education:School Fees' },
+    { day:'20', payee:'Comcast Xfinity',               amt:89.00,   acct:CHK,  cat:'Utilities:Internet' },
+    { day:'22', payee:'Verizon Wireless',              amt:187.00,  acct:CHK,  cat:'Utilities:Phone' },
+    { day:'27', payee:'Netflix',                       amt:22.99,   acct:CC1,  cat:'Entertainment' },
+    { day:'27', payee:'Disney+',                       amt:13.99,   acct:CC1,  cat:'Entertainment' },
+    { day:'27', payee:'Hulu',                          amt:17.99,   acct:CC1,  cat:'Entertainment' },
+  ];
+
+  // ── North Hills variable expense pools ────────────────────────────────────
+  // Groceries: Giant Eagle McKnight Rd is primary, Costco monthly, Shop'n Save
+  const GROCERIES = [
+    { p:"Giant Eagle #4391",         lo:95,  hi:218 },
+    { p:"Giant Eagle #4391",         lo:72,  hi:165 },
+    { p:"Giant Eagle #4391",         lo:88,  hi:192 },
+    { p:"Costco McKnight Rd",        lo:195, hi:412 },
+    { p:"Shop 'n Save #47",          lo:48,  hi:108 },
+    { p:"Aldi #132",                 lo:42,  hi:95  },
+    { p:"Sam's Club North Hills",    lo:88,  hi:190 },
+  ];
+
+  // Dining: North Hills pattern — heavy on chains, Eat'n Park is Pittsburgh staple
+  const DINING = [
+    { p:"Eat'n Park #58",            lo:22,  hi:58  },  // Pittsburgh institution
+    { p:"Eat'n Park #58",            lo:18,  hi:45  },
+    { p:"McDonald's North Hills",    lo:12,  hi:32  },
+    { p:"Chick-fil-A McKnight Rd",   lo:16,  hi:44  },
+    { p:"Chick-fil-A McKnight Rd",   lo:14,  hi:38  },
+    { p:"Applebee's Grill + Bar",    lo:38,  hi:88  },
+    { p:"Primanti Bros Millvale",    lo:28,  hi:62  },
+    { p:"Pizza Roma Glenshaw",       lo:24,  hi:52  },
+    { p:"Starbucks McKnight Rd",     lo:8,   hi:24  },
+    { p:"Dunkin Donuts",             lo:6,   hi:18  },
+    { p:"La Tavola North Hills",     lo:48,  hi:112 },
+    { p:"Chipotle Ross Park",        lo:18,  hi:44  },
+    { p:"Panera Bread",              lo:16,  hi:38  },
+  ];
+
+  // Gas: two cars, heavy North Hills driving (no transit, everything by car)
+  const GAS = [
+    { p:"GetGo #2847 McKnight",      lo:65,  hi:108 },
+    { p:"GetGo #2847 McKnight",      lo:60,  hi:95  },
+    { p:"Sunoco North Hills",        lo:58,  hi:99  },
+    { p:"BP Connect Glenshaw",       lo:62,  hi:102 },
+    { p:"Sheetz #287",               lo:55,  hi:94  },
+  ];
+
+  // Needs Category Mapping — North Hills family of 5 version
+  // High volume, diverse enough to clearly demonstrate Category Mapper
+  const UNMAPPED = [
+    { p:"BarkBox",                   lo:29,  hi:29,  monthly:true },
+    { p:"Chewy.com",                 lo:55,  hi:198, monthly:true },
+    { p:"Petco North Hills",         lo:22,  hi:92  },
+    { p:"Pet Supplies Plus",         lo:18,  hi:68  },
+    { p:"Learning Tree Daycare",     lo:420, hi:420, monthly:true }, // 3yo
+    { p:"Great Clips Glenshaw",      lo:14,  hi:22  },
+    { p:"Dollar General #8472",      lo:12,  hi:55  },
+    { p:"Dollar Tree",               lo:10,  hi:42  },
+    { p:"Five Below Ross Park",      lo:15,  hi:68  },
+    { p:"Tuesday Morning",           lo:22,  hi:87  },
+    { p:"Bath & Body Works",         lo:18,  hi:76  },
+    { p:"Hallmark Gold Crown",       lo:8,   hi:28  },
+    { p:"TJ Maxx North Hills",       lo:28,  hi:124 },
+    { p:"HomeGoods Ross Township",   lo:34,  hi:145 },
+    { p:"Party City",                lo:22,  hi:78  },  // 3 birthdays/year
+    { p:"Joann Fabrics",             lo:18,  hi:65  },
+  ];
+
+  // Healthcare: 3 kids = more copays
+  const HEALTH = [
+    { p:"UPMC Children's North",     lo:30,  hi:55  },
+    { p:"AHN Primary Care North Hills", lo:25, hi:45 },
+    { p:"CVS Pharmacy McKnight",     lo:12,  hi:72  },
+    { p:"Walgreens Glenshaw",        lo:15,  hi:58  },
+    { p:"AHN Urgent Care Shaler",    lo:45,  hi:150 },
+    { p:"North Hills Eye Associates", lo:45, hi:120 },
+  ];
+
+  // Kids: 3 kids = soccer + baseball + swim + school stuff
+  const KIDS = [
+    { p:"Shaler Area Youth Sports",  lo:55,  hi:145 },
+    { p:"North Park Athletic Assoc", lo:48,  hi:110 },
+    { p:"Allegheny County Parks",    lo:18,  hi:48  },
+    { p:"Target North Hills",        lo:38,  hi:178 },
+    { p:"Walmart Supercenter",       lo:45,  hi:165 },
+    { p:"Dick's Sporting Goods",     lo:28,  hi:145 },
+    { p:"Old Navy Ross Park",        lo:32,  hi:118 },
+    { p:"Kohl's North Hills",        lo:28,  hi:98  },
+  ];
+
+  // Lump-sum merchants replaced by detail CSVs
+  const AMAZON_LUMPS  = [
+    { lo:95, hi:185 }, { lo:48, hi:112 },
+    { lo:145, hi:310 }, { lo:28, hi:75 },
+  ];
+  const APPLE_LUMPS   = [{ lo:140, hi:380 }];
+  const HD_LUMPS      = [{ lo:180, hi:640 }];  // North Hills homeowners do more projects
+  const LOWES_LUMPS   = [{ lo:120, hi:480 }];
+  const VENMO_LUMPS   = [{ lo:55,  hi:280 }];
+
+  // ── Seeded pseudo-RNG — reproducible every load ───────────────────────────
+  let _s = 20240115;
+  function srng(a, b) {
+    _s = (_s * 1664525 + 1013904223) & 0x7FFFFFFF;
+    return a + ((_s / 0x7FFFFFFF) * (b - a));
+  }
+  function spick(arr) { return arr[Math.floor(srng(0, arr.length))]; }
+  function sround(v)  { return Math.round(v * 100) / 100; }
+  function sfloor(lo, hi) { return Math.floor(srng(lo, hi + 1)); }
+
+  const seen = new Set();
+  function push(t) {
+    const k = [t.date,t.payee,t.amount,t.account].join('|');
+    if (seen.has(k)) return;
+    seen.add(k); txns.push(t);
+  }
+
+  const now   = new Date();
+  const start = new Date(now);
+  start.setFullYear(start.getFullYear() - 3);
+  let cur = new Date(start);
+
+  while (cur <= now) {
+    const yr  = cur.getFullYear();
+    const mo  = String(cur.getMonth()+1).padStart(2,'0');
+    const MO  = yr+'-'+mo;
+    const isNow = (yr===now.getFullYear() && cur.getMonth()===now.getMonth());
+    const moDay = (n) => MO+'-'+String(n).padStart(2,'0');
+
+    // ── Paychecks: biweekly ───────────────────────────────────────────────
+    // Morgan works rotating shifts — occasional pay variation
+    [[EMP1,A_CHK,A_SAV,30],[EMP2,M_CHK,M_SAV,80]].forEach(function(e) {
+      const emp=e[0],chk=e[1],sav=e[2],var_=e[3];
+      const v1=sround(chk+srng(-var_,var_)), v2=sround(chk+srng(-var_,var_));
+      if (!isNow||now.getDate()>=7) {
+        push({date:moDay(7), payee:emp,amount:v1, category:'Income:Salary',account:CHK,memo:'Direct deposit',isTransfer:false});
+        push({date:moDay(7), payee:emp,amount:sav,category:'Income:Salary',account:SAV,memo:'Savings split', isTransfer:false});
+      }
+      if (!isNow||now.getDate()>=21) {
+        push({date:moDay(21),payee:emp,amount:v2, category:'Income:Salary',account:CHK,memo:'Direct deposit',isTransfer:false});
+        push({date:moDay(21),payee:emp,amount:sav,category:'Income:Salary',account:SAV,memo:'Savings split', isTransfer:false});
+      }
+    });
+
+    // ── Fixed expenses ────────────────────────────────────────────────────
+    FIXED.forEach(function(f) {
+      const day=parseInt(f.day);
+      if (isNow&&now.getDate()<day) return;
+      push({date:moDay(day),payee:f.payee,amount:-f.amt,category:f.cat,account:f.acct,memo:'',isTransfer:false});
+    });
+
+    // ── CC payment ────────────────────────────────────────────────────────
+    const ccPay=sround(srng(1200,2100));
+    if (!isNow||now.getDate()>=18)
+      push({date:moDay(18),payee:'PNC Visa Payment',amount:-ccPay,category:'['+CC1+']',account:CHK,memo:'',isTransfer:true});
+
+    // ── Groceries: 4-6 trips (family of 5) ───────────────────────────────
+    for (let i=0;i<sfloor(4,6);i++) {
+      const g=spick(GROCERIES), day=sfloor(1,28);
+      if (isNow&&now.getDate()<day) continue;
+      push({date:moDay(day),payee:g.p,amount:-sround(srng(g.lo,g.hi)),category:'Groceries',account:CC1,memo:'',isTransfer:false});
+    }
+
+    // ── Dining: 5-9x/month ────────────────────────────────────────────────
+    for (let i=0;i<sfloor(5,9);i++) {
+      const g=spick(DINING), day=sfloor(1,28);
+      if (isNow&&now.getDate()<day) continue;
+      push({date:moDay(day),payee:g.p,amount:-sround(srng(g.lo,g.hi)),category:'Dining',account:CC1,memo:'',isTransfer:false});
+    }
+
+    // ── Gas: 4-5 fill-ups (2 cars, lots of driving) ──────────────────────
+    for (let i=0;i<sfloor(4,5);i++) {
+      const g=spick(GAS), day=sfloor(1,28);
+      if (isNow&&now.getDate()<day) continue;
+      push({date:moDay(day),payee:g.p,amount:-sround(srng(g.lo,g.hi)),category:'Transportation:Gas',account:CC1,memo:'',isTransfer:false});
+    }
+
+    // ── Needs-mapping payees: 4-7x/month ─────────────────────────────────
+    UNMAPPED.filter(u=>u.monthly).forEach(function(u) {
+      const day=sfloor(1,25);
+      if (isNow&&now.getDate()<day) return;
+      push({date:moDay(day),payee:u.p,amount:-sround(srng(u.lo,u.hi)),category:'',account:CC1,memo:'',isTransfer:false});
+    });
+    for (let i=0;i<sfloor(3,5);i++) {
+      const u=spick(UNMAPPED.filter(u=>!u.monthly)), day=sfloor(1,28);
+      if (isNow&&now.getDate()<day) continue;
+      push({date:moDay(day),payee:u.p,amount:-sround(srng(u.lo,u.hi)),category:'',account:CC1,memo:'',isTransfer:false});
+    }
+
+    // ── Healthcare: 1-3x/month (3 kids) ──────────────────────────────────
+    for (let i=0;i<sfloor(1,3);i++) {
+      const h=spick(HEALTH), day=sfloor(1,28);
+      if (isNow&&now.getDate()<day) continue;
+      push({date:moDay(day),payee:h.p,amount:-sround(srng(h.lo,h.hi)),category:'Healthcare',account:CC1,memo:'',isTransfer:false});
+    }
+
+    // ── Kids activities: 2-3x/month ───────────────────────────────────────
+    for (let i=0;i<sfloor(2,3);i++) {
+      const k=spick(KIDS), day=sfloor(1,28);
+      if (isNow&&now.getDate()<day) continue;
+      push({date:moDay(day),payee:k.p,amount:-sround(srng(k.lo,k.hi)),category:'Education',account:CC1,memo:'',isTransfer:false});
+    }
+
+    // ── Amazon lump sums ──────────────────────────────────────────────────
+    for (let i=0;i<sfloor(2,4);i++) {
+      const lp=spick(AMAZON_LUMPS), day=sfloor(2,27);
+      if (isNow&&now.getDate()<day) continue;
+      push({date:moDay(day),payee:'Amazon.com',amount:-sround(srng(lp.lo,lp.hi)),category:'Shopping',account:CC1,memo:'',isTransfer:false});
+    }
+
+    // ── Apple Card charge ─────────────────────────────────────────────────
+    { const lp=APPLE_LUMPS[0], day=sfloor(3,8);
+      if (!isNow||now.getDate()>=day)
+        push({date:moDay(day),payee:'Apple Card',amount:-sround(srng(lp.lo,lp.hi)),category:'Shopping',account:CC2,memo:'',isTransfer:false});
+    }
+
+    // ── Home Depot (frequent — North Hills homeowners) ────────────────────
+    if (cur.getMonth()%2===0||srng(0,1)>0.55) {
+      const lp=HD_LUMPS[0], day=sfloor(4,22);
+      if (!isNow||now.getDate()>=day)
+        push({date:moDay(day),payee:'The Home Depot',amount:-sround(srng(lp.lo,lp.hi)),category:'Home:Improvement',account:CC1,memo:'',isTransfer:false});
+    }
+
+    // ── Lowe's (every 2-3 months) ─────────────────────────────────────────
+    if (cur.getMonth()%3===1||srng(0,1)>0.65) {
+      const lp=LOWES_LUMPS[0], day=sfloor(5,22);
+      if (!isNow||now.getDate()>=day)
+        push({date:moDay(day),payee:"Lowe's",amount:-sround(srng(lp.lo,lp.hi)),category:'Home:Improvement',account:CC1,memo:'',isTransfer:false});
+    }
+
+    // ── Venmo (school fundraisers, sports, neighborhood) ─────────────────
+    { const lp=VENMO_LUMPS[0], day=sfloor(7,25);
+      if (!isNow||now.getDate()>=day)
+        push({date:moDay(day),payee:'Venmo',amount:-sround(srng(lp.lo,lp.hi)),category:'Transfer',account:CHK,memo:'',isTransfer:false});
+    }
+
+    cur.setMonth(cur.getMonth()+1);
+  }
+  txns.sort((a,b)=>b.date.localeCompare(a.date));
+  accounts=[...new Set(txns.map(t=>t.account))].sort();
+  acctMeta = {};
+  accounts.forEach(a => {
+    const type = detectAcctType(a);
+    acctMeta[a] = { type, isCreditCard: type === 'credit' };
+  });
+  saveData();
+  updateHeader();
+  renderUploadStatus();
+  toast('⚾ Demo data loaded');
+  showPage('dashboard');
+}
+
+
+
+function loadDemoDetails() {
+  const today = new Date();
+  const mo1   = [today.getFullYear(), String(today.getMonth()+1).padStart(2,'0')].join('-');
+  const d1    = new Date(today); d1.setMonth(d1.getMonth()-1);
+  const mo2   = [d1.getFullYear(), String(d1.getMonth()+1).padStart(2,'0')].join('-');
+  const d2    = new Date(today); d2.setMonth(d2.getMonth()-2);
+  const mo3   = [d2.getFullYear(), String(d2.getMonth()+1).padStart(2,'0')].join('-');
+
+  function moFmt(mo, day) { return (mo.slice(5,7)+'/'+String(day).padStart(2,'0')+'/'+mo.slice(0,4)); }
+
+  // ── Apple Card CSV (last 2 months) ───────────────────────────────────────
+  const appleCSV = [
+    'Transaction Date,Clearing Date,Description,Merchant,Category,Type,Amount (USD)',
+    `${moFmt(mo1,4)},${moFmt(mo1,5)},WHOLEFDS 10183 MTN VIEW,Whole Foods Market,Food & Drink,Purchase,67.84`,
+    `${moFmt(mo1,4)},${moFmt(mo1,5)},NETFLIX.COM,Netflix,Entertainment,Purchase,22.99`,
+    `${moFmt(mo1,6)},${moFmt(mo1,7)},APPLE.COM/BILL,Apple,Shopping,Purchase,9.99`,
+    `${moFmt(mo1,7)},${moFmt(mo1,8)},SQ*EAT'N PARK #58,Eat'n Park,Restaurants,Purchase,48.37`,
+    `${moFmt(mo1,9)},${moFmt(mo1,10)},AMAZON MKTPLACE PMTS,Amazon,Shopping,Purchase,34.99`,
+    `${moFmt(mo1,11)},${moFmt(mo1,12)},STARBUCKS #08432,Starbucks,Coffee,Purchase,12.75`,
+    `${moFmt(mo1,13)},${moFmt(mo1,14)},TARGET 00123,Target,Retail,Purchase,89.14`,
+    `${moFmt(mo1,16)},${moFmt(mo1,17)},SHELL OIL 57445312,Shell,Automotive,Purchase,54.87`,
+    `${moFmt(mo1,18)},${moFmt(mo1,18)},APPLE CARD PAYMENT,Apple Card,Payment,Payment,439.94`,  // filtered by typeSkip
+    `${moFmt(mo1,19)},${moFmt(mo1,20)},PANERA BREAD #4821,Panera Bread,Restaurants,Purchase,32.18`,
+    `${moFmt(mo1,21)},${moFmt(mo1,22)},CVS PHARMACY #9182,CVS Pharmacy,Health,Purchase,28.44`,
+    `${moFmt(mo1,23)},${moFmt(mo1,24)},SPOTIFY USA,Spotify,Entertainment,Purchase,16.99`,
+    `${moFmt(mo2,3)},${moFmt(mo2,4)},WHOLEFDS 10183 MTN VIEW,Whole Foods Market,Food & Drink,Purchase,54.22`,
+    `${moFmt(mo2,5)},${moFmt(mo2,6)},NETFLIX.COM,Netflix,Entertainment,Purchase,22.99`,
+    `${moFmt(mo2,7)},${moFmt(mo2,8)},LOCAL COFFEE CO,Coffee Shop,Coffee,Purchase,8.50`,
+    `${moFmt(mo2,10)},${moFmt(mo2,11)},TARGET 00123,Target,Retail,Purchase,112.67`,
+    `${moFmt(mo2,14)},${moFmt(mo2,15)},SQ*PRIMANTI BROTHERS,Primanti Brothers,Restaurants,Purchase,38.91`,
+    `${moFmt(mo2,18)},${moFmt(mo2,18)},APPLE CARD PAYMENT,Apple Card,Payment,Payment,320.28`,
+    `${moFmt(mo2,19)},${moFmt(mo2,20)},BP CONNECT #7823,BP,Automotive,Purchase,61.33`,
+    `${moFmt(mo2,22)},${moFmt(mo2,23)},SPOTIFY USA,Spotify,Entertainment,Purchase,16.99`,
+    `${moFmt(mo2,25)},${moFmt(mo2,26)},CHICK-FIL-A #02847,Chick-fil-A,Restaurants,Purchase,27.48`,
+  ].join('\n');
+
+  // ── Amazon CSV (Privacy Central format — last 2 months) ──────────────────
+  const amazonCSV = [
+    'ASIN,Order Date,Order ID,Order Status,Shipment Date,Shipping Address,Carrier,Tracking,Product Name,Product Condition,Seller,List Price,Purchase Price,Quantity,Shipment Item Subtotal,Shipment Item Subtotal Tax,Ship To',
+    `B07ZPC9QD4,${mo1}-03T10:22:00Z,112-4821947-0012345,Shipped,${mo1}-05T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456784,Clorox Clean-Up Spray Cleaner 32 oz Pack of 2,New,Amazon.com,12.99,11.47,1,11.47,0.92,Alex Henderson`,
+    `B08N5WRWNW,${mo1}-03T10:22:00Z,112-4821947-0012345,Shipped,${mo1}-05T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456784,Command Picture Hanging Strips Large 14 Pairs,New,Amazon.com,14.98,13.49,1,13.49,1.08,Alex Henderson`,
+    `B07X2XQZYB,${mo1}-08T14:31:00Z,112-7734821-9920134,Shipped,${mo1}-10T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,USPS,9400111899223197214820,Ozzy Kids Backpack 16 inch Elementary School Backpack,New,Ozzy Enterprises,28.99,24.99,1,24.99,2.00,Morgan Henderson`,
+    `B09B8RNKN7,${mo1}-08T14:31:00Z,112-7734821-9920134,Shipped,${mo1}-10T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,USPS,9400111899223197214820,Crayola Broad Line Markers 20 ct Classic Colors,New,Crayola LLC,6.49,5.97,2,11.94,0.96,Morgan Henderson`,
+    `B086QKYKBH,${mo1}-14T09:15:00Z,112-2948301-7712849,Shipped,${mo1}-16T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456785,Simple Modern 40oz Tumbler with Handle and Straw Lid,New,Simple Modern,44.99,34.97,1,34.97,2.80,Alex Henderson`,
+    `B07ZPFL5YS,${mo2}-06T11:40:00Z,112-8820391-4430012,Shipped,${mo2}-08T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456786,Tide PODS Original Laundry Detergent 81 count,New,Procter & Gamble,24.94,18.97,1,18.97,1.52,Alex Henderson`,
+    `B09WX5Q9CJ,${mo2}-06T11:40:00Z,112-8820391-4430012,Shipped,${mo2}-08T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456786,Bounty Quick-Size Paper Towels 12 Double Plus Rolls,New,Procter & Gamble,31.99,27.44,1,27.44,2.20,Alex Henderson`,
+    `B08P4RYNHB,${mo2}-12T16:22:00Z,112-9910283-2231144,Shipped,${mo2}-14T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,USPS,9400111899223197214821,MindWare Qwirkle Board Game Family Strategy Game,New,MindWare,34.99,29.95,1,29.95,2.40,Morgan Henderson`,
+    `B01N5O8J5J,${mo2}-19T09:55:00Z,112-3314890-8871122,Shipped,${mo2}-21T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,Amazon,TBA123456789000,Ninja BL610 Professional 72 Oz Countertop Blender,New,Amazon.com,99.00,79.99,1,79.99,6.40,Alex Henderson`,
+    `B08BX8KBBZ,${mo3}-09T13:11:00Z,112-4401928-3300087,Shipped,${mo3}-11T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456787,LEGO Icons Flower Bouquet Building Set,New,LEGO,49.99,44.97,1,44.97,3.60,Morgan Henderson`,
+    `B00I8BIAG4,${mo3}-09T13:11:00Z,112-4401928-3300087,Shipped,${mo3}-11T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456787,Sharpie Permanent Markers Chisel Tip 12 Pack,New,Sanford,9.99,8.47,1,8.47,0.68,Alex Henderson`,
+    `B09XLNWLQ8,${mo3}-21T10:04:00Z,112-0012847-9934410,Shipped,${mo3}-23T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456788,Waterpik Aquarius Water Flosser Complete Care 5.0,New,Waterpik,99.99,89.97,1,89.97,7.20,Morgan Henderson`,
+  ].join('\n');
+
+  // ── Home Depot Order CSV ──────────────────────────────────────────────────
+  const homeDepotCSV = [
+    'Order Date,Order Number,Items Ordered,Order Total,Status',
+    `${mo2}-11,WC98374827,"(3) 2x6x8 Pressure Treated Lumber @ $8.47 ea",25.41,Delivered`,
+    `${mo2}-11,WC98374827,"(2) 1x4x8 Cedar Fence Picket @ $6.98 ea",13.96,Delivered`,
+    `${mo2}-11,WC98374827,"Rust-Oleum Deck & Fence 1 gal Solid Stain Cedar",42.97,Delivered`,
+    `${mo2}-11,WC98374827,"3 in Zinc-Plated Lag Screw 25-Pack",9.47,Delivered`,
+    `${mo2}-11,WC98374827,"Simpson Strong-Tie 1.5 in Joist Hanger 10-Pack",12.97,Delivered`,
+    `${mo3}-04,WC97112039,"RIDGID 18V Cordless 3/8 in. Drill Driver",129.00,Delivered`,
+    `${mo3}-04,WC97112039,"Dewalt 25 ft Tape Measure",14.97,Delivered`,
+    `${mo3}-04,WC97112039,"(4) 4x4x8 Pressure Treated Post @ $14.97 ea",59.88,Delivered`,
+    `${mo3}-04,WC97112039,"Quikrete 50 lb Fast-Setting Concrete Mix (4 bags) @ $7.47 ea",29.88,Delivered`,
+  ].join('\n');
+
+  // ── Lowe's Order CSV ─────────────────────────────────────────────────────
+  const lowesCSV = [
+    "Order Number,Order Date,Item Description,Qty,Unit Price,Item Total,Status",
+    `847291034,${mo1}-12,Moen Adler Single Handle Kitchen Faucet Spot Resist Stainless,1,129.00,129.00,Delivered`,
+    `847291034,${mo1}-12,PlumbCraft 3/8 in x 1/2 in Braided Stainless Steel Faucet Supply Line 2pk,2,8.48,16.96,Delivered`,
+    `847291034,${mo1}-12,GE Silicone 1 Kitchen and Bath 2.8-oz Clear Silicone Caulk,1,7.48,7.48,Delivered`,
+    `847291034,${mo1}-12,Teflon Thread Seal Tape 3pk,1,3.98,3.98,Delivered`,
+    `829104827,${mo3}-18,American Standard Cadet PRO Toilet Round Front 1.28 GPF,1,248.00,248.00,Delivered`,
+    `829104827,${mo3}-18,Danco Wax Ring with Horn Toilet Wax Ring,1,11.48,11.48,Delivered`,
+    `829104827,${mo3}-18,Korky 2 in Complete Toilet Repair Kit,1,14.98,14.98,Delivered`,
+    `829104827,${mo3}-18,Fluidmaster 400AH Anti-Hump Fill Valve,1,12.48,12.48,Delivered`,
+  ].join('\n');
+
+  // ── Venmo CSV (last 2 months) ─────────────────────────────────────────────
+  const venmoCSV = [
+    'ID,Datetime,Type,Status,Note,From,To,Amount (total),Amount (fee),Tax Amount,Tax Exempt,Funding Source,Destination,Beginning Balance,Ending Balance,Statement Period Venmo Fees,Terminal Location,Year to Date Venmo Fees,Disclaimer',
+    `4821938,${mo1}-04T19:22:00,Payment,Complete,Spring baseball registration,Alex Henderson,Shaler Area Youth Sports,- $85.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821939,${mo1}-09T20:15:00,Payment,Complete,Dinner at Gaucho split,Alex Henderson,Jamie Morrison,- $72.50,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821940,${mo1}-14T12:00:00,Payment,Complete,Book club dues,Morgan Henderson,Shadyside Book Club,- $25.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821941,${mo1}-21T18:44:00,Payment,Complete,Backyard cookout supplies,Alex Henderson,Mike Kowalski,- $45.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821942,${mo2}-03T09:30:00,Payment,Complete,Scholastic book fair,Morgan Henderson,Shaler Primary PTA,- $35.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821943,${mo2}-11T21:10:00,Payment,Complete,Fantasy football league,Alex Henderson,Dave Barton,- $180.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821944,${mo2}-17T13:22:00,Payment,Complete,Swim team YMCA,Morgan Henderson,North Hills YMCA,- $68.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821945,${mo3}-06T20:05:00,Payment,Complete,Steelers watch party food,Alex Henderson,Sean Murphy,- $38.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821946,${mo3}-19T11:45:00,Payment,Complete,Fall carnival tickets,Morgan Henderson,Shaler Primary PTA,- $42.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+  ].join('\n');
+
+  // ── Parse all files through the live import pipeline ─────────────────────
+  const files = [
+    new File([appleCSV],   'apple_card_henderson_recent.csv',  { type:'text/csv' }),
+    new File([amazonCSV],  'Order_History.csv',                { type:'text/csv' }),
+    new File([homeDepotCSV],'home_depot_orders_henderson.csv', { type:'text/csv' }),
+    new File([lowesCSV],   'lowes_orders_henderson.csv',       { type:'text/csv' }),
+    new File([venmoCSV],   'venmo_henderson_2026.csv',         { type:'text/csv' }),
+  ];
+
+  processFiles(files).then(function() {
+    toast('📦 Detail files loaded — Amazon, Apple Card, Home Depot, Lowe\'s & Venmo unmasked');
+    if (document.getElementById('incomeStatement')) renderIncomeStatement();
+  }).catch(function(e) { console.warn('loadDemoDetails error', e); });
+}
 
 
 
@@ -6554,10 +6953,11 @@ function renderNetSavingsChart(elId, labels, data, opts) {
 
 
 
+
 function buildMonthRecon(selMonth) {
   if (!selMonth || !txns.length) return null;
   const RTYPES  = new Set(['checking','savings','credit']);
-  const DETAIL  = new Set(['apple_card','amazon_orders','home_depot','venmo']);
+  const DETAIL  = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
 
   const accts = {};
   txns.forEach(t => {
