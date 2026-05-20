@@ -1214,6 +1214,9 @@ select:focus { border-color: var(--gold); }
     <div class="chart-title">Net Savings Trend</div>
     <div class="chart-area" id="cfLineWrap" style="height:140px;"></div>
   </div>
+  <!-- ── Banking & Draw — core savings discipline panel ── -->
+  <div id="cfBankDrawPanel" style="margin-bottom:16px;"></div>
+
   <div class="chart-card" style="margin-bottom:16px;">
     <div class="chart-title">Annual Waterfall</div>
     <div class="chart-area" id="cfWaterfallWrap" style="height:160px;"></div>
@@ -1440,15 +1443,12 @@ select:focus { border-color: var(--gold); }
 <div id="page-reconcile" class="page">
   <div class="page-hdr">
     <div>
-      <div class="page-title">Register Reconciliation</div>
-      <div class="page-sub" id="reconSub">P&amp;L → Quicken register crosscheck · verify every dollar is in the right month</div>
+      <div class="page-title">Reconciliation Bridge</div>
+      <div class="page-sub" id="reconSub">Single source of truth · trace any number from Quicken to every view in Forge</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
-      <button onclick="document.getElementById('reconHelpModal').style.display='flex'" style="background:transparent;border:1px solid var(--line2);color:var(--ink4);padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;">? How to Fix Discrepancies</button>
       <select id="reconMonth" onchange="renderReconcile()" style="font-size:12px;padding:5px 10px;"></select>
-      <select id="reconAcct" onchange="renderReconcile()" style="font-size:12px;padding:5px 10px;">
-        <option value="all">All Accounts</option>
-      </select>
+      <button onclick="document.getElementById('reconHelpModal').style.display='flex'" style="background:transparent;border:1px solid var(--line2);color:var(--ink4);padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;">? Discrepancy Guide</button>
     </div>
   </div>
   <div id="reconContent"></div>
@@ -2290,147 +2290,164 @@ function cwExportExcel() {
 
 
 function renderReconcile() {
-  const el = document.getElementById('reconContent');
+  var el = document.getElementById('reconContent');
   if (!el) return;
-
   if (!txns.length) {
-    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);font-size:14px;">Import data to use reconciliation.</div>';
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);font-size:14px;">Import Quicken data to use the Reconciliation Bridge.</div>';
     return;
   }
 
-  const moSel = document.getElementById('reconMonth');
-  const sp    = operatingSpendable(txns);
-  const allMonths = [...new Set(sp.map(t=>t.date.slice(0,7)))].sort().reverse();
+  var moSel = document.getElementById('reconMonth');
+  var sp    = operatingSpendable(txns);
+  var allMonths = Array.from(new Set(sp.map(function(t){ return t.date.slice(0,7); }))).sort().reverse();
 
-  // Populate month dropdown
   if (moSel && moSel.options.length === 0) {
-    allMonths.forEach(m => {
-      const [yr,mo] = m.split('-');
-      const opt = document.createElement('option');
+    allMonths.forEach(function(m) {
+      var parts = m.split('-');
+      var opt = document.createElement('option');
       opt.value = m;
-      opt.textContent = new Date(+yr,+mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      opt.textContent = new Date(+parts[0],+parts[1]-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
       moSel.appendChild(opt);
     });
   }
-  const selMonth = (moSel && moSel.value) || allMonths[0];
-  if (!selMonth) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">No data available.</div>'; return; }
+  var selMonth = (moSel && moSel.value) || allMonths[0];
+  if (!selMonth) { el.innerHTML = '<div style="padding:20px;color:var(--ink4);">No data.</div>'; return; }
 
-  const [yr,mo] = selMonth.split('-');
-  const monthName = new Date(+yr,+mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  const prevMo    = allMonths[allMonths.indexOf(selMonth)+1] || null;
+  var parts = selMonth.split('-');
+  var monthName = new Date(+parts[0],+parts[1]-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
 
-  const C = window._C || {
-    ink:'var(--ink)',ink2:'var(--ink2)',ink3:'var(--ink3)',ink4:'var(--ink4)',
-    pos:'var(--pos)',neg:'var(--neg)',gold:'var(--gold)',river:'var(--river)'
-  };
-  function mfmt(n) { const a=Math.abs(n||0); return (n<0?'−':'')+'$'+a.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
-  function kfmt(n) { const a=Math.abs(n||0); return (n<0?'−':'')+(a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a)); }
-  function pct(v,t) { return t>0?(v/t*100).toFixed(1)+'%':'—'; }
+  function mfmt(v) { var a=Math.abs(v||0); return (v<0?'\u2212':'')+'$'+Math.round(a).toLocaleString(); }
+  function kfmt(v) { var a=Math.abs(v||0); var s=a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a); return (v<0?'\u2212':v>0?'+':'')+s; }
 
-  // ── Build IS summary for the selected month ──────────────────────────────
-  // Compute from txns directly (mirrors IS logic without re-rendering IS)
-  const OPER   = new Set(['checking','savings','credit']);
-  const DETAIL = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
-  const monthSp = sp.filter(t => t.date.startsWith(selMonth) && OPER.has(detectAcctType(t.account||'')));
-  const UNMASK_PAT2 = {
-    amazon_orders:/\bamazon\b/i, home_depot:/\bhome.?depot\b/i,
-    lowes:/\blow.?es\b|\blowes\b/i,
-    venmo:/\bvenmo\b/i, apple_card:/\bapple\b|\bapple.?card\b/i
-  };
-  const hasDetailMo = {};
-  txns.filter(t => (t.itemDetail||DETAIL.has(t._source||t._ftype||'')) && t.date.startsWith(selMonth) && t.amount<0).forEach(t => {
-    hasDetailMo[t._source||t._ftype||'det'] = true;
+  // ── Gather Quicken source numbers for this month ──────────────────────────
+  var DETAIL = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+  var qkData = { income:0, expenses:0, savXferOut:0, savXferIn:0, ccPayments:0,
+                 chkOpen:0, chkClose:0, savOpen:0, savClose:0, ccOpen:0, ccClose:0 };
+  var chkAccts = {}, savAccts = {}, ccAccts = {};
+  txns.forEach(function(t) {
+    if (t.itemDetail || DETAIL.has(t._source||t._ftype||'')) return;
+    var tp = detectAcctType(t.account||'');
+    if (!tp || !['checking','savings','credit'].includes(tp)) return;
+    var bucket = tp==='checking' ? chkAccts : tp==='savings' ? savAccts : ccAccts;
+    if (!bucket[t.account]) bucket[t.account] = {open:0,in_:0,out:0};
+    if (t.date < selMonth+'-01')       bucket[t.account].open += t.amount;
+    else if (t.date <= selMonth+'-31') {
+      if (t.amount>0) bucket[t.account].in_ += t.amount;
+      else            bucket[t.account].out  += Math.abs(t.amount);
+    }
+    // Classify transfers
+    if (t.isTransfer && t.date >= selMonth+'-01' && t.date <= selMonth+'-31') {
+      var cat = (t.category||'').trim();
+      var isSavXfer = detectAcctType(cat.replace(/^\[|\]$/g,''))==='savings' || /^\[.*(savings|sav).*\]$/i.test(cat);
+      var isCCPay   = detectAcctType(cat.replace(/^\[|\]$/g,''))==='credit'  || /^\[.*(card|cc|visa|mastercard|amex).*\]$/i.test(cat);
+      if (isSavXfer && tp==='checking') t.amount<0 ? qkData.savXferOut+=Math.abs(t.amount) : qkData.savXferIn+=t.amount;
+      if (isCCPay   && tp==='checking') qkData.ccPayments += Math.abs(t.amount);
+    }
+    if (!t.isTransfer && t.date >= selMonth+'-01' && t.date <= selMonth+'-31') {
+      if (tp==='checking' && t.amount>0) qkData.income   += t.amount;
+      if (tp==='checking' && t.amount<0) qkData.expenses += Math.abs(t.amount);
+    }
   });
-  function lumpFtype2(t) {
-    for (const [ft,rx] of Object.entries(UNMASK_PAT2)) if (rx.test(t.payee)) return ft;
-    return null;
+  function sumAcct(bucket, field) { return Object.values(bucket).reduce(function(s,a){ return s+a[field]; },0); }
+  qkData.chkOpen  = sumAcct(chkAccts,'open');
+  qkData.chkClose = qkData.chkOpen + sumAcct(chkAccts,'in_') - sumAcct(chkAccts,'out');
+  qkData.savOpen  = sumAcct(savAccts,'open');
+  qkData.savClose = qkData.savOpen + sumAcct(savAccts,'in_') - sumAcct(savAccts,'out');
+  qkData.ccOpen   = sumAcct(ccAccts,'open');
+  qkData.ccClose  = qkData.ccOpen  + sumAcct(ccAccts,'in_')  - sumAcct(ccAccts,'out');
+
+  // ── IS / Accrual numbers for this month ───────────────────────────────────
+  var isIncome=0, isFixed=0, isVar=0, isAutoSave=0;
+  var FIXED_BKS = new Set(['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','streaming']);
+  var monthSp = sp.filter(function(t){ return t.date.startsWith(selMonth) && detectAcctType(t.account||'')==='checking'; });
+  monthSp.filter(function(t){ return t.amount>0&&classifyTxn(t)==='paycheck'; }).forEach(function(t){ isIncome+=t.amount; });
+  var ALL_DETAIL_SP = txns.filter(function(t){ return t.date.startsWith(selMonth)&&t.amount<0&&(t.itemDetail||DETAIL.has(t._source||t._ftype||'')); });
+  monthSp.filter(function(t){ return t.amount<0&&!t.itemDetail&&!DETAIL.has(t._source||t._ftype||''); }).forEach(function(t){
+    var bk=classifyTxn(t); if(FIXED_BKS.has(bk)) isFixed+=Math.abs(t.amount); else isVar+=Math.abs(t.amount);
+  });
+  ALL_DETAIL_SP.forEach(function(t){ var bk=classifyTxn(t); if(FIXED_BKS.has(bk)) isFixed+=Math.abs(t.amount); else isVar+=Math.abs(t.amount); });
+  var isDeploy = Math.max(isIncome - isAutoSave, 0);
+  var isNet    = isDeploy - isFixed - isVar;
+  var cfNet    = qkData.income - qkData.expenses;
+  var trueBank = qkData.income - qkData.expenses;  // non-transfer checking delta
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  var out = '';
+
+  // ── Section: The Numbers Trail ─────────────────────────────────────────────
+  // One table that lets you trace a number from Quicken to every view
+  out += '<div style="margin-bottom:20px;">';
+  out += '<div style="font-size:11px;color:var(--ink4);margin-bottom:14px;line-height:1.8;">Every number in every view below traces back to your Quicken register. Pick a line, check it in Quicken, verify it matches.</div>';
+
+  function bridgeSection(title, color, rows_) {
+    var h = '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;">';
+    h += '<div style="padding:8px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:8px;">';
+    h += '<span style="display:inline-block;width:3px;height:14px;border-radius:2px;background:'+color+';flex-shrink:0;"></span>';
+    h += '<span style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);">'+title+'</span>';
+    h += '</div>';
+    h += '<table style="width:100%;border-collapse:collapse;">';
+    rows_.forEach(function(r) {
+      var bg = r.header ? 'rgba(255,255,255,.04)' : 'transparent';
+      var fc = r.header ? 'var(--ink2)' : 'var(--ink4)';
+      h += '<tr style="border-top:1px solid rgba(255,255,255,.04);background:'+bg+';">';
+      h += '<td style="padding:5px 16px;font-size:11px;color:'+fc+';width:55%;">'+r.label+'</td>';
+      h += '<td style="padding:5px 16px;font-size:11px;font-family:var(--fm);text-align:right;width:20%;color:'+(r.col||'var(--ink2)')+';">'+r.val+'</td>';
+      h += '<td style="padding:5px 16px;font-size:10px;color:var(--ink4);width:25%;">'+( r.where||'' )+'</td>';
+      h += '</tr>';
+    });
+    h += '</table></div>';
+    return h;
   }
 
-  let isIncome=0, isFixed=0, isVar=0, isAutoSave=0;
-  const FIXED_BKS2 = new Set(['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','streaming']);
-  // Income
-  monthSp.filter(t=>t.amount>0&&classifyTxn(t)==='paycheck'&&detectAcctType(t.account||'')==='checking').forEach(t=>{ isIncome+=t.amount; });
-  // Auto-save
-  const payChdates = [...new Set(monthSp.filter(t=>t.amount>0&&classifyTxn(t)==='paycheck'&&detectAcctType(t.account||'')==='checking').map(t=>t.date))];
-  txns.filter(t=>t.date.startsWith(selMonth)&&isTransfer(t)&&t.amount<0).forEach(t=>{
-    const dest=(t.category||'').replace(/^\[|\]$/g,'').trim();
-    if (detectAcctType(dest)==='savings'&&payChdates.some(pd=>Math.abs(new Date(pd)-new Date(t.date))<=4*864e5)) isAutoSave+=Math.abs(t.amount);
-  });
-  sp.filter(t=>t.date.startsWith(selMonth)&&t.amount>0&&classifyTxn(t)==='paycheck'&&detectAcctType(t.account||'')==='savings').forEach(t=>{ isAutoSave+=t.amount; });
-  // Expenses
-  monthSp.filter(t=>t.amount<0&&!t.itemDetail&&!DETAIL.has(t._source||t._ftype||'')).forEach(t=>{
-    const ft=lumpFtype2(t); if(ft&&hasDetailMo[ft]) return;
-    const bk=classifyTxn(t), a=Math.abs(t.amount);
-    if(FIXED_BKS2.has(bk)) isFixed+=a; else isVar+=a;
-  });
-  txns.filter(t=>t.date.startsWith(selMonth)&&t.amount<0&&!t._masked&&(t.itemDetail||DETAIL.has(t._source||t._ftype||''))).forEach(t=>{
-    const bk=classifyTxn(t), a=Math.abs(t.amount);
-    if(FIXED_BKS2.has(bk)) isFixed+=a; else isVar+=a;
-  });
-  const isDeploy = Math.max(isIncome - isAutoSave, 0);
-  const isNet    = isDeploy - isFixed - isVar;
-  const isData   = { income:isIncome, autoSave:isAutoSave, fixed:isFixed, variable:isVar, net:isNet, draw:0, earlyMonth:false };
+  // 1. Quicken source
+  out += bridgeSection('1 · Quicken Register · '+monthName, '#F5A800', [
+    { label:'Checking: opening balance', val:mfmt(qkData.chkOpen),   where:'Reports → Account Balances', col:'var(--ink3)' },
+    { label:'Checking: deposits (income + xfers in)', val:'+'+mfmt(qkData.chkOpen>0?sumAcct(chkAccts,'in_'):0), where:'Register filter by date', col:'var(--pos)' },
+    { label:'Checking: withdrawals (expenses + xfers out)', val:'\u2212'+mfmt(sumAcct(chkAccts,'out')), where:'Register filter by date', col:'var(--neg)' },
+    { label:'Checking: closing balance', val:mfmt(qkData.chkClose), where:'Reports → Account Balances', col:'var(--ink2)', header:true },
+    { label:'Savings transfers out (→ savings)', val: qkData.savXferOut>0?'\u2212'+mfmt(qkData.savXferOut):'\u2014', where:'Bracket category txns', col:'var(--river)' },
+    { label:'Savings transfers in (← savings)', val: qkData.savXferIn>0?'+'+mfmt(qkData.savXferIn):'\u2014', where:'Bracket category txns', col:'var(--gold)' },
+    { label:'CC payments sent from checking', val: qkData.ccPayments>0?'\u2212'+mfmt(qkData.ccPayments):'\u2014', where:'Bracket category txns', col:'var(--neg)' },
+  ]);
 
-  const recon = buildMonthRecon(selMonth);
-  const reconOpts = { monthName, isData, C, mfmt, kfmt };
+  // 2. Cash Flow view
+  out += bridgeSection('2 · Cash Flow View', 'var(--river)', [
+    { label:'Income (non-transfer checking deposits)', val:'+'+mfmt(qkData.income), where:'Cash Flow \u2192 bar chart', col:'var(--pos)' },
+    { label:'Expenses (non-transfer checking outflows)', val:'\u2212'+mfmt(qkData.expenses), where:'Cash Flow \u2192 bar chart', col:'var(--neg)' },
+    { label:'Net (income \u2212 expenses)', val:kfmt(cfNet), where:'Cash Flow \u2192 net line', col:cfNet>=0?'var(--pos)':'var(--neg)', header:true },
+    { label:'Banking vs Drawing this month', val:kfmt(trueBank), where:'Cash Flow \u2192 Bank/Draw panel', col:trueBank>=0?'var(--pos)':'var(--neg)' },
+  ]);
 
-  // ── Month-over-month summary ──────────────────────────────────────────────
-  const prevRecon = prevMo ? buildMonthRecon(prevMo) : null;
-  const [pyr,pmo] = prevMo ? prevMo.split('-') : ['',''];
-  const prevMonthName = prevMo ? new Date(+pyr,+pmo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}) : '';
+  // 3. Income Statement (accrual)
+  out += bridgeSection('3 · Income Statement (Accrual)', 'var(--pos)', [
+    { label:'Gross pay (paycheck deposits)', val:'+'+mfmt(isIncome), where:'IS \u2192 Step 1: Net Pay', col:'var(--pos)' },
+    { label:'Fixed expenses', val:'\u2212'+mfmt(isFixed), where:'IS \u2192 fixed bucket rows', col:'var(--neg)' },
+    { label:'Variable expenses', val:'\u2212'+mfmt(isVar), where:'IS \u2192 variable bucket rows', col:'var(--gold)' },
+    { label:'Net remaining (deployable)', val:kfmt(isNet), where:'IS \u2192 Net row', col:isNet>=0?'var(--pos)':'var(--neg)', header:true },
+  ]);
 
-  let momHtml = '';
-  if (prevRecon) {
-    const cur = recon.totals.all, prv = prevRecon.totals.all;
-    const incChg  = cur.income  - prv.income;
-    const expChg  = cur.charges - prv.charges;
-    const netChg  = isNet - 0;  // simplified
-    momHtml = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">`;
-    const kpiBlock = (label, cur, chg, col) =>
-      `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:12px 14px;">
-        <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${C.ink4};margin-bottom:6px;">${label}</div>
-        <div style="font-size:22px;font-weight:700;font-family:var(--fd);color:${col};">${kfmt(cur)}</div>
-        <div style="font-size:11px;color:${chg>=0?'var(--pos)':C.neg};margin-top:3px;">${chg>=0?'+':''}${kfmt(chg)} vs ${prevMonthName}</div>
-      </div>`;
-    momHtml += kpiBlock('Income', isIncome, incChg, 'var(--pos)');
-    momHtml += kpiBlock('Expenses', isFixed+isVar, expChg, 'var(--neg)');
-    momHtml += kpiBlock('Net', isNet, isNet, isNet>=0?'var(--pos)':C.neg);
-    momHtml += `</div>`;
-  }
+  // 4. Why Cash Flow \u2260 IS (the reconciling items)
+  var diff = cfNet - isNet;
+  out += bridgeSection('4 · Why Cash Flow \u2260 Income Statement', 'var(--ink4)', [
+    { label:'Cash Flow net (Quicken register)', val:kfmt(cfNet), col:cfNet>=0?'var(--pos)':'var(--neg)' },
+    { label:'IS net (accrual / bucket classification)', val:kfmt(isNet), col:isNet>=0?'var(--pos)':'var(--neg)' },
+    { label:'Difference', val:kfmt(diff), col:Math.abs(diff)<100?'var(--pos)':'var(--gold)',
+      where: Math.abs(diff)<100 ? '\u2713 close enough' : 'detail CSVs, timing diffs', header:true },
+    { label:'Common causes of difference:', val:'', where:'' },
+    { label:'\u2022 CC payments in CF (transfer), excluded from IS', val:'', where:'by design', col:'var(--ink4)' },
+    { label:'\u2022 Amazon/Apple detail: IS uses detail, CF uses Quicken lump', val:'', where:'unmasking', col:'var(--ink4)' },
+    { label:'\u2022 Savings auto-transfers: CF included, IS excluded', val:'', where:'IS: operating only', col:'var(--ink4)' },
+  ]);
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-  let out = '';
+  // 5. Account balances
+  out += bridgeSection('5 · Account Closing Balances · '+monthName, 'var(--ink3)', [
+    { label:'Checking total', val:mfmt(qkData.chkClose), where:'Quicken → Account list', col:qkData.chkClose>=0?'var(--ink2)':'var(--neg)' },
+    { label:'Savings total',  val:mfmt(qkData.savClose), where:'Quicken → Account list', col:'var(--river)' },
+    { label:'Credit card balance', val:mfmt(qkData.ccClose), where:'Quicken → Account list', col:qkData.ccClose<0?'var(--neg)':'var(--ink3)' },
+    { label:'Net liquid (checking + savings)', val:mfmt(qkData.chkClose+qkData.savClose), where:'Balance Sheet view', col:(qkData.chkClose+qkData.savClose)>=0?'var(--pos)':'var(--neg)', header:true },
+  ]);
 
-  // Month-over-month KPIs
-  if (momHtml) out += momHtml;
-
-  // Master recon table
-  out += `<div style="margin-bottom:24px;">`;
-  out += `<div style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:${C.ink4};margin-bottom:8px;">Account Register Reconciliation</div>`;
-  out += `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">`;
-  out += renderReconTable(recon, reconOpts);
-  out += `</div></div>`;
-
-  // Verification checklist
-  out += `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px;margin-bottom:16px;">`;
-  out += `<div style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:${C.ink4};margin-bottom:12px;">Verification Checklist</div>`;
-  const checks = [
-    { tab:'Income Statement', desc:`Gross pay ${kfmt(isIncome)} · Pre-saved ${kfmt(isAutoSave)} · Fixed ${kfmt(isFixed)} · Variable ${kfmt(isVar)} · Net ${kfmt(isNet)}`, ok: Math.abs(isNet) < 99999 },
-    { tab:'Checking Close', desc:`Checking accounts close at ${mfmt(recon.totals.checking.close)}`, ok: recon.totals.checking.close >= 0 },
-    { tab:'Savings Close',  desc:`Savings accounts close at ${mfmt(recon.totals.savings.close)}`, ok: recon.totals.savings.close >= 0 },
-    { tab:'Credit Balance', desc:`Credit card balances total ${mfmt(recon.totals.credit.close)}`, ok: recon.totals.credit.close <= 0 },
-  ];
-  checks.forEach(c => {
-    const icon = c.ok ? '✓' : '⚠';
-    const col  = c.ok ? 'var(--pos)' : 'var(--gold)';
-    out += `<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);">`;
-    out +=   `<span style="font-size:14px;color:${col};flex-shrink:0;line-height:1.4;">${icon}</span>`;
-    out +=   `<div><div style="font-size:12px;font-weight:600;color:var(--ink);">${c.tab}</div>`;
-    out +=   `<div style="font-size:11px;color:${C.ink4};margin-top:1px;">${c.desc}</div></div>`;
-    out += `</div>`;
-  });
-  out += `</div>`;
-
+  out += '</div>';
   el.innerHTML = out;
 }
 
@@ -5317,6 +5334,445 @@ function loadDemoDetails() {
   }).catch(function(e) { console.warn('loadDemoDetails error', e); });
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// buildSavingsRegister(months) → array of monthly register rows
+// months = sorted array of 'YYYY-MM' strings (ascending)
+// Each row: { month, monthName, startBal, endBal, xfersIn, xfersOut,
+//             chkChange, trueBankDraw, cumulative }
+// ─────────────────────────────────────────────────────────────────────────────
+function buildSavingsRegister(months) {
+  if (!txns.length || !months.length) return [];
+  const DETAIL = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+
+  // Compute opening checking balance (all checking txns before first month)
+  var firstMo = months[0];
+  var chkOpeningAll = 0;
+  txns.forEach(function(t) {
+    if (t.itemDetail || DETAIL.has(t._source||t._ftype||'')) return;
+    if (detectAcctType(t.account||'') !== 'checking') return;
+    if (t.date < firstMo + '-01') chkOpeningAll += t.amount;
+  });
+
+  var rows = [];
+  var cumulative = 0;
+  var runningStart = chkOpeningAll;
+
+  months.forEach(function(mo) {
+    var [yr, mn] = mo.split('-');
+    var monthName = new Date(+yr, +mn-1, 1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
+
+    // Checking activity this month
+    var chkIncome  = 0;  // positive checking txns (payroll deposits)
+    var chkCharges = 0;  // negative checking txns (bills, outflows)
+    var xfersIn    = 0;  // money FROM savings INTO checking (bracket syntax, positive in checking)
+    var xfersOut   = 0;  // money FROM checking INTO savings (bracket syntax, negative in checking)
+
+    txns.forEach(function(t) {
+      if (t.itemDetail || DETAIL.has(t._source||t._ftype||'')) return;
+      if (detectAcctType(t.account||'') !== 'checking') return;
+      if (t.date < mo+'-01' || t.date > mo+'-31') return;
+
+      if (t.isTransfer) {
+        // Detect direction: category is [SavingsAccountName]
+        var cat = (t.category||'').trim();
+        var isSavingsXfer = /^\[.*(savings|sav|save).*\]$/i.test(cat) ||
+                            detectAcctType(cat.replace(/^\[|\]$/g,'')) === 'savings';
+        if (isSavingsXfer) {
+          if (t.amount < 0) xfersOut += Math.abs(t.amount);  // checking → savings
+          else               xfersIn  += t.amount;            // savings → checking
+        }
+      } else {
+        if (t.amount > 0) chkIncome  += t.amount;
+        else              chkCharges += Math.abs(t.amount);
+      }
+    });
+
+    var chkChange     = chkIncome - chkCharges + xfersIn - xfersOut;
+    var endBal        = runningStart + chkChange;
+    // True bank/draw = how much checking+savings wealth ACTUALLY changed
+    // If savings transferred IN to cover a deficit, that's a draw on total wealth
+    var trueBankDraw  = chkChange - xfersIn + xfersOut;
+    // Simplified: just the non-transfer net change in checking
+    // = income - charges (excluding any savings transfers)
+    trueBankDraw = chkIncome - chkCharges;
+
+    cumulative += trueBankDraw;
+
+    rows.push({
+      month:       mo,
+      monthName:   monthName,
+      startBal:    runningStart,
+      endBal:      endBal,
+      xfersIn:     xfersIn,
+      xfersOut:    xfersOut,
+      chkChange:   chkChange,
+      trueBankDraw:trueBankDraw,
+      cumulative:  cumulative
+    });
+
+    runningStart = endBal;
+  });
+
+  return rows;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// renderSavingsRegister() — renders into #savingsRegContent
+// ─────────────────────────────────────────────────────────────────────────────
+function renderSavingsRegister() {
+  var el = document.getElementById('savingsRegContent');
+  if (!el) return;
+  if (!txns.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">Import data to use the Savings Register.</div>';
+    return;
+  }
+
+  var sp = operatingSpendable(txns);
+  var allMonths = Array.from(new Set(sp.map(function(t){ return t.date.slice(0,7); }))).sort();
+
+  // Range selector value
+  var rangeEl = document.getElementById('savRegRange');
+  var rangeVal = rangeEl ? rangeEl.value : '12';
+  var months = rangeVal === 'all' ? allMonths : allMonths.slice(-parseInt(rangeVal));
+
+  var rows = buildSavingsRegister(months);
+  if (!rows.length) {
+    el.innerHTML = '<div style="padding:20px;color:var(--ink4);">No checking data found.</div>';
+    return;
+  }
+
+  var C = window._C || {};
+  function kfmt(v) {
+    var a = Math.abs(v||0);
+    var s = a >= 1000 ? '$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K' : '$'+Math.round(a);
+    return (v < 0 ? '−' : '') + s;
+  }
+  function kfmtSigned(v) {
+    var a = Math.abs(v||0);
+    var s = a >= 1000 ? '$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K' : '$'+Math.round(a);
+    return (v < 0 ? '−' : v > 0 ? '+' : '') + s;
+  }
+  function mfmt(v) {
+    var a = Math.abs(v||0);
+    return (v < 0 ? '−' : '') + '$' + a.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  }
+
+  // ── Chart: True Bank/Draw bars + cumulative line ─────────────────────────
+  var chartData  = rows.map(function(r){ return r.trueBankDraw; });
+  var cumData    = rows.map(function(r){ return r.cumulative; });
+  var labels     = rows.map(function(r){ return r.monthName; });
+
+  // ── Summary KPIs ─────────────────────────────────────────────────────────
+  var totalBanked = rows.reduce(function(s,r){ return s+(r.trueBankDraw>0?r.trueBankDraw:0); },0);
+  var totalDrawn  = rows.reduce(function(s,r){ return s+(r.trueBankDraw<0?Math.abs(r.trueBankDraw):0); },0);
+  var netTotal    = rows[rows.length-1].cumulative;
+  var bankMos     = rows.filter(function(r){ return r.trueBankDraw > 0; }).length;
+  var drawMos     = rows.filter(function(r){ return r.trueBankDraw < 0; }).length;
+
+  var kpiColor = netTotal >= 0 ? 'var(--pos)' : 'var(--neg)';
+
+  var out = '';
+
+  // KPI strip
+  out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">';
+  function kpi(label, val, col) {
+    return '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:12px 14px;">'
+         + '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;">'+label+'</div>'
+         + '<div style="font-size:22px;font-weight:700;font-family:var(--fd);color:'+col+';">'+val+'</div>'
+         + '</div>';
+  }
+  out += kpi('Net Position', kfmtSigned(netTotal), kpiColor);
+  out += kpi('Total Banked', '+'+kfmt(totalBanked), 'var(--pos)');
+  out += kpi('Total Drawn', '−'+kfmt(totalDrawn), 'var(--neg)');
+  out += kpi('Banking Months', bankMos+' / '+rows.length, bankMos > drawMos ? 'var(--pos)' : 'var(--gold)');
+  out += '</div>';
+
+  // Chart container
+  out += '<div style="margin-bottom:20px;">';
+  out += '<div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">Monthly Bank / Draw &amp; Cumulative Position</div>';
+  out += '<div id="savRegChartWrap" style="width:100%;height:220px;"></div>';
+  out += '</div>';
+
+  // Table
+  out += '<div style="overflow-x:auto;overflow-y:auto;max-height:420px;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;">';
+  out += '<table style="width:100%;border-collapse:collapse;font-size:12px;font-family:var(--fm);">';
+  out += '<thead><tr style="border-bottom:2px solid rgba(255,255,255,.12);">';
+  var ths = ['Month','Start Bal','End Bal','Xfer → Sav','Xfer ← Sav','Chk Δ','Bank / (Draw)','Cumulative'];
+  ths.forEach(function(h,i) {
+    var align = i === 0 ? 'left' : 'right';
+    out += '<th style="padding:6px 10px;text-align:'+align+';font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);white-space:nowrap;">'+h+'</th>';
+  });
+  out += '</tr></thead><tbody>';
+
+  rows.forEach(function(r, ri) {
+    var bg = ri % 2 ? 'rgba(255,255,255,.018)' : 'transparent';
+    var bankCol = r.trueBankDraw >= 0 ? 'var(--pos)' : 'var(--neg)';
+    var cumCol  = r.cumulative  >= 0 ? 'var(--pos)' : 'var(--neg)';
+    var chkCol  = r.chkChange   >= 0 ? 'var(--pos)' : 'var(--neg)';
+    out += '<tr style="background:'+bg+';border-top:1px solid rgba(255,255,255,.04);">';
+    out += '<td style="padding:5px 10px;color:var(--ink2);white-space:nowrap;">'+r.monthName+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;color:var(--ink3);">'+mfmt(r.startBal)+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;color:var(--ink2);">'+mfmt(r.endBal)+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;color:'+(r.xfersOut>0?'var(--river)':'var(--ink4)')+';">'+(r.xfersOut>0?'−'+kfmt(r.xfersOut):'—')+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;color:'+(r.xfersIn>0?'var(--gold)':'var(--ink4)')+';">'+(r.xfersIn>0?'+'+kfmt(r.xfersIn):'—')+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;color:'+chkCol+';">'+kfmtSigned(r.chkChange)+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;font-weight:700;color:'+bankCol+';">'+kfmtSigned(r.trueBankDraw)+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;font-weight:700;color:'+cumCol+';">'+kfmtSigned(r.cumulative)+'</td>';
+    out += '</tr>';
+  });
+  out += '</tbody></table></div>';
+
+  el.innerHTML = out;
+
+  // Render chart
+  setTimeout(function() {
+    var cw = document.getElementById('savRegChartWrap');
+    if (!cw) return;
+    renderSavingsRegChart(cw, labels, chartData, cumData);
+  }, 0);
+}
+
+// ── 3D bar+line chart for savings register ───────────────────────────────────
+function renderSavingsRegChart(el, labels, barData, lineData) {
+  if (!el || !labels.length) return;
+  var W = Math.max(el.offsetWidth || 520, 320);
+  var H = 220;
+  var PAD = {t:18, r:18, b:32, l:62};
+  var cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
+  var n = labels.length;
+
+  var allVals = barData.concat(lineData).filter(isFinite);
+  var sc = computeScale(allVals, {showZero:true, padPct:0.18});
+  var maxV = sc.maxV, minV = sc.minV, span = sc.span;
+  function yPx(v) { return PAD.t + cH - cH*(v-minV)/span; }
+  var y0 = yPx(0);
+
+  var uid = 'srC'+Date.now();
+  var barW = Math.max(Math.min((cW/n)*0.55, 36), 4);
+
+  // Defs
+  var defs = '<defs>'
+    + '<linearGradient id="srPos'+uid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5EEFD8"/><stop offset="100%" stop-color="#1DA892"/></linearGradient>'
+    + '<linearGradient id="srNeg'+uid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF9494"/><stop offset="100%" stop-color="#C93333"/></linearGradient>'
+    + '<filter id="srGlow'+uid+'" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+    + '<filter id="srDot'+uid+'" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+    + '</defs>';
+
+  // Grid
+  var grid = '', yLbls = '';
+  (sc.ticks||[]).forEach(function(v) {
+    var y = yPx(v).toFixed(1);
+    var isZ = Math.abs(v) < span*0.015;
+    if (parseFloat(y) < PAD.t-4 || parseFloat(y) > PAD.t+cH+4) return;
+    grid += '<line x1="'+PAD.l+'" y1="'+y+'" x2="'+(W-PAD.r)+'" y2="'+y+'"'
+          + ' stroke="'+(isZ?'rgba(255,255,255,.55)':'rgba(255,255,255,.06)')+'" stroke-width="'+(isZ?2:1)+'"/>';
+    if (isZ) grid += '<line x1="'+PAD.l+'" y1="'+(parseFloat(y)+2)+'" x2="'+(W-PAD.r)+'" y2="'+(parseFloat(y)+2)+'" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/>';
+    var neg=v<0,av=Math.abs(v);
+    var lbl=(neg?'−$':'$')+(av>=1000?(av/1000).toFixed(1).replace(/\.0$/,'')+'K':Math.round(av));
+    yLbls+='<text x="'+(PAD.l-6)+'" y="'+y+'" text-anchor="end" dominant-baseline="middle"'
+          +' fill="'+(isZ?'rgba(255,255,255,.65)':'rgba(255,255,255,.35)')+'"'
+          +' font-size="10" font-family="var(--fm)"'+(isZ?' font-weight="700"':'')+'>'+lbl+'</text>';
+  });
+
+  // Bars + line pts
+  var bars = '', linePts = [], dots = '', xLbls = '';
+  var step = Math.ceil(n / Math.max(1, Math.floor(cW / 52)));
+
+  barData.forEach(function(v, i) {
+    var cx   = PAD.l + (n < 2 ? cW/2 : i*cW/(n-1));
+    var isPos = v >= 0;
+    var bTop  = isPos ? yPx(v) : y0;
+    var bBot  = isPos ? y0     : yPx(v);
+    var bH    = Math.max(bBot - bTop, 2);
+    var bx    = (cx - barW/2).toFixed(1);
+    var grad  = isPos ? 'url(#srPos'+uid+')' : 'url(#srNeg'+uid+')';
+    var flatC = isPos ? '#34D9C3' : '#F87171';
+    var rx    = Math.min(bH/2, 3);
+    // Shadow + bar + highlight
+    bars += '<rect x="'+bx+'" y="'+(bTop+2).toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+bH.toFixed(1)+'" rx="'+rx+'" fill="'+flatC+'" opacity="0.18"/>';
+    bars += '<rect x="'+bx+'" y="'+bTop.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+bH.toFixed(1)+'" rx="'+rx+'" fill="'+grad+'" opacity="0.9"/>';
+    bars += '<rect x="'+bx+'" y="'+bTop.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+(bH*0.32).toFixed(1)+'" rx="'+rx+'" fill="rgba(255,255,255,0.14)" style="pointer-events:none;"/>';
+
+    linePts.push({x:cx.toFixed(1), y:yPx(lineData[i]).toFixed(1), v:lineData[i]});
+    if (i % step === 0 || i === n-1) {
+      xLbls += '<text x="'+cx.toFixed(1)+'" y="'+(H-4)+'" text-anchor="middle"'
+             + ' fill="rgba(255,255,255,.38)" font-size="10" font-family="var(--fm)">'+labels[i]+'</text>';
+    }
+  });
+
+  // Cumulative line
+  var lineD = 'M'+linePts.map(function(p){ return p.x+','+p.y; }).join(' L');
+  var lineEl = '<path d="'+lineD+'" fill="none" stroke="rgba(245,168,0,.2)" stroke-width="5" stroke-linecap="round"/>'
+             + '<path d="'+lineD+'" fill="none" stroke="#F5A800" stroke-width="2" stroke-linecap="round" filter="url(#srGlow'+uid+')" opacity="0.7"/>'
+             + '<path d="'+lineD+'" fill="none" stroke="#F5A800" stroke-width="1.5" stroke-linecap="round"/>';
+
+  // Dots on line
+  linePts.forEach(function(p) {
+    var pos = p.v >= 0;
+    var col = pos ? '#F5A800' : '#F5A800';
+    dots += '<circle cx="'+p.x+'" cy="'+p.y+'" r="3.5" fill="'+col+'" opacity="0.9" filter="url(#srDot'+uid+')"/>';
+    dots += '<circle cx="'+p.x+'" cy="'+(parseFloat(p.y)-1.2)+'" r="1.3" fill="rgba(255,230,150,.7)"/>';
+  });
+
+  // Waterline SURPLUS/DEFICIT
+  var zeroLabels = '';
+  if (y0 > PAD.t + 10)
+    zeroLabels += '<text x="'+(W-PAD.r-4)+'" y="'+(y0-8)+'" text-anchor="end" fill="rgba(52,217,195,.55)" font-size="9" font-weight="700" font-family="var(--fm)" letter-spacing=".08em">BANKING ▲</text>';
+  if (y0 < PAD.t + cH - 10)
+    zeroLabels += '<text x="'+(W-PAD.r-4)+'" y="'+(y0+14)+'" text-anchor="end" fill="rgba(248,113,113,.55)" font-size="9" font-weight="700" font-family="var(--fm)" letter-spacing=".08em">DRAWING ▼</text>';
+
+  // Legend
+  var lgY = H - 4;
+  var legend = '<circle cx="'+(PAD.l)+'" cy="'+(lgY-12)+'" r="4" fill="#34D9C3"/>'
+             + '<text x="'+(PAD.l+8)+'" y="'+(lgY-8)+'" fill="rgba(255,255,255,.45)" font-size="9" font-family="var(--fm)">Monthly bank/draw</text>'
+             + '<line x1="'+(PAD.l+120)+'" y1="'+(lgY-12)+'" x2="'+(PAD.l+138)+'" y2="'+(lgY-12)+'" stroke="#F5A800" stroke-width="2"/>'
+             + '<text x="'+(PAD.l+142)+'" y="'+(lgY-8)+'" fill="rgba(255,255,255,.45)" font-size="9" font-family="var(--fm)">Cumulative position</text>';
+
+  el.innerHTML = '<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'
+    + defs + grid + bars + lineEl + dots + yLbls + xLbls + zeroLabels + legend + '</svg>';
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// renderCfBankDraw(months, projectedIdx)
+// The core savings discipline panel — shown prominently on the Cash Flow tab.
+// Shows: are we banking or drawing from savings each month?
+// Target audience: quick answer to "are we building or spending down our position?"
+// ─────────────────────────────────────────────────────────────────────────────
+function renderCfBankDraw(months, projectedIdx) {
+  var el = document.getElementById('cfBankDrawPanel');
+  if (!el || !txns.length || !months || !months.length) return;
+
+  var rows = buildSavingsRegister(months);
+  if (!rows.length) { el.innerHTML = ''; return; }
+
+  function kfmt(v) {
+    var a = Math.abs(v||0);
+    return (v < 0 ? '\u2212' : '') + (a>=1000 ? '$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K' : '$'+Math.round(a));
+  }
+  function kfmtS(v) {
+    var a = Math.abs(v||0);
+    var s = a>=1000 ? '$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K' : '$'+Math.round(a);
+    return (v > 0 ? '+' : v < 0 ? '\u2212' : '') + s;
+  }
+
+  var netPos     = rows[rows.length-1].cumulative;
+  var bankMos    = rows.filter(function(r){ return r.trueBankDraw > 0; }).length;
+  var drawMos    = rows.filter(function(r){ return r.trueBankDraw <= 0; }).length;
+  var totalBank  = rows.reduce(function(s,r){ return s+(r.trueBankDraw>0?r.trueBankDraw:0); }, 0);
+  var totalDraw  = rows.reduce(function(s,r){ return s+(r.trueBankDraw<0?Math.abs(r.trueBankDraw):0); }, 0);
+  var avgMonthly = rows.reduce(function(s,r){ return s+r.trueBankDraw; }, 0) / rows.length;
+  var streakType = rows[rows.length-1].trueBankDraw >= 0 ? 'banking' : 'drawing';
+  var streak = 0;
+  for (var si = rows.length-1; si >= 0; si--) {
+    if ((streakType==='banking') === (rows[si].trueBankDraw >= 0)) streak++;
+    else break;
+  }
+
+  var netCol   = netPos  >= 0 ? 'var(--pos)' : 'var(--neg)';
+  var avgCol   = avgMonthly >= 0 ? 'var(--pos)' : 'var(--neg)';
+  var disciplineScore = Math.round((bankMos / rows.length) * 100);
+  var dsCol = disciplineScore >= 70 ? 'var(--pos)' : disciplineScore >= 50 ? 'var(--gold)' : 'var(--neg)';
+
+  // Headline statement
+  var headline = netPos >= 0
+    ? 'On balance you\u2019re building \u2014 <strong style="color:var(--pos);">+'+kfmt(netPos)+'</strong> ahead over this period.'
+    : 'On balance you\u2019re drawing down \u2014 <strong style="color:var(--neg);">\u2212'+kfmt(Math.abs(netPos))+'</strong> behind over this period.';
+  var streakMsg = streak > 1
+    ? (streakType==='banking' ? streak+' consecutive banking months \u2705' : streak+' consecutive draw months \u26a0\ufe0f')
+    : '';
+
+  var out = '';
+
+  // Panel header
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
+
+  // Title bar with discipline badge
+  out += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid rgba(255,255,255,.07);">';
+  out +=   '<div>';
+  out +=     '<div style="font-size:13px;font-weight:700;color:var(--ink);letter-spacing:-.01em;">Banking vs. Drawing \u2014 Savings Discipline</div>';
+  out +=     '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">How much are we building or depleting our operating position each month?</div>';
+  out +=   '</div>';
+  out +=   '<div style="text-align:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 14px;flex-shrink:0;">';
+  out +=     '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Discipline</div>';
+  out +=     '<div style="font-size:22px;font-weight:800;font-family:var(--fd);color:'+dsCol+';">'+disciplineScore+'%</div>';
+  out +=     '<div style="font-size:9px;color:var(--ink4);">'+bankMos+' of '+rows.length+' months</div>';
+  out +=   '</div>';
+  out += '</div>';
+
+  // Headline
+  out += '<div style="padding:10px 16px;background:rgba(255,255,255,.025);border-bottom:1px solid rgba(255,255,255,.06);">';
+  out +=   '<div style="font-size:12px;color:var(--ink3);line-height:1.6;">\u{1F3AF} '+headline+'</div>';
+  if (streakMsg) out += '<div style="font-size:11px;color:var(--ink4);margin-top:4px;">' + streakMsg + '</div>';
+  out += '</div>';
+
+  // KPI row
+  out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid rgba(255,255,255,.07);">';
+  function cfKpi(label, val, col, sub) {
+    return '<div style="padding:10px 14px;border-right:1px solid rgba(255,255,255,.06);">'
+         + '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">'+label+'</div>'
+         + '<div style="font-size:20px;font-weight:800;font-family:var(--fd);color:'+col+';">'+val+'</div>'
+         + (sub ? '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+sub+'</div>' : '')
+         + '</div>';
+  }
+  out += cfKpi('Net Position', kfmtS(netPos), netCol, 'vs. period start');
+  out += cfKpi('Avg / Month',  kfmtS(Math.round(avgMonthly)), avgCol, 'bank or draw');
+  out += cfKpi('Banked',  '+'+kfmt(totalBank), 'var(--pos)', bankMos+' months');
+  out += '<div style="padding:10px 14px;">'
+       + '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Drawn</div>'
+       + '<div style="font-size:20px;font-weight:800;font-family:var(--fd);color:var(--neg);">\u2212'+kfmt(totalDraw)+'</div>'
+       + '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+drawMos+' months</div>'
+       + '</div>';
+  out += '</div>';
+
+  // Chart
+  out += '<div style="padding:12px 16px 8px;">';
+  out += '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Monthly Bank / Draw &amp; Cumulative Position</div>';
+  out += '<div id="cfBankChart" style="width:100%;height:160px;"></div>';
+  out += '</div>';
+
+  // Table — compact, last 12 months max
+  var tableRows = rows.slice(-12);
+  out += '<div style="border-top:1px solid rgba(255,255,255,.07);overflow-x:auto;">';
+  out += '<table style="width:100%;border-collapse:collapse;font-size:11px;font-family:var(--fm);">';
+  out += '<thead><tr style="border-bottom:1px solid rgba(255,255,255,.1);">';
+  ['Month','Start Bal','End Bal','Xfer\u2192Sav','Xfer\u2190Sav','Bank / (Draw)','Cumulative'].forEach(function(h,i) {
+    out += '<th style="padding:5px '+(i===0?'16':'10')+'px;text-align:'+(i===0?'left':'right')+';font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);white-space:nowrap;">'+h+'</th>';
+  });
+  out += '</tr></thead><tbody>';
+  tableRows.forEach(function(r, ri) {
+    var isProj = (r.month === (months[months.length-1]) && projectedIdx >= 0);
+    var bg  = ri % 2 ? 'rgba(255,255,255,.018)' : 'transparent';
+    var bkC = r.trueBankDraw >= 0 ? 'var(--pos)' : 'var(--neg)';
+    var cuC = r.cumulative  >= 0 ? 'var(--pos)' : 'var(--neg)';
+    function mf(v) { var a=Math.abs(v||0); return (v<0?'\u2212':'')+'$'+a.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+    out += '<tr style="background:'+bg+';border-top:1px solid rgba(255,255,255,.04);"'+(isProj?' title="Projected month"':'')+'>'; 
+    out += '<td style="padding:4px 16px;color:var(--ink2);white-space:nowrap;">'+r.monthName+(isProj?' <em style=\"color:var(--gold);font-size:9px;\">est.</em>':'')+'</td>';
+    out += '<td style="padding:4px 10px;text-align:right;color:var(--ink4);">'+mf(r.startBal)+'</td>';
+    out += '<td style="padding:4px 10px;text-align:right;color:var(--ink3);">'+mf(r.endBal)+'</td>';
+    out += '<td style="padding:4px 10px;text-align:right;color:'+(r.xfersOut>0?'var(--river)':'var(--ink4)')+';">'+(r.xfersOut>0?'\u2212'+kfmt(r.xfersOut):'\u2014')+'</td>';
+    out += '<td style="padding:4px 10px;text-align:right;color:'+(r.xfersIn>0?'var(--gold)':'var(--ink4)')+';">'+(r.xfersIn>0?'+'+kfmt(r.xfersIn):'\u2014')+'</td>';
+    out += '<td style="padding:4px 10px;text-align:right;font-weight:700;color:'+bkC+';">'+kfmtS(r.trueBankDraw)+'</td>';
+    out += '<td style="padding:4px 10px;text-align:right;font-weight:700;color:'+cuC+';">'+kfmtS(r.cumulative)+'</td>';
+    out += '</tr>';
+  });
+  out += '</tbody></table></div>';
+  out += '</div>';  // close panel
+
+  el.innerHTML = out;
+
+  // Render chart into cfBankChart
+  setTimeout(function() {
+    var ce = document.getElementById('cfBankChart');
+    if (!ce) return;
+    var bData = rows.map(function(r){ return r.trueBankDraw; });
+    var lData = rows.map(function(r){ return r.cumulative; });
+    var lbls  = rows.map(function(r){ return r.monthName; });
+    renderSavingsRegChart(ce, lbls, bData, lData);
+  }, 0);
+}
+
 // ════════════════════════════════════════════════
 // RENDER DASHBOARD
 // ════════════════════════════════════════════════
@@ -5742,6 +6198,9 @@ function renderCashFlow() {
     wfItems.push({label:'Net',value:netVal,type:'total',color:'rgba(245,168,0,.9)'});
     svgWaterfall('cfWaterfallWrap', wfItems);
   })();
+
+  // ── Banking & Draw panel — core savings discipline view ──────────────────
+  renderCfBankDraw(md.fullKeys, _projIdx);
 
   // KPIs
   const totInc = md.income.reduce((a,b)=>a+b,0);
