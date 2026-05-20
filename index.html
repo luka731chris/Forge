@@ -1215,7 +1215,7 @@ select:focus { border-color: var(--gold); }
     <div class="chart-area" id="cfLineWrap" style="height:140px;"></div>
   </div>
   <!-- ── Banking & Draw — core savings discipline panel ── -->
-  <div id="cfBankDrawPanel" style="margin-bottom:16px;"></div>
+  <div id="cfBankDrawPanel" style="margin-bottom:16px;overflow:hidden;"></div>
 
   <div class="chart-card" style="margin-bottom:16px;">
     <div class="chart-title">Annual Waterfall</div>
@@ -5161,7 +5161,7 @@ function buildMonthProjection(curMo, sp) {
 function computeScale(vals, opts) {
   opts = opts || {};
   var showZero = opts.showZero !== false;
-  var padPct   = opts.padPct != null ? opts.padPct : 0.15;
+  var padPct   = opts.padPct != null ? opts.padPct : 0.18;
   var finite   = vals.filter(isFinite);
   if (!finite.length) return { maxV:1, minV:0, span:1, y0Pct:0, ticks:[], zero:true };
 
@@ -5169,59 +5169,51 @@ function computeScale(vals, opts) {
   var dMin  = finite.reduce(function(m,v){ return Math.min(m,v); }, finite[0]);
   var dSpan = Math.max(Math.abs(dMax - dMin), 1);
 
-  // Padding: 15% of actual data span — never based on absolute values
-  var pad  = dSpan * padPct;
+  // Symmetric padding — equal above and below.
+  // Using data span prevents income data ($7K–$8K) from being anchored to $0.
+  var pad    = dSpan * padPct;
   var rawMax = dMax + pad;
   var rawMin = dMin - pad;
 
-  // Smart zero inclusion:
-  //   Include zero ONLY if it is within 1× the data span of the data range.
-  //   This prevents $7,400–$8,100 income data from being anchored to $0.
-  //   But it always includes zero when data is mixed-sign or near zero.
+  // Smart zero inclusion: only pull zero in if data is within 1.5× span of zero.
+  // Mixed-sign data always includes zero (distToZero === 0).
   var zeroIncluded = false;
   if (showZero) {
-    var distToZero = dMin > 0 ? dMin : (dMax < 0 ? Math.abs(dMax) : 0);
-    if (distToZero <= dSpan * 1.0) {   // zero is within 1× span → include it
+    var distToZero = (dMin >= 0) ? dMin : (dMax <= 0 ? Math.abs(dMax) : 0);
+    if (distToZero <= dSpan * 1.5) {
       rawMax = Math.max(rawMax, 0);
       rawMin = Math.min(rawMin, 0);
       zeroIncluded = true;
-    } else {
-      // Zero is far away — don't pull it in; just ensure sign doesn't flip
-      zeroIncluded = false;
     }
   }
 
   var span = Math.max(rawMax - rawMin, 1);
 
-  // Nice tick generation: find a tick interval that gives 4–6 readable labels
   function niceTicks(lo, hi) {
     var range = hi - lo;
     var rough = range / 5;
-    var mag   = Math.pow(10, Math.floor(Math.log10(rough)));
-    var candidates = [mag * 0.5, mag, mag * 2, mag * 2.5, mag * 5, mag * 10];
-    var interval = candidates.find(function(c){ return range / c >= 3 && range / c <= 7; }) || (range / 5);
-    var start = Math.ceil(lo / interval) * interval;
+    if (rough <= 0) return [lo, hi];
+    var mag  = Math.pow(10, Math.floor(Math.log10(rough)));
+    var cands = [mag*0.5, mag, mag*2, mag*2.5, mag*5, mag*10];
+    var iv   = cands.find(function(c){ return range/c >= 3 && range/c <= 7; }) || rough;
+    var start = Math.ceil(lo / iv) * iv;
     var ticks = [];
-    for (var v = start; v <= hi + interval * 0.01; v += interval) {
+    for (var v = start; v <= hi + iv*0.01; v += iv)
       ticks.push(Math.round(v * 1000) / 1000);
-    }
     return ticks;
   }
 
   var ticks = niceTicks(rawMin, rawMax);
-  var y0Pct = (0 - rawMin) / span;
-
   return {
-    maxV:         rawMax,
-    minV:         rawMin,
-    span:         span,
-    y0Pct:        y0Pct,
-    ticks:        ticks,
-    zero:         zeroIncluded,
-    truncated:    !zeroIncluded && dMin > 0    // true when axis doesn't start at 0
+    maxV:      rawMax,
+    minV:      rawMin,
+    span:      span,
+    y0Pct:     (0 - rawMin) / span,
+    ticks:     ticks,
+    zero:      zeroIncluded,
+    truncated: !zeroIncluded && dMin > 0
   };
 }
-
 // ── Demo detail CSV files (embedded for test build) ──────────────────────────
 // Calling loadDemoDetails() parses these through the live import pipeline,
 // demonstrating unmasking of Amazon, Apple Card, Home Depot, Lowe's, and Venmo.
@@ -5344,13 +5336,21 @@ function loadDemoDetails() {
 function buildSavingsRegister(months) {
   if (!txns.length || !months.length) return [];
   const DETAIL = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+  // OPERATING ONLY: checking, savings, credit — never investment, retirement, 529, HSA
+  const OPER_T  = new Set(['checking','savings','credit']);
 
   // Compute opening checking balance (all checking txns before first month)
   var firstMo = months[0];
   var chkOpeningAll = 0;
+  function isOperatingAcct(name) {
+    var tp = detectAcctType(name||'');
+    return tp === 'checking' || tp === 'savings' || tp === 'credit';
+  }
+  function isCheckingAcct(name) { return detectAcctType(name||'') === 'checking'; }
+
   txns.forEach(function(t) {
     if (t.itemDetail || DETAIL.has(t._source||t._ftype||'')) return;
-    if (detectAcctType(t.account||'') !== 'checking') return;
+    if (!isCheckingAcct(t.account||'')) return;
     if (t.date < firstMo + '-01') chkOpeningAll += t.amount;
   });
 
@@ -5370,7 +5370,7 @@ function buildSavingsRegister(months) {
 
     txns.forEach(function(t) {
       if (t.itemDetail || DETAIL.has(t._source||t._ftype||'')) return;
-      if (detectAcctType(t.account||'') !== 'checking') return;
+      if (!isCheckingAcct(t.account||'')) return;
       if (t.date < mo+'-01' || t.date > mo+'-31') return;
 
       if (t.isTransfer) {
@@ -5686,7 +5686,7 @@ function renderCfBankDraw(months, projectedIdx) {
   var out = '';
 
   // Panel header
-  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;contain:paint;">';
 
   // Title bar with discipline badge
   out += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid rgba(255,255,255,.07);">';
@@ -5726,43 +5726,43 @@ function renderCfBankDraw(months, projectedIdx) {
        + '</div>';
   out += '</div>';
 
-  // Chart
-  out += '<div style="padding:12px 16px 8px;">';
-  out += '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Monthly Bank / Draw &amp; Cumulative Position</div>';
-  out += '<div id="cfBankChart" style="width:100%;height:160px;"></div>';
+  // Chart — own styled container, visually separated from table
+  out += '<div style="border-top:1px solid rgba(255,255,255,.07);padding:14px 16px 10px;background:rgba(255,255,255,.014);">';
+  out += '<div style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">Monthly Bank / Draw — Operating Accounts Only</div>';
+  out += '<div id="cfBankChart" style="width:100%;height:190px;"></div>';
   out += '</div>';
 
-  // Table — compact, last 12 months max
-  var tableRows = rows.slice(-12);
-  out += '<div style="border-top:1px solid rgba(255,255,255,.07);overflow-x:auto;">';
-  out += '<table style="width:100%;border-collapse:collapse;font-size:11px;font-family:var(--fm);">';
-  out += '<thead><tr style="border-bottom:1px solid rgba(255,255,255,.1);">';
-  ['Month','Start Bal','End Bal','Xfer\u2192Sav','Xfer\u2190Sav','Bank / (Draw)','Cumulative'].forEach(function(h,i) {
-    out += '<th style="padding:5px '+(i===0?'16':'10')+'px;text-align:'+(i===0?'left':'right')+';font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);white-space:nowrap;">'+h+'</th>';
+  // Table — analytics-grade, clearly below the chart
+  var tableRows = rows.slice(-18);
+  out += '<div style="padding:5px 16px 4px;background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.08);">';
+  out += '<span style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);font-family:var(--fm);">Monthly Detail — last 12 months</span></div>';
+  out += '<div style="border-top:2px solid rgba(255,255,255,.14);overflow-x:auto;overflow-y:auto;max-height:380px;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;">';
+  out += '<table style="width:100%;border-collapse:collapse;">';
+  out += '<thead><tr style="background:linear-gradient(180deg,rgba(255,255,255,.07) 0%,rgba(255,255,255,.03) 100%);border-bottom:2px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:2;">';
+  ['Month','Start Bal','End Bal','Xfer → Sav','Xfer ← Sav','Bank / (Draw)','Cumulative'].forEach(function(h,i) {
+    out += '<th style="padding:8px '+(i===0?'16':'10')+'px;text-align:'+(i===0?'left':'right')+';font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);white-space:nowrap;">'+h+'</th>';
   });
   out += '</tr></thead><tbody>';
   tableRows.forEach(function(r, ri) {
-    var isProj = (r.month === (months[months.length-1]) && projectedIdx >= 0);
-    var bg  = ri % 2 ? 'rgba(255,255,255,.018)' : 'transparent';
+    var isProj = (r.month === months[months.length-1] && projectedIdx >= 0);
+    var bg  = ri % 2 ? 'rgba(255,255,255,.028)' : 'rgba(255,255,255,.008)';
     var bkC = r.trueBankDraw >= 0 ? 'var(--pos)' : 'var(--neg)';
-    var cuC = r.cumulative  >= 0 ? 'var(--pos)' : 'var(--neg)';
-    function mf(v) { var a=Math.abs(v||0); return (v<0?'\u2212':'')+'$'+a.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
-    out += '<tr style="background:'+bg+';border-top:1px solid rgba(255,255,255,.04);"'+(isProj?' title="Projected month"':'')+'>'; 
-    out += '<td style="padding:4px 16px;color:var(--ink2);white-space:nowrap;">'+r.monthName+(isProj?' <em style=\"color:var(--gold);font-size:9px;\">est.</em>':'')+'</td>';
-    out += '<td style="padding:4px 10px;text-align:right;color:var(--ink4);">'+mf(r.startBal)+'</td>';
-    out += '<td style="padding:4px 10px;text-align:right;color:var(--ink3);">'+mf(r.endBal)+'</td>';
-    out += '<td style="padding:4px 10px;text-align:right;color:'+(r.xfersOut>0?'var(--river)':'var(--ink4)')+';">'+(r.xfersOut>0?'\u2212'+kfmt(r.xfersOut):'\u2014')+'</td>';
-    out += '<td style="padding:4px 10px;text-align:right;color:'+(r.xfersIn>0?'var(--gold)':'var(--ink4)')+';">'+(r.xfersIn>0?'+'+kfmt(r.xfersIn):'\u2014')+'</td>';
-    out += '<td style="padding:4px 10px;text-align:right;font-weight:700;color:'+bkC+';">'+kfmtS(r.trueBankDraw)+'</td>';
-    out += '<td style="padding:4px 10px;text-align:right;font-weight:700;color:'+cuC+';">'+kfmtS(r.cumulative)+'</td>';
+    var cuC = r.cumulative   >= 0 ? 'var(--pos)' : 'var(--neg)';
+    var FM  = 'font-size:11px;font-family:var(--fm);';
+    function mf(v) { var a=Math.abs(v||0); return (v<0?'−':'')+'$'+a.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+    out += '<tr style="background:'+bg+';border-top:1px solid rgba(255,255,255,.05);">';
+    out += '<td style="padding:5px 16px;font-size:12px;font-weight:600;color:'+(isProj?'var(--gold)':'var(--ink2)')+';white-space:nowrap;">'+r.monthName+(isProj?' <span style="font-size:9px;font-family:var(--fm);font-style:italic;font-weight:400;">est.</span>':'')+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:var(--ink4);">'+mf(r.startBal)+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:var(--ink3);">'+mf(r.endBal)+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:'+(r.xfersOut>0?'var(--river)':'rgba(255,255,255,.18)')+';">'+(r.xfersOut>0?'−'+kfmt(r.xfersOut):'—')+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:'+(r.xfersIn>0?'var(--gold)':'rgba(255,255,255,.18)')+';">'+(r.xfersIn>0?'+'+kfmt(r.xfersIn):'—')+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;font-size:13px;font-weight:700;font-family:var(--fm);color:'+bkC+';">'+kfmtS(r.trueBankDraw)+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;font-size:13px;font-weight:700;font-family:var(--fm);color:'+cuC+';">'+kfmtS(r.cumulative)+'</td>';
     out += '</tr>';
   });
   out += '</tbody></table></div>';
-  out += '</div>';  // close panel
-
+  out += '</div>';  // close outer panel
   el.innerHTML = out;
-
-  // Render chart into cfBankChart
   setTimeout(function() {
     var ce = document.getElementById('cfBankChart');
     if (!ce) return;
@@ -6118,7 +6118,9 @@ function renderCashFlow() {
   try {
   if (!txns.length) return;
 
-  let src = spendable(txns);
+  // Operating accounts only — exclude investment, retirement, 529, HSA
+  const OPER_TYPES = new Set(['checking', 'savings', 'credit']);
+  let src = spendable(txns).filter(t => OPER_TYPES.has(detectAcctType(t.account||'')));
 
   // Populate account filter on first call
   const acctSel = document.getElementById('cfAcct');
