@@ -5334,84 +5334,108 @@ function loadDemoDetails() {
 //             chkChange, trueBankDraw, cumulative }
 // ─────────────────────────────────────────────────────────────────────────────
 function buildSavingsRegister(months) {
+  // OPERATING ONLY: checking + savings + credit card transactions.
+  // Never includes investment, retirement, 529, HSA.
+  // 
+  // Core metric: trueBankDraw = operating income - operating expenses
+  //   Income   = non-transfer deposits to checking (payroll, etc.)
+  //   Expenses = all non-transfer outflows across checking + credit cards
+  //              (CC charges represent real spending even if paid later)
+  // 
+  // We do NOT attempt to reconstruct running balances from transaction history —
+  // Quicken is the authoritative register for that. We only show the monthly
+  // income/expense delta and its cumulative trend.
+
   if (!txns.length || !months.length) return [];
   const DETAIL = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
-  // OPERATING ONLY: checking, savings, credit — never investment, retirement, 529, HSA
-  const OPER_T  = new Set(['checking','savings','credit']);
 
-  // Compute opening checking balance (all checking txns before first month)
-  var firstMo = months[0];
-  var chkOpeningAll = 0;
-  function isOperatingAcct(name) {
-    var tp = detectAcctType(name||'');
-    return tp === 'checking' || tp === 'savings' || tp === 'credit';
-  }
-  function isCheckingAcct(name) { return detectAcctType(name||'') === 'checking'; }
+  function acctType(name) { return detectAcctType(name||''); }
+  function isChk(name)  { return acctType(name) === 'checking'; }
+  function isCC(name)   { return acctType(name) === 'credit';   }
+  function isSav(name)  { return acctType(name) === 'savings';  }
+  function isOper(name) { var t=acctType(name); return t==='checking'||t==='savings'||t==='credit'; }
 
+  // Pre-index operating transactions by month for speed
+  var byMonth = {};
   txns.forEach(function(t) {
-    if (t.itemDetail || DETAIL.has(t._source||t._ftype||'')) return;
-    if (!isCheckingAcct(t.account||'')) return;
-    if (t.date < firstMo + '-01') chkOpeningAll += t.amount;
+    if (!isOper(t.account||'')) return;                        // skip investment/retirement
+    if (t.itemDetail || DETAIL.has(t._source||t._ftype||'')) return;  // skip detail CSVs
+    var mo = t.date.slice(0,7);
+    if (!byMonth[mo]) byMonth[mo] = [];
+    byMonth[mo].push(t);
   });
 
   var rows = [];
   var cumulative = 0;
-  var runningStart = chkOpeningAll;
 
   months.forEach(function(mo) {
-    var [yr, mn] = mo.split('-');
-    var monthName = new Date(+yr, +mn-1, 1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
+    var parts = mo.split('-');
+    var monthName = new Date(+parts[0],+parts[1]-1,1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
+    var moTxns = byMonth[mo] || [];
 
-    // Checking activity this month
-    var chkIncome  = 0;  // positive checking txns (payroll deposits)
-    var chkCharges = 0;  // negative checking txns (bills, outflows)
-    var xfersIn    = 0;  // money FROM savings INTO checking (bracket syntax, positive in checking)
-    var xfersOut   = 0;  // money FROM checking INTO savings (bracket syntax, negative in checking)
+    var income   = 0;  // payroll / direct deposits into checking (non-transfer)
+    var expenses = 0;  // all operating spend: checking outflows + CC charges (non-transfer)
+    var savXferOut = 0; // checking → savings (we're choosing to save this)
+    var savXferIn  = 0; // savings → checking (drawing on savings to cover shortfall)
+    var ccPay      = 0; // CC payments from checking (accounting move, not real spend)
 
-    txns.forEach(function(t) {
-      if (t.itemDetail || DETAIL.has(t._source||t._ftype||'')) return;
-      if (!isCheckingAcct(t.account||'')) return;
-      if (t.date < mo+'-01' || t.date > mo+'-31') return;
-
+    moTxns.forEach(function(t) {
       if (t.isTransfer) {
-        // Detect direction: category is [SavingsAccountName]
-        var cat = (t.category||'').trim();
-        var isSavingsXfer = /^\[.*(savings|sav|save).*\]$/i.test(cat) ||
-                            detectAcctType(cat.replace(/^\[|\]$/g,'')) === 'savings';
-        if (isSavingsXfer) {
-          if (t.amount < 0) xfersOut += Math.abs(t.amount);  // checking → savings
-          else               xfersIn  += t.amount;            // savings → checking
+        // Classify transfers by destination account type
+        var cat  = (t.category||'').replace(/^\[|\]$/g,'').trim();
+        var dest = acctType(cat);
+        if (isChk(t.account||'')) {
+          // Transfer originating from checking
+          if (dest === 'savings') {
+            if (t.amount < 0) savXferOut += Math.abs(t.amount);
+            else               savXferIn  += t.amount;
+          } else if (dest === 'credit') {
+            // CC payment — already counted as expense when charge was made; skip
+            if (t.amount < 0) ccPay += Math.abs(t.amount);
+          }
         }
-      } else {
-        if (t.amount > 0) chkIncome  += t.amount;
-        else              chkCharges += Math.abs(t.amount);
+        // Savings→checking: positive amount in checking with savings source
+        if (isSav(t.account||'') === false && isChk(t.account||'') && t.amount > 0) {
+          if (dest === 'savings' || isSav(cat)) savXferIn += t.amount;
+        }
+        return;
       }
+
+      // Non-transfer transactions
+      if (isChk(t.account||'')) {
+        if (t.amount > 0) income   += t.amount;   // deposit
+        else              expenses += Math.abs(t.amount); // bill / direct debit
+      } else if (isCC(t.account||'')) {
+        // CC charge = real expense; CC credit/refund = negative expense
+        if (t.amount < 0) expenses += Math.abs(t.amount); // charge
+        else              expenses -= t.amount;            // refund/credit
+      }
+      // Savings account: non-transfer activity is interest, ignored here
     });
 
-    var chkChange     = chkIncome - chkCharges + xfersIn - xfersOut;
-    var endBal        = runningStart + chkChange;
-    // True bank/draw = how much checking+savings wealth ACTUALLY changed
-    // If savings transferred IN to cover a deficit, that's a draw on total wealth
-    var trueBankDraw  = chkChange - xfersIn + xfersOut;
-    // Simplified: just the non-transfer net change in checking
-    // = income - charges (excluding any savings transfers)
-    trueBankDraw = chkIncome - chkCharges;
+    // Ensure expenses >= 0
+    expenses = Math.max(expenses, 0);
+
+    // True bank/draw: how much did income actually exceed operating expenses?
+    // savXferOut is a CHOICE (we're saving it), savXferIn is DRAWING (covering a gap).
+    // Both are excluded from trueBankDraw — they're capital movements, not P&L.
+    var trueBankDraw = income - expenses;
 
     cumulative += trueBankDraw;
 
     rows.push({
-      month:       mo,
-      monthName:   monthName,
-      startBal:    runningStart,
-      endBal:      endBal,
-      xfersIn:     xfersIn,
-      xfersOut:    xfersOut,
-      chkChange:   chkChange,
-      trueBankDraw:trueBankDraw,
-      cumulative:  cumulative
+      month:        mo,
+      monthName:    monthName,
+      income:       income,
+      expenses:     expenses,
+      savXferOut:   savXferOut,
+      savXferIn:    savXferIn,
+      ccPay:        ccPay,
+      xfersIn:      savXferIn,   // alias for table display
+      xfersOut:     savXferOut,  // alias for table display
+      trueBankDraw: trueBankDraw,
+      cumulative:   cumulative
     });
-
-    runningStart = endBal;
   });
 
   return rows;
@@ -5739,7 +5763,7 @@ function renderCfBankDraw(months, projectedIdx) {
   out += '<div style="border-top:2px solid rgba(255,255,255,.14);overflow-x:auto;overflow-y:auto;max-height:380px;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;">';
   out += '<table style="width:100%;border-collapse:collapse;">';
   out += '<thead><tr style="background:linear-gradient(180deg,rgba(255,255,255,.07) 0%,rgba(255,255,255,.03) 100%);border-bottom:2px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:2;">';
-  ['Month','Start Bal','End Bal','Xfer → Sav','Xfer ← Sav','Bank / (Draw)','Cumulative'].forEach(function(h,i) {
+  ['Month','Income','Expenses','→ Savings','← Savings','Bank / (Draw)','Cumulative'].forEach(function(h,i) {
     out += '<th style="padding:8px '+(i===0?'16':'10')+'px;text-align:'+(i===0?'left':'right')+';font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);white-space:nowrap;">'+h+'</th>';
   });
   out += '</tr></thead><tbody>';
@@ -5752,8 +5776,8 @@ function renderCfBankDraw(months, projectedIdx) {
     function mf(v) { var a=Math.abs(v||0); return (v<0?'−':'')+'$'+a.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
     out += '<tr style="background:'+bg+';border-top:1px solid rgba(255,255,255,.05);">';
     out += '<td style="padding:5px 16px;font-size:12px;font-weight:600;color:'+(isProj?'var(--gold)':'var(--ink2)')+';white-space:nowrap;">'+r.monthName+(isProj?' <span style="font-size:9px;font-family:var(--fm);font-style:italic;font-weight:400;">est.</span>':'')+'</td>';
-    out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:var(--ink4);">'+mf(r.startBal)+'</td>';
-    out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:var(--ink3);">'+mf(r.endBal)+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:var(--pos);">+'+mf(r.income)+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:var(--neg);">\u2212'+mf(r.expenses)+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:'+(r.xfersOut>0?'var(--river)':'rgba(255,255,255,.18)')+';">'+(r.xfersOut>0?'−'+kfmt(r.xfersOut):'—')+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:'+(r.xfersIn>0?'var(--gold)':'rgba(255,255,255,.18)')+';">'+(r.xfersIn>0?'+'+kfmt(r.xfersIn):'—')+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;font-size:13px;font-weight:700;font-family:var(--fm);color:'+bkC+';">'+kfmtS(r.trueBankDraw)+'</td>';
