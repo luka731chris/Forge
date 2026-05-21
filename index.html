@@ -1,4 +1,21 @@
-<!DOCTYPE html>
+
+  border: 1px solid rgba(255,255,255,.07);
+  transition: border-color .15s, box-shadow .15s, transform .1s;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.03) 0%, transparent 60%);
+  pointer-events: none;
+}
+.kpi-card:hover {
+  border-color: rgba(255,255,255,.15);
+  box-shadow: 0 4px 20px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08);
+  transform: translateY(-1px);
+}<!DOCTYPE html>
 <html lang="en">
 <head>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -291,11 +308,17 @@ main::-webkit-scrollbar-thumb:hover { background: var(--line3); }
 .chart-grid-1 { margin-bottom: var(--sp2); }
 .chart-card {
   background: var(--float);
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255,255,255,.07);
+  border-top: 1px solid rgba(255,255,255,.11);
   border-radius: var(--r-lg);
   padding: var(--sp4);
   overflow: hidden;
   contain: paint;
+  transition: border-color .15s, box-shadow .15s;
+}
+.chart-card:hover {
+  border-color: rgba(255,255,255,.13);
+  box-shadow: 0 2px 16px rgba(0,0,0,.35);
 }
 .chart-title  { font-size: 13px; font-weight: 600; color: var(--ink2); margin-bottom: 2px; }
 .chart-sub    { font-size: 10px; color: var(--ink4); font-family: var(--fm); margin-bottom: var(--sp3); }
@@ -761,16 +784,20 @@ select:focus { border-color: var(--gold); }
 /* ── Chart tooltip ────────────────────────────────────────────────────────── */
 #chartTip {
   position: fixed;
-  background: var(--raised);
-  border: 1px solid var(--line2);
-  border-left: 3px solid var(--gold);
-  border-radius: var(--r-sm);
-  padding: 5px var(--sp3);
-  font-size: 11px; font-family: var(--fm); color: var(--ink);
-  pointer-events: none; z-index: 999;
+  background: rgba(12,12,18,0.96);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,.12);
+  border-top: 1px solid rgba(255,255,255,.22);
+  border-radius: 10px;
+  padding: 10px 14px 9px;
+  font-size: 12px; font-family: var(--fm); color: var(--ink2);
+  pointer-events: none; z-index: 9999;
   white-space: nowrap;
-  box-shadow: var(--shadow);
+  box-shadow: 0 8px 32px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04);
   display: none;
+  min-width: 140px;
+  max-width: 320px;
+  transition: opacity .08s;
 }
 
 /* ── Transfer badge ───────────────────────────────────────────────────────── */
@@ -3826,8 +3853,43 @@ function showChartTip(e, text) {
   const tip = document.getElementById('chartTip');
   if (!tip) return;
   const hasDrill = e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.drill;
-  tip.innerHTML = (text||'').replace(/&apos;/g,"'").replace(/&quot;/g,'"') +
-    (hasDrill ? '<span style="display:block;font-size:9px;color:var(--gold);margin-top:3px;">↗ click to view transactions</span>' : '');
+  const raw = (text||'').replace(/&apos;/g,"'").replace(/&quot;/g,'"');
+  // Parse pipe-delimited sections into styled rows
+  const parts = raw.split(/\s*\|\s*/);
+  let html = '';
+  parts.forEach(function(p, i) {
+    p = p.trim();
+    if (!p) return;
+    if (i === 0) {
+      // Header row: month label
+      html += '<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;'
+            + 'color:rgba(255,255,255,.45);margin-bottom:6px;padding-bottom:5px;'
+            + 'border-bottom:1px solid rgba(255,255,255,.08);">'+p+'</div>';
+    } else {
+      // Data row: "Label: value" — color value by sign
+      const colon = p.indexOf(':');
+      if (colon > 0) {
+        const label = p.slice(0, colon).trim();
+        const val   = p.slice(colon+1).trim();
+        const isPos = val.startsWith('+') || (!val.startsWith('-') && !val.startsWith('−'));
+        const isNeg = val.startsWith('-') || val.startsWith('−');
+        const isNet = label.toLowerCase().includes('net');
+        const valCol = isNet ? (isNeg ? '#FF5C5C' : '#34D9C3') : 'rgba(255,255,255,.85)';
+        html += '<div style="display:flex;justify-content:space-between;align-items:baseline;'
+              + 'gap:16px;padding:2px 0;">'
+              + '<span style="color:rgba(255,255,255,.55);font-size:11px;">'+label+'</span>'
+              + '<span style="color:'+valCol+';font-weight:'+(isNet?'700':'500')+';font-size:12px;font-family:var(--fm);">'+val+'</span>'
+              + '</div>';
+      } else {
+        html += '<div style="color:rgba(255,255,255,.55);font-size:11px;padding:2px 0;">'+p+'</div>';
+      }
+    }
+  });
+  if (hasDrill) {
+    html += '<div style="font-size:9px;color:var(--gold);margin-top:6px;padding-top:5px;'
+          + 'border-top:1px solid rgba(255,255,255,.07);">↗ click to view transactions</div>';
+  }
+  tip.innerHTML = html;
   tip.style.display = 'block';
   positionChartTip(e);
 }
@@ -5595,13 +5657,15 @@ function renderSavingsRegister() {
 function renderSavingsRegChart(el, labels, barData, lineData) {
   if (!el || !labels.length) return;
   var W = Math.max(el.offsetWidth || 520, 320);
-  var H = 220;
-  var PAD = {t:18, r:18, b:32, l:62};
+  var H = 240;
+  var PAD = {t:24, r:20, b:42, l:68};
   var cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
   var n = labels.length;
 
+  // Bars need zero baseline; cumulative line uses smart zero
+  var barVals = barData.filter(isFinite);
   var allVals = barData.concat(lineData).filter(isFinite);
-  var sc = computeScale(allVals, {showZero:true, padPct:0.18});
+  var sc = computeScale(allVals, {showZero:true, padPct:0.22});
   var maxV = sc.maxV, minV = sc.minV, span = sc.span;
   function yPx(v) { return PAD.t + cH - cH*(v-minV)/span; }
   var y0 = yPx(0);
@@ -5654,7 +5718,7 @@ function renderSavingsRegChart(el, labels, barData, lineData) {
 
     linePts.push({x:cx.toFixed(1), y:yPx(lineData[i]).toFixed(1), v:lineData[i]});
     if (i % step === 0 || i === n-1) {
-      xLbls += '<text x="'+cx.toFixed(1)+'" y="'+(H-4)+'" text-anchor="middle"'
+      xLbls += '<text x="'+cx.toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle"'
              + ' fill="rgba(255,255,255,.38)" font-size="10" font-family="var(--fm)">'+labels[i]+'</text>';
     }
   });
@@ -5750,19 +5814,19 @@ function renderCfBankDraw(months, projectedIdx) {
   out += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid rgba(255,255,255,.07);">';
   out +=   '<div>';
   out +=     '<div style="font-size:13px;font-weight:700;color:var(--ink);letter-spacing:-.01em;">Banking vs. Drawing \u2014 Savings Discipline</div>';
-  out +=     '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">How much are we building or depleting our operating position each month?</div>';
+  out +=     '<div style="font-size:12px;color:var(--ink4);margin-top:3px;line-height:1.5;">Month-over-month: are we building or drawing from our operating position?</div>';
   out +=   '</div>';
   out +=   '<div style="text-align:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 14px;flex-shrink:0;">';
   out +=     '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Discipline</div>';
-  out +=     '<div style="font-size:22px;font-weight:800;font-family:var(--fd);color:'+dsCol+';">'+disciplineScore+'%</div>';
-  out +=     '<div style="font-size:9px;color:var(--ink4);">'+bankMos+' of '+rows.length+' months</div>';
+  out +=     '<div style="font-size:28px;font-weight:800;font-family:var(--fd);color:'+dsCol+';line-height:1.1;">'+disciplineScore+'%</div>';
+  out +=     '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">'+bankMos+' of '+rows.length+' months</div>';
   out +=   '</div>';
   out += '</div>';
 
   // Headline
-  out += '<div style="padding:10px 16px;background:rgba(255,255,255,.025);border-bottom:1px solid rgba(255,255,255,.06);">';
+  out += '<div style="padding:14px 18px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.08);">';
   out +=   '<div style="font-size:12px;color:var(--ink3);line-height:1.6;">\u{1F3AF} '+headline+'</div>';
-  if (streakMsg) out += '<div style="font-size:11px;color:var(--ink4);margin-top:4px;">' + streakMsg + '</div>';
+  if (streakMsg) out += '<div style="font-size:12px;color:var(--ink4);margin-top:6px;">' + streakMsg + '</div>';
   out += '</div>';
 
   // KPI row
@@ -5770,8 +5834,8 @@ function renderCfBankDraw(months, projectedIdx) {
   function cfKpi(label, val, col, sub) {
     return '<div style="padding:10px 14px;border-right:1px solid rgba(255,255,255,.06);">'
          + '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">'+label+'</div>'
-         + '<div style="font-size:20px;font-weight:800;font-family:var(--fd);color:'+col+';">'+val+'</div>'
-         + (sub ? '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+sub+'</div>' : '')
+         + '<div style="font-size:26px;font-weight:800;font-family:var(--fd);color:'+col+';line-height:1.1;">'+val+'</div>'
+         + (sub ? '<div style="font-size:11px;color:var(--ink4);margin-top:4px;">'+sub+'</div>' : '')
          + '</div>';
   }
   out += cfKpi('Net Position', kfmtS(netPos), netCol, 'vs. period start');
@@ -5779,7 +5843,7 @@ function renderCfBankDraw(months, projectedIdx) {
   out += cfKpi('Banked',  '+'+kfmt(totalBank), 'var(--pos)', bankMos+' months');
   out += '<div style="padding:10px 14px;">'
        + '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Drawn</div>'
-       + '<div style="font-size:20px;font-weight:800;font-family:var(--fd);color:var(--neg);">\u2212'+kfmt(totalDraw)+'</div>'
+       + '<div style="font-size:26px;font-weight:800;font-family:var(--fd);color:var(--neg);line-height:1.1;">\u2212'+kfmt(totalDraw)+'</div>'
        + '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+drawMos+' months</div>'
        + '</div>';
   out += '</div>';
@@ -5787,7 +5851,7 @@ function renderCfBankDraw(months, projectedIdx) {
   // Chart — own styled container, visually separated from table
   out += '<div style="border-top:1px solid rgba(255,255,255,.07);padding:14px 16px 10px;background:rgba(255,255,255,.014);">';
   out += '<div style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">Monthly Bank / Draw — Operating Accounts Only</div>';
-  out += '<div id="cfBankChart" style="width:100%;height:190px;"></div>';
+  out += '<div id="cfBankChart" style="width:100%;height:220px;"></div>';
   out += '</div>';
 
   // Table — analytics-grade, clearly below the chart
@@ -5806,16 +5870,16 @@ function renderCfBankDraw(months, projectedIdx) {
     var bg  = ri % 2 ? 'rgba(255,255,255,.028)' : 'rgba(255,255,255,.008)';
     var bkC = r.net >= 0 ? 'var(--pos)' : 'var(--neg)';
     var cuC = r.cumulative   >= 0 ? 'var(--pos)' : 'var(--neg)';
-    var FM  = 'font-size:11px;font-family:var(--fm);';
+    var FM  = 'font-size:12px;font-family:var(--fm);';
     function mf(v) { var a=Math.abs(v||0); return (v<0?'−':'')+'$'+a.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
-    out += '<tr style="background:'+bg+';border-top:1px solid rgba(255,255,255,.05);">';
-    out += '<td style="padding:5px 16px;font-size:12px;font-weight:600;color:'+(isProj?'var(--gold)':'var(--ink2)')+';white-space:nowrap;">'+r.monthName+(isProj?' <span style="font-size:9px;font-family:var(--fm);font-style:italic;font-weight:400;">est.</span>':'')+'</td>';
-    out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:var(--pos);">+'+mf(r.income)+'</td>';
-    out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:var(--neg);">\u2212'+mf(r.expenses)+'</td>';
+    out += '<tr style="background:'+bg+';border-top:1px solid rgba(255,255,255,.05);height:38px;">';
+    out += '<td style="padding:7px 16px;font-size:13px;font-weight:600;color:'+(isProj?'var(--gold)':'var(--ink2)')+';white-space:nowrap;">'+r.monthName+(isProj?' <span style="font-size:9px;font-family:var(--fm);font-style:italic;font-weight:400;">est.</span>':'')+'</td>';
+    out += '<td style="padding:7px 10px;text-align:right;'+FM+'color:var(--pos);">+'+mf(r.income)+'</td>';
+    out += '<td style="padding:7px 10px;text-align:right;'+FM+'color:var(--neg);">\u2212'+mf(r.expenses)+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:'+(r.xfersOut>0?'var(--river)':'rgba(255,255,255,.18)')+';">'+(r.xfersOut>0?'−'+kfmt(r.xfersOut):'—')+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:'+(r.xfersIn>0?'var(--gold)':'rgba(255,255,255,.18)')+';">'+(r.xfersIn>0?'+'+kfmt(r.xfersIn):'—')+'</td>';
-    out += '<td style="padding:5px 10px;text-align:right;font-size:13px;font-weight:700;font-family:var(--fm);color:'+bkC+';">'+kfmtS(r.net)+'</td>';
-    out += '<td style="padding:5px 10px;text-align:right;font-size:13px;font-weight:700;font-family:var(--fm);color:'+cuC+';">'+kfmtS(r.cumulative)+'</td>';
+    out += '<td style="padding:7px 10px;text-align:right;font-size:14px;font-weight:800;font-family:var(--fd);color:'+bkC+';">'+kfmtS(r.net)+'</td>';
+    out += '<td style="padding:7px 10px;text-align:right;font-size:14px;font-weight:800;font-family:var(--fd);color:'+cuC+';">'+kfmtS(r.cumulative)+'</td>';
     out += '</tr>';
   });
   out += '</tbody></table></div>';
@@ -6148,13 +6212,13 @@ function renderNetSavingsChart(elId, labels, data, opts) {
   if (!data || !data.length) { el.innerHTML = ''; return; }
 
   const W  = Math.max(el.offsetWidth || 520, 320);
-  const H  = 240;
-  const PT = 28, PB = 38, PL = 66, PR = 20;
+  const H  = 260;
+  const PT = 32, PB = 42, PL = 68, PR = 22;
   const cW = W - PL - PR, cH = H - PT - PB;
 
   const n       = data.length;
   // Dynamic scale: 15% of data span as padding — data always fills ~75% of chart
-  const _sc  = computeScale(data, { showZero:true, padPct:0.15 });
+  const _sc  = computeScale(data, { showZero:true, padPct:0.22 });
   const maxV = _sc.maxV, minV = _sc.minV, span = _sc.span;
   const yOf  = v => PT + cH - cH * (v - minV) / span;
   const xOf  = i => PL + (n < 2 ? cW / 2 : (i / (n - 1)) * cW);
