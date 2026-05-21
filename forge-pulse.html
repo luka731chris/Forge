@@ -4,24 +4,31 @@ function svgBar(elId, labels, datasets, opts) {
   const el = document.getElementById(elId);
   if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
   const W = Math.max(el.offsetWidth || 0, 300);
-  const H = Math.max(el.offsetHeight || 0, 180);
-  if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;font-family:var(--fm);">No data</div>'; return; }
+  const H = Math.max(el.offsetHeight || 0, 200);
+  if (!labels.length) {
+    el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
+    return;
+  }
 
-  const PAD = { t:12, r:16, b:52, l:58 };
-  const cW = W - PAD.l - PAD.r;
-  const cH = H - PAD.t - PAD.b;
-  const n  = labels.length;
+  // Padding: top for value labels, bottom for x-labels + legend
+  const nDS    = datasets.length;
+  const LEGEND_H = nDS > 1 ? 22 : 0;    // only show legend if multiple datasets
+  const PAD    = { t:20, r:18, b:44 + LEGEND_H, l:62 };
+  const cW     = W - PAD.l - PAD.r;
+  const cH     = H - PAD.t - PAD.b;
+  const n      = labels.length;
   const allVals = datasets.flatMap(d => d.data || []).filter(v => isFinite(v));
   if (!allVals.length) return;
 
-  // Dynamic scale with smart zero + nice ticks
-  const _sbSc  = computeScale(allVals, { showZero:true, padPct:0.15 });
-  const maxV   = _sbSc.maxV;
-  const minV   = _sbSc.minV;
-  const span   = _sbSc.span;
-  const zeroY  = cH * (maxV / span);
+  // Bar charts always anchor at $0 — forceZeroBase prevents truncated axis
+  const _sbSc = computeScale(allVals, { showZero:true, forceZeroBase:true, padPct:0.12 });
+  const maxV  = _sbSc.maxV;
+  const minV  = _sbSc.minV;
+  const span  = _sbSc.span;
+  const zeroY = cH * (maxV / span);   // pixel distance from chart top to zero
 
-  let grid = '', yLbls = '', truncNote = '';
+  // Grid + y-axis labels
+  let grid = '', yLbls = '';
   (_sbSc.ticks || []).forEach(function(v) {
     var y   = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
     var isZ = Math.abs(v) < span * 0.015;
@@ -30,6 +37,7 @@ function svgBar(elId, labels, datasets, opts) {
          + ' stroke="'+(isZ?'rgba(255,255,255,.55)':'rgba(255,255,255,.06)')+'"'
          + ' stroke-width="'+(isZ?2:1)+'"/>';
     if (isZ) {
+      // Shadow below zero line for depth
       grid += '<line x1="'+PAD.l+'" y1="'+(parseFloat(y)+2)+'" x2="'+(W-PAD.r)+'" y2="'+(parseFloat(y)+2)+'"'
            + ' stroke="rgba(0,0,0,.35)" stroke-width="2"/>';
     }
@@ -39,49 +47,56 @@ function svgBar(elId, labels, datasets, opts) {
           + ' fill="'+(isZ?'rgba(255,255,255,.65)':'rgba(255,255,255,.38)')+'"'
           + ' font-size="10" font-family="var(--fm)"'+(isZ?' font-weight="700"':'')+'>'+lbl+'</text>';
   });
-  if (_sbSc.truncated) {
-    truncNote = '<text x="'+PAD.l+'" y="'+(PAD.t+cH+12)+'" text-anchor="start"'
-              + ' fill="rgba(255,255,255,.28)" font-size="9" font-family="var(--fm)" font-style="italic">'
-              + 'axis truncated — $0 not shown</text>';
-  }
-  // Bars + invisible hit areas for tooltip
-  const nDS  = datasets.length;
+
+  // Bars
   const grpW = cW / n;
-  const barW = Math.max(Math.min((grpW / (nDS + 0.8)) - 1, 40), 3);
+  const barW = Math.max(Math.min((grpW / (nDS + 0.8)) - 1, 44), 3);
   const off  = (grpW - barW * nDS) / 2;
   let bars = '', hitAreas = '', legend = '';
 
   var _htchId = 'h'+elId.replace(/[^a-z0-9]/gi,'');
-  var _defs2  = '<defs><pattern id="'+_htchId+'" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="rgba(255,255,255,0.28)" stroke-width="2.5"/></pattern></defs>';
+  var _defs2  = '<defs><pattern id="'+_htchId+'" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="rgba(255,255,255,0.3)" stroke-width="2.5"/></pattern></defs>';
 
   datasets.forEach(function(ds, di) {
     var color     = ds.backgroundColor || COLORS[di % COLORS.length];
     var safeLabel = (ds.label||'').replace(/'/g, '&apos;');
-    legend += '<rect x="'+(di*90+PAD.l)+'" y="'+(H-16)+'" width="10" height="8" rx="2" fill="'+color+'"/>'
-            + '<text x="'+(di*90+PAD.l+14)+'" y="'+(H-8)+'" fill="rgba(255,255,255,.5)" font-size="10" font-family="var(--fm)">'+safeLabel+'</text>';
+
+    // Legend: placed below x-labels with breathing room
+    if (nDS > 1) {
+      var lgX = PAD.l + di * 110;
+      var lgY = H - 10;
+      legend += '<rect x="'+lgX+'" y="'+(lgY-8)+'" width="10" height="8" rx="2" fill="'+color+'"/>'
+              + '<text x="'+(lgX+14)+'" y="'+lgY+'" fill="rgba(255,255,255,.5)" font-size="10" font-family="var(--fm)">'+safeLabel+'</text>';
+    }
+
     (ds.data || []).forEach(function(v, i) {
       if (!isFinite(v)) return;
       var isP  = (i === _pIdx);
       var x    = (PAD.l + i * grpW + off + di * barW).toFixed(1);
-      var bH   = Math.max((Math.abs(v) / span * cH).toFixed(1), 1);
+      var bH   = Math.max((Math.abs(v) / span * cH), 2);
       var y    = (PAD.t + (v >= 0 ? zeroY - Math.abs(v)/span*cH : zeroY)).toFixed(1);
-      var fmtV = Math.abs(v)>=1000?'$'+(v/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
+      var fmtV = Math.abs(v)>=1000?'$'+(Math.abs(v)/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
       var tip  = labels[i]+' · '+safeLabel+': '+fmtV+(isP?' (projected)':'');
-      var bRx = Math.min(parseFloat(bH)/2, 3);
-      bars += '<rect x="'+x+'" y="'+(parseFloat(y)+2)+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="'+bRx+'" fill="'+color+'" opacity="'+(isP?'0.1':'0.18')+'"/>'; // shadow bloom
-      bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="'+bRx+'" fill="'+color+'" opacity="'+(isP?'0.45':'0.88')+'" data-tip="'+tip+'"/>';
-      bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+(parseFloat(bH)*0.32).toFixed(1)+'" rx="'+bRx+'" fill="rgba(255,255,255,0.13)" style="pointer-events:none;"/>'; // top-lit
+      var bRx  = Math.min(bH/2, 3);
+      var bHs  = bH.toFixed(1);
+
+      // 3D: shadow bloom
+      bars += '<rect x="'+x+'" y="'+(parseFloat(y)+2)+'" width="'+barW.toFixed(1)+'" height="'+bHs+'" rx="'+bRx+'" fill="'+color+'" opacity="'+(isP?'0.10':'0.20')+'"/>';
+      // Main bar
+      bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+bHs+'" rx="'+bRx+'" fill="'+color+'" opacity="'+(isP?'0.45':'0.88')+'" data-tip="'+tip+'"/>';
+      // Top-lit highlight
+      bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+(bH*0.32).toFixed(1)+'" rx="'+bRx+'" fill="rgba(255,255,255,0.13)" style="pointer-events:none;"/>';
+
       if (isP) {
-        bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="'+bRx+'" fill="url(#'+_htchId+')" opacity="0.75"/>';
-        bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="'+bRx+'" fill="none" stroke="'+color+'" stroke-width="1" stroke-dasharray="3 2" opacity="0.8"/>';
-        var ely = (parseFloat(y)-5).toFixed(1);
+        bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+bHs+'" rx="'+bRx+'" fill="url(#'+_htchId+')" opacity="0.75"/>';
+        bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+bHs+'" rx="'+bRx+'" fill="none" stroke="'+color+'" stroke-width="1" stroke-dasharray="3 2" opacity="0.8"/>';
+        var ely = (parseFloat(y)-7).toFixed(1);
         bars += '<text x="'+(parseFloat(x)+barW/2).toFixed(1)+'" y="'+ely+'" text-anchor="middle" font-size="8" font-family="var(--fm)" fill="'+color+'" opacity="0.85" font-style="italic">est.</text>';
       }
     });
   });
 
-
-  // Per-column hit areas — all dataset values + computed net in one tooltip
+  // Per-column hit areas with net tooltip
   labels.forEach(function(colLbl, ci) {
     var parts = [String(colLbl)];
     var incV = 0, expV = 0;
@@ -90,36 +105,47 @@ function svgBar(elId, labels, datasets, opts) {
       if (!isFinite(v)) return;
       var av=Math.abs(v), fv=av>=1000?(av/1000).toFixed(1)+'K':Math.round(av).toString();
       var sign=v>=0?'+':'-';
-      parts.push((ds.label||'').replace(/['"&<>]/g,' ')+': '+sign+'$'+fv);
+      parts.push((ds.label||'').replace(/['\"&<>]/g,' ')+': '+sign+'$'+fv);
       if(/income/i.test(ds.label||'')) incV=v;
       if(/expense/i.test(ds.label||'')) expV=v;
     });
-    if(incV&&expV){var net=incV-Math.abs(expV),nAbs=Math.abs(net),nFv=nAbs>=1000?(nAbs/1000).toFixed(1)+'K':Math.round(nAbs).toString();parts.push('Net: '+(net>=0?'+':'-')+'$'+nFv);}
+    if(incV&&expV){
+      var net=incV-Math.abs(expV),nAbs=Math.abs(net);
+      var nFv=nAbs>=1000?(nAbs/1000).toFixed(1)+'K':Math.round(nAbs).toString();
+      parts.push('Net: '+(net>=0?'+':'-')+'$'+nFv);
+    }
     var colTip=parts.join('  |  ');
     var dd=JSON.stringify({month:String(colLbl)}).replace(/"/g,'&quot;');
-    hitAreas+='<rect x="'+(PAD.l+ci*grpW).toFixed(1)+'" y="'+PAD.t+'" width="'+grpW.toFixed(1)+'" height="'+cH+'" fill="transparent" style="cursor:pointer;" data-tip="'+colTip.replace(/"/g,'&quot;')+'" data-drill="'+dd+'"/>';
+    hitAreas+='<rect x="'+(PAD.l+ci*grpW).toFixed(1)+'" y="'+PAD.t+'" width="'+grpW.toFixed(1)+'" height="'+cH+'" fill="transparent" data-tip="'+colTip.replace(/'/g,'&#39;')+'" data-drill="'+dd+'" style="cursor:crosshair;"/>';
   });
 
-  // X labels — adaptive: skip labels to prevent overlap
-  // Calculate how many chars fit per slot
-  const charsPerSlot = Math.floor(grpW / 6.5); // ~6.5px per char at font-size 10
-  const minStep = Math.ceil(n / Math.max(1, Math.floor(cW / 48)));
+  // X-axis labels — adaptive step to prevent overlap
+  const minStep = Math.ceil(n / Math.max(1, Math.floor(cW / 52)));
+  const xLblY   = (PAD.t + cH + 18).toFixed(1);  // clear of bars, above legend
   let xLbls = '';
-  labels.forEach((lbl, i) => {
+  labels.forEach(function(lbl, i) {
     if (i % minStep !== 0 && i !== n-1) return;
-    const x = (PAD.l + i * grpW + grpW / 2).toFixed(1);
-    const s = String(lbl).length > charsPerSlot ? String(lbl).slice(-Math.max(4, charsPerSlot)) : String(lbl);
-    xLbls += `<text x="${x}" y="${PAD.t+cH+16}" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10" font-family="'DM Mono',monospace">${s}</text>`;
+    var x = (PAD.l + i * grpW + grpW / 2).toFixed(1);
+    var s = String(lbl);
+    xLbls += '<text x="'+x+'" y="'+xLblY+'" text-anchor="middle" fill="rgba(255,255,255,.42)" font-size="10" font-family="var(--fm)">'+s+'</text>';
   });
 
-  const zY = (PAD.t + zeroY).toFixed(1);
-  const zeroLine = `<line x1="${PAD.l}" y1="${(parseFloat(zY)+2).toFixed(1)}" x2="${W-PAD.r}" y2="${(parseFloat(zY)+2).toFixed(1)}" stroke="rgba(0,0,0,.35)" stroke-width="2"/><line x1="${PAD.l}" y1="${zY}" x2="${W-PAD.r}" y2="${zY}" stroke="rgba(255,255,255,.6)" stroke-width="1"/>`;
+  // Zero line
+  const zY        = (PAD.t + zeroY).toFixed(1);
+  const zeroLine  = '<line x1="'+PAD.l+'" y1="'+(parseFloat(zY)+2)+'" x2="'+(W-PAD.r)+'" y2="'+(parseFloat(zY)+2)+'" stroke="rgba(0,0,0,.35)" stroke-width="2"/>'
+                  + '<line x1="'+PAD.l+'" y1="'+zY+'" x2="'+(W-PAD.r)+'" y2="'+zY+'" stroke="rgba(255,255,255,.55)" stroke-width="1.5"/>';
 
-  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:hidden;">
-    ${_defs2}${grid}${bars}${yLbls}${xLbls}${legend}${truncNote}${hitAreas}
-  </svg>`;
+  // Truncation note (shown when axis doesn't start at $0 — shouldn't happen with forceZeroBase)
+  var truncNote = '';
+
+  el.innerHTML = '<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'
+    + _defs2 + grid + zeroLine + bars + yLbls + xLbls + legend + truncNote + hitAreas
+    + '</svg>';
   bindChartTips(el);
 }
+
+
+
 
 
 
@@ -1320,29 +1346,231 @@ let family = { ...DEFAULT_FAMILY };
 // ── Utility formatters & account helpers ─────────────────────────────────────
 // fmt, fmtK defined below as const — detectAcctType added here
 
+const QUICKEN_CAT_MAP = {
+  // ── Income ──────────────────────────────────────────────────────────────────
+  'net salary':                        'paycheck',
+  'salary':                            'paycheck',
+  'wages':                             'paycheck',
+  'paycheck':                          'paycheck',
+  'bonus':                             'paycheck',
+  'other inc':                         'other_inc',
+  'interest inc':                      'other_inc',
+  '_divinc':                           'other_inc',
+  '_rlzdgain':                         'other_inc',
+  'interest income':                   'other_inc',
+  'dividend income':                   'other_inc',
+  'rental income':                     'other_inc',
+  'freelance':                         'other_inc',
+  'consulting':                        'other_inc',
+  'fees & charges:trade commissions':  'other_inc',  // investment trade commissions as income offset
+
+  // ── Non-operating / excluded from IS ─────────────────────────────────────
+  'fees & charges:bank fee':           'other',   // bank fees = expense, not income
+  'fees & charges:finance charge':     'other',
+  'fees & charges':                    'other',
+  'cash & atm':                        'other',
+  'dues':                              'other',
+  'tax:fed':                           'other',
+  'tax:state':                         'other',
+  'tax:local':                         'other',
+  'tax':                               'other',
+  'transfer':                          'other',
+  'uncategorized':                     'other',
+  // CC payments are transfers — handled by isTransfer(); mapping here prevents
+  // them appearing as 'electric' via the broad 'bills & utilities' fallback
+  'bills & utilities:credit card payment': 'other',
+  'bills & utilities:online payment':  'other',
+  'payment':                           'other',
+
+  // ── Housing ──────────────────────────────────────────────────────────────────
+  'mort int':                          'mort_interest',
+  'home:mortgage interest':            'mort_interest',
+  'mortgage interest':                 'mort_interest',
+  'home:mortgage:interest':            'mort_interest',
+  'mort prin':                         'mort_principal',
+  'home:mortgage principal':           'mort_principal',
+  'mortgage principal':                'mort_principal',
+  'home:mortgage:principal':           'mort_principal',
+  'escrow':                            'mort_escrow',
+  'home:mortgage escrow':              'mort_escrow',
+  'home:mortgage:escrow':              'mort_escrow',
+  'home:mortgage':                     'mortgage',
+  'mortgage':                          'mortgage',
+  'home:rent':                         'mortgage',
+  'rent':                              'mortgage',
+  'hoa':                               'mortgage',
+  'home:hoa':                          'mortgage',
+
+  // ── Auto ─────────────────────────────────────────────────────────────────────
+  'auto & transport:auto payment':     'car',
+  'auto & transport:auto insurance':   'car',
+  'auto & transport:registration':     'car',
+  'auto & transport:service & parts':  'car',
+  // NOTE: 'auto & transport' broad fallback intentionally omitted — too broad;
+  // specific subcategories below will match; unknown auto → KW_MAP or 'other'
+
+  // ── Insurance (Health/Life) ──────────────────────────────────────────────────
+  'financial:life insurance':          'insurance',
+  'financial:disability insurance':    'insurance',
+  'financial:dental insurance':        'insurance',
+  'financial:vision insurance':        'insurance',
+  'financial:health insurance':        'insurance',
+  'insurance:health':                  'insurance',
+  'insurance:life':                    'insurance',
+  'insurance:dental':                  'insurance',
+  'insurance:vision':                  'insurance',
+  'insurance':                         'insurance',
+  // 'financial' alone NOT mapped — too broad (includes bank fees, investments, etc.)
+
+  // ── Education ────────────────────────────────────────────────────────────────
+  'education:tuition':                 'education',
+  'education:books & supplies':        'education',
+  'education:student loan':            'education',
+  'education':                         'education',
+
+  // ── Childcare / Kids ─────────────────────────────────────────────────────────
+  'kids:kids activities':              'childcare',
+  'kids:sports':                       'childcare',
+  'kids:camp':                         'childcare',
+  'kids:music lessons':                'childcare',
+  'kids:tutoring':                     'childcare',
+  'kids:school':                       'childcare',
+  'kids:clothing':                     'clothing',   // kids clothing → clothing bucket
+  'kids:toys':                         'household',  // toys → household not childcare
+  'kids':                              'childcare',  // generic kids catch-all
+
+  // ── Utilities — SPECIFIC subcategories listed BEFORE any broad catch-all ─────
+  'bills & utilities:utilities':       'electric',
+  'bills & utilities:gas & heat':      'gas_util',
+  'bills & utilities:water':           'water',
+  'bills & utilities:internet':        'internet',
+  'bills & utilities:television':      'internet',
+  'bills & utilities:mobile phone':    'cell',
+  'bills & utilities:home phone':      'cell',
+  // Broad 'bills & utilities' NOT mapped — let specific subcats match above;
+  // unknowns fall to KW_MAP (payee-based) for accurate utility routing
+
+  // ── Food ─────────────────────────────────────────────────────────────────────
+  'food & dining:groceries':           'groceries',
+  'food & dining:restaurants':         'restaurants',
+  'food & dining:fast food':           'restaurants',
+  'food & dining:coffee shops':        'restaurants',
+  'food & dining:alcohol & bars':      'restaurants',
+  'food & dining:food delivery':       'restaurants',
+  'food & dining':                     'groceries',   // unknown food → groceries
+
+  // ── Transport ────────────────────────────────────────────────────────────────
+  'auto & transport:gas & fuel':       'gas_car',
+  'auto & transport:parking':          'transit',
+  'auto & transport:tolls':            'transit',
+  'auto & transport:rental car & taxi':'transit',
+  'auto & transport:ride share':       'transit',
+  'auto & transport:car wash':         'household',  // car wash = household/personal
+  // 'auto & transport' broad fallback NOT mapped (too broad)
+
+  // ── Health & Fitness ─────────────────────────────────────────────────────────
+  'health & fitness:pharmacy':         'healthcare',
+  'health & fitness:doctor':           'healthcare',
+  'health & fitness:dentist':          'healthcare',
+  'health & fitness:eyecare':          'healthcare',
+  'health & fitness:medical':          'healthcare',
+  'health & fitness:therapist':        'healthcare',
+  'health & fitness:hospital':         'healthcare',
+  'health & fitness:gym':              'personal',
+  'health & fitness:sports':           'entertainment',
+  'health & fitness:outdoor rec':      'entertainment',
+  'health & fitness':                  'healthcare',  // generic health → healthcare
+
+  // ── Discretionary / Entertainment ────────────────────────────────────────────
+  'entertainment:amusement':           'entertainment',
+  'entertainment:movies & dvds':       'entertainment',
+  'entertainment:music':               'subscriptions',
+  'entertainment:arts':                'entertainment',
+  'entertainment:games':               'entertainment',
+  'entertainment:events':              'entertainment',
+  'entertainment':                     'entertainment',
+  'media subscriptions':               'subscriptions',
+
+  // ── Shopping / Household ─────────────────────────────────────────────────────
+  'shopping:clothing':                 'clothing',
+  'shopping:clothing:jewelry insurance':'clothing',
+  'shopping:electronics & software':   'household',
+  'shopping:books':                    'household',
+  'shopping:sporting goods':           'entertainment',
+  'shopping:hobbies':                  'entertainment',
+  'shopping:toys':                     'household',
+  'shopping':                          'household',   // generic shopping → household
+  'home:home supplies':                'household',
+  'home:home improvement':             'household',
+  'home:home services':                'household',
+  'home:furnishings':                  'household',
+  'home:lawn & garden':                'household',
+  'home:garden':                       'household',
+  'home:cleaning':                     'household',
+  'home':                              'household',   // generic home → household
+
+  // ── Personal Care ────────────────────────────────────────────────────────────
+  'personal care':                     'personal',
+  'personal care:hair':                'personal',
+  'personal care:spa & massage':       'personal',
+  'kira self care':                    'personal',
+  'chris self care':                   'personal',
+
+  // ── Gifts & Giving ───────────────────────────────────────────────────────────
+  'gifts & donations:gift':            'gifts',
+  'gifts & donations:charity':         'gifts',
+  'gifts & donations:charitable':      'gifts',
+  'gifts & donations':                 'gifts',
+
+  // ── Travel ───────────────────────────────────────────────────────────────────
+  'travel:hotel':                      'travel',
+  'travel:air travel':                 'travel',
+  'travel:vacation':                   'travel',
+  'travel:baggage':                    'travel',
+  'travel:rental car & taxi':          'transit',
+  'travel:parking':                    'transit',
+  'travel':                            'travel',
+
+  // ── Pets ─────────────────────────────────────────────────────────────────────
+  'pets:vet':                          'healthcare',
+  'pets:pet food & supplies':          'household',
+  'pets:grooming':                     'personal',
+  'pets':                              'household',
+
+  // ── Misc ─────────────────────────────────────────────────────────────────────
+  'shipping':                          'household',
+  // '--split--' intentionally NOT in this map — handled by classifyTxn special case
+};
+
+
 function computeScale(vals, opts) {
   opts = opts || {};
-  var showZero = opts.showZero !== false;
-  var padPct   = opts.padPct != null ? opts.padPct : 0.18;
-  var finite   = vals.filter(isFinite);
+  var showZero      = opts.showZero !== false;
+  var forceZeroBase = opts.forceZeroBase || false;  // bars always anchor at $0
+  var padPct        = opts.padPct != null ? opts.padPct : 0.18;
+  var finite        = vals.filter(isFinite);
   if (!finite.length) return { maxV:1, minV:0, span:1, y0Pct:0, ticks:[], zero:true };
 
   var dMax  = finite.reduce(function(m,v){ return Math.max(m,v); }, finite[0]);
   var dMin  = finite.reduce(function(m,v){ return Math.min(m,v); }, finite[0]);
   var dSpan = Math.max(Math.abs(dMax - dMin), 1);
 
-  // Symmetric padding — equal above and below.
-  // Using data span prevents income data ($7K–$8K) from being anchored to $0.
+  // Padding is always based on the data span — never absolute values
   var pad    = dSpan * padPct;
   var rawMax = dMax + pad;
   var rawMin = dMin - pad;
 
-  // Smart zero inclusion: only pull zero in if data is within 1.5× span of zero.
-  // Mixed-sign data always includes zero (distToZero === 0).
   var zeroIncluded = false;
-  if (showZero) {
+  if (forceZeroBase) {
+    // Bar charts: always anchor at zero, pad only above the tallest bar
+    rawMax = dMax + pad;
+    rawMin = Math.min(rawMin, 0);
+    rawMax = Math.max(rawMax, 0);
+    zeroIncluded = true;
+  } else if (showZero) {
+    // Line / net charts: include zero only if data is within 2× span of zero
     var distToZero = (dMin >= 0) ? dMin : (dMax <= 0 ? Math.abs(dMax) : 0);
-    if (distToZero <= dSpan * 1.5) {
+    if (distToZero <= dSpan * 2.0) {
       rawMax = Math.max(rawMax, 0);
       rawMin = Math.min(rawMin, 0);
       zeroIncluded = true;
@@ -1355,9 +1583,9 @@ function computeScale(vals, opts) {
     var range = hi - lo;
     var rough = range / 5;
     if (rough <= 0) return [lo, hi];
-    var mag  = Math.pow(10, Math.floor(Math.log10(rough)));
+    var mag   = Math.pow(10, Math.floor(Math.log10(rough)));
     var cands = [mag*0.5, mag, mag*2, mag*2.5, mag*5, mag*10];
-    var iv   = cands.find(function(c){ return range/c >= 3 && range/c <= 7; }) || rough;
+    var iv    = cands.find(function(c){ return range/c >= 3 && range/c <= 7; }) || rough;
     var start = Math.ceil(lo / iv) * iv;
     var ticks = [];
     for (var v = start; v <= hi + iv*0.01; v += iv)
@@ -1370,12 +1598,125 @@ function computeScale(vals, opts) {
     maxV:      rawMax,
     minV:      rawMin,
     span:      span,
-    y0Pct:     (0 - rawMin) / span,
+    y0Pct:     Math.max(0, Math.min(1, (0 - rawMin) / span)),
     ticks:     ticks,
     zero:      zeroIncluded,
     truncated: !zeroIncluded && dMin > 0
   };
+}// ── Demo detail CSV files (embedded for test build) ──────────────────────────
+// Calling loadDemoDetails() parses these through the live import pipeline,
+// demonstrating unmasking of Amazon, Apple Card, Home Depot, Lowe's, and Venmo.
+function loadDemoDetails() {
+  const today = new Date();
+  const mo1   = [today.getFullYear(), String(today.getMonth()+1).padStart(2,'0')].join('-');
+  const d1    = new Date(today); d1.setMonth(d1.getMonth()-1);
+  const mo2   = [d1.getFullYear(), String(d1.getMonth()+1).padStart(2,'0')].join('-');
+  const d2    = new Date(today); d2.setMonth(d2.getMonth()-2);
+  const mo3   = [d2.getFullYear(), String(d2.getMonth()+1).padStart(2,'0')].join('-');
+
+  function moFmt(mo, day) { return (mo.slice(5,7)+'/'+String(day).padStart(2,'0')+'/'+mo.slice(0,4)); }
+
+  // ── Apple Card CSV (last 2 months) ───────────────────────────────────────
+  const appleCSV = [
+    'Transaction Date,Clearing Date,Description,Merchant,Category,Type,Amount (USD)',
+    `${moFmt(mo1,4)},${moFmt(mo1,5)},WHOLEFDS 10183 MTN VIEW,Whole Foods Market,Food & Drink,Purchase,67.84`,
+    `${moFmt(mo1,4)},${moFmt(mo1,5)},NETFLIX.COM,Netflix,Entertainment,Purchase,22.99`,
+    `${moFmt(mo1,6)},${moFmt(mo1,7)},APPLE.COM/BILL,Apple,Shopping,Purchase,9.99`,
+    `${moFmt(mo1,7)},${moFmt(mo1,8)},SQ*EAT'N PARK #58,Eat'n Park,Restaurants,Purchase,48.37`,
+    `${moFmt(mo1,9)},${moFmt(mo1,10)},AMAZON MKTPLACE PMTS,Amazon,Shopping,Purchase,34.99`,
+    `${moFmt(mo1,11)},${moFmt(mo1,12)},STARBUCKS #08432,Starbucks,Coffee,Purchase,12.75`,
+    `${moFmt(mo1,13)},${moFmt(mo1,14)},TARGET 00123,Target,Retail,Purchase,89.14`,
+    `${moFmt(mo1,16)},${moFmt(mo1,17)},SHELL OIL 57445312,Shell,Automotive,Purchase,54.87`,
+    `${moFmt(mo1,18)},${moFmt(mo1,18)},APPLE CARD PAYMENT,Apple Card,Payment,Payment,439.94`,  // filtered by typeSkip
+    `${moFmt(mo1,19)},${moFmt(mo1,20)},PANERA BREAD #4821,Panera Bread,Restaurants,Purchase,32.18`,
+    `${moFmt(mo1,21)},${moFmt(mo1,22)},CVS PHARMACY #9182,CVS Pharmacy,Health,Purchase,28.44`,
+    `${moFmt(mo1,23)},${moFmt(mo1,24)},SPOTIFY USA,Spotify,Entertainment,Purchase,16.99`,
+    `${moFmt(mo2,3)},${moFmt(mo2,4)},WHOLEFDS 10183 MTN VIEW,Whole Foods Market,Food & Drink,Purchase,54.22`,
+    `${moFmt(mo2,5)},${moFmt(mo2,6)},NETFLIX.COM,Netflix,Entertainment,Purchase,22.99`,
+    `${moFmt(mo2,7)},${moFmt(mo2,8)},LOCAL COFFEE CO,Coffee Shop,Coffee,Purchase,8.50`,
+    `${moFmt(mo2,10)},${moFmt(mo2,11)},TARGET 00123,Target,Retail,Purchase,112.67`,
+    `${moFmt(mo2,14)},${moFmt(mo2,15)},SQ*PRIMANTI BROTHERS,Primanti Brothers,Restaurants,Purchase,38.91`,
+    `${moFmt(mo2,18)},${moFmt(mo2,18)},APPLE CARD PAYMENT,Apple Card,Payment,Payment,320.28`,
+    `${moFmt(mo2,19)},${moFmt(mo2,20)},BP CONNECT #7823,BP,Automotive,Purchase,61.33`,
+    `${moFmt(mo2,22)},${moFmt(mo2,23)},SPOTIFY USA,Spotify,Entertainment,Purchase,16.99`,
+    `${moFmt(mo2,25)},${moFmt(mo2,26)},CHICK-FIL-A #02847,Chick-fil-A,Restaurants,Purchase,27.48`,
+  ].join('\n');
+
+  // ── Amazon CSV (Privacy Central format — last 2 months) ──────────────────
+  const amazonCSV = [
+    'ASIN,Order Date,Order ID,Order Status,Shipment Date,Shipping Address,Carrier,Tracking,Product Name,Product Condition,Seller,List Price,Purchase Price,Quantity,Shipment Item Subtotal,Shipment Item Subtotal Tax,Ship To',
+    `B07ZPC9QD4,${mo1}-03T10:22:00Z,112-4821947-0012345,Shipped,${mo1}-05T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456784,Clorox Clean-Up Spray Cleaner 32 oz Pack of 2,New,Amazon.com,12.99,11.47,1,11.47,0.92,Alex Henderson`,
+    `B08N5WRWNW,${mo1}-03T10:22:00Z,112-4821947-0012345,Shipped,${mo1}-05T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456784,Command Picture Hanging Strips Large 14 Pairs,New,Amazon.com,14.98,13.49,1,13.49,1.08,Alex Henderson`,
+    `B07X2XQZYB,${mo1}-08T14:31:00Z,112-7734821-9920134,Shipped,${mo1}-10T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,USPS,9400111899223197214820,Ozzy Kids Backpack 16 inch Elementary School Backpack,New,Ozzy Enterprises,28.99,24.99,1,24.99,2.00,Morgan Henderson`,
+    `B09B8RNKN7,${mo1}-08T14:31:00Z,112-7734821-9920134,Shipped,${mo1}-10T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,USPS,9400111899223197214820,Crayola Broad Line Markers 20 ct Classic Colors,New,Crayola LLC,6.49,5.97,2,11.94,0.96,Morgan Henderson`,
+    `B086QKYKBH,${mo1}-14T09:15:00Z,112-2948301-7712849,Shipped,${mo1}-16T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456785,Simple Modern 40oz Tumbler with Handle and Straw Lid,New,Simple Modern,44.99,34.97,1,34.97,2.80,Alex Henderson`,
+    `B07ZPFL5YS,${mo2}-06T11:40:00Z,112-8820391-4430012,Shipped,${mo2}-08T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456786,Tide PODS Original Laundry Detergent 81 count,New,Procter & Gamble,24.94,18.97,1,18.97,1.52,Alex Henderson`,
+    `B09WX5Q9CJ,${mo2}-06T11:40:00Z,112-8820391-4430012,Shipped,${mo2}-08T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456786,Bounty Quick-Size Paper Towels 12 Double Plus Rolls,New,Procter & Gamble,31.99,27.44,1,27.44,2.20,Alex Henderson`,
+    `B08P4RYNHB,${mo2}-12T16:22:00Z,112-9910283-2231144,Shipped,${mo2}-14T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,USPS,9400111899223197214821,MindWare Qwirkle Board Game Family Strategy Game,New,MindWare,34.99,29.95,1,29.95,2.40,Morgan Henderson`,
+    `B01N5O8J5J,${mo2}-19T09:55:00Z,112-3314890-8871122,Shipped,${mo2}-21T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,Amazon,TBA123456789000,Ninja BL610 Professional 72 Oz Countertop Blender,New,Amazon.com,99.00,79.99,1,79.99,6.40,Alex Henderson`,
+    `B08BX8KBBZ,${mo3}-09T13:11:00Z,112-4401928-3300087,Shipped,${mo3}-11T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456787,LEGO Icons Flower Bouquet Building Set,New,LEGO,49.99,44.97,1,44.97,3.60,Morgan Henderson`,
+    `B00I8BIAG4,${mo3}-09T13:11:00Z,112-4401928-3300087,Shipped,${mo3}-11T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456787,Sharpie Permanent Markers Chisel Tip 12 Pack,New,Sanford,9.99,8.47,1,8.47,0.68,Alex Henderson`,
+    `B09XLNWLQ8,${mo3}-21T10:04:00Z,112-0012847-9934410,Shipped,${mo3}-23T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456788,Waterpik Aquarius Water Flosser Complete Care 5.0,New,Waterpik,99.99,89.97,1,89.97,7.20,Morgan Henderson`,
+  ].join('\n');
+
+  // ── Home Depot Order CSV ──────────────────────────────────────────────────
+  const homeDepotCSV = [
+    'Order Date,Order Number,Items Ordered,Order Total,Status',
+    `${mo2}-11,WC98374827,"(3) 2x6x8 Pressure Treated Lumber @ $8.47 ea",25.41,Delivered`,
+    `${mo2}-11,WC98374827,"(2) 1x4x8 Cedar Fence Picket @ $6.98 ea",13.96,Delivered`,
+    `${mo2}-11,WC98374827,"Rust-Oleum Deck & Fence 1 gal Solid Stain Cedar",42.97,Delivered`,
+    `${mo2}-11,WC98374827,"3 in Zinc-Plated Lag Screw 25-Pack",9.47,Delivered`,
+    `${mo2}-11,WC98374827,"Simpson Strong-Tie 1.5 in Joist Hanger 10-Pack",12.97,Delivered`,
+    `${mo3}-04,WC97112039,"RIDGID 18V Cordless 3/8 in. Drill Driver",129.00,Delivered`,
+    `${mo3}-04,WC97112039,"Dewalt 25 ft Tape Measure",14.97,Delivered`,
+    `${mo3}-04,WC97112039,"(4) 4x4x8 Pressure Treated Post @ $14.97 ea",59.88,Delivered`,
+    `${mo3}-04,WC97112039,"Quikrete 50 lb Fast-Setting Concrete Mix (4 bags) @ $7.47 ea",29.88,Delivered`,
+  ].join('\n');
+
+  // ── Lowe's Order CSV ─────────────────────────────────────────────────────
+  const lowesCSV = [
+    "Order Number,Order Date,Item Description,Qty,Unit Price,Item Total,Status",
+    `847291034,${mo1}-12,Moen Adler Single Handle Kitchen Faucet Spot Resist Stainless,1,129.00,129.00,Delivered`,
+    `847291034,${mo1}-12,PlumbCraft 3/8 in x 1/2 in Braided Stainless Steel Faucet Supply Line 2pk,2,8.48,16.96,Delivered`,
+    `847291034,${mo1}-12,GE Silicone 1 Kitchen and Bath 2.8-oz Clear Silicone Caulk,1,7.48,7.48,Delivered`,
+    `847291034,${mo1}-12,Teflon Thread Seal Tape 3pk,1,3.98,3.98,Delivered`,
+    `829104827,${mo3}-18,American Standard Cadet PRO Toilet Round Front 1.28 GPF,1,248.00,248.00,Delivered`,
+    `829104827,${mo3}-18,Danco Wax Ring with Horn Toilet Wax Ring,1,11.48,11.48,Delivered`,
+    `829104827,${mo3}-18,Korky 2 in Complete Toilet Repair Kit,1,14.98,14.98,Delivered`,
+    `829104827,${mo3}-18,Fluidmaster 400AH Anti-Hump Fill Valve,1,12.48,12.48,Delivered`,
+  ].join('\n');
+
+  // ── Venmo CSV (last 2 months) ─────────────────────────────────────────────
+  const venmoCSV = [
+    'ID,Datetime,Type,Status,Note,From,To,Amount (total),Amount (fee),Tax Amount,Tax Exempt,Funding Source,Destination,Beginning Balance,Ending Balance,Statement Period Venmo Fees,Terminal Location,Year to Date Venmo Fees,Disclaimer',
+    `4821938,${mo1}-04T19:22:00,Payment,Complete,Spring baseball registration,Alex Henderson,Shaler Area Youth Sports,- $85.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821939,${mo1}-09T20:15:00,Payment,Complete,Dinner at Gaucho split,Alex Henderson,Jamie Morrison,- $72.50,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821940,${mo1}-14T12:00:00,Payment,Complete,Book club dues,Morgan Henderson,Shadyside Book Club,- $25.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821941,${mo1}-21T18:44:00,Payment,Complete,Backyard cookout supplies,Alex Henderson,Mike Kowalski,- $45.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821942,${mo2}-03T09:30:00,Payment,Complete,Scholastic book fair,Morgan Henderson,Shaler Primary PTA,- $35.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821943,${mo2}-11T21:10:00,Payment,Complete,Fantasy football league,Alex Henderson,Dave Barton,- $180.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821944,${mo2}-17T13:22:00,Payment,Complete,Swim team YMCA,Morgan Henderson,North Hills YMCA,- $68.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821945,${mo3}-06T20:05:00,Payment,Complete,Steelers watch party food,Alex Henderson,Sean Murphy,- $38.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+    `4821946,${mo3}-19T11:45:00,Payment,Complete,Fall carnival tickets,Morgan Henderson,Shaler Primary PTA,- $42.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
+  ].join('\n');
+
+  // ── Parse all files through the live import pipeline ─────────────────────
+  const files = [
+    new File([appleCSV],   'apple_card_henderson_recent.csv',  { type:'text/csv' }),
+    new File([amazonCSV],  'Order_History.csv',                { type:'text/csv' }),
+    new File([homeDepotCSV],'home_depot_orders_henderson.csv', { type:'text/csv' }),
+    new File([lowesCSV],   'lowes_orders_henderson.csv',       { type:'text/csv' }),
+    new File([venmoCSV],   'venmo_henderson_2026.csv',         { type:'text/csv' }),
+  ];
+
+  processFiles(files).then(function() {
+    toast('📦 Detail files loaded — Amazon, Apple Card, Home Depot, Lowe\'s & Venmo unmasked');
+    if (document.getElementById('incomeStatement')) renderIncomeStatement();
+  }).catch(function(e) { console.warn('loadDemoDetails error', e); });
 }
+
+
+
 
 
 
@@ -2488,7 +2829,10 @@ const BUCKET_META = {
   paycheck:      { label:'Payroll & Wages',               icon:'💵' },
   other_inc:     { label:'Other Income',                  icon:'💰' },
   auto_save:     { label:'Auto-Savings & Retirement',     icon:'🏦' },
-  mortgage:      { label:'Mortgage & Housing',             icon:'🏠' },
+  mort_interest:  { label:'Mortgage Interest',              icon:'🏦' },
+  mort_principal:  { label:'Mortgage Principal',             icon:'📉' },
+  mort_escrow:     { label:'Escrow (Tax & Insurance)',       icon:'📋' },
+  mortgage:        { label:'Mortgage & Housing (unsplit)',   icon:'🏠' },
   car:           { label:'Car Payments & Insurance',      icon:'🚗' },
   education:     { label:'Education & Tuition',           icon:'🎓' },
   insurance:     { label:'Health & Life Insurance',       icon:'🛡️' },
@@ -2741,7 +3085,7 @@ function svgLine(elId, labels, datasets, opts) {
   const H = Math.max(el.offsetHeight || 0, 160);
   if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>'; return; }
 
-  const PAD = { t:16, r:18, b:32, l:58 };
+  const PAD = { t:20, r:18, b:38, l:62 };
   const cW = W - PAD.l - PAD.r;
   const cH = H - PAD.t - PAD.b;
   const n  = labels.length;
@@ -2841,7 +3185,7 @@ function svgLine(elId, labels, datasets, opts) {
   let xLbls = '';
   labels.forEach((lbl, i) => {
     if (i % minStep !== 0 && i !== n-1) return;
-    xLbls += `<text x="${xOf(i).toFixed(1)}" y="${H-4}" text-anchor="middle" fill="rgba(255,255,255,.38)" font-size="10" font-family="var(--fm)">${lbl}</text>`;
+    xLbls += `<text x="${xOf(i).toFixed(1)}" y="${H-8}" text-anchor="middle" fill="rgba(255,255,255,.42)" font-size="10" font-family="var(--fm)">${lbl}</text>`;
   });
 
   // Hit areas
@@ -2864,6 +3208,9 @@ function svgLine(elId, labels, datasets, opts) {
   </svg>`;
   bindChartTips(el);
 }
+
+
+
 
 
 
@@ -2918,7 +3265,7 @@ function svgHBar(elId, labels, values, colors, bucketKeys) {
     const color  = usedColors[i];
     const ci     = uniqueCols.indexOf(color);
     const valS   = Math.abs(v)>=1000?'$'+(Math.abs(v)/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
-    const lShort = String(lbl).length > 19 ? String(lbl).slice(0,18)+'…' : String(lbl);
+    const lShort = String(lbl).length > 22 ? String(lbl).slice(0,21)+'…' : String(lbl);
     const tip    = `${lbl}: ${valS}`;
     const drillKey = (bucketKeys && bucketKeys[i]) ? String(bucketKeys[i]) : String(lbl);
     const catDrill = JSON.stringify({cat: drillKey}).replace(/"/g,'&quot;');
@@ -2951,6 +3298,9 @@ function svgHBar(elId, labels, values, colors, bucketKeys) {
 
 
 
+
+
+
 function svgWaterfall(elId, items) {
   var el = document.getElementById(elId);
   if (!el) return;
@@ -2960,7 +3310,7 @@ function svgWaterfall(elId, items) {
     el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
     return;
   }
-  var PAD = {t:24,r:16,b:56,l:64};
+  var PAD = {t:30,r:18,b:60,l:66};
   var cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b, n = items.length;
   var running = 0;
   var segs = items.map(function(item) {
@@ -3053,12 +3403,15 @@ function svgWaterfall(elId, items) {
     var tip=s.label+': '+sign+fmtM(s.value)+' | '+tipT+'| Running: '+(isTot?'final':fmtM(s.end));
     hitAreas+='<rect x="'+(PAD.l+i*gap).toFixed(1)+'" y="'+PAD.t+'" width="'+gap.toFixed(1)+'" height="'+cH+'" fill="transparent" data-tip="'+tip.replace(/'/g,'&apos;').replace(/"/g,'&quot;')+'" style="cursor:crosshair;"/>';
     var sl=s.label.length>11?s.label.slice(0,10)+String.fromCharCode(8230):s.label;
-    xLbls+='<text x="'+cx.toFixed(1)+'" y="'+(H-PAD.b+18)+'" text-anchor="middle" fill="rgba(255,255,255,.42)" font-size="10" font-family="var(--fm)">'+sl+'</text>';
+    xLbls+='<text x="'+cx.toFixed(1)+'" y="'+(H-PAD.b+22)+'" text-anchor="middle" fill="rgba(255,255,255,.42)" font-size="10" font-family="var(--fm)">'+sl+'</text>';
   });
 
   el.innerHTML='<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'+defs+grid+connectors+bars+yLbls+xLbls+hitAreas+'</svg>';
   bindChartTips(el);
 }
+
+
+
 
 
 
@@ -3353,219 +3706,109 @@ function loadDemo() {
 
 
 
-function loadDemoDetails() {
-  const today = new Date();
-  const mo1   = [today.getFullYear(), String(today.getMonth()+1).padStart(2,'0')].join('-');
-  const d1    = new Date(today); d1.setMonth(d1.getMonth()-1);
-  const mo2   = [d1.getFullYear(), String(d1.getMonth()+1).padStart(2,'0')].join('-');
-  const d2    = new Date(today); d2.setMonth(d2.getMonth()-2);
-  const mo3   = [d2.getFullYear(), String(d2.getMonth()+1).padStart(2,'0')].join('-');
-
-  function moFmt(mo, day) { return (mo.slice(5,7)+'/'+String(day).padStart(2,'0')+'/'+mo.slice(0,4)); }
-
-  // ── Apple Card CSV (last 2 months) ───────────────────────────────────────
-  const appleCSV = [
-    'Transaction Date,Clearing Date,Description,Merchant,Category,Type,Amount (USD)',
-    `${moFmt(mo1,4)},${moFmt(mo1,5)},WHOLEFDS 10183 MTN VIEW,Whole Foods Market,Food & Drink,Purchase,67.84`,
-    `${moFmt(mo1,4)},${moFmt(mo1,5)},NETFLIX.COM,Netflix,Entertainment,Purchase,22.99`,
-    `${moFmt(mo1,6)},${moFmt(mo1,7)},APPLE.COM/BILL,Apple,Shopping,Purchase,9.99`,
-    `${moFmt(mo1,7)},${moFmt(mo1,8)},SQ*EAT'N PARK #58,Eat'n Park,Restaurants,Purchase,48.37`,
-    `${moFmt(mo1,9)},${moFmt(mo1,10)},AMAZON MKTPLACE PMTS,Amazon,Shopping,Purchase,34.99`,
-    `${moFmt(mo1,11)},${moFmt(mo1,12)},STARBUCKS #08432,Starbucks,Coffee,Purchase,12.75`,
-    `${moFmt(mo1,13)},${moFmt(mo1,14)},TARGET 00123,Target,Retail,Purchase,89.14`,
-    `${moFmt(mo1,16)},${moFmt(mo1,17)},SHELL OIL 57445312,Shell,Automotive,Purchase,54.87`,
-    `${moFmt(mo1,18)},${moFmt(mo1,18)},APPLE CARD PAYMENT,Apple Card,Payment,Payment,439.94`,  // filtered by typeSkip
-    `${moFmt(mo1,19)},${moFmt(mo1,20)},PANERA BREAD #4821,Panera Bread,Restaurants,Purchase,32.18`,
-    `${moFmt(mo1,21)},${moFmt(mo1,22)},CVS PHARMACY #9182,CVS Pharmacy,Health,Purchase,28.44`,
-    `${moFmt(mo1,23)},${moFmt(mo1,24)},SPOTIFY USA,Spotify,Entertainment,Purchase,16.99`,
-    `${moFmt(mo2,3)},${moFmt(mo2,4)},WHOLEFDS 10183 MTN VIEW,Whole Foods Market,Food & Drink,Purchase,54.22`,
-    `${moFmt(mo2,5)},${moFmt(mo2,6)},NETFLIX.COM,Netflix,Entertainment,Purchase,22.99`,
-    `${moFmt(mo2,7)},${moFmt(mo2,8)},LOCAL COFFEE CO,Coffee Shop,Coffee,Purchase,8.50`,
-    `${moFmt(mo2,10)},${moFmt(mo2,11)},TARGET 00123,Target,Retail,Purchase,112.67`,
-    `${moFmt(mo2,14)},${moFmt(mo2,15)},SQ*PRIMANTI BROTHERS,Primanti Brothers,Restaurants,Purchase,38.91`,
-    `${moFmt(mo2,18)},${moFmt(mo2,18)},APPLE CARD PAYMENT,Apple Card,Payment,Payment,320.28`,
-    `${moFmt(mo2,19)},${moFmt(mo2,20)},BP CONNECT #7823,BP,Automotive,Purchase,61.33`,
-    `${moFmt(mo2,22)},${moFmt(mo2,23)},SPOTIFY USA,Spotify,Entertainment,Purchase,16.99`,
-    `${moFmt(mo2,25)},${moFmt(mo2,26)},CHICK-FIL-A #02847,Chick-fil-A,Restaurants,Purchase,27.48`,
-  ].join('\n');
-
-  // ── Amazon CSV (Privacy Central format — last 2 months) ──────────────────
-  const amazonCSV = [
-    'ASIN,Order Date,Order ID,Order Status,Shipment Date,Shipping Address,Carrier,Tracking,Product Name,Product Condition,Seller,List Price,Purchase Price,Quantity,Shipment Item Subtotal,Shipment Item Subtotal Tax,Ship To',
-    `B07ZPC9QD4,${mo1}-03T10:22:00Z,112-4821947-0012345,Shipped,${mo1}-05T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456784,Clorox Clean-Up Spray Cleaner 32 oz Pack of 2,New,Amazon.com,12.99,11.47,1,11.47,0.92,Alex Henderson`,
-    `B08N5WRWNW,${mo1}-03T10:22:00Z,112-4821947-0012345,Shipped,${mo1}-05T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456784,Command Picture Hanging Strips Large 14 Pairs,New,Amazon.com,14.98,13.49,1,13.49,1.08,Alex Henderson`,
-    `B07X2XQZYB,${mo1}-08T14:31:00Z,112-7734821-9920134,Shipped,${mo1}-10T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,USPS,9400111899223197214820,Ozzy Kids Backpack 16 inch Elementary School Backpack,New,Ozzy Enterprises,28.99,24.99,1,24.99,2.00,Morgan Henderson`,
-    `B09B8RNKN7,${mo1}-08T14:31:00Z,112-7734821-9920134,Shipped,${mo1}-10T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,USPS,9400111899223197214820,Crayola Broad Line Markers 20 ct Classic Colors,New,Crayola LLC,6.49,5.97,2,11.94,0.96,Morgan Henderson`,
-    `B086QKYKBH,${mo1}-14T09:15:00Z,112-2948301-7712849,Shipped,${mo1}-16T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456785,Simple Modern 40oz Tumbler with Handle and Straw Lid,New,Simple Modern,44.99,34.97,1,34.97,2.80,Alex Henderson`,
-    `B07ZPFL5YS,${mo2}-06T11:40:00Z,112-8820391-4430012,Shipped,${mo2}-08T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456786,Tide PODS Original Laundry Detergent 81 count,New,Procter & Gamble,24.94,18.97,1,18.97,1.52,Alex Henderson`,
-    `B09WX5Q9CJ,${mo2}-06T11:40:00Z,112-8820391-4430012,Shipped,${mo2}-08T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456786,Bounty Quick-Size Paper Towels 12 Double Plus Rolls,New,Procter & Gamble,31.99,27.44,1,27.44,2.20,Alex Henderson`,
-    `B08P4RYNHB,${mo2}-12T16:22:00Z,112-9910283-2231144,Shipped,${mo2}-14T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,USPS,9400111899223197214821,MindWare Qwirkle Board Game Family Strategy Game,New,MindWare,34.99,29.95,1,29.95,2.40,Morgan Henderson`,
-    `B01N5O8J5J,${mo2}-19T09:55:00Z,112-3314890-8871122,Shipped,${mo2}-21T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,Amazon,TBA123456789000,Ninja BL610 Professional 72 Oz Countertop Blender,New,Amazon.com,99.00,79.99,1,79.99,6.40,Alex Henderson`,
-    `B08BX8KBBZ,${mo3}-09T13:11:00Z,112-4401928-3300087,Shipped,${mo3}-11T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456787,LEGO Icons Flower Bouquet Building Set,New,LEGO,49.99,44.97,1,44.97,3.60,Morgan Henderson`,
-    `B00I8BIAG4,${mo3}-09T13:11:00Z,112-4401928-3300087,Shipped,${mo3}-11T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456787,Sharpie Permanent Markers Chisel Tip 12 Pack,New,Sanford,9.99,8.47,1,8.47,0.68,Alex Henderson`,
-    `B09XLNWLQ8,${mo3}-21T10:04:00Z,112-0012847-9934410,Shipped,${mo3}-23T00:00:00Z,847 Mt. Royal Blvd Glenshaw PA 15116,UPS,1Z999AA10123456788,Waterpik Aquarius Water Flosser Complete Care 5.0,New,Waterpik,99.99,89.97,1,89.97,7.20,Morgan Henderson`,
-  ].join('\n');
-
-  // ── Home Depot Order CSV ──────────────────────────────────────────────────
-  const homeDepotCSV = [
-    'Order Date,Order Number,Items Ordered,Order Total,Status',
-    `${mo2}-11,WC98374827,"(3) 2x6x8 Pressure Treated Lumber @ $8.47 ea",25.41,Delivered`,
-    `${mo2}-11,WC98374827,"(2) 1x4x8 Cedar Fence Picket @ $6.98 ea",13.96,Delivered`,
-    `${mo2}-11,WC98374827,"Rust-Oleum Deck & Fence 1 gal Solid Stain Cedar",42.97,Delivered`,
-    `${mo2}-11,WC98374827,"3 in Zinc-Plated Lag Screw 25-Pack",9.47,Delivered`,
-    `${mo2}-11,WC98374827,"Simpson Strong-Tie 1.5 in Joist Hanger 10-Pack",12.97,Delivered`,
-    `${mo3}-04,WC97112039,"RIDGID 18V Cordless 3/8 in. Drill Driver",129.00,Delivered`,
-    `${mo3}-04,WC97112039,"Dewalt 25 ft Tape Measure",14.97,Delivered`,
-    `${mo3}-04,WC97112039,"(4) 4x4x8 Pressure Treated Post @ $14.97 ea",59.88,Delivered`,
-    `${mo3}-04,WC97112039,"Quikrete 50 lb Fast-Setting Concrete Mix (4 bags) @ $7.47 ea",29.88,Delivered`,
-  ].join('\n');
-
-  // ── Lowe's Order CSV ─────────────────────────────────────────────────────
-  const lowesCSV = [
-    "Order Number,Order Date,Item Description,Qty,Unit Price,Item Total,Status",
-    `847291034,${mo1}-12,Moen Adler Single Handle Kitchen Faucet Spot Resist Stainless,1,129.00,129.00,Delivered`,
-    `847291034,${mo1}-12,PlumbCraft 3/8 in x 1/2 in Braided Stainless Steel Faucet Supply Line 2pk,2,8.48,16.96,Delivered`,
-    `847291034,${mo1}-12,GE Silicone 1 Kitchen and Bath 2.8-oz Clear Silicone Caulk,1,7.48,7.48,Delivered`,
-    `847291034,${mo1}-12,Teflon Thread Seal Tape 3pk,1,3.98,3.98,Delivered`,
-    `829104827,${mo3}-18,American Standard Cadet PRO Toilet Round Front 1.28 GPF,1,248.00,248.00,Delivered`,
-    `829104827,${mo3}-18,Danco Wax Ring with Horn Toilet Wax Ring,1,11.48,11.48,Delivered`,
-    `829104827,${mo3}-18,Korky 2 in Complete Toilet Repair Kit,1,14.98,14.98,Delivered`,
-    `829104827,${mo3}-18,Fluidmaster 400AH Anti-Hump Fill Valve,1,12.48,12.48,Delivered`,
-  ].join('\n');
-
-  // ── Venmo CSV (last 2 months) ─────────────────────────────────────────────
-  const venmoCSV = [
-    'ID,Datetime,Type,Status,Note,From,To,Amount (total),Amount (fee),Tax Amount,Tax Exempt,Funding Source,Destination,Beginning Balance,Ending Balance,Statement Period Venmo Fees,Terminal Location,Year to Date Venmo Fees,Disclaimer',
-    `4821938,${mo1}-04T19:22:00,Payment,Complete,Spring baseball registration,Alex Henderson,Shaler Area Youth Sports,- $85.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
-    `4821939,${mo1}-09T20:15:00,Payment,Complete,Dinner at Gaucho split,Alex Henderson,Jamie Morrison,- $72.50,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
-    `4821940,${mo1}-14T12:00:00,Payment,Complete,Book club dues,Morgan Henderson,Shadyside Book Club,- $25.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
-    `4821941,${mo1}-21T18:44:00,Payment,Complete,Backyard cookout supplies,Alex Henderson,Mike Kowalski,- $45.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
-    `4821942,${mo2}-03T09:30:00,Payment,Complete,Scholastic book fair,Morgan Henderson,Shaler Primary PTA,- $35.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
-    `4821943,${mo2}-11T21:10:00,Payment,Complete,Fantasy football league,Alex Henderson,Dave Barton,- $180.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
-    `4821944,${mo2}-17T13:22:00,Payment,Complete,Swim team YMCA,Morgan Henderson,North Hills YMCA,- $68.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
-    `4821945,${mo3}-06T20:05:00,Payment,Complete,Steelers watch party food,Alex Henderson,Sean Murphy,- $38.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
-    `4821946,${mo3}-19T11:45:00,Payment,Complete,Fall carnival tickets,Morgan Henderson,Shaler Primary PTA,- $42.00,,,,First Keystone Checking,First Keystone Checking,$0.00,$0.00,$0.00,,,$0.00,`,
-  ].join('\n');
-
-  // ── Parse all files through the live import pipeline ─────────────────────
-  const files = [
-    new File([appleCSV],   'apple_card_henderson_recent.csv',  { type:'text/csv' }),
-    new File([amazonCSV],  'Order_History.csv',                { type:'text/csv' }),
-    new File([homeDepotCSV],'home_depot_orders_henderson.csv', { type:'text/csv' }),
-    new File([lowesCSV],   'lowes_orders_henderson.csv',       { type:'text/csv' }),
-    new File([venmoCSV],   'venmo_henderson_2026.csv',         { type:'text/csv' }),
-  ];
-
-  processFiles(files).then(function() {
-    toast('📦 Detail files loaded — Amazon, Apple Card, Home Depot, Lowe\'s & Venmo unmasked');
-    if (document.getElementById('incomeStatement')) renderIncomeStatement();
-  }).catch(function(e) { console.warn('loadDemoDetails error', e); });
-}
 
 
 
 function buildSavingsRegister(months) {
-  // OPERATING ONLY: checking + savings + credit card transactions.
-  // Never includes investment, retirement, 529, HSA.
-  // 
-  // Core metric: trueBankDraw = operating income - operating expenses
-  //   Income   = non-transfer deposits to checking (payroll, etc.)
-  //   Expenses = all non-transfer outflows across checking + credit cards
-  //              (CC charges represent real spending even if paid later)
-  // 
-  // We do NOT attempt to reconstruct running balances from transaction history —
-  // Quicken is the authoritative register for that. We only show the monthly
-  // income/expense delta and its cumulative trend.
+  // Uses the SAME transaction filter as the Cash Flow chart and Income Statement.
+  // This guarantees the Bank/Draw column reconciles with those views.
+  //
+  //   operatingBase = non-transfer, non-masked, non-detail, operating-account txns
+  //   Income   = positive amounts on CHECKING accounts in operatingBase
+  //   Expenses = absolute negative amounts on CHECKING + CREDIT accounts in operatingBase
+  //   Net      = Income − Expenses (positive = banking, negative = drawing)
+  //
+  // Savings transfers are EXCLUDED from Net (they are capital movements, not P&L).
+  // They are shown separately for context.
 
-  if (!txns.length || !months.length) return [];
-  const DETAIL = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+  if (!txns || !txns.length || !months || !months.length) return [];
 
-  function acctType(name) { return detectAcctType(name||''); }
-  function isChk(name)  { return acctType(name) === 'checking'; }
-  function isCC(name)   { return acctType(name) === 'credit';   }
-  function isSav(name)  { return acctType(name) === 'savings';  }
-  function isOper(name) { var t=acctType(name); return t==='checking'||t==='savings'||t==='credit'; }
+  const OPER_TYPES = new Set(['checking', 'savings', 'credit']);
+  const DETAIL_SRC = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
 
-  // Pre-index operating transactions by month for speed
-  var byMonth = {};
-  txns.forEach(function(t) {
-    if (!isOper(t.account||'')) return;                        // skip investment/retirement
-    if (t.itemDetail || DETAIL.has(t._source||t._ftype||'')) return;  // skip detail CSVs
+  // Build the same base the cash flow chart uses
+  function operatingBase(txnArr) {
+    return (txnArr || []).filter(function(t) {
+      if (isTransfer(t))  return false;   // transfers excluded (CC payments, sav xfers)
+      if (t._masked)      return false;   // Quicken lump-sums superseded by detail CSVs
+      if (t.itemDetail)   return false;   // detail CSV line items (handled separately)
+      if (DETAIL_SRC.has(t._source||t._ftype||'')) return false;
+      return OPER_TYPES.has(detectAcctType(t.account||''));
+    });
+  }
+
+  // Savings transfer index (transfers not in operatingBase — tracked separately)
+  function savXferBase(txnArr) {
+    return (txnArr || []).filter(function(t) {
+      if (!t.isTransfer && !/^\[.*\]$/.test(t.category||'')) return false;
+      var tp  = detectAcctType(t.account||'');
+      var cat = (t.category||'').replace(/^\[|\]$/g,'').trim();
+      var destTp = detectAcctType(cat);
+      return (tp === 'checking' && (destTp === 'savings' || detectAcctType(cat) === 'savings'));
+    });
+  }
+
+  // Pre-index by month
+  var base   = operatingBase(txns);
+  var xfers  = savXferBase(txns);
+
+  var byMo = {}, xfByMo = {};
+  base.forEach(function(t) {
     var mo = t.date.slice(0,7);
-    if (!byMonth[mo]) byMonth[mo] = [];
-    byMonth[mo].push(t);
+    if (!byMo[mo]) byMo[mo] = [];
+    byMo[mo].push(t);
+  });
+  xfers.forEach(function(t) {
+    var mo = t.date.slice(0,7);
+    if (!xfByMo[mo]) xfByMo[mo] = [];
+    xfByMo[mo].push(t);
   });
 
-  var rows = [];
   var cumulative = 0;
+  var rows = [];
 
   months.forEach(function(mo) {
-    var parts = mo.split('-');
-    var monthName = new Date(+parts[0],+parts[1]-1,1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
-    var moTxns = byMonth[mo] || [];
+    var p = mo.split('-');
+    var monthName = new Date(+p[0],+p[1]-1,1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
+    var moTxns  = byMo[mo]  || [];
+    var moXfers = xfByMo[mo]|| [];
 
-    var income   = 0;  // payroll / direct deposits into checking (non-transfer)
-    var expenses = 0;  // all operating spend: checking outflows + CC charges (non-transfer)
-    var savXferOut = 0; // checking → savings (we're choosing to save this)
-    var savXferIn  = 0; // savings → checking (drawing on savings to cover shortfall)
-    var ccPay      = 0; // CC payments from checking (accounting move, not real spend)
+    var income   = 0;
+    var expenses = 0;
+    var savOut   = 0;  // checking → savings (choosing to save — positive number)
+    var savIn    = 0;  // savings → checking (drawing on savings — positive number)
 
     moTxns.forEach(function(t) {
-      if (t.isTransfer) {
-        // Classify transfers by destination account type
-        var cat  = (t.category||'').replace(/^\[|\]$/g,'').trim();
-        var dest = acctType(cat);
-        if (isChk(t.account||'')) {
-          // Transfer originating from checking
-          if (dest === 'savings') {
-            if (t.amount < 0) savXferOut += Math.abs(t.amount);
-            else               savXferIn  += t.amount;
-          } else if (dest === 'credit') {
-            // CC payment — already counted as expense when charge was made; skip
-            if (t.amount < 0) ccPay += Math.abs(t.amount);
-          }
-        }
-        // Savings→checking: positive amount in checking with savings source
-        if (isSav(t.account||'') === false && isChk(t.account||'') && t.amount > 0) {
-          if (dest === 'savings' || isSav(cat)) savXferIn += t.amount;
-        }
-        return;
+      var tp = detectAcctType(t.account||'');
+      if (t.amount > 0 && tp === 'checking') {
+        income += t.amount;
+      } else if (t.amount < 0 && (tp === 'checking' || tp === 'credit')) {
+        expenses += Math.abs(t.amount);
       }
-
-      // Non-transfer transactions
-      if (isChk(t.account||'')) {
-        if (t.amount > 0) income   += t.amount;   // deposit
-        else              expenses += Math.abs(t.amount); // bill / direct debit
-      } else if (isCC(t.account||'')) {
-        // CC charge = real expense; CC credit/refund = negative expense
-        if (t.amount < 0) expenses += Math.abs(t.amount); // charge
-        else              expenses -= t.amount;            // refund/credit
-      }
-      // Savings account: non-transfer activity is interest, ignored here
     });
 
-    // Ensure expenses >= 0
-    expenses = Math.max(expenses, 0);
+    moXfers.forEach(function(t) {
+      // Checking → savings: amount is negative in checking
+      // Savings → checking: amount is positive in checking
+      if (t.amount < 0) savOut += Math.abs(t.amount);
+      else              savIn  += t.amount;
+    });
 
-    // True bank/draw: how much did income actually exceed operating expenses?
-    // savXferOut is a CHOICE (we're saving it), savXferIn is DRAWING (covering a gap).
-    // Both are excluded from trueBankDraw — they're capital movements, not P&L.
-    var trueBankDraw = income - expenses;
-
-    cumulative += trueBankDraw;
+    var net = income - expenses;
+    cumulative += net;
 
     rows.push({
       month:        mo,
       monthName:    monthName,
-      income:       income,
-      expenses:     expenses,
-      savXferOut:   savXferOut,
-      savXferIn:    savXferIn,
-      ccPay:        ccPay,
-      xfersIn:      savXferIn,   // alias for table display
-      xfersOut:     savXferOut,  // alias for table display
-      trueBankDraw: trueBankDraw,
-      cumulative:   cumulative
+      income:       Math.round(income * 100) / 100,
+      expenses:     Math.round(expenses * 100) / 100,
+      savXferOut:   Math.round(savOut * 100) / 100,
+      savXferIn:    Math.round(savIn  * 100) / 100,
+      xfersOut:     Math.round(savOut * 100) / 100,  // alias
+      xfersIn:      Math.round(savIn  * 100) / 100,  // alias
+      net:          Math.round(net * 100) / 100,
+      trueBankDraw: Math.round(net * 100) / 100,     // alias
+      cumulative:   Math.round(cumulative * 100) / 100
     });
   });
 
@@ -3574,6 +3817,309 @@ function buildSavingsRegister(months) {
 
 
 
+
+
+
+
+
+
+function buildCfpProof(selMonth, isNetIncome) {
+  if (!selMonth || !txns.length) return null;
+
+  var DETAIL = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+  var OPER   = new Set(['checking','savings','credit']);
+
+  function tp(name) { return detectAcctType(name || ''); }
+  function isChk(n) { return tp(n) === 'checking'; }
+  function isOper(n){ return OPER.has(tp(n)); }
+
+  // ── Account opening/closing balances ───────────────────────────────────────
+  var accts = {};
+  txns.forEach(function(t) {
+    if (!isOper(t.account || '')) return;
+    if (t.itemDetail || DETAIL.has(t._source || t._ftype || '')) return;
+    var a = t.account;
+    if (!accts[a]) accts[a] = { type: tp(a), open: 0, close: 0 };
+    if (t.date < selMonth + '-01') {
+      accts[a].open  += t.amount;
+      accts[a].close += t.amount;
+    } else if (t.date <= selMonth + '-31') {
+      accts[a].close += t.amount;
+    }
+  });
+
+  var oChk=0, cChk=0, oSav=0, cSav=0, oCC=0, cCC=0;
+  Object.values(accts).forEach(function(a) {
+    if (a.type==='checking'){ oChk+=a.open; cChk+=a.close; }
+    if (a.type==='savings') { oSav+=a.open; cSav+=a.close; }
+    if (a.type==='credit')  { oCC +=a.open; cCC +=a.close; }
+  });
+
+  // Net liquid = checking + savings - |CC balance| (CC is a liability)
+  var openLiq  = oChk + oSav + oCC;   // CC amounts are negative in Quicken
+  var closeLiq = cChk + cSav + cCC;
+  var actualDelta = closeLiq - openLiq;
+
+  // ── Mortgage principal paid this month ─────────────────────────────────────
+  var principalPaid = 0;
+  txns.forEach(function(t) {
+    if (t.date < selMonth+'-01' || t.date > selMonth+'-31') return;
+    if (classifyTxn(t) === 'mort_principal' && t.amount < 0)
+      principalPaid += Math.abs(t.amount);
+  });
+
+  // ── Net savings transfers (checking ↔ savings) ─────────────────────────────
+  // Positive = checking→savings (banking), Negative = savings→checking (drawing)
+  var savXferNet = 0;
+  txns.forEach(function(t) {
+    if (t.date < selMonth+'-01' || t.date > selMonth+'-31') return;
+    if (!isChk(t.account || '')) return;
+    if (!t.isTransfer && !/^\[.*\]$/.test(t.category || '')) return;
+    var cat = (t.category || '').replace(/^\[|\]$/g, '').trim();
+    if (tp(cat) === 'savings') savXferNet -= t.amount; // negative txn = positive saving
+  });
+
+  // ── Cash-basis net (same filter as bank/draw panel) ────────────────────────
+  var cashIncome = 0, cashExpenses = 0;
+  var opBase = (txns || []).filter(function(t) {
+    return !isTransfer(t) && !t._masked && !t.itemDetail
+        && !DETAIL.has(t._source||t._ftype||'')
+        && OPER.has(tp(t.account||''))
+        && t.date >= selMonth+'-01' && t.date <= selMonth+'-31';
+  });
+  opBase.forEach(function(t) {
+    var atp = tp(t.account||'');
+    if (t.amount > 0 && atp === 'checking')           cashIncome   += t.amount;
+    if (t.amount < 0 && (atp==='checking'||atp==='credit')) cashExpenses += Math.abs(t.amount);
+  });
+  var cashNet = cashIncome - cashExpenses;
+
+  // ── Accrual timing adjustment ──────────────────────────────────────────────
+  var isNet = isNetIncome || 0;
+  var accrualAdj = isNet - cashNet;
+
+  // ── Proof ──────────────────────────────────────────────────────────────────
+  var calcClose = openLiq + isNet + principalPaid + savXferNet + accrualAdj;
+  var proofDiff = calcClose - closeLiq;
+
+  return {
+    selMonth:     selMonth,
+    openLiq:      Math.round(openLiq),
+    closeLiq:     Math.round(closeLiq),
+    actualDelta:  Math.round(actualDelta),
+    isNet:        Math.round(isNet),
+    principalPaid:Math.round(principalPaid),
+    savXferNet:   Math.round(savXferNet),
+    cashNet:      Math.round(cashNet),
+    accrualAdj:   Math.round(accrualAdj),
+    proofDiff:    Math.round(proofDiff),
+    balanced:     Math.abs(proofDiff) < 50,
+    oChk:Math.round(oChk), cChk:Math.round(cChk),
+    oSav:Math.round(oSav), cSav:Math.round(cSav),
+    oCC: Math.round(oCC),  cCC: Math.round(cCC),
+  };
+}
+
+
+
+function renderCashFlow() {
+  try {
+  if (!txns.length) return;
+
+  // Operating accounts only — exclude investment, retirement, 529, HSA
+  const OPER_TYPES = new Set(['checking', 'savings', 'credit']);
+  let src = spendable(txns).filter(t => OPER_TYPES.has(detectAcctType(t.account||'')));
+
+  // Populate account filter on first call
+  const acctSel = document.getElementById('cfAcct');
+  if (acctSel && acctSel.options.length <= 1) {
+    acctSel.innerHTML = '<option value="all">All Accounts</option>' +
+      [...new Set(src.map(t=>t.account))].sort().map(a=>`<option>${a}</option>`).join('');
+  }
+
+  // Apply range filter (rolling window)
+  if (cfRange !== 'all') src = src.filter(t => new Date(t.date) >= rangeStart(cfRange));
+
+  // Apply account filter
+  const acct = acctSel ? acctSel.value : 'all';
+  if (acct !== 'all') src = src.filter(t=>t.account===acct);
+
+  const md  = monthlyData(src);
+  const net = md.income.map((v,i) => v - md.expenses[i]);
+
+  // ── Project the current in-flight month ──────────────────────────────────
+  const _curMo = new Date().toISOString().slice(0,7);
+  let _projIdx = -1, _projNet = null;
+  const _lastKey = md.fullKeys[md.fullKeys.length - 1];
+  if (_lastKey === _curMo) {
+    _projIdx = md.fullKeys.length - 1;
+    try {
+      const _accrual = buildAccrualEngine && buildAccrualEngine(_curMo, operatingSpendable(txns));
+      if (_accrual && _accrual.normalizeIncome) {
+        const _norm = _accrual.normalizeIncome();
+        if (_norm) {
+          // Project income: normalizedIncome (actual + estimated remaining paychecks)
+          const _projInc = _norm.normalizedIncome || 0;
+          // Project expenses: actual so far + accrued remaining days via accrual engine
+          const _actualExp = md.expenses[_projIdx] || 0;
+          const _allBks = ['mortgage','car','insurance','education','childcare',
+            'electric','gas_util','water','internet','streaming',
+            'restaurants','groceries','gas_car','transit','healthcare',
+            'entertainment','household','personal','clothing','travel','gifts','other'];
+          let _projExp = _actualExp;
+          _allBks.forEach(bk => {
+            try { _projExp += (_accrual.accrueAmount(bk) || 0); } catch(e) {}
+          });
+          _projNet = _projInc - _projExp;
+          net[_projIdx] = _projNet;
+        }
+      }
+    } catch(e) { console.warn('[CF] projection error', e); }
+  }
+
+  svgBar('cfBarWrap', md.labels, [
+    { label:'Income',   data:md.income,   backgroundColor:'rgba(45,212,191,.75)' },
+    { label:'Expenses', data:md.expenses, backgroundColor:'rgba(248,113,113,.75)' },
+  ], { projectedIdx: _projIdx });
+  renderNetSavingsChart('cfLineWrap', md.labels, net, { projectedIdx: _projIdx });
+
+  // Waterfall: cumulative flow from income through each spending category
+  (function() {
+    var wfEl = document.getElementById('cfWaterfallWrap');
+    if (!wfEl) return;
+    var sp2 = spendable(src);
+    var cats = {
+      income:  sp2.filter(function(t){return t.amount>0;}).reduce(function(s,t){return s+t.amount;},0),
+      savings: sp2.filter(function(t){return t.amount<0&&classifyTxn(t)==='auto_save';}).reduce(function(s,t){return s+t.amount;},0),
+      fixed:   sp2.filter(function(t){return t.amount<0&&['mortgage','car','education','insurance','childcare'].includes(classifyTxn(t));}).reduce(function(s,t){return s+t.amount;},0),
+      utils:   sp2.filter(function(t){return t.amount<0&&['electric','gas_util','water','internet','cell'].includes(classifyTxn(t));}).reduce(function(s,t){return s+t.amount;},0),
+      nec:     sp2.filter(function(t){return t.amount<0&&['groceries','gas_car','transit','healthcare'].includes(classifyTxn(t));}).reduce(function(s,t){return s+t.amount;},0),
+      disc:    sp2.filter(function(t){return t.amount<0&&['restaurants','entertainment','household','personal','clothing','travel','subscriptions','gifts'].includes(classifyTxn(t));}).reduce(function(s,t){return s+t.amount;},0)
+    };
+    var wfItems = [
+      {label:'Income',       value:cats.income,   type:'income',  color:'rgba(45,212,191,.85)'},
+      {label:'Savings',      value:cats.savings,  type:'expense', color:'rgba(52,211,153,.8)'},
+      {label:'Fixed',        value:cats.fixed,    type:'expense', color:'rgba(96,165,250,.8)'},
+      {label:'Utilities',    value:cats.utils,    type:'expense', color:'rgba(167,139,250,.8)'},
+      {label:'Necessities',  value:cats.nec,      type:'expense', color:'rgba(245,168,0,.8)'},
+      {label:'Discretionary',value:cats.disc,     type:'expense', color:'rgba(232,121,249,.8)'}
+    ].filter(function(it){return Math.abs(it.value)>1||it.type==='income';});
+    var netVal=wfItems.reduce(function(s,it){return s+it.value;},0);
+    wfItems.push({label:'Net',value:netVal,type:'total',color:'rgba(245,168,0,.9)'});
+    svgWaterfall('cfWaterfallWrap', wfItems);
+  })();
+
+  // ── Banking & Draw panel — core savings discipline view ──────────────────
+  renderCfBankDraw(md.fullKeys, _projIdx);
+
+  // KPIs
+  const totInc = md.income.reduce((a,b)=>a+b,0);
+  const totExp = md.expenses.reduce((a,b)=>a+b,0);
+  const totNet = totInc - totExp;
+  const mo = md.labels.length || 1;
+  document.getElementById('cfKPIs').innerHTML = [
+    { label:'Total Income',    val:fmtK(totInc), sub:fmt(totInc/mo)+'/mo', cls:'positive' },
+    { label:'Total Expenses',  val:fmtK(totExp), sub:fmt(totExp/mo)+'/mo', cls:'' },
+    { label:'Net',             val:(totNet>=0?'+':'')+fmtK(totNet), sub:'Savings rate: '+(totInc>0?((totNet/totInc)*100).toFixed(1):0)+'%', cls:totNet>=0?'positive':'negative' },
+    { label:'Months',          val:mo, sub:'in view', cls:'' },
+  ].map(k=>`<div class="kpi ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-val">${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+
+  } catch(e) {
+    console.error('[Forge] renderCashFlow error:', e);
+    const _el = document.getElementById('cfBarWrap');
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--neg);font-family:var(--fm);font-size:12px;">⚠ Render error in renderCashFlow: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+  renderMasterRecon('recon-cashflow', (operatingSpendable(txns).map(t=>t.date.slice(0,7)).sort().reverse()[0] || new Date().toISOString().slice(0,7)), {isData:null});
+  }
+}
+
+
+function renderCfpProof(containerId, selMonth, isNetIncome, monthName) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  if (!txns.length) { el.innerHTML = ''; return; }
+
+  var p = buildCfpProof(selMonth, isNetIncome);
+  if (!p) { el.innerHTML = ''; return; }
+
+  function mf(v) {
+    var a = Math.abs(v || 0);
+    return (v < 0 ? '\u2212' : '') + '$' + Math.round(a).toLocaleString();
+  }
+  function mfS(v) {
+    var a = Math.abs(v || 0);
+    var s = '$' + Math.round(a).toLocaleString();
+    return v > 0 ? '+\u2009' + s : v < 0 ? '\u2212\u2009' + s : s;
+  }
+  function pct(v, base) {
+    if (!base) return '';
+    return ' (' + (v / Math.abs(base) * 100).toFixed(1) + '%)';
+  }
+
+  var balanced  = p.balanced;
+  var diffColor = balanced ? 'var(--pos)' : 'var(--gold)';
+  var diffIcon  = balanced ? '\u2713\u2009Balanced' : '\u26a0\ufe0f\u2009Diff: ' + mf(p.proofDiff);
+  var mn        = monthName || selMonth;
+
+  // Build HTML with no template literals
+  var h = '';
+  h += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px;">';
+
+  // ── Header ──
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 16px 9px;border-bottom:1px solid rgba(255,255,255,.08);">';
+  h +=   '<div>';
+  h +=     '<div style="font-size:13px;font-weight:700;color:var(--ink);">CFP Balance Sheet Proof \u2014 ' + mn + '</div>';
+  h +=     '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-top:3px;">Income Statement + Capital Changes = Net Liquid Position Change</div>';
+  h +=   '</div>';
+  h +=   '<div style="font-size:12px;font-weight:700;color:' + diffColor + ';padding:6px 12px;background:rgba(255,255,255,.04);border-radius:8px;border:1px solid rgba(255,255,255,.08);">' + diffIcon + '</div>';
+  h += '</div>';
+
+  // ── Proof steps ──
+  function proofRow(label, valStr, colCss, noteTxt, isBold, isTotal) {
+    var bg   = isTotal ? 'rgba(255,255,255,.05)' : 'transparent';
+    var bdr  = isTotal ? 'border-top:2px solid rgba(255,255,255,.12);' : 'border-top:1px solid rgba(255,255,255,.04);';
+    var fs   = isBold  ? '12' : '11';
+    var fw   = isBold  ? '700' : '400';
+    var fsc  = isBold  ? '13' : '11';
+    var row  = '<div style="display:flex;align-items:baseline;justify-content:space-between;padding:5px 16px;background:' + bg + ';' + bdr + '">';
+    row += '<div>';
+    row +=   '<span style="font-size:' + fs + 'px;font-weight:' + fw + ';color:' + (colCss||'var(--ink3)') + ';">' + label + '</span>';
+    if (noteTxt) row += '<span style="font-size:9px;color:var(--ink4);margin-left:7px;">' + noteTxt + '</span>';
+    row += '</div>';
+    row += '<span style="font-size:' + fsc + 'px;font-family:var(--fm);font-weight:' + fw + ';color:' + (colCss||'var(--ink3)') + ';">' + valStr + '</span>';
+    row += '</div>';
+    return row;
+  }
+
+  h += proofRow('Opening Net Liquid (Checking + Savings \u2212 CC)', mf(p.openLiq), 'var(--ink2)', 'Quicken opening balances', false, false);
+  h += proofRow('+ IS Net Income (accrual basis)', mfS(p.isNet), p.isNet >= 0 ? 'var(--pos)' : 'var(--neg)', 'Income Statement bottom line', true, false);
+  if (p.principalPaid > 0)
+    h += proofRow('+ Mortgage Principal Paid', mfS(p.principalPaid), 'var(--river)', 'Equity build \u2014 balance sheet, not IS expense', true, false);
+  h += proofRow('+ Net Savings Transfers', mfS(p.savXferNet), p.savXferNet >= 0 ? 'var(--river)' : 'var(--gold)', p.savXferNet >= 0 ? 'Moved to savings' : 'Drew from savings', true, false);
+  if (Math.abs(p.accrualAdj) > 0)
+    h += proofRow('+ Accrual Timing Adjustment', mfS(p.accrualAdj), 'var(--ink4)', 'IS (accrual) vs cash-basis difference', false, false);
+  h += proofRow('= Calculated Closing Net Liquid', mf(p.openLiq + p.isNet + p.principalPaid + p.savXferNet + p.accrualAdj), balanced ? 'var(--pos)' : 'var(--gold)', '', true, true);
+  h += proofRow('  Actual Closing Net Liquid (Quicken)', mf(p.closeLiq), 'var(--ink2)', '', true, false);
+
+  // ── Account balance mini-grid ──
+  h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px 16px;border-top:1px solid rgba(255,255,255,.07);">';
+  function acctCard(label2, open2, close2) {
+    var chg2  = close2 - open2;
+    var ccol  = chg2 >= 0 ? 'var(--pos)' : 'var(--neg)';
+    var s     = '<div style="background:rgba(255,255,255,.03);border-radius:7px;padding:8px 10px;">';
+    s += '<div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">' + label2 + '</div>';
+    s += '<div style="font-size:13px;font-family:var(--fm);font-weight:700;color:var(--ink2);">' + mf(close2) + '</div>';
+    s += '<div style="font-size:10px;color:' + ccol + ';margin-top:2px;">' + mfS(chg2) + ' vs open</div>';
+    s += '</div>';
+    return s;
+  }
+  h += acctCard('Checking', p.oChk, p.cChk);
+  h += acctCard('Savings',  p.oSav, p.cSav);
+  h += acctCard('CC Balance', p.oCC, p.cCC);
+  h += '</div>';
+
+  h += '</div>';
+  el.innerHTML = h;
+}
 
 
 
@@ -3595,15 +4141,15 @@ function renderCfBankDraw(months, projectedIdx) {
   }
 
   var netPos     = rows[rows.length-1].cumulative;
-  var bankMos    = rows.filter(function(r){ return r.trueBankDraw > 0; }).length;
-  var drawMos    = rows.filter(function(r){ return r.trueBankDraw <= 0; }).length;
-  var totalBank  = rows.reduce(function(s,r){ return s+(r.trueBankDraw>0?r.trueBankDraw:0); }, 0);
-  var totalDraw  = rows.reduce(function(s,r){ return s+(r.trueBankDraw<0?Math.abs(r.trueBankDraw):0); }, 0);
-  var avgMonthly = rows.reduce(function(s,r){ return s+r.trueBankDraw; }, 0) / rows.length;
-  var streakType = rows[rows.length-1].trueBankDraw >= 0 ? 'banking' : 'drawing';
+  var bankMos    = rows.filter(function(r){ return r.net > 0; }).length;
+  var drawMos    = rows.filter(function(r){ return r.net <= 0; }).length;
+  var totalBank  = rows.reduce(function(s,r){ return s+(r.net>0?r.net:0); }, 0);
+  var totalDraw  = rows.reduce(function(s,r){ return s+(r.net<0?Math.abs(r.net):0); }, 0);
+  var avgMonthly = rows.reduce(function(s,r){ return s+r.net; }, 0) / rows.length;
+  var streakType = rows[rows.length-1].net >= 0 ? 'banking' : 'drawing';
   var streak = 0;
   for (var si = rows.length-1; si >= 0; si--) {
-    if ((streakType==='banking') === (rows[si].trueBankDraw >= 0)) streak++;
+    if ((streakType==='banking') === (rows[si].net >= 0)) streak++;
     else break;
   }
 
@@ -3683,7 +4229,7 @@ function renderCfBankDraw(months, projectedIdx) {
   tableRows.forEach(function(r, ri) {
     var isProj = (r.month === months[months.length-1] && projectedIdx >= 0);
     var bg  = ri % 2 ? 'rgba(255,255,255,.028)' : 'rgba(255,255,255,.008)';
-    var bkC = r.trueBankDraw >= 0 ? 'var(--pos)' : 'var(--neg)';
+    var bkC = r.net >= 0 ? 'var(--pos)' : 'var(--neg)';
     var cuC = r.cumulative   >= 0 ? 'var(--pos)' : 'var(--neg)';
     var FM  = 'font-size:11px;font-family:var(--fm);';
     function mf(v) { var a=Math.abs(v||0); return (v<0?'−':'')+'$'+a.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
@@ -3693,7 +4239,7 @@ function renderCfBankDraw(months, projectedIdx) {
     out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:var(--neg);">\u2212'+mf(r.expenses)+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:'+(r.xfersOut>0?'var(--river)':'rgba(255,255,255,.18)')+';">'+(r.xfersOut>0?'−'+kfmt(r.xfersOut):'—')+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:'+(r.xfersIn>0?'var(--gold)':'rgba(255,255,255,.18)')+';">'+(r.xfersIn>0?'+'+kfmt(r.xfersIn):'—')+'</td>';
-    out += '<td style="padding:5px 10px;text-align:right;font-size:13px;font-weight:700;font-family:var(--fm);color:'+bkC+';">'+kfmtS(r.trueBankDraw)+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;font-size:13px;font-weight:700;font-family:var(--fm);color:'+bkC+';">'+kfmtS(r.net)+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;font-size:13px;font-weight:700;font-family:var(--fm);color:'+cuC+';">'+kfmtS(r.cumulative)+'</td>';
     out += '</tr>';
   });
@@ -3703,12 +4249,15 @@ function renderCfBankDraw(months, projectedIdx) {
   setTimeout(function() {
     var ce = document.getElementById('cfBankChart');
     if (!ce) return;
-    var bData = rows.map(function(r){ return r.trueBankDraw; });
+    var bData = rows.map(function(r){ return r.net; });
     var lData = rows.map(function(r){ return r.cumulative; });
     var lbls  = rows.map(function(r){ return r.monthName; });
     renderSavingsRegChart(ce, lbls, bData, lData);
   }, 0);
 }
+
+
+
 
 
 
@@ -3818,6 +4367,9 @@ function renderSavingsRegChart(el, labels, barData, lineData) {
 
 
 
+
+
+
 function renderSavingsRegister() {
   var el = document.getElementById('savingsRegContent');
   if (!el) return;
@@ -3857,16 +4409,16 @@ function renderSavingsRegister() {
   }
 
   // ── Chart: True Bank/Draw bars + cumulative line ─────────────────────────
-  var chartData  = rows.map(function(r){ return r.trueBankDraw; });
+  var chartData  = rows.map(function(r){ return r.net; });
   var cumData    = rows.map(function(r){ return r.cumulative; });
   var labels     = rows.map(function(r){ return r.monthName; });
 
   // ── Summary KPIs ─────────────────────────────────────────────────────────
-  var totalBanked = rows.reduce(function(s,r){ return s+(r.trueBankDraw>0?r.trueBankDraw:0); },0);
-  var totalDrawn  = rows.reduce(function(s,r){ return s+(r.trueBankDraw<0?Math.abs(r.trueBankDraw):0); },0);
+  var totalBanked = rows.reduce(function(s,r){ return s+(r.net>0?r.net:0); },0);
+  var totalDrawn  = rows.reduce(function(s,r){ return s+(r.net<0?Math.abs(r.net):0); },0);
   var netTotal    = rows[rows.length-1].cumulative;
-  var bankMos     = rows.filter(function(r){ return r.trueBankDraw > 0; }).length;
-  var drawMos     = rows.filter(function(r){ return r.trueBankDraw < 0; }).length;
+  var bankMos     = rows.filter(function(r){ return r.net > 0; }).length;
+  var drawMos     = rows.filter(function(r){ return r.net < 0; }).length;
 
   var kpiColor = netTotal >= 0 ? 'var(--pos)' : 'var(--neg)';
 
@@ -3905,7 +4457,7 @@ function renderSavingsRegister() {
 
   rows.forEach(function(r, ri) {
     var bg = ri % 2 ? 'rgba(255,255,255,.018)' : 'transparent';
-    var bankCol = r.trueBankDraw >= 0 ? 'var(--pos)' : 'var(--neg)';
+    var bankCol = r.net >= 0 ? 'var(--pos)' : 'var(--neg)';
     var cumCol  = r.cumulative  >= 0 ? 'var(--pos)' : 'var(--neg)';
     var chkCol  = r.chkChange   >= 0 ? 'var(--pos)' : 'var(--neg)';
     out += '<tr style="background:'+bg+';border-top:1px solid rgba(255,255,255,.04);">';
@@ -3915,7 +4467,7 @@ function renderSavingsRegister() {
     out += '<td style="padding:5px 10px;text-align:right;color:'+(r.xfersOut>0?'var(--river)':'var(--ink4)')+';">'+(r.xfersOut>0?'−'+kfmt(r.xfersOut):'—')+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;color:'+(r.xfersIn>0?'var(--gold)':'var(--ink4)')+';">'+(r.xfersIn>0?'+'+kfmt(r.xfersIn):'—')+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;color:'+chkCol+';">'+kfmtSigned(r.chkChange)+'</td>';
-    out += '<td style="padding:5px 10px;text-align:right;font-weight:700;color:'+bankCol+';">'+kfmtSigned(r.trueBankDraw)+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;font-weight:700;color:'+bankCol+';">'+kfmtSigned(r.net)+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;font-weight:700;color:'+cumCol+';">'+kfmtSigned(r.cumulative)+'</td>';
     out += '</tr>';
   });
@@ -3930,6 +4482,9 @@ function renderSavingsRegister() {
     renderSavingsRegChart(cw, labels, chartData, cumData);
   }, 0);
 }
+
+
+
 
 
 
@@ -7275,7 +7830,7 @@ function renderNetSavingsChart(elId, labels, data, opts) {
 
   const W  = Math.max(el.offsetWidth || 520, 320);
   const H  = 240;
-  const PT = 22, PB = 34, PL = 62, PR = 18;
+  const PT = 28, PB = 38, PL = 66, PR = 20;
   const cW = W - PL - PR, cH = H - PT - PB;
 
   const n       = data.length;
@@ -7500,6 +8055,9 @@ function renderNetSavingsChart(elId, labels, data, opts) {
   </svg>`;
   bindChartTips(el);
 }
+
+
+
 
 
 

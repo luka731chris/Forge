@@ -1194,7 +1194,7 @@ select:focus { border-color: var(--gold); }
   <div class="page-hdr">
     <div>
       <div class="page-title">Cash Flow</div>
-      <div class="page-sub">Monthly income and expense trends</div>
+      <div class="page-sub">Cash basis &nbsp;&middot;&nbsp; operating accounts only &nbsp;&middot;&nbsp; transfers excluded</div>
     </div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <div class="range-tabs" id="cfRangeTabs">
@@ -1378,7 +1378,7 @@ select:focus { border-color: var(--gold); }
   <div class="page-hdr">
     <div>
       <div class="page-title">Income Statement</div>
-      <div class="page-sub">Household P&amp;L · accrual basis · click any section to expand</div>
+      <div class="page-sub">Accrual basis &nbsp;&middot;&nbsp; income when earned &nbsp;&middot;&nbsp; expenses when incurred &nbsp;&middot;&nbsp; CFP-accurate</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <!-- Chart type selector with tooltip -->
@@ -1437,6 +1437,7 @@ select:focus { border-color: var(--gold); }
   <div id="isTrendWrap" style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;"></div>
   <div id="incomeStatement"></div>
 </div>
+  <div id="cfp-proof-income" style="padding:0 16px;margin-top:4px;margin-bottom:4px;"></div>
   <div id="recon-income" style="padding:0 16px;"></div>
 
 <!-- ══ RECONCILE ══ -->
@@ -1444,7 +1445,7 @@ select:focus { border-color: var(--gold); }
   <div class="page-hdr">
     <div>
       <div class="page-title">Reconciliation Bridge</div>
-      <div class="page-sub" id="reconSub">Single source of truth · trace any number from Quicken to every view in Forge</div>
+      <div class="page-sub" id="reconSub">Quicken register &rarr; Cash Flow (cash) &rarr; Income Statement (accrual) &nbsp;&middot;&nbsp; CFP-grade proof</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <select id="reconMonth" onchange="renderReconcile()" style="font-size:12px;padding:5px 10px;"></select>
@@ -1957,7 +1958,7 @@ function renderCrosswalk() {
   });
 
   function getRecommendation(t) {
-    const payee = (t.payee || '').toLowerCase().trim();
+    let   payee = (t.payee || '').toLowerCase().trim();
     if (!payee) return null;
 
     // 1. Exact payee match
@@ -2234,7 +2235,7 @@ function cwApplyAll() {
   if (!keys.length) { toast('No pending mappings to apply'); return; }
   let updated = 0;
   txns.forEach(t => {
-    const payee = (t.payee || '(no payee)').trim();
+    let   payee = (t.payee || '(no payee)').trim();
     if (pending[payee]) {
       t.category = pending[payee];
       updated++;
@@ -2358,7 +2359,8 @@ function renderReconcile() {
 
   // ── IS / Accrual numbers for this month ───────────────────────────────────
   var isIncome=0, isFixed=0, isVar=0, isAutoSave=0;
-  var FIXED_BKS = new Set(['mortgage','car','insurance','education','childcare','electric','gas_util','water','internet','streaming']);
+  var CAPITAL_BKS = new Set(['mort_principal']);
+  var FIXED_BKS   = new Set(['mortgage','mort_interest','mort_escrow','car','insurance','education','childcare','electric','gas_util','water','internet','streaming']);
   var monthSp = sp.filter(function(t){ return t.date.startsWith(selMonth) && detectAcctType(t.account||'')==='checking'; });
   monthSp.filter(function(t){ return t.amount>0&&classifyTxn(t)==='paycheck'; }).forEach(function(t){ isIncome+=t.amount; });
   var ALL_DETAIL_SP = txns.filter(function(t){ return t.date.startsWith(selMonth)&&t.amount<0&&(t.itemDetail||DETAIL.has(t._source||t._ftype||'')); });
@@ -2449,6 +2451,13 @@ function renderReconcile() {
 
   out += '</div>';
   el.innerHTML = out;
+  // CFP proof panel — appended after render
+  var _proofEl = document.createElement('div');
+  _proofEl.style.cssText = 'padding:0;margin-top:12px;';
+  el.appendChild(_proofEl);
+  if (typeof renderCfpProof === 'function')
+    renderCfpProof(_proofEl.id = ('cfpProof_'+selMonth), selMonth,
+      (isNet || 0), monthName);
 }
 
 function updateAccountOwner(sel) {
@@ -2850,7 +2859,7 @@ function renderSettings() {
       'networth':   t => false,  // NW snapshots aren't in txns[]
     };
     const test = ALIASES[sourceKey] || (t => t._source === sourceKey);
-    const src = (txns || []).filter(test);
+    let   src = (txns || []).filter(test);
     if (!src.length) return null;
     const dates = src.map(t => t.date).filter(Boolean).sort();
     return { count: src.length, earliest: dates[0], latest: dates[dates.length - 1] };
@@ -3853,24 +3862,31 @@ function svgBar(elId, labels, datasets, opts) {
   const el = document.getElementById(elId);
   if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
   const W = Math.max(el.offsetWidth || 0, 300);
-  const H = Math.max(el.offsetHeight || 0, 180);
-  if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;font-family:var(--fm);">No data</div>'; return; }
+  const H = Math.max(el.offsetHeight || 0, 200);
+  if (!labels.length) {
+    el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
+    return;
+  }
 
-  const PAD = { t:12, r:16, b:52, l:58 };
-  const cW = W - PAD.l - PAD.r;
-  const cH = H - PAD.t - PAD.b;
-  const n  = labels.length;
+  // Padding: top for value labels, bottom for x-labels + legend
+  const nDS    = datasets.length;
+  const LEGEND_H = nDS > 1 ? 22 : 0;    // only show legend if multiple datasets
+  const PAD    = { t:20, r:18, b:44 + LEGEND_H, l:62 };
+  const cW     = W - PAD.l - PAD.r;
+  const cH     = H - PAD.t - PAD.b;
+  const n      = labels.length;
   const allVals = datasets.flatMap(d => d.data || []).filter(v => isFinite(v));
   if (!allVals.length) return;
 
-  // Dynamic scale with smart zero + nice ticks
-  const _sbSc  = computeScale(allVals, { showZero:true, padPct:0.15 });
-  const maxV   = _sbSc.maxV;
-  const minV   = _sbSc.minV;
-  const span   = _sbSc.span;
-  const zeroY  = cH * (maxV / span);
+  // Bar charts always anchor at $0 — forceZeroBase prevents truncated axis
+  const _sbSc = computeScale(allVals, { showZero:true, forceZeroBase:true, padPct:0.12 });
+  const maxV  = _sbSc.maxV;
+  const minV  = _sbSc.minV;
+  const span  = _sbSc.span;
+  const zeroY = cH * (maxV / span);   // pixel distance from chart top to zero
 
-  let grid = '', yLbls = '', truncNote = '';
+  // Grid + y-axis labels
+  let grid = '', yLbls = '';
   (_sbSc.ticks || []).forEach(function(v) {
     var y   = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
     var isZ = Math.abs(v) < span * 0.015;
@@ -3879,6 +3895,7 @@ function svgBar(elId, labels, datasets, opts) {
          + ' stroke="'+(isZ?'rgba(255,255,255,.55)':'rgba(255,255,255,.06)')+'"'
          + ' stroke-width="'+(isZ?2:1)+'"/>';
     if (isZ) {
+      // Shadow below zero line for depth
       grid += '<line x1="'+PAD.l+'" y1="'+(parseFloat(y)+2)+'" x2="'+(W-PAD.r)+'" y2="'+(parseFloat(y)+2)+'"'
            + ' stroke="rgba(0,0,0,.35)" stroke-width="2"/>';
     }
@@ -3888,49 +3905,56 @@ function svgBar(elId, labels, datasets, opts) {
           + ' fill="'+(isZ?'rgba(255,255,255,.65)':'rgba(255,255,255,.38)')+'"'
           + ' font-size="10" font-family="var(--fm)"'+(isZ?' font-weight="700"':'')+'>'+lbl+'</text>';
   });
-  if (_sbSc.truncated) {
-    truncNote = '<text x="'+PAD.l+'" y="'+(PAD.t+cH+12)+'" text-anchor="start"'
-              + ' fill="rgba(255,255,255,.28)" font-size="9" font-family="var(--fm)" font-style="italic">'
-              + 'axis truncated — $0 not shown</text>';
-  }
-  // Bars + invisible hit areas for tooltip
-  const nDS  = datasets.length;
+
+  // Bars
   const grpW = cW / n;
-  const barW = Math.max(Math.min((grpW / (nDS + 0.8)) - 1, 40), 3);
+  const barW = Math.max(Math.min((grpW / (nDS + 0.8)) - 1, 44), 3);
   const off  = (grpW - barW * nDS) / 2;
   let bars = '', hitAreas = '', legend = '';
 
   var _htchId = 'h'+elId.replace(/[^a-z0-9]/gi,'');
-  var _defs2  = '<defs><pattern id="'+_htchId+'" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="rgba(255,255,255,0.28)" stroke-width="2.5"/></pattern></defs>';
+  var _defs2  = '<defs><pattern id="'+_htchId+'" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="rgba(255,255,255,0.3)" stroke-width="2.5"/></pattern></defs>';
 
   datasets.forEach(function(ds, di) {
     var color     = ds.backgroundColor || COLORS[di % COLORS.length];
     var safeLabel = (ds.label||'').replace(/'/g, '&apos;');
-    legend += '<rect x="'+(di*90+PAD.l)+'" y="'+(H-16)+'" width="10" height="8" rx="2" fill="'+color+'"/>'
-            + '<text x="'+(di*90+PAD.l+14)+'" y="'+(H-8)+'" fill="rgba(255,255,255,.5)" font-size="10" font-family="var(--fm)">'+safeLabel+'</text>';
+
+    // Legend: placed below x-labels with breathing room
+    if (nDS > 1) {
+      var lgX = PAD.l + di * 110;
+      var lgY = H - 10;
+      legend += '<rect x="'+lgX+'" y="'+(lgY-8)+'" width="10" height="8" rx="2" fill="'+color+'"/>'
+              + '<text x="'+(lgX+14)+'" y="'+lgY+'" fill="rgba(255,255,255,.5)" font-size="10" font-family="var(--fm)">'+safeLabel+'</text>';
+    }
+
     (ds.data || []).forEach(function(v, i) {
       if (!isFinite(v)) return;
       var isP  = (i === _pIdx);
       var x    = (PAD.l + i * grpW + off + di * barW).toFixed(1);
-      var bH   = Math.max((Math.abs(v) / span * cH).toFixed(1), 1);
+      var bH   = Math.max((Math.abs(v) / span * cH), 2);
       var y    = (PAD.t + (v >= 0 ? zeroY - Math.abs(v)/span*cH : zeroY)).toFixed(1);
-      var fmtV = Math.abs(v)>=1000?'$'+(v/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
+      var fmtV = Math.abs(v)>=1000?'$'+(Math.abs(v)/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
       var tip  = labels[i]+' · '+safeLabel+': '+fmtV+(isP?' (projected)':'');
-      var bRx = Math.min(parseFloat(bH)/2, 3);
-      bars += '<rect x="'+x+'" y="'+(parseFloat(y)+2)+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="'+bRx+'" fill="'+color+'" opacity="'+(isP?'0.1':'0.18')+'"/>'; // shadow bloom
-      bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="'+bRx+'" fill="'+color+'" opacity="'+(isP?'0.45':'0.88')+'" data-tip="'+tip+'"/>';
-      bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+(parseFloat(bH)*0.32).toFixed(1)+'" rx="'+bRx+'" fill="rgba(255,255,255,0.13)" style="pointer-events:none;"/>'; // top-lit
+      var bRx  = Math.min(bH/2, 3);
+      var bHs  = bH.toFixed(1);
+
+      // 3D: shadow bloom
+      bars += '<rect x="'+x+'" y="'+(parseFloat(y)+2)+'" width="'+barW.toFixed(1)+'" height="'+bHs+'" rx="'+bRx+'" fill="'+color+'" opacity="'+(isP?'0.10':'0.20')+'"/>';
+      // Main bar
+      bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+bHs+'" rx="'+bRx+'" fill="'+color+'" opacity="'+(isP?'0.45':'0.88')+'" data-tip="'+tip+'"/>';
+      // Top-lit highlight
+      bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+(bH*0.32).toFixed(1)+'" rx="'+bRx+'" fill="rgba(255,255,255,0.13)" style="pointer-events:none;"/>';
+
       if (isP) {
-        bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="'+bRx+'" fill="url(#'+_htchId+')" opacity="0.75"/>';
-        bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+bH+'" rx="'+bRx+'" fill="none" stroke="'+color+'" stroke-width="1" stroke-dasharray="3 2" opacity="0.8"/>';
-        var ely = (parseFloat(y)-5).toFixed(1);
+        bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+bHs+'" rx="'+bRx+'" fill="url(#'+_htchId+')" opacity="0.75"/>';
+        bars += '<rect x="'+x+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+bHs+'" rx="'+bRx+'" fill="none" stroke="'+color+'" stroke-width="1" stroke-dasharray="3 2" opacity="0.8"/>';
+        var ely = (parseFloat(y)-7).toFixed(1);
         bars += '<text x="'+(parseFloat(x)+barW/2).toFixed(1)+'" y="'+ely+'" text-anchor="middle" font-size="8" font-family="var(--fm)" fill="'+color+'" opacity="0.85" font-style="italic">est.</text>';
       }
     });
   });
 
-
-  // Per-column hit areas — all dataset values + computed net in one tooltip
+  // Per-column hit areas with net tooltip
   labels.forEach(function(colLbl, ci) {
     var parts = [String(colLbl)];
     var incV = 0, expV = 0;
@@ -3939,34 +3963,42 @@ function svgBar(elId, labels, datasets, opts) {
       if (!isFinite(v)) return;
       var av=Math.abs(v), fv=av>=1000?(av/1000).toFixed(1)+'K':Math.round(av).toString();
       var sign=v>=0?'+':'-';
-      parts.push((ds.label||'').replace(/['"&<>]/g,' ')+': '+sign+'$'+fv);
+      parts.push((ds.label||'').replace(/['\"&<>]/g,' ')+': '+sign+'$'+fv);
       if(/income/i.test(ds.label||'')) incV=v;
       if(/expense/i.test(ds.label||'')) expV=v;
     });
-    if(incV&&expV){var net=incV-Math.abs(expV),nAbs=Math.abs(net),nFv=nAbs>=1000?(nAbs/1000).toFixed(1)+'K':Math.round(nAbs).toString();parts.push('Net: '+(net>=0?'+':'-')+'$'+nFv);}
+    if(incV&&expV){
+      var net=incV-Math.abs(expV),nAbs=Math.abs(net);
+      var nFv=nAbs>=1000?(nAbs/1000).toFixed(1)+'K':Math.round(nAbs).toString();
+      parts.push('Net: '+(net>=0?'+':'-')+'$'+nFv);
+    }
     var colTip=parts.join('  |  ');
     var dd=JSON.stringify({month:String(colLbl)}).replace(/"/g,'&quot;');
-    hitAreas+='<rect x="'+(PAD.l+ci*grpW).toFixed(1)+'" y="'+PAD.t+'" width="'+grpW.toFixed(1)+'" height="'+cH+'" fill="transparent" style="cursor:pointer;" data-tip="'+colTip.replace(/"/g,'&quot;')+'" data-drill="'+dd+'"/>';
+    hitAreas+='<rect x="'+(PAD.l+ci*grpW).toFixed(1)+'" y="'+PAD.t+'" width="'+grpW.toFixed(1)+'" height="'+cH+'" fill="transparent" data-tip="'+colTip.replace(/'/g,'&#39;')+'" data-drill="'+dd+'" style="cursor:crosshair;"/>';
   });
 
-  // X labels — adaptive: skip labels to prevent overlap
-  // Calculate how many chars fit per slot
-  const charsPerSlot = Math.floor(grpW / 6.5); // ~6.5px per char at font-size 10
-  const minStep = Math.ceil(n / Math.max(1, Math.floor(cW / 48)));
+  // X-axis labels — adaptive step to prevent overlap
+  const minStep = Math.ceil(n / Math.max(1, Math.floor(cW / 52)));
+  const xLblY   = (PAD.t + cH + 18).toFixed(1);  // clear of bars, above legend
   let xLbls = '';
-  labels.forEach((lbl, i) => {
+  labels.forEach(function(lbl, i) {
     if (i % minStep !== 0 && i !== n-1) return;
-    const x = (PAD.l + i * grpW + grpW / 2).toFixed(1);
-    const s = String(lbl).length > charsPerSlot ? String(lbl).slice(-Math.max(4, charsPerSlot)) : String(lbl);
-    xLbls += `<text x="${x}" y="${PAD.t+cH+16}" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10" font-family="'DM Mono',monospace">${s}</text>`;
+    var x = (PAD.l + i * grpW + grpW / 2).toFixed(1);
+    var s = String(lbl);
+    xLbls += '<text x="'+x+'" y="'+xLblY+'" text-anchor="middle" fill="rgba(255,255,255,.42)" font-size="10" font-family="var(--fm)">'+s+'</text>';
   });
 
-  const zY = (PAD.t + zeroY).toFixed(1);
-  const zeroLine = `<line x1="${PAD.l}" y1="${(parseFloat(zY)+2).toFixed(1)}" x2="${W-PAD.r}" y2="${(parseFloat(zY)+2).toFixed(1)}" stroke="rgba(0,0,0,.35)" stroke-width="2"/><line x1="${PAD.l}" y1="${zY}" x2="${W-PAD.r}" y2="${zY}" stroke="rgba(255,255,255,.6)" stroke-width="1"/>`;
+  // Zero line
+  const zY        = (PAD.t + zeroY).toFixed(1);
+  const zeroLine  = '<line x1="'+PAD.l+'" y1="'+(parseFloat(zY)+2)+'" x2="'+(W-PAD.r)+'" y2="'+(parseFloat(zY)+2)+'" stroke="rgba(0,0,0,.35)" stroke-width="2"/>'
+                  + '<line x1="'+PAD.l+'" y1="'+zY+'" x2="'+(W-PAD.r)+'" y2="'+zY+'" stroke="rgba(255,255,255,.55)" stroke-width="1.5"/>';
 
-  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:hidden;">
-    ${_defs2}${grid}${bars}${yLbls}${xLbls}${legend}${truncNote}${hitAreas}
-  </svg>`;
+  // Truncation note (shown when axis doesn't start at $0 — shouldn't happen with forceZeroBase)
+  var truncNote = '';
+
+  el.innerHTML = '<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'
+    + _defs2 + grid + zeroLine + bars + yLbls + xLbls + legend + truncNote + hitAreas
+    + '</svg>';
   bindChartTips(el);
 }
 
@@ -3979,7 +4011,7 @@ function svgLine(elId, labels, datasets, opts) {
   const H = Math.max(el.offsetHeight || 0, 160);
   if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>'; return; }
 
-  const PAD = { t:16, r:18, b:32, l:58 };
+  const PAD = { t:20, r:18, b:38, l:62 };
   const cW = W - PAD.l - PAD.r;
   const cH = H - PAD.t - PAD.b;
   const n  = labels.length;
@@ -4079,7 +4111,7 @@ function svgLine(elId, labels, datasets, opts) {
   let xLbls = '';
   labels.forEach((lbl, i) => {
     if (i % minStep !== 0 && i !== n-1) return;
-    xLbls += `<text x="${xOf(i).toFixed(1)}" y="${H-4}" text-anchor="middle" fill="rgba(255,255,255,.38)" font-size="10" font-family="var(--fm)">${lbl}</text>`;
+    xLbls += `<text x="${xOf(i).toFixed(1)}" y="${H-8}" text-anchor="middle" fill="rgba(255,255,255,.42)" font-size="10" font-family="var(--fm)">${lbl}</text>`;
   });
 
   // Hit areas
@@ -4147,7 +4179,7 @@ function svgHBar(elId, labels, values, colors, bucketKeys) {
     const color  = usedColors[i];
     const ci     = uniqueCols.indexOf(color);
     const valS   = Math.abs(v)>=1000?'$'+(Math.abs(v)/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
-    const lShort = String(lbl).length > 19 ? String(lbl).slice(0,18)+'…' : String(lbl);
+    const lShort = String(lbl).length > 22 ? String(lbl).slice(0,21)+'…' : String(lbl);
     const tip    = `${lbl}: ${valS}`;
     const drillKey = (bucketKeys && bucketKeys[i]) ? String(bucketKeys[i]) : String(lbl);
     const catDrill = JSON.stringify({cat: drillKey}).replace(/"/g,'&quot;');
@@ -4180,7 +4212,7 @@ function svgWaterfall(elId, items) {
     el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
     return;
   }
-  var PAD = {t:24,r:16,b:56,l:64};
+  var PAD = {t:30,r:18,b:60,l:66};
   var cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b, n = items.length;
   var running = 0;
   var segs = items.map(function(item) {
@@ -4273,7 +4305,7 @@ function svgWaterfall(elId, items) {
     var tip=s.label+': '+sign+fmtM(s.value)+' | '+tipT+'| Running: '+(isTot?'final':fmtM(s.end));
     hitAreas+='<rect x="'+(PAD.l+i*gap).toFixed(1)+'" y="'+PAD.t+'" width="'+gap.toFixed(1)+'" height="'+cH+'" fill="transparent" data-tip="'+tip.replace(/'/g,'&apos;').replace(/"/g,'&quot;')+'" style="cursor:crosshair;"/>';
     var sl=s.label.length>11?s.label.slice(0,10)+String.fromCharCode(8230):s.label;
-    xLbls+='<text x="'+cx.toFixed(1)+'" y="'+(H-PAD.b+18)+'" text-anchor="middle" fill="rgba(255,255,255,.42)" font-size="10" font-family="var(--fm)">'+sl+'</text>';
+    xLbls+='<text x="'+cx.toFixed(1)+'" y="'+(H-PAD.b+22)+'" text-anchor="middle" fill="rgba(255,255,255,.42)" font-size="10" font-family="var(--fm)">'+sl+'</text>';
   });
 
   el.innerHTML='<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'+defs+grid+connectors+bars+yLbls+xLbls+hitAreas+'</svg>';
@@ -5160,27 +5192,32 @@ function buildMonthProjection(curMo, sp) {
 // so data always fills ~75% of the chart area.
 function computeScale(vals, opts) {
   opts = opts || {};
-  var showZero = opts.showZero !== false;
-  var padPct   = opts.padPct != null ? opts.padPct : 0.18;
-  var finite   = vals.filter(isFinite);
+  var showZero      = opts.showZero !== false;
+  var forceZeroBase = opts.forceZeroBase || false;  // bars always anchor at $0
+  var padPct        = opts.padPct != null ? opts.padPct : 0.18;
+  var finite        = vals.filter(isFinite);
   if (!finite.length) return { maxV:1, minV:0, span:1, y0Pct:0, ticks:[], zero:true };
 
   var dMax  = finite.reduce(function(m,v){ return Math.max(m,v); }, finite[0]);
   var dMin  = finite.reduce(function(m,v){ return Math.min(m,v); }, finite[0]);
   var dSpan = Math.max(Math.abs(dMax - dMin), 1);
 
-  // Symmetric padding — equal above and below.
-  // Using data span prevents income data ($7K–$8K) from being anchored to $0.
+  // Padding is always based on the data span — never absolute values
   var pad    = dSpan * padPct;
   var rawMax = dMax + pad;
   var rawMin = dMin - pad;
 
-  // Smart zero inclusion: only pull zero in if data is within 1.5× span of zero.
-  // Mixed-sign data always includes zero (distToZero === 0).
   var zeroIncluded = false;
-  if (showZero) {
+  if (forceZeroBase) {
+    // Bar charts: always anchor at zero, pad only above the tallest bar
+    rawMax = dMax + pad;
+    rawMin = Math.min(rawMin, 0);
+    rawMax = Math.max(rawMax, 0);
+    zeroIncluded = true;
+  } else if (showZero) {
+    // Line / net charts: include zero only if data is within 2× span of zero
     var distToZero = (dMin >= 0) ? dMin : (dMax <= 0 ? Math.abs(dMax) : 0);
-    if (distToZero <= dSpan * 1.5) {
+    if (distToZero <= dSpan * 2.0) {
       rawMax = Math.max(rawMax, 0);
       rawMin = Math.min(rawMin, 0);
       zeroIncluded = true;
@@ -5193,9 +5230,9 @@ function computeScale(vals, opts) {
     var range = hi - lo;
     var rough = range / 5;
     if (rough <= 0) return [lo, hi];
-    var mag  = Math.pow(10, Math.floor(Math.log10(rough)));
+    var mag   = Math.pow(10, Math.floor(Math.log10(rough)));
     var cands = [mag*0.5, mag, mag*2, mag*2.5, mag*5, mag*10];
-    var iv   = cands.find(function(c){ return range/c >= 3 && range/c <= 7; }) || rough;
+    var iv    = cands.find(function(c){ return range/c >= 3 && range/c <= 7; }) || rough;
     var start = Math.ceil(lo / iv) * iv;
     var ticks = [];
     for (var v = start; v <= hi + iv*0.01; v += iv)
@@ -5208,13 +5245,12 @@ function computeScale(vals, opts) {
     maxV:      rawMax,
     minV:      rawMin,
     span:      span,
-    y0Pct:     (0 - rawMin) / span,
+    y0Pct:     Math.max(0, Math.min(1, (0 - rawMin) / span)),
     ticks:     ticks,
     zero:      zeroIncluded,
     truncated: !zeroIncluded && dMin > 0
   };
-}
-// ── Demo detail CSV files (embedded for test build) ──────────────────────────
+}// ── Demo detail CSV files (embedded for test build) ──────────────────────────
 // Calling loadDemoDetails() parses these through the live import pipeline,
 // demonstrating unmasking of Amazon, Apple Card, Home Depot, Lowe's, and Venmo.
 function loadDemoDetails() {
@@ -5334,107 +5370,105 @@ function loadDemoDetails() {
 //             chkChange, trueBankDraw, cumulative }
 // ─────────────────────────────────────────────────────────────────────────────
 function buildSavingsRegister(months) {
-  // OPERATING ONLY: checking + savings + credit card transactions.
-  // Never includes investment, retirement, 529, HSA.
-  // 
-  // Core metric: trueBankDraw = operating income - operating expenses
-  //   Income   = non-transfer deposits to checking (payroll, etc.)
-  //   Expenses = all non-transfer outflows across checking + credit cards
-  //              (CC charges represent real spending even if paid later)
-  // 
-  // We do NOT attempt to reconstruct running balances from transaction history —
-  // Quicken is the authoritative register for that. We only show the monthly
-  // income/expense delta and its cumulative trend.
+  // Uses the SAME transaction filter as the Cash Flow chart and Income Statement.
+  // This guarantees the Bank/Draw column reconciles with those views.
+  //
+  //   operatingBase = non-transfer, non-masked, non-detail, operating-account txns
+  //   Income   = positive amounts on CHECKING accounts in operatingBase
+  //   Expenses = absolute negative amounts on CHECKING + CREDIT accounts in operatingBase
+  //   Net      = Income − Expenses (positive = banking, negative = drawing)
+  //
+  // Savings transfers are EXCLUDED from Net (they are capital movements, not P&L).
+  // They are shown separately for context.
 
-  if (!txns.length || !months.length) return [];
-  const DETAIL = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+  if (!txns || !txns.length || !months || !months.length) return [];
 
-  function acctType(name) { return detectAcctType(name||''); }
-  function isChk(name)  { return acctType(name) === 'checking'; }
-  function isCC(name)   { return acctType(name) === 'credit';   }
-  function isSav(name)  { return acctType(name) === 'savings';  }
-  function isOper(name) { var t=acctType(name); return t==='checking'||t==='savings'||t==='credit'; }
+  const OPER_TYPES = new Set(['checking', 'savings', 'credit']);
+  const DETAIL_SRC = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
 
-  // Pre-index operating transactions by month for speed
-  var byMonth = {};
-  txns.forEach(function(t) {
-    if (!isOper(t.account||'')) return;                        // skip investment/retirement
-    if (t.itemDetail || DETAIL.has(t._source||t._ftype||'')) return;  // skip detail CSVs
+  // Build the same base the cash flow chart uses
+  function operatingBase(txnArr) {
+    return (txnArr || []).filter(function(t) {
+      if (isTransfer(t))  return false;   // transfers excluded (CC payments, sav xfers)
+      if (t._masked)      return false;   // Quicken lump-sums superseded by detail CSVs
+      if (t.itemDetail)   return false;   // detail CSV line items (handled separately)
+      if (DETAIL_SRC.has(t._source||t._ftype||'')) return false;
+      return OPER_TYPES.has(detectAcctType(t.account||''));
+    });
+  }
+
+  // Savings transfer index (transfers not in operatingBase — tracked separately)
+  function savXferBase(txnArr) {
+    return (txnArr || []).filter(function(t) {
+      if (!t.isTransfer && !/^\[.*\]$/.test(t.category||'')) return false;
+      var tp  = detectAcctType(t.account||'');
+      var cat = (t.category||'').replace(/^\[|\]$/g,'').trim();
+      var destTp = detectAcctType(cat);
+      return (tp === 'checking' && (destTp === 'savings' || detectAcctType(cat) === 'savings'));
+    });
+  }
+
+  // Pre-index by month
+  var base   = operatingBase(txns);
+  var xfers  = savXferBase(txns);
+
+  var byMo = {}, xfByMo = {};
+  base.forEach(function(t) {
     var mo = t.date.slice(0,7);
-    if (!byMonth[mo]) byMonth[mo] = [];
-    byMonth[mo].push(t);
+    if (!byMo[mo]) byMo[mo] = [];
+    byMo[mo].push(t);
+  });
+  xfers.forEach(function(t) {
+    var mo = t.date.slice(0,7);
+    if (!xfByMo[mo]) xfByMo[mo] = [];
+    xfByMo[mo].push(t);
   });
 
-  var rows = [];
   var cumulative = 0;
+  var rows = [];
 
   months.forEach(function(mo) {
-    var parts = mo.split('-');
-    var monthName = new Date(+parts[0],+parts[1]-1,1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
-    var moTxns = byMonth[mo] || [];
+    var p = mo.split('-');
+    var monthName = new Date(+p[0],+p[1]-1,1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
+    var moTxns  = byMo[mo]  || [];
+    var moXfers = xfByMo[mo]|| [];
 
-    var income   = 0;  // payroll / direct deposits into checking (non-transfer)
-    var expenses = 0;  // all operating spend: checking outflows + CC charges (non-transfer)
-    var savXferOut = 0; // checking → savings (we're choosing to save this)
-    var savXferIn  = 0; // savings → checking (drawing on savings to cover shortfall)
-    var ccPay      = 0; // CC payments from checking (accounting move, not real spend)
+    var income   = 0;
+    var expenses = 0;
+    var savOut   = 0;  // checking → savings (choosing to save — positive number)
+    var savIn    = 0;  // savings → checking (drawing on savings — positive number)
 
     moTxns.forEach(function(t) {
-      if (t.isTransfer) {
-        // Classify transfers by destination account type
-        var cat  = (t.category||'').replace(/^\[|\]$/g,'').trim();
-        var dest = acctType(cat);
-        if (isChk(t.account||'')) {
-          // Transfer originating from checking
-          if (dest === 'savings') {
-            if (t.amount < 0) savXferOut += Math.abs(t.amount);
-            else               savXferIn  += t.amount;
-          } else if (dest === 'credit') {
-            // CC payment — already counted as expense when charge was made; skip
-            if (t.amount < 0) ccPay += Math.abs(t.amount);
-          }
-        }
-        // Savings→checking: positive amount in checking with savings source
-        if (isSav(t.account||'') === false && isChk(t.account||'') && t.amount > 0) {
-          if (dest === 'savings' || isSav(cat)) savXferIn += t.amount;
-        }
-        return;
+      var tp = detectAcctType(t.account||'');
+      if (t.amount > 0 && tp === 'checking') {
+        income += t.amount;
+      } else if (t.amount < 0 && (tp === 'checking' || tp === 'credit')) {
+        expenses += Math.abs(t.amount);
       }
-
-      // Non-transfer transactions
-      if (isChk(t.account||'')) {
-        if (t.amount > 0) income   += t.amount;   // deposit
-        else              expenses += Math.abs(t.amount); // bill / direct debit
-      } else if (isCC(t.account||'')) {
-        // CC charge = real expense; CC credit/refund = negative expense
-        if (t.amount < 0) expenses += Math.abs(t.amount); // charge
-        else              expenses -= t.amount;            // refund/credit
-      }
-      // Savings account: non-transfer activity is interest, ignored here
     });
 
-    // Ensure expenses >= 0
-    expenses = Math.max(expenses, 0);
+    moXfers.forEach(function(t) {
+      // Checking → savings: amount is negative in checking
+      // Savings → checking: amount is positive in checking
+      if (t.amount < 0) savOut += Math.abs(t.amount);
+      else              savIn  += t.amount;
+    });
 
-    // True bank/draw: how much did income actually exceed operating expenses?
-    // savXferOut is a CHOICE (we're saving it), savXferIn is DRAWING (covering a gap).
-    // Both are excluded from trueBankDraw — they're capital movements, not P&L.
-    var trueBankDraw = income - expenses;
-
-    cumulative += trueBankDraw;
+    var net = income - expenses;
+    cumulative += net;
 
     rows.push({
       month:        mo,
       monthName:    monthName,
-      income:       income,
-      expenses:     expenses,
-      savXferOut:   savXferOut,
-      savXferIn:    savXferIn,
-      ccPay:        ccPay,
-      xfersIn:      savXferIn,   // alias for table display
-      xfersOut:     savXferOut,  // alias for table display
-      trueBankDraw: trueBankDraw,
-      cumulative:   cumulative
+      income:       Math.round(income * 100) / 100,
+      expenses:     Math.round(expenses * 100) / 100,
+      savXferOut:   Math.round(savOut * 100) / 100,
+      savXferIn:    Math.round(savIn  * 100) / 100,
+      xfersOut:     Math.round(savOut * 100) / 100,  // alias
+      xfersIn:      Math.round(savIn  * 100) / 100,  // alias
+      net:          Math.round(net * 100) / 100,
+      trueBankDraw: Math.round(net * 100) / 100,     // alias
+      cumulative:   Math.round(cumulative * 100) / 100
     });
   });
 
@@ -5483,16 +5517,16 @@ function renderSavingsRegister() {
   }
 
   // ── Chart: True Bank/Draw bars + cumulative line ─────────────────────────
-  var chartData  = rows.map(function(r){ return r.trueBankDraw; });
+  var chartData  = rows.map(function(r){ return r.net; });
   var cumData    = rows.map(function(r){ return r.cumulative; });
   var labels     = rows.map(function(r){ return r.monthName; });
 
   // ── Summary KPIs ─────────────────────────────────────────────────────────
-  var totalBanked = rows.reduce(function(s,r){ return s+(r.trueBankDraw>0?r.trueBankDraw:0); },0);
-  var totalDrawn  = rows.reduce(function(s,r){ return s+(r.trueBankDraw<0?Math.abs(r.trueBankDraw):0); },0);
+  var totalBanked = rows.reduce(function(s,r){ return s+(r.net>0?r.net:0); },0);
+  var totalDrawn  = rows.reduce(function(s,r){ return s+(r.net<0?Math.abs(r.net):0); },0);
   var netTotal    = rows[rows.length-1].cumulative;
-  var bankMos     = rows.filter(function(r){ return r.trueBankDraw > 0; }).length;
-  var drawMos     = rows.filter(function(r){ return r.trueBankDraw < 0; }).length;
+  var bankMos     = rows.filter(function(r){ return r.net > 0; }).length;
+  var drawMos     = rows.filter(function(r){ return r.net < 0; }).length;
 
   var kpiColor = netTotal >= 0 ? 'var(--pos)' : 'var(--neg)';
 
@@ -5531,7 +5565,7 @@ function renderSavingsRegister() {
 
   rows.forEach(function(r, ri) {
     var bg = ri % 2 ? 'rgba(255,255,255,.018)' : 'transparent';
-    var bankCol = r.trueBankDraw >= 0 ? 'var(--pos)' : 'var(--neg)';
+    var bankCol = r.net >= 0 ? 'var(--pos)' : 'var(--neg)';
     var cumCol  = r.cumulative  >= 0 ? 'var(--pos)' : 'var(--neg)';
     var chkCol  = r.chkChange   >= 0 ? 'var(--pos)' : 'var(--neg)';
     out += '<tr style="background:'+bg+';border-top:1px solid rgba(255,255,255,.04);">';
@@ -5541,7 +5575,7 @@ function renderSavingsRegister() {
     out += '<td style="padding:5px 10px;text-align:right;color:'+(r.xfersOut>0?'var(--river)':'var(--ink4)')+';">'+(r.xfersOut>0?'−'+kfmt(r.xfersOut):'—')+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;color:'+(r.xfersIn>0?'var(--gold)':'var(--ink4)')+';">'+(r.xfersIn>0?'+'+kfmt(r.xfersIn):'—')+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;color:'+chkCol+';">'+kfmtSigned(r.chkChange)+'</td>';
-    out += '<td style="padding:5px 10px;text-align:right;font-weight:700;color:'+bankCol+';">'+kfmtSigned(r.trueBankDraw)+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;font-weight:700;color:'+bankCol+';">'+kfmtSigned(r.net)+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;font-weight:700;color:'+cumCol+';">'+kfmtSigned(r.cumulative)+'</td>';
     out += '</tr>';
   });
@@ -5682,15 +5716,15 @@ function renderCfBankDraw(months, projectedIdx) {
   }
 
   var netPos     = rows[rows.length-1].cumulative;
-  var bankMos    = rows.filter(function(r){ return r.trueBankDraw > 0; }).length;
-  var drawMos    = rows.filter(function(r){ return r.trueBankDraw <= 0; }).length;
-  var totalBank  = rows.reduce(function(s,r){ return s+(r.trueBankDraw>0?r.trueBankDraw:0); }, 0);
-  var totalDraw  = rows.reduce(function(s,r){ return s+(r.trueBankDraw<0?Math.abs(r.trueBankDraw):0); }, 0);
-  var avgMonthly = rows.reduce(function(s,r){ return s+r.trueBankDraw; }, 0) / rows.length;
-  var streakType = rows[rows.length-1].trueBankDraw >= 0 ? 'banking' : 'drawing';
+  var bankMos    = rows.filter(function(r){ return r.net > 0; }).length;
+  var drawMos    = rows.filter(function(r){ return r.net <= 0; }).length;
+  var totalBank  = rows.reduce(function(s,r){ return s+(r.net>0?r.net:0); }, 0);
+  var totalDraw  = rows.reduce(function(s,r){ return s+(r.net<0?Math.abs(r.net):0); }, 0);
+  var avgMonthly = rows.reduce(function(s,r){ return s+r.net; }, 0) / rows.length;
+  var streakType = rows[rows.length-1].net >= 0 ? 'banking' : 'drawing';
   var streak = 0;
   for (var si = rows.length-1; si >= 0; si--) {
-    if ((streakType==='banking') === (rows[si].trueBankDraw >= 0)) streak++;
+    if ((streakType==='banking') === (rows[si].net >= 0)) streak++;
     else break;
   }
 
@@ -5770,7 +5804,7 @@ function renderCfBankDraw(months, projectedIdx) {
   tableRows.forEach(function(r, ri) {
     var isProj = (r.month === months[months.length-1] && projectedIdx >= 0);
     var bg  = ri % 2 ? 'rgba(255,255,255,.028)' : 'rgba(255,255,255,.008)';
-    var bkC = r.trueBankDraw >= 0 ? 'var(--pos)' : 'var(--neg)';
+    var bkC = r.net >= 0 ? 'var(--pos)' : 'var(--neg)';
     var cuC = r.cumulative   >= 0 ? 'var(--pos)' : 'var(--neg)';
     var FM  = 'font-size:11px;font-family:var(--fm);';
     function mf(v) { var a=Math.abs(v||0); return (v<0?'−':'')+'$'+a.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
@@ -5780,7 +5814,7 @@ function renderCfBankDraw(months, projectedIdx) {
     out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:var(--neg);">\u2212'+mf(r.expenses)+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:'+(r.xfersOut>0?'var(--river)':'rgba(255,255,255,.18)')+';">'+(r.xfersOut>0?'−'+kfmt(r.xfersOut):'—')+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:'+(r.xfersIn>0?'var(--gold)':'rgba(255,255,255,.18)')+';">'+(r.xfersIn>0?'+'+kfmt(r.xfersIn):'—')+'</td>';
-    out += '<td style="padding:5px 10px;text-align:right;font-size:13px;font-weight:700;font-family:var(--fm);color:'+bkC+';">'+kfmtS(r.trueBankDraw)+'</td>';
+    out += '<td style="padding:5px 10px;text-align:right;font-size:13px;font-weight:700;font-family:var(--fm);color:'+bkC+';">'+kfmtS(r.net)+'</td>';
     out += '<td style="padding:5px 10px;text-align:right;font-size:13px;font-weight:700;font-family:var(--fm);color:'+cuC+';">'+kfmtS(r.cumulative)+'</td>';
     out += '</tr>';
   });
@@ -5790,11 +5824,215 @@ function renderCfBankDraw(months, projectedIdx) {
   setTimeout(function() {
     var ce = document.getElementById('cfBankChart');
     if (!ce) return;
-    var bData = rows.map(function(r){ return r.trueBankDraw; });
+    var bData = rows.map(function(r){ return r.net; });
     var lData = rows.map(function(r){ return r.cumulative; });
     var lbls  = rows.map(function(r){ return r.monthName; });
     renderSavingsRegChart(ce, lbls, bData, lData);
   }, 0);
+}
+
+
+/* ─── buildCfpProof ───────────────────────────────────────────────────────────
+   CFP Statement of Financial Position reconciliation for a single month.
+
+   The proof equation:
+     Opening Net Liquid
+     + Accrual IS Net Income           (from Income Statement)
+     + Mortgage Principal Paid         (debt reduction — IS excludes this)
+     + Net Savings Transfers           (capital moved in/out of liquid pool)
+     + Accrual Timing Adjustment       (IS vs cash-basis difference)
+     = Closing Net Liquid
+
+   All figures derive from the same Quicken transaction data.
+   "Balanced" means proof total ≈ actual closing net liquid (within ±$50).
+──────────────────────────────────────────────────────────────────────────── */
+function buildCfpProof(selMonth, isNetIncome) {
+  if (!selMonth || !txns.length) return null;
+
+  var DETAIL = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+  var OPER   = new Set(['checking','savings','credit']);
+
+  function tp(name) { return detectAcctType(name || ''); }
+  function isChk(n) { return tp(n) === 'checking'; }
+  function isOper(n){ return OPER.has(tp(n)); }
+
+  // ── Account opening/closing balances ───────────────────────────────────────
+  var accts = {};
+  txns.forEach(function(t) {
+    if (!isOper(t.account || '')) return;
+    if (t.itemDetail || DETAIL.has(t._source || t._ftype || '')) return;
+    var a = t.account;
+    if (!accts[a]) accts[a] = { type: tp(a), open: 0, close: 0 };
+    if (t.date < selMonth + '-01') {
+      accts[a].open  += t.amount;
+      accts[a].close += t.amount;
+    } else if (t.date <= selMonth + '-31') {
+      accts[a].close += t.amount;
+    }
+  });
+
+  var oChk=0, cChk=0, oSav=0, cSav=0, oCC=0, cCC=0;
+  Object.values(accts).forEach(function(a) {
+    if (a.type==='checking'){ oChk+=a.open; cChk+=a.close; }
+    if (a.type==='savings') { oSav+=a.open; cSav+=a.close; }
+    if (a.type==='credit')  { oCC +=a.open; cCC +=a.close; }
+  });
+
+  // Net liquid = checking + savings - |CC balance| (CC is a liability)
+  var openLiq  = oChk + oSav + oCC;   // CC amounts are negative in Quicken
+  var closeLiq = cChk + cSav + cCC;
+  var actualDelta = closeLiq - openLiq;
+
+  // ── Mortgage principal paid this month ─────────────────────────────────────
+  var principalPaid = 0;
+  txns.forEach(function(t) {
+    if (t.date < selMonth+'-01' || t.date > selMonth+'-31') return;
+    if (classifyTxn(t) === 'mort_principal' && t.amount < 0)
+      principalPaid += Math.abs(t.amount);
+  });
+
+  // ── Net savings transfers (checking ↔ savings) ─────────────────────────────
+  // Positive = checking→savings (banking), Negative = savings→checking (drawing)
+  var savXferNet = 0;
+  txns.forEach(function(t) {
+    if (t.date < selMonth+'-01' || t.date > selMonth+'-31') return;
+    if (!isChk(t.account || '')) return;
+    if (!t.isTransfer && !/^\[.*\]$/.test(t.category || '')) return;
+    var cat = (t.category || '').replace(/^\[|\]$/g, '').trim();
+    if (tp(cat) === 'savings') savXferNet -= t.amount; // negative txn = positive saving
+  });
+
+  // ── Cash-basis net (same filter as bank/draw panel) ────────────────────────
+  var cashIncome = 0, cashExpenses = 0;
+  var opBase = (txns || []).filter(function(t) {
+    return !isTransfer(t) && !t._masked && !t.itemDetail
+        && !DETAIL.has(t._source||t._ftype||'')
+        && OPER.has(tp(t.account||''))
+        && t.date >= selMonth+'-01' && t.date <= selMonth+'-31';
+  });
+  opBase.forEach(function(t) {
+    var atp = tp(t.account||'');
+    if (t.amount > 0 && atp === 'checking')           cashIncome   += t.amount;
+    if (t.amount < 0 && (atp==='checking'||atp==='credit')) cashExpenses += Math.abs(t.amount);
+  });
+  var cashNet = cashIncome - cashExpenses;
+
+  // ── Accrual timing adjustment ──────────────────────────────────────────────
+  var isNet = isNetIncome || 0;
+  var accrualAdj = isNet - cashNet;
+
+  // ── Proof ──────────────────────────────────────────────────────────────────
+  var calcClose = openLiq + isNet + principalPaid + savXferNet + accrualAdj;
+  var proofDiff = calcClose - closeLiq;
+
+  return {
+    selMonth:     selMonth,
+    openLiq:      Math.round(openLiq),
+    closeLiq:     Math.round(closeLiq),
+    actualDelta:  Math.round(actualDelta),
+    isNet:        Math.round(isNet),
+    principalPaid:Math.round(principalPaid),
+    savXferNet:   Math.round(savXferNet),
+    cashNet:      Math.round(cashNet),
+    accrualAdj:   Math.round(accrualAdj),
+    proofDiff:    Math.round(proofDiff),
+    balanced:     Math.abs(proofDiff) < 50,
+    oChk:Math.round(oChk), cChk:Math.round(cChk),
+    oSav:Math.round(oSav), cSav:Math.round(cSav),
+    oCC: Math.round(oCC),  cCC: Math.round(cCC),
+  };
+}
+
+/* ─── renderCfpProof ─────────────────────────────────────────────────────────
+   Renders the CFP proof panel into containerId.
+   isNetIncome must be the IS bottom-line net for selMonth.
+──────────────────────────────────────────────────────────────────────────── */
+function renderCfpProof(containerId, selMonth, isNetIncome, monthName) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  if (!txns.length) { el.innerHTML = ''; return; }
+
+  var p = buildCfpProof(selMonth, isNetIncome);
+  if (!p) { el.innerHTML = ''; return; }
+
+  function mf(v) {
+    var a = Math.abs(v || 0);
+    return (v < 0 ? '\u2212' : '') + '$' + Math.round(a).toLocaleString();
+  }
+  function mfS(v) {
+    var a = Math.abs(v || 0);
+    var s = '$' + Math.round(a).toLocaleString();
+    return v > 0 ? '+\u2009' + s : v < 0 ? '\u2212\u2009' + s : s;
+  }
+  function pct(v, base) {
+    if (!base) return '';
+    return ' (' + (v / Math.abs(base) * 100).toFixed(1) + '%)';
+  }
+
+  var balanced  = p.balanced;
+  var diffColor = balanced ? 'var(--pos)' : 'var(--gold)';
+  var diffIcon  = balanced ? '\u2713\u2009Balanced' : '\u26a0\ufe0f\u2009Diff: ' + mf(p.proofDiff);
+  var mn        = monthName || selMonth;
+
+  // Build HTML with no template literals
+  var h = '';
+  h += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px;">';
+
+  // ── Header ──
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 16px 9px;border-bottom:1px solid rgba(255,255,255,.08);">';
+  h +=   '<div>';
+  h +=     '<div style="font-size:13px;font-weight:700;color:var(--ink);">CFP Balance Sheet Proof \u2014 ' + mn + '</div>';
+  h +=     '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-top:3px;">Income Statement + Capital Changes = Net Liquid Position Change</div>';
+  h +=   '</div>';
+  h +=   '<div style="font-size:12px;font-weight:700;color:' + diffColor + ';padding:6px 12px;background:rgba(255,255,255,.04);border-radius:8px;border:1px solid rgba(255,255,255,.08);">' + diffIcon + '</div>';
+  h += '</div>';
+
+  // ── Proof steps ──
+  function proofRow(label, valStr, colCss, noteTxt, isBold, isTotal) {
+    var bg   = isTotal ? 'rgba(255,255,255,.05)' : 'transparent';
+    var bdr  = isTotal ? 'border-top:2px solid rgba(255,255,255,.12);' : 'border-top:1px solid rgba(255,255,255,.04);';
+    var fs   = isBold  ? '12' : '11';
+    var fw   = isBold  ? '700' : '400';
+    var fsc  = isBold  ? '13' : '11';
+    var row  = '<div style="display:flex;align-items:baseline;justify-content:space-between;padding:5px 16px;background:' + bg + ';' + bdr + '">';
+    row += '<div>';
+    row +=   '<span style="font-size:' + fs + 'px;font-weight:' + fw + ';color:' + (colCss||'var(--ink3)') + ';">' + label + '</span>';
+    if (noteTxt) row += '<span style="font-size:9px;color:var(--ink4);margin-left:7px;">' + noteTxt + '</span>';
+    row += '</div>';
+    row += '<span style="font-size:' + fsc + 'px;font-family:var(--fm);font-weight:' + fw + ';color:' + (colCss||'var(--ink3)') + ';">' + valStr + '</span>';
+    row += '</div>';
+    return row;
+  }
+
+  h += proofRow('Opening Net Liquid (Checking + Savings \u2212 CC)', mf(p.openLiq), 'var(--ink2)', 'Quicken opening balances', false, false);
+  h += proofRow('+ IS Net Income (accrual basis)', mfS(p.isNet), p.isNet >= 0 ? 'var(--pos)' : 'var(--neg)', 'Income Statement bottom line', true, false);
+  if (p.principalPaid > 0)
+    h += proofRow('+ Mortgage Principal Paid', mfS(p.principalPaid), 'var(--river)', 'Equity build \u2014 balance sheet, not IS expense', true, false);
+  h += proofRow('+ Net Savings Transfers', mfS(p.savXferNet), p.savXferNet >= 0 ? 'var(--river)' : 'var(--gold)', p.savXferNet >= 0 ? 'Moved to savings' : 'Drew from savings', true, false);
+  if (Math.abs(p.accrualAdj) > 0)
+    h += proofRow('+ Accrual Timing Adjustment', mfS(p.accrualAdj), 'var(--ink4)', 'IS (accrual) vs cash-basis difference', false, false);
+  h += proofRow('= Calculated Closing Net Liquid', mf(p.openLiq + p.isNet + p.principalPaid + p.savXferNet + p.accrualAdj), balanced ? 'var(--pos)' : 'var(--gold)', '', true, true);
+  h += proofRow('  Actual Closing Net Liquid (Quicken)', mf(p.closeLiq), 'var(--ink2)', '', true, false);
+
+  // ── Account balance mini-grid ──
+  h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px 16px;border-top:1px solid rgba(255,255,255,.07);">';
+  function acctCard(label2, open2, close2) {
+    var chg2  = close2 - open2;
+    var ccol  = chg2 >= 0 ? 'var(--pos)' : 'var(--neg)';
+    var s     = '<div style="background:rgba(255,255,255,.03);border-radius:7px;padding:8px 10px;">';
+    s += '<div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);margin-bottom:3px;">' + label2 + '</div>';
+    s += '<div style="font-size:13px;font-family:var(--fm);font-weight:700;color:var(--ink2);">' + mf(close2) + '</div>';
+    s += '<div style="font-size:10px;color:' + ccol + ';margin-top:2px;">' + mfS(chg2) + ' vs open</div>';
+    s += '</div>';
+    return s;
+  }
+  h += acctCard('Checking', p.oChk, p.cChk);
+  h += acctCard('Savings',  p.oSav, p.cSav);
+  h += acctCard('CC Balance', p.oCC, p.cCC);
+  h += '</div>';
+
+  h += '</div>';
+  el.innerHTML = h;
 }
 
 // ════════════════════════════════════════════════
@@ -5911,7 +6149,7 @@ function renderNetSavingsChart(elId, labels, data, opts) {
 
   const W  = Math.max(el.offsetWidth || 520, 320);
   const H  = 240;
-  const PT = 22, PB = 34, PL = 62, PR = 18;
+  const PT = 28, PB = 38, PL = 66, PR = 20;
   const cW = W - PL - PR, cH = H - PT - PB;
 
   const n       = data.length;
@@ -7512,7 +7750,7 @@ async function processFiles() {
   const existingBySource = {};      // source → Set of _detailKey
   const existingCrossDetail = new Set(); // all detail rows by _crossDetailKey
   txns.filter(t => _isDetailSrc(t)).forEach(t => {
-    const src = _detailSrc(t) || 'det';
+    let   src = _detailSrc(t) || 'det';
     if (!existingBySource[src]) existingBySource[src] = new Set();
     existingBySource[src].add(_detailKey(t));
     existingCrossDetail.add(_crossDetailKey(t));
@@ -7592,7 +7830,7 @@ async function processFiles() {
     batchStrict.add(sk);
 
     if (_isDetailSrc(t)) {
-      const src = _detailSrc(t) || 'det';
+      let   src = _detailSrc(t) || 'det';
       const dk  = _detailKey(t);
       const cdk = _crossDetailKey(t);
 
@@ -7618,7 +7856,7 @@ async function processFiles() {
     if (existingStrict.has(_strictKey(t))) { duped++; return; }
 
     if (_isDetailSrc(t)) {
-      const src = _detailSrc(t) || 'det';
+      let   src = _detailSrc(t) || 'det';
       const dk  = _detailKey(t);
       const cdk = _crossDetailKey(t);
 
@@ -8059,7 +8297,7 @@ function parseCSV(text, fname) {
 
     // Payee
     const rawPayee = effectivePayeeC >= 0 ? (row[effectivePayeeC] || '') : '';
-    const payee = rawPayee.replace(/^["'\s]+|["'\s]+$/g, '') || 'Unknown';
+    let   payee = rawPayee.replace(/^["'\s]+|["'\s]+$/g, '') || 'Unknown';
 
     // Account — from column if available, else filename
     const rawAcct = acctC >= 0 ? (row[acctC] || '') : '';
@@ -8129,7 +8367,7 @@ function parseOFX(text, fname) {
     if (!date) return;
     const amount = parseFloat(g(block,'TRNAMT'));
     if (isNaN(amount)) return;
-    const payee = g(block,'NAME')||g(block,'MEMO')||'Unknown';
+    let   payee = g(block,'NAME')||g(block,'MEMO')||'Unknown';
     const memo  = g(block,'MEMO')||'';
     results.push({ date, payee, amount, category:'Uncategorized', account:acctName, memo, isTransfer:false });
   });
@@ -8741,6 +8979,17 @@ const QUICKEN_CAT_MAP = {
   'payment':                           'other',
 
   // ── Housing ──────────────────────────────────────────────────────────────────
+  'mort int':                          'mort_interest',
+  'home:mortgage interest':            'mort_interest',
+  'mortgage interest':                 'mort_interest',
+  'home:mortgage:interest':            'mort_interest',
+  'mort prin':                         'mort_principal',
+  'home:mortgage principal':           'mort_principal',
+  'mortgage principal':                'mort_principal',
+  'home:mortgage:principal':           'mort_principal',
+  'escrow':                            'mort_escrow',
+  'home:mortgage escrow':              'mort_escrow',
+  'home:mortgage:escrow':              'mort_escrow',
   'home:mortgage':                     'mortgage',
   'mortgage':                          'mortgage',
   'home:rent':                         'mortgage',
@@ -9157,7 +9406,12 @@ function classifyTxn(t) {
   //    We classify by payee name since the category is lost.
   if (cat === '--split--') {
     // Mortgage servicers
-    if (/house loan|rocket mortgage|pennymac|mr\.? cooper|nationstar|wells fargo home|chase home|quicken loan|loancare|freedom mortgage|newrez|loanDepot|flagstar|sps |select portfolio/i.test(pay)) return 'mortgage';
+    // Mortgage split: detect by sub-category first (most specific)
+    if (/mort.*int|mortgage.*interest|interest.*mortgage/i.test(cat)) return 'mort_interest';
+    if (/mort.*prin|mortgage.*principal|principal.*mortgage/i.test(cat)) return 'mort_principal';
+    if (/escrow/i.test(cat)) return 'mort_escrow';
+    // Detect by servicer payee (full payment, unsplit)
+    if (/house loan|rocket mortgage|pennymac|mr\.? cooper|nationstar|wells fargo home|chase home|quicken loan|loancare|freedom mortgage|newrez|loanDepot|flagstar|sps |select portfolio|keystone.*mortgage|mortgage.*service/i.test(pay)) return 'mortgage';
     // Car loans
     if (/palisade|hyundai|honda financial|hmf |gm financial|ford motor credit|toyota financial|nissan motor|chrysler capital|ally financial.*auto|auto loan|car loan|chevrolet/i.test(pay)) return 'car';
     // Insurance (home, auto, life, umbrella)
@@ -9510,7 +9764,7 @@ function buildCrosswalk(txnList) {
     const bk = et.forgeBucket;
     const qp = et.qParent || 'Uncategorized';
     const qs = et.qSub    || '—';
-    const src = et.qSource || 'inferred';
+    let   src = et.qSource || 'inferred';
 
     if (!cw[bk]) cw[bk] = {};
     if (!cw[bk][qp]) cw[bk][qp] = {};
@@ -9613,7 +9867,10 @@ const BUCKET_META = {
   paycheck:      { label:'Payroll & Wages',               icon:'💵' },
   other_inc:     { label:'Other Income',                  icon:'💰' },
   auto_save:     { label:'Auto-Savings & Retirement',     icon:'🏦' },
-  mortgage:      { label:'Mortgage & Housing',             icon:'🏠' },
+  mort_interest:  { label:'Mortgage Interest',              icon:'🏦' },
+  mort_principal:  { label:'Mortgage Principal',             icon:'📉' },
+  mort_escrow:     { label:'Escrow (Tax & Insurance)',       icon:'📋' },
+  mortgage:        { label:'Mortgage & Housing (unsplit)',   icon:'🏠' },
   car:           { label:'Car Payments & Insurance',      icon:'🚗' },
   education:     { label:'Education & Tuition',           icon:'🎓' },
   insurance:     { label:'Health & Life Insurance',       icon:'🛡️' },
@@ -9689,7 +9946,7 @@ function buildAccrualEngine(selMonth, sp) {
     if (i <= 3) priorMonths3.push(mo);
   }
 
-  const priorTxns    = sp.filter(t => priorMonths6.some(m => t.date.startsWith(m)));
+  let   priorTxns    = sp.filter(t => priorMonths6.some(m => t.date.startsWith(m)));
   const priorTxns3   = sp.filter(t => priorMonths3.some(m => t.date.startsWith(m)));
   const curMonthStr  = String(sy).padStart(4,'0')+'-'+String(sm).padStart(2,'0');
   const curMonthTxns = sp.filter(t => t.date.startsWith(curMonthStr));
@@ -9831,7 +10088,7 @@ function buildAccrualEngine(selMonth, sp) {
     // reimbursements, etc. Excluded from normalized operating income.
     const oneTimeItems = [];
     curOthTxns.forEach(t => {
-      const payee = (t.payee||'').toLowerCase().trim();
+      let   payee = (t.payee||'').toLowerCase().trim();
       const hist  = priorTxns.filter(p => classifyTxn(p) === 'other_inc' &&
                                           (p.payee||'').toLowerCase().trim() === payee)
                               .map(p => p.amount);
@@ -10108,7 +10365,7 @@ function buildAccrualEngine(selMonth, sp) {
 
   // ── isOneTime: flag transactions that look like one-offs ──────────────────
   function isOneTime(t, bk) {
-    const payee = (t.payee||'').toLowerCase().trim();
+    let   payee = (t.payee||'').toLowerCase().trim();
     const amt   = Math.abs(t.amount);
     const bkTxns = (priorByBucket[bk]||[]).filter(p =>
       (p.payee||'').toLowerCase().trim() === payee
@@ -10785,7 +11042,7 @@ function renderIncomeStatement() {
   // Which detail sources have rows for this month?
   const _hasDetailForMonth = {};
   txns.filter(t => _isDetailRow(t) && t.date.startsWith(selMonth) && t.amount < 0).forEach(t => {
-    const src = t._source || t._ftype || '';
+    let   src = t._source || t._ftype || '';
     if (src) {
       _hasDetailForMonth[src] = true;
     } else {
@@ -10888,7 +11145,7 @@ function renderIncomeStatement() {
   // ── Savings draws: savings→checking (warning signal) ─────────────────────
   const savingsDrawTxns = monthXfers.filter(t => {
     if (t.amount <= 0) return false;
-    const src = (t.category||'').replace(/^\[|\]$/g,'').trim();
+    let   src = (t.category||'').replace(/^\[|\]$/g,'').trim();
     return detectAcctType(src)==='savings' || detectAcctType(t.account||'')==='savings';
   });
   const totalDraw = savingsDrawTxns.reduce((s,t)=>s+t.amount, 0);
@@ -11758,6 +12015,9 @@ function renderIncomeStatement() {
   // Recon container on Income tab is rendered inline in `out` via reconHtml variable
   // Also update the standalone recon-income container (for consistency with other tabs)
   renderMasterRecon('recon-income', selMonth);
+  // CFP proof — wires IS net back to balance sheet
+  if (typeof renderCfpProof === 'function')
+    renderCfpProof('cfp-proof-income', selMonth, netRemaining, monthName);
 
   } catch(e) {
     console.error('[IS] render error:', e);
