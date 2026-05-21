@@ -1,21 +1,4 @@
-
-  border: 1px solid rgba(255,255,255,.07);
-  transition: border-color .15s, box-shadow .15s, transform .1s;
-  position: relative;
-  overflow: hidden;
-}
-.kpi-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,.03) 0%, transparent 60%);
-  pointer-events: none;
-}
-.kpi-card:hover {
-  border-color: rgba(255,255,255,.15);
-  box-shadow: 0 4px 20px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08);
-  transform: translateY(-1px);
-}<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -270,9 +253,24 @@ main::-webkit-scrollbar-thumb:hover { background: var(--line3); }
 }
 .kpi {
   background: var(--float);
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255,255,255,.08);
+  border-top: 1px solid rgba(255,255,255,.14);
   border-radius: var(--r-lg);
   padding: var(--sp3) var(--sp4);
+  position: relative;
+  overflow: hidden;
+  transition: border-color .15s, box-shadow .15s;
+}
+.kpi::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.025) 0%, transparent 55%);
+  pointer-events: none;
+}
+.kpi:hover {
+  border-color: rgba(255,255,255,.18);
+  box-shadow: 0 4px 18px rgba(0,0,0,.4);
 }
 .kpi-label {
   font-size: 11px;
@@ -5286,6 +5284,13 @@ function computeScale(vals, opts) {
     }
   }
 
+  // Enforce minimum visible span (prevents flat appearance on low-variance months)
+  if (opts.minSpan && (rawMax - rawMin) < opts.minSpan) {
+    var mid = (rawMax + rawMin) / 2;
+    rawMax = Math.max(rawMax, mid + opts.minSpan / 2);
+    rawMin = Math.min(rawMin, mid - opts.minSpan / 2);
+    if (showZero || forceZeroBase) { rawMax = Math.max(rawMax, 0); rawMin = Math.min(rawMin, 0); }
+  }
   var span = Math.max(rawMax - rawMin, 1);
 
   function niceTicks(lo, hi) {
@@ -5771,12 +5776,17 @@ function renderCfBankDraw(months, projectedIdx) {
 
   function kfmt(v) {
     var a = Math.abs(v||0);
-    return (v < 0 ? '\u2212' : '') + (a>=1000 ? '$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K' : '$'+Math.round(a));
+    var s = a>=1000 ? '$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K' : '$'+Math.round(a);
+    return (v < 0 ? '\u2212' : '') + s;
   }
   function kfmtS(v) {
     var a = Math.abs(v||0);
     var s = a>=1000 ? '$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K' : '$'+Math.round(a);
     return (v > 0 ? '+' : v < 0 ? '\u2212' : '') + s;
+  }
+  function mfull(v) {
+    var a = Math.abs(v||0);
+    return (v < 0 ? '\u2212' : '') + '$' + a.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',');
   }
 
   var netPos     = rows[rows.length-1].cumulative;
@@ -5791,107 +5801,108 @@ function renderCfBankDraw(months, projectedIdx) {
     if ((streakType==='banking') === (rows[si].net >= 0)) streak++;
     else break;
   }
-
-  var netCol   = netPos  >= 0 ? 'var(--pos)' : 'var(--neg)';
-  var avgCol   = avgMonthly >= 0 ? 'var(--pos)' : 'var(--neg)';
   var disciplineScore = Math.round((bankMos / rows.length) * 100);
-  var dsCol = disciplineScore >= 70 ? 'var(--pos)' : disciplineScore >= 50 ? 'var(--gold)' : 'var(--neg)';
+  var dsCol  = disciplineScore >= 70 ? '#34D9C3' : disciplineScore >= 50 ? '#F5A800' : '#FF5C5C';
+  var netCol = netPos >= 0 ? '#34D9C3' : '#FF5C5C';
+  var avgCol = avgMonthly >= 0 ? '#34D9C3' : '#FF5C5C';
 
-  // Headline statement
   var headline = netPos >= 0
-    ? 'On balance you\u2019re building \u2014 <strong style="color:var(--pos);">+'+kfmt(netPos)+'</strong> ahead over this period.'
-    : 'On balance you\u2019re drawing down \u2014 <strong style="color:var(--neg);">\u2212'+kfmt(Math.abs(netPos))+'</strong> behind over this period.';
+    ? 'You\u2019re ahead \u2014 <strong style="color:#34D9C3;">+' + kfmt(netPos) + '</strong> net over this period'
+    : 'You\u2019re behind \u2014 <strong style="color:#FF5C5C;">' + kfmt(netPos) + '</strong> net over this period';
   var streakMsg = streak > 1
-    ? (streakType==='banking' ? streak+' consecutive banking months \u2705' : streak+' consecutive draw months \u26a0\ufe0f')
+    ? (streakType === 'banking'
+      ? streak + ' consecutive banking months \u2705'
+      : streak + ' consecutive draw months \u26A0\uFE0F')
     : '';
 
-  var out = '';
+  var h = '';
+  h += '<div style="background:var(--float);border:1px solid rgba(255,255,255,.09);border-top:1px solid rgba(255,255,255,.15);border-radius:var(--r-lg);overflow:hidden;">';
 
-  // Panel header
-  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;contain:paint;">';
+  // ── Header ────────────────────────────────────────────────────────────────
+  h += '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:20px 22px 18px;">';
+  h +=   '<div style="max-width:72%;">';
+  h +=     '<div style="font-size:16px;font-weight:700;font-family:var(--fd);color:var(--ink);letter-spacing:-.02em;margin-bottom:4px;">Banking vs. Drawing \u2014 Savings Discipline</div>';
+  h +=     '<div style="font-size:12px;color:var(--ink4);line-height:1.55;">Are we building or eroding our operating position month over month?</div>';
+  h +=   '</div>';
+  h +=   '<div style="text-align:center;min-width:88px;">';
+  h +=     '<div style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Discipline</div>';
+  h +=     '<div style="font-size:32px;font-weight:800;font-family:var(--fd);color:'+dsCol+';line-height:1;">'+disciplineScore+'%</div>';
+  h +=     '<div style="font-size:11px;color:var(--ink4);margin-top:3px;">'+bankMos+' / '+rows.length+' months</div>';
+  h +=   '</div>';
+  h += '</div>';
 
-  // Title bar with discipline badge
-  out += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid rgba(255,255,255,.07);">';
-  out +=   '<div>';
-  out +=     '<div style="font-size:13px;font-weight:700;color:var(--ink);letter-spacing:-.01em;">Banking vs. Drawing \u2014 Savings Discipline</div>';
-  out +=     '<div style="font-size:12px;color:var(--ink4);margin-top:3px;line-height:1.5;">Month-over-month: are we building or drawing from our operating position?</div>';
-  out +=   '</div>';
-  out +=   '<div style="text-align:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 14px;flex-shrink:0;">';
-  out +=     '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">Discipline</div>';
-  out +=     '<div style="font-size:28px;font-weight:800;font-family:var(--fd);color:'+dsCol+';line-height:1.1;">'+disciplineScore+'%</div>';
-  out +=     '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">'+bankMos+' of '+rows.length+' months</div>';
-  out +=   '</div>';
-  out += '</div>';
+  // ── Verdict ───────────────────────────────────────────────────────────────
+  h += '<div style="margin:0 22px 18px;padding:14px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;">';
+  h +=   '<div style="font-size:14px;color:var(--ink2);line-height:1.6;font-weight:500;">' + headline + '.</div>';
+  if (streakMsg) h += '<div style="font-size:12px;color:var(--ink4);margin-top:6px;">' + streakMsg + '</div>';
+  h += '</div>';
 
-  // Headline
-  out += '<div style="padding:14px 18px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.08);">';
-  out +=   '<div style="font-size:12px;color:var(--ink3);line-height:1.6;">\u{1F3AF} '+headline+'</div>';
-  if (streakMsg) out += '<div style="font-size:12px;color:var(--ink4);margin-top:6px;">' + streakMsg + '</div>';
-  out += '</div>';
-
-  // KPI row
-  out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid rgba(255,255,255,.07);">';
-  function cfKpi(label, val, col, sub) {
-    return '<div style="padding:10px 14px;border-right:1px solid rgba(255,255,255,.06);">'
-         + '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">'+label+'</div>'
-         + '<div style="font-size:26px;font-weight:800;font-family:var(--fd);color:'+col+';line-height:1.1;">'+val+'</div>'
-         + (sub ? '<div style="font-size:11px;color:var(--ink4);margin-top:4px;">'+sub+'</div>' : '')
+  // ── KPIs ──────────────────────────────────────────────────────────────────
+  h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(255,255,255,.06);margin:0 22px 20px;border-radius:10px;overflow:hidden;">';
+  function kpi(lbl, val, col, sub) {
+    return '<div style="background:var(--float);padding:16px 14px 14px;">'
+         + '<div style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">'+lbl+'</div>'
+         + '<div style="font-size:28px;font-weight:800;font-family:var(--fd);color:'+col+';line-height:1.05;">'+val+'</div>'
+         + (sub ? '<div style="font-size:11px;color:var(--ink4);margin-top:5px;">'+sub+'</div>' : '')
          + '</div>';
   }
-  out += cfKpi('Net Position', kfmtS(netPos), netCol, 'vs. period start');
-  out += cfKpi('Avg / Month',  kfmtS(Math.round(avgMonthly)), avgCol, 'bank or draw');
-  out += cfKpi('Banked',  '+'+kfmt(totalBank), 'var(--pos)', bankMos+' months');
-  out += '<div style="padding:10px 14px;">'
-       + '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Drawn</div>'
-       + '<div style="font-size:26px;font-weight:800;font-family:var(--fd);color:var(--neg);line-height:1.1;">\u2212'+kfmt(totalDraw)+'</div>'
-       + '<div style="font-size:10px;color:var(--ink4);margin-top:2px;">'+drawMos+' months</div>'
-       + '</div>';
-  out += '</div>';
+  h += kpi('Net Position',  kfmtS(netPos),              netCol, 'vs. period start');
+  h += kpi('Avg / Month',   kfmtS(Math.round(avgMonthly)), avgCol, 'operating net');
+  h += kpi('Total Banked',  '+'+kfmt(totalBank),         '#34D9C3', bankMos+' months');
+  h += kpi('Total Drawn',   '\u2212'+kfmt(totalDraw),    '#FF5C5C', drawMos+' months');
+  h += '</div>';
 
-  // Chart — own styled container, visually separated from table
-  out += '<div style="border-top:1px solid rgba(255,255,255,.07);padding:14px 16px 10px;background:rgba(255,255,255,.014);">';
-  out += '<div style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">Monthly Bank / Draw — Operating Accounts Only</div>';
-  out += '<div id="cfBankChart" style="width:100%;height:220px;"></div>';
-  out += '</div>';
+  // ── Chart ─────────────────────────────────────────────────────────────────
+  h += '<div style="padding:0 22px 16px;">';
+  h +=   '<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px;">Monthly Bank / Draw &amp; Cumulative Position</div>';
+  h +=   '<div id="cfBankChart" style="width:100%;height:200px;"></div>';
+  h += '</div>';
 
-  // Table — analytics-grade, clearly below the chart
+  // ── Table ─────────────────────────────────────────────────────────────────
   var tableRows = rows.slice(-18);
-  out += '<div style="padding:5px 16px 4px;background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.08);">';
-  out += '<span style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);font-family:var(--fm);">Monthly Detail — last 12 months</span></div>';
-  out += '<div style="border-top:2px solid rgba(255,255,255,.14);overflow-x:auto;overflow-y:auto;max-height:380px;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;">';
-  out += '<table style="width:100%;border-collapse:collapse;">';
-  out += '<thead><tr style="background:linear-gradient(180deg,rgba(255,255,255,.07) 0%,rgba(255,255,255,.03) 100%);border-bottom:2px solid rgba(255,255,255,.12);position:sticky;top:0;z-index:2;">';
-  ['Month','Income','Expenses','→ Savings','← Savings','Bank / (Draw)','Cumulative'].forEach(function(h,i) {
-    out += '<th style="padding:8px '+(i===0?'16':'10')+'px;text-align:'+(i===0?'left':'right')+';font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);white-space:nowrap;">'+h+'</th>';
+  h += '<div style="border-top:1px solid rgba(255,255,255,.07);">';
+  h +=   '<div style="padding:10px 22px 8px;display:flex;align-items:center;justify-content:space-between;">';
+  h +=     '<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Monthly Detail</div>';
+  h +=     '<div style="font-size:10px;color:var(--ink4);">Operating accounts only \u00b7 cash basis</div>';
+  h +=   '</div>';
+  h +=   '<div style="overflow-x:auto;overflow-y:auto;max-height:360px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent;">';
+  h +=   '<table style="width:100%;border-collapse:collapse;font-family:var(--fm);">';
+  h +=   '<thead><tr style="position:sticky;top:0;z-index:2;background:linear-gradient(180deg,rgba(30,30,40,1) 0%,rgba(21,21,28,1) 100%);border-bottom:2px solid rgba(255,255,255,.12);">';
+  var ths = ['Month','Income','Expenses','\u2192 Savings','\u2190 Savings','Bank / (Draw)','Cumulative'];
+  ths.forEach(function(h2,i) {
+    h +=  '<th style="padding:9px '+(i===0?'22':'12')+'px;text-align:'+(i===0?'left':'right')+';font-size:9px;'
+       +  'font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);white-space:nowrap;">'+h2+'</th>';
   });
-  out += '</tr></thead><tbody>';
+  h += '</tr></thead><tbody>';
+
   tableRows.forEach(function(r, ri) {
     var isProj = (r.month === months[months.length-1] && projectedIdx >= 0);
-    var bg  = ri % 2 ? 'rgba(255,255,255,.028)' : 'rgba(255,255,255,.008)';
-    var bkC = r.net >= 0 ? 'var(--pos)' : 'var(--neg)';
-    var cuC = r.cumulative   >= 0 ? 'var(--pos)' : 'var(--neg)';
-    var FM  = 'font-size:12px;font-family:var(--fm);';
-    function mf(v) { var a=Math.abs(v||0); return (v<0?'−':'')+'$'+a.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
-    out += '<tr style="background:'+bg+';border-top:1px solid rgba(255,255,255,.05);height:38px;">';
-    out += '<td style="padding:7px 16px;font-size:13px;font-weight:600;color:'+(isProj?'var(--gold)':'var(--ink2)')+';white-space:nowrap;">'+r.monthName+(isProj?' <span style="font-size:9px;font-family:var(--fm);font-style:italic;font-weight:400;">est.</span>':'')+'</td>';
-    out += '<td style="padding:7px 10px;text-align:right;'+FM+'color:var(--pos);">+'+mf(r.income)+'</td>';
-    out += '<td style="padding:7px 10px;text-align:right;'+FM+'color:var(--neg);">\u2212'+mf(r.expenses)+'</td>';
-    out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:'+(r.xfersOut>0?'var(--river)':'rgba(255,255,255,.18)')+';">'+(r.xfersOut>0?'−'+kfmt(r.xfersOut):'—')+'</td>';
-    out += '<td style="padding:5px 10px;text-align:right;'+FM+'color:'+(r.xfersIn>0?'var(--gold)':'rgba(255,255,255,.18)')+';">'+(r.xfersIn>0?'+'+kfmt(r.xfersIn):'—')+'</td>';
-    out += '<td style="padding:7px 10px;text-align:right;font-size:14px;font-weight:800;font-family:var(--fd);color:'+bkC+';">'+kfmtS(r.net)+'</td>';
-    out += '<td style="padding:7px 10px;text-align:right;font-size:14px;font-weight:800;font-family:var(--fd);color:'+cuC+';">'+kfmtS(r.cumulative)+'</td>';
-    out += '</tr>';
+    var isBank = r.net >= 0;
+    var bg     = ri % 2 ? 'rgba(255,255,255,.018)' : 'rgba(255,255,255,.006)';
+    var bkC    = isBank ? '#34D9C3' : '#FF5C5C';
+    var cuC    = r.cumulative >= 0 ? '#34D9C3' : '#FF5C5C';
+    h += '<tr style="background:'+bg+';border-top:1px solid rgba(255,255,255,.05);">';
+    h += '<td style="padding:9px 22px;font-size:13px;font-weight:600;color:'+(isProj?'#F5A800':'var(--ink2)')+';white-space:nowrap;">'+r.monthName+(isProj?' <em style="font-size:10px;opacity:.7;">est.</em>':'')+'</td>';
+    h += '<td style="padding:9px 12px;text-align:right;font-size:12px;font-family:var(--fm);color:#34D9C3;">+'+mfull(r.income)+'</td>';
+    h += '<td style="padding:9px 12px;text-align:right;font-size:12px;font-family:var(--fm);color:#FF5C5C;">\u2212'+mfull(r.expenses)+'</td>';
+    h += '<td style="padding:9px 12px;text-align:right;font-size:12px;font-family:var(--fm);color:'+(r.xfersOut>0?'#60A5FA':'rgba(255,255,255,.25)')+';">'+(r.xfersOut>0?'\u2212'+kfmt(r.xfersOut):'\u2014')+'</td>';
+    h += '<td style="padding:9px 12px;text-align:right;font-size:12px;font-family:var(--fm);color:'+(r.xfersIn>0?'#F5A800':'rgba(255,255,255,.25)')+';">'+(r.xfersIn>0?'+'+kfmt(r.xfersIn):'\u2014')+'</td>';
+    h += '<td style="padding:9px 12px;text-align:right;font-size:15px;font-weight:800;font-family:var(--fd);color:'+bkC+';">'+kfmtS(r.net)+'</td>';
+    h += '<td style="padding:9px 12px;text-align:right;font-size:15px;font-weight:800;font-family:var(--fd);color:'+cuC+';">'+kfmtS(r.cumulative)+'</td>';
+    h += '</tr>';
   });
-  out += '</tbody></table></div>';
-  out += '</div>';  // close outer panel
-  el.innerHTML = out;
+
+  h += '</tbody></table></div></div>';
+  h += '</div>';  // close outer
+
+  el.innerHTML = h;
   setTimeout(function() {
     var ce = document.getElementById('cfBankChart');
     if (!ce) return;
-    var bData = rows.map(function(r){ return r.net; });
-    var lData = rows.map(function(r){ return r.cumulative; });
-    var lbls  = rows.map(function(r){ return r.monthName; });
-    renderSavingsRegChart(ce, lbls, bData, lData);
+    renderSavingsRegChart(ce,
+      rows.map(function(r){ return r.monthName; }),
+      rows.map(function(r){ return r.net; }),
+      rows.map(function(r){ return r.cumulative; }));
   }, 0);
 }
 
@@ -6218,7 +6229,12 @@ function renderNetSavingsChart(elId, labels, data, opts) {
 
   const n       = data.length;
   // Dynamic scale: 15% of data span as padding — data always fills ~75% of chart
-  const _sc  = computeScale(data, { showZero:true, padPct:0.22 });
+  // Ensure a minimum visible span so small-variance months aren't flat
+  const _rawMax = data.reduce((m,v)=>Math.max(m,v), data[0]);
+  const _rawMin = data.reduce((m,v)=>Math.min(m,v), data[0]);
+  const _minSpan = Math.max(Math.abs(_rawMax), Math.abs(_rawMin), 500) * 0.25;
+  const _sc  = computeScale(data, { showZero:true, padPct:0.25,
+    minSpan: _minSpan });
   const maxV = _sc.maxV, minV = _sc.minV, span = _sc.span;
   const yOf  = v => PT + cH - cH * (v - minV) / span;
   const xOf  = i => PL + (n < 2 ? cW / 2 : (i / (n - 1)) * cW);
@@ -13258,4 +13274,3 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-OCTYPE html>
