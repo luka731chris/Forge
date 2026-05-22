@@ -3087,6 +3087,7 @@ function svgLine(elId, labels, datasets, opts) {
 
 
 
+
 function svgHBar(elId, labels, values, colors, bucketKeys) {
   const el = document.getElementById(elId);
   if (!el) return;
@@ -3282,6 +3283,7 @@ function svgWaterfall(elId, items) {
   el.innerHTML='<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'+defs+grid+connectors+bars+yLbls+xLbls+hitAreas+'</svg>';
   bindChartTips(el);
 }
+
 
 
 
@@ -4020,6 +4022,7 @@ function svgBar(elId, labels, datasets, opts) {
 
 
 
+
 function buildMonthProjection(curMo, sp) {
   if (!curMo || !txns.length) return null;
   const today = new Date().toISOString().slice(0,7);
@@ -4067,55 +4070,57 @@ function clearCatDrill() {
 
 
 function showPage(name) {
-  console.log('[Forge] showPage:', name, '| txns:', txns.length);
   if (typeof renderProjStrip === 'function') renderProjStrip();
-  document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display='none'; });
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.remove('active');
+    p.style.display = 'none';
+  });
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const pg = document.getElementById('page-'+name);
-  if (pg) { pg.classList.add('active'); pg.style.display='block'; }
+  if (pg) { pg.classList.add('active'); pg.style.display = 'block'; }
   const nv = document.getElementById('nav-'+name);
   if (nv) nv.classList.add('active');
-  // scrollTop reset happens on page element itself after display
 
-  // Render after a frame so the page is visible and has real dimensions
-  requestAnimationFrame(() => {
-    console.log('[Forge] rAF render. page:', name, 'txns:', txns.length);
-    // After rAF, schedule a second check to re-render any empty charts
-    var _rafPage = name;
-    setTimeout(function(){
-      var _pg = document.getElementById('page-'+_rafPage);
-      if (!_pg || _pg.style.display==='none') return;
-      var _empties = _pg.querySelectorAll('[id$="Wrap"],[id$="wrap"]');
-      var _needsRender = Array.prototype.some.call(_empties, function(e){
-        return e.offsetWidth > 10 && !e.querySelector('svg') && !e.querySelector('canvas');
+  function _doRender(pageName) {
+    if (pageName === 'dashboard'    && txns.length) renderDashboard();
+    if (pageName === 'cashflow'     && txns.length) renderCashFlow();
+    if (pageName === 'categories'   && txns.length) renderCategories();
+    if (pageName === 'transactions' && txns.length) renderTxns();
+    if (pageName === 'income'       && txns.length) renderIncomeStatement();
+    if (pageName === 'creditflow'   && txns.length) renderCreditFlow();
+    if (pageName === 'validate')    renderValidation();
+    if (pageName === 'budget')      renderBudget();
+    if (pageName === 'balancesheet') renderBalanceSheet();
+    if (pageName === 'financials')  renderFinancials();
+    if (pageName === 'upload')      renderUploadStatus();
+    if (pageName === 'crosswalk')   renderCrosswalk();
+    if (pageName === 'reconcile')   renderReconcile();
+    if (pageName === 'settings')    renderSettings();
+    if (pageName === 'planner')     renderPlanner();
+  }
+
+  // First attempt: inside rAF so page is display:block when render runs
+  requestAnimationFrame(function() {
+    _doRender(name);
+
+    // Second attempt: after 300ms, re-render any charts that are still empty
+    // This handles browsers that haven't laid out the containers yet after first rAF
+    var _n2 = name;
+    setTimeout(function() {
+      var _activePg = document.getElementById('page-'+_n2);
+      if (!_activePg || _activePg.style.display === 'none') return;
+      var _wraps = _activePg.querySelectorAll('[id$="Wrap"],[id$="wrap"]');
+      var _anyEmpty = Array.prototype.some.call(_wraps, function(w) {
+        return w.offsetWidth > 10 && !w.querySelector('svg') && !w.querySelector('canvas') && !w.textContent.trim();
       });
-      if (_needsRender) {
-        if (_rafPage==='cashflow'    && typeof renderCashFlow==='function')         renderCashFlow();
-        if (_rafPage==='dashboard'   && typeof renderDashboard==='function')        renderDashboard();
-        if (_rafPage==='categories'  && typeof renderCategories==='function')       renderCategories();
-        if (_rafPage==='income'      && typeof renderIncomeStatement==='function')  renderIncomeStatement();
-        if (_rafPage==='balancesheet'&& typeof renderBalanceSheet==='function')     renderBalanceSheet();
-        if (_rafPage==='budget'      && typeof renderBudget==='function')           renderBudget();
+      if (_anyEmpty) {
+        console.log('[Forge] re-rendering empty charts for:', _n2);
+        _doRender(_n2);
       }
-    }, 200);
-
-    if (name === 'dashboard'    && txns.length) renderDashboard();
-    if (name === 'cashflow'     && txns.length) renderCashFlow();
-    if (name === 'categories'   && txns.length) renderCategories();
-    if (name === 'transactions' && txns.length) renderTxns();
-    if (name === 'income'        && txns.length) { renderIncomeStatement(); }
-    if (name === 'creditflow'    && txns.length) renderCreditFlow();
-    if (name === 'validate'      ) renderValidation();
-    if (name === 'budget'        ) renderBudget();
-    if (name === 'balancesheet'  ) renderBalanceSheet();
-    if (name === 'financials'    ) renderFinancials();
-    if (name === 'upload')                      renderUploadStatus();
-    if (name === 'crosswalk')                   renderCrosswalk();
-    if (name === 'reconcile')                   renderReconcile();
-    if (name === 'settings')                    renderSettings();
-    if (name === 'planner')                     renderPlanner();
+    }, 350);
   });
 }
+
 
 
 function renderProjStrip() {
@@ -4918,6 +4923,7 @@ function renderSavingsRegChart(el, labels, barData, lineData) {
   el.innerHTML = '<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'
     + defs + grid + bars + lineEl + dots + yLbls + xLbls + zeroLabels + legend + '</svg>';
 }
+
 
 
 
