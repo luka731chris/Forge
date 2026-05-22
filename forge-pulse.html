@@ -3088,6 +3088,7 @@ function svgLine(elId, labels, datasets, opts) {
 
 
 
+
 function svgHBar(elId, labels, values, colors, bucketKeys) {
   const el = document.getElementById(elId);
   if (!el) return;
@@ -3283,6 +3284,7 @@ function svgWaterfall(elId, items) {
   el.innerHTML='<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'+defs+grid+connectors+bars+yLbls+xLbls+hitAreas+'</svg>';
   bindChartTips(el);
 }
+
 
 
 
@@ -4023,6 +4025,7 @@ function svgBar(elId, labels, datasets, opts) {
 
 
 
+
 function buildMonthProjection(curMo, sp) {
   if (!curMo || !txns.length) return null;
   const today = new Date().toISOString().slice(0,7);
@@ -4123,11 +4126,17 @@ function showPage(name) {
 
 
 
+
 function renderProjStrip() {
   var strip = document.getElementById('projStrip');
   var txt   = document.getElementById('projStripText');
   if (!strip || !txt) return;
-  if (!txns.length) { strip.style.display = 'none'; return; }
+  if (!txns.length) {
+    strip.style.display = 'none';
+    var _m = document.querySelector('main');
+    if (_m) _m.style.paddingTop = '';
+    return;
+  }
 
   var now    = new Date();
   var curMo  = now.toISOString().slice(0,7);
@@ -4216,7 +4225,11 @@ function renderProjStrip() {
 
   txt.innerHTML = html;
   strip.style.display = 'flex';
+  // Push main content down so strip doesn't cover page header
+  var _main = document.querySelector('main');
+  if (_main) _main.style.paddingTop = 'calc(var(--sp5) + 38px)';
 }
+
 
 
 
@@ -4923,6 +4936,7 @@ function renderSavingsRegChart(el, labels, barData, lineData) {
   el.innerHTML = '<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'
     + defs + grid + bars + lineEl + dots + yLbls + xLbls + zeroLabels + legend + '</svg>';
 }
+
 
 
 
@@ -8371,5 +8385,7 @@ function initPulseTips() {
   document.head.appendChild(style);
 })();
 </script>
+
+<div id="projStrip" style="display:none;position:fixed;top:50px;left:0;right:0;z-index:150;background:rgba(12,13,18,.97);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.09);padding:8px 28px;align-items:center;gap:10px;font-size:12.5px;font-family:var(--fm);color:var(--ink4);"><span id="projStripText"></span></div>
 </body>
 </html>

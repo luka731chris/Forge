@@ -1012,8 +1012,6 @@ select:focus { border-color: var(--gold); }
 </nav>
 
 <main>
-<div id="projStrip" style="display:none;background:rgba(14,16,22,.98);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.08);padding:9px 32px;align-items:center;gap:10px;font-size:12.5px;font-family:var(--fm);color:var(--ink4);position:sticky;top:0;z-index:50;margin:-28px -32px 20px;width:calc(100% + 64px);box-sizing:content-box;"><span id="projStripText"></span></div>
-
 <!-- ══ UPLOAD ══ -->
 <div id="page-upload" class="page active">
   <div style="max-width:680px;margin:0 auto;">
@@ -6133,7 +6131,12 @@ function renderProjStrip() {
   var strip = document.getElementById('projStrip');
   var txt   = document.getElementById('projStripText');
   if (!strip || !txt) return;
-  if (!txns.length) { strip.style.display = 'none'; return; }
+  if (!txns.length) {
+    strip.style.display = 'none';
+    var _m = document.querySelector('main');
+    if (_m) _m.style.paddingTop = '';
+    return;
+  }
 
   var now    = new Date();
   var curMo  = now.toISOString().slice(0,7);
@@ -6222,6 +6225,9 @@ function renderProjStrip() {
 
   txt.innerHTML = html;
   strip.style.display = 'flex';
+  // Push main content down so strip doesn't cover page header
+  var _main = document.querySelector('main');
+  if (_main) _main.style.paddingTop = 'calc(var(--sp5) + 38px)';
 }
 
 
@@ -13420,5 +13426,7 @@ document.addEventListener('DOMContentLoaded', () => {
   forgeInitAuth();
 });
 </script>
+
+<div id="projStrip" style="display:none;position:fixed;top:50px;left:0;right:0;z-index:150;background:rgba(12,13,18,.97);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.09);padding:8px 28px;align-items:center;gap:10px;font-size:12.5px;font-family:var(--fm);color:var(--ink4);"><span id="projStripText"></span></div>
 </body>
 </html>
