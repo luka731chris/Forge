@@ -2933,16 +2933,7 @@ function svgLine(elId, labels, datasets, opts) {
   const projectedIdx = (opts.projectedIdx !== undefined && opts.projectedIdx >= 0) ? opts.projectedIdx : -1;
   const el = document.getElementById(elId);
   if (!el) return;
-  var _slW = el.offsetWidth || el.getBoundingClientRect().width || 0;
-  if (_slW < 10) {
-    var _slRetry = (opts && opts._retry) || 0;
-    if (_slRetry < 4) {
-      var _slDelay = [60,150,300,600][_slRetry];
-      setTimeout(function(){ svgLine(elId, labels, datasets, Object.assign({},opts,{_retry:_slRetry+1})); }, _slDelay);
-    }
-    return;
-  }
-  const W = Math.max(_slW, 300);
+  const W = Math.max(el.offsetWidth || el.getBoundingClientRect().width || 860, 300);
   const H = Math.max(el.offsetHeight || 0, 160);
   if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>'; return; }
 
@@ -3089,6 +3080,7 @@ function svgLine(elId, labels, datasets, opts) {
 
 
 
+
 function svgHBar(elId, labels, values, colors, bucketKeys) {
   const el = document.getElementById(elId);
   if (!el) return;
@@ -3170,16 +3162,11 @@ function svgHBar(elId, labels, values, colors, bucketKeys) {
 
 
 
+
 function svgWaterfall(elId, items) {
   var el = document.getElementById(elId);
   if (!el) return;
-  var _wfW = el.offsetWidth || el.getBoundingClientRect().width || 0;
-  if (_wfW < 10) {
-    setTimeout(function(){ svgWaterfall(elId, items); }, 150);
-    setTimeout(function(){ svgWaterfall(elId, items); }, 400);
-    return;
-  }
-  var W = Math.max(_wfW, 300);
+  var W = Math.max(el.offsetWidth || el.getBoundingClientRect().width || 860, 300);
   var H = Math.max(el.offsetHeight || 0, 240);
   if (!items || !items.length) {
     el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
@@ -3284,6 +3271,7 @@ function svgWaterfall(elId, items) {
   el.innerHTML='<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'+defs+grid+connectors+bars+yLbls+xLbls+hitAreas+'</svg>';
   bindChartTips(el);
 }
+
 
 
 
@@ -3869,18 +3857,7 @@ function svgBar(elId, labels, datasets, opts) {
   var _pIdx = (opts && opts.projectedIdx >= 0) ? opts.projectedIdx : -1;
   const el = document.getElementById(elId);
   if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
-  // Wait for layout to settle — use RAF with fallback timeouts
-  var _sbW = el.offsetWidth || el.getBoundingClientRect().width || 0;
-  if (_sbW < 10) {
-    var _sbRetry = (opts && opts._retry) || 0;
-    if (_sbRetry < 5) {
-      var _sbDelay = [0, 60, 150, 300, 600][_sbRetry] || 600;
-      var _sbOpts = Object.assign({}, opts, {_retry: _sbRetry + 1});
-      setTimeout(function(){ svgBar(elId, labels, datasets, _sbOpts); }, _sbDelay);
-    }
-    return;
-  }
-  const W = Math.max(_sbW, 300);
+  const W = Math.max(el.offsetWidth || el.getBoundingClientRect().width || 860, 300);
   const H = Math.max(el.offsetHeight || 0, 200);
   if (!labels.length) {
     el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
@@ -4020,6 +3997,7 @@ function svgBar(elId, labels, datasets, opts) {
     + '</svg>';
   bindChartTips(el);
 }
+
 
 
 
@@ -4240,7 +4218,7 @@ function renderNetSavingsChart(elId, labels, data, opts) {
   if (!el || !labels.length) return;
   if (!data || !data.length) { el.innerHTML = ''; return; }
 
-  const W  = Math.max(el.offsetWidth || 520, 320);
+  const W  = Math.max(el.offsetWidth || el.getBoundingClientRect().width || 860, 320);
   const H  = 280;
   const PT = 32, PB = 44, PL = 68, PR = 22;
   const cW = W - PL - PR, cH = H - PT - PB;
@@ -4458,20 +4436,146 @@ function renderNetSavingsChart(elId, labels, data, opts) {
       fill="transparent" data-tip="${tip.replace(/'/g,'&#39;')}" style="cursor:crosshair;"/>`;
   });
 
-  // ── Assemble ───────────────────────────────────────────────────────────────
-  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"
-    style="width:100%;height:${H}px;display:block;overflow:visible;">
-    ${defs}
-    ${grid}
-    ${areaBelow}${areaAbove}
-    ${zeroLine}
-    ${linesSvg}
-    ${dotsSvg}
-    ${yAxis}${xAxis}
-    ${hits}
-  </svg>`;
-  bindChartTips(el);
+  // ── function renderCashFlow() {
+  try {
+  if (!txns.length) return;
+
+  // Operating accounts only — exclude investment, retirement, 529, HSA
+  const OPER_TYPES = new Set(['checking', 'savings', 'credit']);
+  let src = spendable(txns).filter(t => OPER_TYPES.has(detectAcctType(t.account||'')));
+
+  // Populate account filter on first call
+  const acctSel = document.getElementById('cfAcct');
+  if (acctSel && acctSel.options.length <= 1) {
+    acctSel.innerHTML = '<option value="all">All Accounts</option>' +
+      [...new Set(src.map(t=>t.account))].sort().map(a=>`<option>${a}</option>`).join('');
+  }
+
+  // Apply range filter (rolling window)
+  if (cfRange !== 'all') src = src.filter(t => new Date(t.date) >= rangeStart(cfRange));
+
+  // Apply account filter
+  const acct = acctSel ? acctSel.value : 'all';
+  if (acct !== 'all') src = src.filter(t=>t.account===acct);
+
+  const md  = monthlyData(src);
+
+
+  // ── Project the current in-flight month ──────────────────────────────────
+  const _curMo = new Date().toISOString().slice(0,7);
+  let _projIdx = -1, _projNet = null;
+  const _lastKey = md.fullKeys[md.fullKeys.length - 1];
+  if (_lastKey === _curMo) {
+    _projIdx = md.fullKeys.length - 1;
+    try {
+      const _accrual = buildAccrualEngine && buildAccrualEngine(_curMo, operatingSpendable(txns));
+      if (_accrual && _accrual.normalizeIncome) {
+        const _norm = _accrual.normalizeIncome();
+        if (_norm) {
+          // Project income: normalizedIncome (actual + estimated remaining paychecks)
+          const _projInc = _norm.normalizedIncome || 0;
+          // Project expenses: actual so far + accrued remaining days via accrual engine
+          const _actualExp = md.expenses[_projIdx] || 0;
+          const _allBks = ['mortgage','car','insurance','education','childcare',
+            'electric','gas_util','water','internet','streaming',
+            'restaurants','groceries','gas_car','transit','healthcare',
+            'entertainment','household','personal','clothing','travel','gifts','other'];
+          let _projExp = _actualExp;
+          _allBks.forEach(bk => {
+            try { _projExp += (_accrual.accrueAmount(bk) || 0); } catch(e) {}
+          });
+          _projNet = _projInc - _projExp;
+          net[_projIdx] = _projNet;
+        }
+      }
+    } catch(e) { console.warn('[CF] projection error', e); }
+  }
+
+  svgBar('cfBarWrap', md.labels, [
+    { label:'Income',   data:md.income,   backgroundColor:'rgba(45,212,191,.75)' },
+    { label:'Expenses', data:md.expenses, backgroundColor:'rgba(248,113,113,.75)' },
+  ], { projectedIdx: _projIdx });
+  
+
+  // Waterfall: same source as banking panel — guaranteed to match
+  (function() {
+    var wfEl = document.getElementById('cfWaterfallWrap');
+    if (!wfEl) return;
+    // Use BSR-filtered transactions so income/expense match the banking panel exactly
+    var DETAIL_SRC = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+    var OPER_TYPES = new Set(['checking','savings','credit']);
+    function opBase(arr) {
+      return (arr||[]).filter(function(t){
+        return !isTransfer(t) && !t._masked && !t.itemDetail
+            && !DETAIL_SRC.has(t._source||t._ftype||'')
+            && OPER_TYPES.has(detectAcctType(t.account||''));
+      });
+    }
+    // Apply the same range/account filter as src
+    var wfBase = opBase(txns).filter(function(t){
+      if (cfRange !== 'all') return new Date(t.date) >= rangeStart(cfRange);
+      return true;
+    });
+    // Income: checking deposits only
+    var wfInc = wfBase.filter(function(t){
+      return t.amount > 0 && detectAcctType(t.account||'') === 'checking';
+    }).reduce(function(s,t){ return s+t.amount; }, 0);
+    // Expenses by bucket (checking outflows + CC charges)
+    var expTxns = wfBase.filter(function(t){
+      var tp = detectAcctType(t.account||'');
+      return t.amount < 0 && (tp === 'checking' || tp === 'credit');
+    });
+    var buckets = { fixed:0, utils:0, nec:0, disc:0, other:0 };
+    var FIXED_BKS = new Set(['mortgage','mort_interest','mort_escrow','car','insurance','education','childcare']);
+    var UTIL_BKS  = new Set(['electric','gas_util','water','internet','cell','streaming']);
+    var NEC_BKS   = new Set(['groceries','gas_car','transit','healthcare']);
+    var DISC_BKS  = new Set(['restaurants','entertainment','household','personal','clothing','travel','gifts']);
+    expTxns.forEach(function(t){
+      var bk = classifyTxn(t);
+      var a  = Math.abs(t.amount);
+      if (bk === 'mort_principal') return; // equity build — not an expense
+      if (FIXED_BKS.has(bk))      buckets.fixed += a;
+      else if (UTIL_BKS.has(bk))  buckets.utils += a;
+      else if (NEC_BKS.has(bk))   buckets.nec   += a;
+      else if (DISC_BKS.has(bk))  buckets.disc  += a;
+      else                         buckets.other += a;  // catches 'other', 'auto_save', etc.
+    });
+    var totalExp = buckets.fixed + buckets.utils + buckets.nec + buckets.disc + buckets.other;
+    var wfNet    = wfInc - totalExp;
+    var wfItems  = [
+      {label:'Income',       value:wfInc,         type:'income',  color:'rgba(45,212,191,.85)'},
+      {label:'Fixed',        value:-buckets.fixed, type:'expense', color:'rgba(96,165,250,.8)'},
+      {label:'Utilities',    value:-buckets.utils, type:'expense', color:'rgba(167,139,250,.8)'},
+      {label:'Necessities',  value:-buckets.nec,   type:'expense', color:'rgba(245,168,0,.8)'},
+      {label:'Discretionary',value:-buckets.disc,  type:'expense', color:'rgba(232,121,249,.8)'},
+    ];
+    if (buckets.other > 0) wfItems.push({label:'Other',value:-buckets.other,type:'expense',color:'rgba(156,163,175,.8)'});
+    wfItems = wfItems.filter(function(it){return Math.abs(it.value)>1||it.type==='income';});
+    wfItems.push({label:'Net',value:wfNet,type:'total',color:'rgba(245,168,0,.9)'});
+    svgWaterfall('cfWaterfallWrap', wfItems);
+  })();
+
+  // ── Banking & Draw panel — core savings discipline view ──────────────────
+  renderCfBankDraw(md.fullKeys, _projIdx);
+
+  // KPIs
+  const totInc = md.income.reduce((a,b)=>a+b,0);
+  const totExp = md.expenses.reduce((a,b)=>a+b,0);
+  const totNet = totInc - totExp;
+  const mo = md.labels.length || 1;
+  document.getElementById('cfKPIs').innerHTML = [
+    { label:'Total Income',    val:fmtK(totInc), sub:fmt(totInc/mo)+'/mo', cls:'positive' },
+    { label:'Total Expenses',  val:fmtK(totExp), sub:fmt(totExp/mo)+'/mo', cls:'' },
+    { label:'Net',             val:(totNet>=0?'+':'')+fmtK(totNet), sub:'Savings rate: '+(totInc>0?((totNet/totInc)*100).toFixed(1):0)+'%', cls:totNet>=0?'positive':'negative' },
+    { label:'Months',          val:mo, sub:'in view', cls:'' },
+  ].map(k=>`<div class="kpi ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-val">${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+
+  } catch(e) {
+    console.error('[Forge] renderCashFlow error:', e);
+    const _el = document.getElementById('cfBarWrap');
+  }
 }
+
 
 
 
@@ -4830,15 +4934,7 @@ function renderCfBankDraw(months, projectedIdx) {
 
 function renderSavingsRegChart(el, labels, barData, lineData) {
   if (!el || !labels.length) return;
-  var _srcW = el.offsetWidth || el.getBoundingClientRect().width || 0;
-  if (_srcW < 10) {
-    var _srcEl=el, _la=labels, _bd=barData, _ld=lineData;
-    [80, 200, 500].forEach(function(ms){
-      setTimeout(function(){ if(el.offsetWidth>10) renderSavingsRegChart(_srcEl,_la,_bd,_ld); }, ms);
-    });
-    return;
-  }
-  var W = Math.max(_srcW, 320);
+  var W = Math.max(el.offsetWidth || el.getBoundingClientRect().width || 860, 320);
   var H = 240;
   var PAD = {t:24, r:20, b:42, l:68};
   var cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
@@ -4936,6 +5032,7 @@ function renderSavingsRegChart(el, labels, barData, lineData) {
   el.innerHTML = '<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'
     + defs + grid + bars + lineEl + dots + yLbls + xLbls + zeroLabels + legend + '</svg>';
 }
+
 
 
 

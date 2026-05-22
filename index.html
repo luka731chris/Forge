@@ -3874,18 +3874,7 @@ function svgBar(elId, labels, datasets, opts) {
   var _pIdx = (opts && opts.projectedIdx >= 0) ? opts.projectedIdx : -1;
   const el = document.getElementById(elId);
   if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
-  // Wait for layout to settle — use RAF with fallback timeouts
-  var _sbW = el.offsetWidth || el.getBoundingClientRect().width || 0;
-  if (_sbW < 10) {
-    var _sbRetry = (opts && opts._retry) || 0;
-    if (_sbRetry < 5) {
-      var _sbDelay = [0, 60, 150, 300, 600][_sbRetry] || 600;
-      var _sbOpts = Object.assign({}, opts, {_retry: _sbRetry + 1});
-      setTimeout(function(){ svgBar(elId, labels, datasets, _sbOpts); }, _sbDelay);
-    }
-    return;
-  }
-  const W = Math.max(_sbW, 300);
+  const W = Math.max(el.offsetWidth || el.getBoundingClientRect().width || 860, 300);
   const H = Math.max(el.offsetHeight || 0, 200);
   if (!labels.length) {
     el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
@@ -4031,16 +4020,7 @@ function svgLine(elId, labels, datasets, opts) {
   const projectedIdx = (opts.projectedIdx !== undefined && opts.projectedIdx >= 0) ? opts.projectedIdx : -1;
   const el = document.getElementById(elId);
   if (!el) return;
-  var _slW = el.offsetWidth || el.getBoundingClientRect().width || 0;
-  if (_slW < 10) {
-    var _slRetry = (opts && opts._retry) || 0;
-    if (_slRetry < 4) {
-      var _slDelay = [60,150,300,600][_slRetry];
-      setTimeout(function(){ svgLine(elId, labels, datasets, Object.assign({},opts,{_retry:_slRetry+1})); }, _slDelay);
-    }
-    return;
-  }
-  const W = Math.max(_slW, 300);
+  const W = Math.max(el.offsetWidth || el.getBoundingClientRect().width || 860, 300);
   const H = Math.max(el.offsetHeight || 0, 160);
   if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>'; return; }
 
@@ -4239,13 +4219,7 @@ function svgHBar(elId, labels, values, colors, bucketKeys) {
 function svgWaterfall(elId, items) {
   var el = document.getElementById(elId);
   if (!el) return;
-  var _wfW = el.offsetWidth || el.getBoundingClientRect().width || 0;
-  if (_wfW < 10) {
-    setTimeout(function(){ svgWaterfall(elId, items); }, 150);
-    setTimeout(function(){ svgWaterfall(elId, items); }, 400);
-    return;
-  }
-  var W = Math.max(_wfW, 300);
+  var W = Math.max(el.offsetWidth || el.getBoundingClientRect().width || 860, 300);
   var H = Math.max(el.offsetHeight || 0, 240);
   if (!items || !items.length) {
     el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
@@ -5667,15 +5641,7 @@ function renderSavingsRegister() {
 // ── 3D bar+line chart for savings register ───────────────────────────────────
 function renderSavingsRegChart(el, labels, barData, lineData) {
   if (!el || !labels.length) return;
-  var _srcW = el.offsetWidth || el.getBoundingClientRect().width || 0;
-  if (_srcW < 10) {
-    var _srcEl=el, _la=labels, _bd=barData, _ld=lineData;
-    [80, 200, 500].forEach(function(ms){
-      setTimeout(function(){ if(el.offsetWidth>10) renderSavingsRegChart(_srcEl,_la,_bd,_ld); }, ms);
-    });
-    return;
-  }
-  var W = Math.max(_srcW, 320);
+  var W = Math.max(el.offsetWidth || el.getBoundingClientRect().width || 860, 320);
   var H = 240;
   var PAD = {t:24, r:20, b:42, l:68};
   var cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
@@ -6358,7 +6324,7 @@ function renderNetSavingsChart(elId, labels, data, opts) {
   if (!el || !labels.length) return;
   if (!data || !data.length) { el.innerHTML = ''; return; }
 
-  const W  = Math.max(el.offsetWidth || 520, 320);
+  const W  = Math.max(el.offsetWidth || el.getBoundingClientRect().width || 860, 320);
   const H  = 280;
   const PT = 32, PB = 44, PL = 68, PR = 22;
   const cW = W - PL - PR, cH = H - PT - PB;
