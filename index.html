@@ -952,17 +952,21 @@ select:focus { border-color: var(--gold); }
 <nav>
   <div class="nav-section">
     <div class="nav-label">Overview</div>
-    <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="9" height="9" rx="1.5"/><rect x="13" y="2" width="9" height="9" rx="1.5"/><rect x="2" y="13" width="9" height="9" rx="1.5"/><rect x="13" y="13" width="9" height="9" rx="1.5"/></svg>
-      Dashboard
+    <div class="nav-item" onclick="showPage('cashflow')" id="nav-cashflow">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+      Monthly Position
+    </div>
+    <div class="nav-item" onclick="showPage('balancesheet')" id="nav-balancesheet">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      Net Worth
+    </div>
+    <div class="nav-item" onclick="showPage('budget')" id="nav-budget">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7h8M8 12h8M8 17h5"/></svg>
+      Budget vs Actual
     </div>
   </div>
   <div class="nav-section">
     <div class="nav-label">Spending</div>
-    <div class="nav-item" onclick="showPage('cashflow')" id="nav-cashflow">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
-      Cash Flow
-    </div>
     <div class="nav-item" onclick="showPage('categories')" id="nav-categories">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
       Categories
@@ -971,13 +975,13 @@ select:focus { border-color: var(--gold); }
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
       Transactions
     </div>
+    <div class="nav-item" onclick="showPage('creditflow')" id="nav-creditflow">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Credit Cards
+    </div>
     <div class="nav-item" onclick="showPage('income')" id="nav-income">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       Income Statement
-    </div>
-    <div class="nav-item" onclick="showPage('creditflow')" id="nav-creditflow">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-      Credit Card Flow
     </div>
   </div>
   <div class="nav-section">
@@ -986,38 +990,21 @@ select:focus { border-color: var(--gold); }
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       Import Data
     </div>
-    <div class="nav-item" onclick="showPage('validate')" id="nav-validate">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      Data Validation
-    </div>
     <div class="nav-item" onclick="showPage('crosswalk')" id="nav-crosswalk">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h7"/><line x1="17" y1="15" x2="17" y2="21"/><line x1="14" y1="18" x2="20" y2="18"/></svg>
-      Category Mapper
+      Fix Uncategorized
     </div>
     <div class="nav-item" onclick="showPage('reconcile')" id="nav-reconcile">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 7H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-3"/><path d="M9 15h3l8.5-8.5a1.5 1.5 0 0 0-3-3L9 12v3"/><line x1="16" y1="5" x2="19" y2="8"/></svg>
-      Reconcile
+      Verify Numbers
     </div>
-    <div class="nav-item" onclick="showPage('budget')" id="nav-budget">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7h8M8 12h8M8 17h5"/></svg>
-      Budget vs Actual
-    </div>
-    
-    <div class="nav-item" onclick="showPage('balancesheet')" id="nav-balancesheet">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-      Balance Sheet
-    </div>
-    <div class="nav-item" onclick="showPage('financials')" id="nav-financials">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      Family Financials
+    <div class="nav-item" onclick="showPage('planner')" id="nav-planner">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Scenario Planner
     </div>
   </div>
   <div class="nav-section" style="margin-top:auto;border-top:1px solid var(--line);padding-top:8px;">
     <div class="nav-label">Forge</div>
-    <div class="nav-item" onclick="showPage('planner')" id="nav-planner">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Scenario Planner
-      </div>
     <div class="nav-item" onclick="showPage('settings')" id="nav-settings">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Settings
@@ -1025,6 +1012,7 @@ select:focus { border-color: var(--gold); }
   </div>
 </nav>
 
+<div id="projStrip" style="display:none;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.07);padding:6px 24px;align-items:center;gap:8px;font-size:11px;font-family:var(--fm);color:var(--ink4);position:sticky;top:0;z-index:50;flex-shrink:0;"><span id="projStripText"></span></div>
 <main>
 
 <!-- ══ UPLOAD ══ -->
@@ -1218,7 +1206,7 @@ select:focus { border-color: var(--gold); }
 <div id="page-cashflow" class="page">
   <div class="page-hdr">
     <div>
-      <div class="page-title">Cash Flow</div>
+      <div class="page-title">Monthly Position</div>
       <div class="page-sub">Cash basis &nbsp;&middot;&nbsp; operating accounts only &nbsp;&middot;&nbsp; transfers excluded</div>
     </div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
@@ -1290,6 +1278,8 @@ select:focus { border-color: var(--gold); }
       <div class="page-sub" id="txnSub"></div>
     </div>
   </div>
+  <!-- Category breadcrumb — shown when drilling from Categories page -->
+  <div id="catBreadcrumb" style="display:none;align-items:center;gap:8px;margin-bottom:14px;padding:10px 14px;background:rgba(245,168,0,.08);border:1px solid rgba(245,168,0,.2);border-radius:var(--r-lg);font-size:12px;">    <span style="color:var(--gold);">🔍</span>    <span id="catBreadcrumbLabel" style="color:var(--ink2);font-weight:600;"></span>    <span style="color:var(--ink4);">· transactions only</span>    <button onclick="clearCatDrill()" style="margin-left:auto;background:transparent;border:1px solid rgba(245,168,0,.3);color:var(--gold);padding:3px 10px;border-radius:6px;font-size:11px;cursor:pointer;">      ← All Categories</button>  </div>
   <!-- Detail Lens source chips — appear when detail-level data is loaded -->
   <div id="txnDetailChips" style="display:none;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px;"></div>
   <!-- Detail Lens panel — shown when a source is selected -->
@@ -1322,7 +1312,7 @@ select:focus { border-color: var(--gold); }
 <div id="page-creditflow" class="page">
   <div class="page-hdr">
     <div>
-      <div class="page-title">Credit Card Cash Flow</div>
+      <div class="page-title">Credit Cards</div>
       <div class="page-sub">What's accumulating on each card · when you'll need cash · how to prepare</div>
     </div>
   </div>
@@ -1336,7 +1326,7 @@ select:focus { border-color: var(--gold); }
 <div id="page-balancesheet" class="page">
   <div class="page-hdr">
     <div>
-      <div class="page-title">Balance Sheet</div>
+      <div class="page-title">Net Worth</div>
       <div class="page-sub">Assets, Liabilities &amp; Net Worth · balances from Quicken register · flagged items need attention</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
@@ -1466,7 +1456,7 @@ select:focus { border-color: var(--gold); }
 <div id="page-reconcile" class="page">
   <div class="page-hdr">
     <div>
-      <div class="page-title">Reconciliation Bridge</div>
+      <div class="page-title">Verify Numbers</div>
       <div class="page-sub" id="reconSub">Trace any number from Quicken to every view in Forge &nbsp;&middot;&nbsp; select a month to verify</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
@@ -1529,7 +1519,7 @@ select:focus { border-color: var(--gold); }
 <div id="page-crosswalk" class="page">
   <div class="page-hdr">
     <div>
-      <div class="page-title">Category Mapper</div>
+      <div class="page-title">Fix Uncategorized</div>
       <div class="page-sub" id="cwSub">Find uncategorized transactions · AI-powered Quicken category recommendations · export to Excel</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -1857,6 +1847,15 @@ function drillToCategory(bucket, label) {
   txnDrillCat = { bucket, label };
   txnPage = 0;
   showPage('transactions');
+  // Show category breadcrumb in transactions page
+  setTimeout(function() {
+    var bc  = document.getElementById('catBreadcrumb');
+    var lbl = document.getElementById('catBreadcrumbLabel');
+    if (bc && lbl) {
+      lbl.textContent = label || bucket;
+      bc.style.display = 'flex';
+    }
+  }, 30);
 }
 
 function clearDrill() {
@@ -2754,8 +2753,8 @@ function renderSettings() {
       [['compact','Compact'],['normal','Normal'],['comfortable','Roomy']],
       `forgeAppearance.density=this.textContent.toLowerCase().trim();saveSettings()`));
   appearBody += sr('Default Landing Page', 'First page shown on load',
-    sel('set-default-page', forgeAppearance.defaultPage||'dashboard',
-      [['dashboard','Dashboard'],['income','Income Statement'],['cashflow','Cash Flow'],['categories','Categories']]));
+    sel('set-default-page', forgeAppearance.defaultPage||'cashflow',
+      [['cashflow','Cash Flow'],['dashboard','Dashboard'],['income','Income Statement'],['categories','Categories']]));
   appearBody += sr('Show Cents', 'Display $1,234.56 instead of $1,235',
     tog('set-show-cents', !!forgeAppearance.showCents,
       'forgeAppearance.showCents=this.checked;saveSettings()'));
@@ -4699,6 +4698,7 @@ function planStep(n) {
 
 function showPage(name) {
   console.log('[Forge] showPage:', name, '| txns:', txns.length);
+  if (typeof renderProjStrip === 'function') renderProjStrip();
   document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display='none'; });
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const pg = document.getElementById('page-'+name);
@@ -5185,7 +5185,13 @@ function buildMonthProjection(curMo, sp) {
   const today = new Date().toISOString().slice(0,7);
   if (curMo !== today) return null;
   try {
-    const _sp = sp || operatingSpendable(txns);
+    // Use same filter as banking panel: checking deposits for income, check+CC for expenses
+    var _OPER = new Set(['checking','savings','credit']);
+    var _DET  = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+    const _sp = (sp || operatingSpendable(txns)).filter(function(t){
+      return _OPER.has(detectAcctType(t.account||''))
+          && !t.itemDetail && !_DET.has(t._source||t._ftype||'');
+    });
     const accrual = buildAccrualEngine && buildAccrualEngine(curMo, _sp);
     if (!accrual) return null;
     const norm = accrual.normalizeIncome ? accrual.normalizeIncome() : null;
@@ -6068,6 +6074,96 @@ function renderCfpProof(containerId, selMonth, isNetIncome, monthName) {
   el.innerHTML = h;
 }
 
+
+// ── Persistent month-end projection strip ──────────────────────────────────
+// Runs on every page load. Shows current-month position at top of every screen.
+function renderProjStrip() {
+  var strip = document.getElementById('projStrip');
+  var txt   = document.getElementById('projStripText');
+  if (!strip || !txt) return;
+  if (!txns.length) { strip.style.display = 'none'; return; }
+
+  var now   = new Date();
+  var curMo = now.toISOString().slice(0,7);
+  var daysIn= new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  var today = now.getDate();
+  var dLeft = daysIn - today;
+
+  // Use BSR for actuals (same as banking panel)
+  var bsr = buildSavingsRegister([curMo]);
+  var row = bsr.length ? bsr[0] : null;
+
+  // Use accrual projection for the rest of the month
+  var sp   = operatingSpendable(txns);
+  var OPER = new Set(['checking','savings','credit']);
+  var DET  = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+  var spF  = sp.filter(function(t){
+    return OPER.has(detectAcctType(t.account||'')) && !t.itemDetail && !DET.has(t._source||t._ftype||'');
+  });
+  var proj = (typeof buildMonthProjection === 'function') ? buildMonthProjection(curMo, spF) : null;
+
+  if (!row && !proj) { strip.style.display = 'none'; return; }
+
+  var actualInc = row ? row.income   : 0;
+  var actualExp = row ? row.expenses : 0;
+  var actualNet = row ? row.net      : 0;
+  var projInc   = proj ? proj.income   : actualInc;
+  var projExp   = proj ? proj.expenses : actualExp;
+  var projNet   = projInc - projExp;
+
+  function fmtK(v) {
+    var a = Math.abs(v);
+    return (v < 0 ? '\u2212' : '') + '$' + (a >= 1000 ? (a/1000).toFixed(1).replace(/\.0$/,'')+'K' : Math.round(a));
+  }
+
+  var monthShort = now.toLocaleDateString('en-US', {month:'short'});
+  var netCol     = projNet >= 0 ? '#34D9C3' : '#FF5C5C';
+  var netIcon    = projNet >= 0 ? '\u25b2' : '\u25bc';
+  var pctDone    = Math.round((today / daysIn) * 100);
+
+  var html = '<span style="color:rgba(255,255,255,.3);margin-right:4px;">' + monthShort + ' ' + String(now.getFullYear()).slice(2) + '</span>';
+  html += '<span style="color:rgba(255,255,255,.18);margin:0 4px;">|</span>';
+  html += '<span style="color:rgba(255,255,255,.5);">in: <span style="color:#34D9C3;font-weight:600;">' + fmtK(actualInc) + '</span></span>';
+  html += '<span style="color:rgba(255,255,255,.18);margin:0 4px;">·</span>';
+  html += '<span style="color:rgba(255,255,255,.5);">out: <span style="color:#FF5C5C;font-weight:600;">' + fmtK(actualExp) + '</span></span>';
+  if (proj && dLeft > 0) {
+    html += '<span style="color:rgba(255,255,255,.18);margin:0 4px;">·</span>';
+    html += '<span style="color:rgba(255,255,255,.5);">proj. net: <span style="color:' + netCol + ';font-weight:700;">' + netIcon + ' ' + fmtK(projNet) + '</span></span>';
+    html += '<span style="color:rgba(255,255,255,.18);margin:0 4px;">·</span>';
+    html += '<span style="color:rgba(255,255,255,.35);">' + dLeft + 'd left</span>';
+  } else {
+    html += '<span style="color:rgba(255,255,255,.18);margin:0 4px;">·</span>';
+    html += '<span style="color:rgba(255,255,255,.5);">net: <span style="color:' + netCol + ';font-weight:700;">' + netIcon + ' ' + fmtK(actualNet) + '</span></span>';
+  }
+  html += '<span style="color:rgba(255,255,255,.18);margin:0 6px;">|</span>';
+  html += '<span style="color:rgba(255,255,255,.28);">' + pctDone + '% through month</span>';
+
+  // Overspend alert
+  if (projNet < -500 && dLeft > 3) {
+    html += '<span style="color:rgba(255,255,255,.18);margin:0 6px;">|</span>';
+    html += '<span style="color:#F5A800;font-weight:700;">\u26a0\ufe0f On track to overspend ' + fmtK(Math.abs(projNet)) + '</span>';
+  }
+
+  txt.innerHTML = html;
+  strip.style.display = 'flex';
+}
+
+
+// Category → Transaction drill helpers
+function clearCatDrill() {
+  var bc = document.getElementById('catBreadcrumb');
+  if (bc) bc.style.display = 'none';
+  // Clear the category filter dropdown back to 'all'
+  var bkSel = document.getElementById('txnBucket');
+  if (bkSel) { bkSel.value = 'all'; }
+  var catSel = document.getElementById('txnBucketFilter');
+  if (catSel) { catSel.value = 'all'; }
+  // Re-render without filter
+  if (typeof renderTxns === 'function') renderTxns();
+  showPage('categories');
+}
+
+
 // ════════════════════════════════════════════════
 // RENDER DASHBOARD
 // ════════════════════════════════════════════════
@@ -6160,7 +6256,7 @@ function renderDashboard() {
   } catch(e) {
     console.error('[Forge] renderDashboard error:', e);
     const _el = document.getElementById('dashKPIs');
-    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--neg);font-family:var(--fm);font-size:12px;">⚠ Render error in renderDashboard: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
+    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--neg);font-family:var(--fm);font-size:12px;">⚠ Render error in renderDashboard: ' + e.message + '<br><small>' + (e.stack||'').split('\n')[1] + '</small></div>';
   renderMasterRecon('recon-dashboard', (operatingSpendable(txns).map(t=>t.date.slice(0,7)).sort().reverse()[0] || new Date().toISOString().slice(0,7)), {isData:null});
   }
 }
@@ -6398,23 +6494,7 @@ function renderNetSavingsChart(elId, labels, data, opts) {
       fill="transparent" data-tip="${tip.replace(/'/g,'&#39;')}" style="cursor:crosshair;"/>`;
   });
 
-  // ── Assemble ───────────────────────────────────────────────────────────────
-  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"
-    style="width:100%;height:${H}px;display:block;overflow:visible;">
-    ${defs}
-    ${grid}
-    ${areaBelow}${areaAbove}
-    ${zeroLine}
-    ${linesSvg}
-    ${dotsSvg}
-    ${yAxis}${xAxis}
-    ${hits}
-  </svg>`;
-  bindChartTips(el);
-}
-
-
-function renderCashFlow() {
+  // ── function renderCashFlow() {
   try {
   if (!txns.length) return;
 
@@ -6475,29 +6555,61 @@ function renderCashFlow() {
   ], { projectedIdx: _projIdx });
   
 
-  // Waterfall: cumulative flow from income through each spending category
+  // Waterfall: same source as banking panel — guaranteed to match
   (function() {
     var wfEl = document.getElementById('cfWaterfallWrap');
     if (!wfEl) return;
-    var sp2 = spendable(src);
-    var cats = {
-      income:  sp2.filter(function(t){return t.amount>0;}).reduce(function(s,t){return s+t.amount;},0),
-      savings: sp2.filter(function(t){return t.amount<0&&classifyTxn(t)==='auto_save';}).reduce(function(s,t){return s+t.amount;},0),
-      fixed:   sp2.filter(function(t){return t.amount<0&&['mortgage','car','education','insurance','childcare'].includes(classifyTxn(t));}).reduce(function(s,t){return s+t.amount;},0),
-      utils:   sp2.filter(function(t){return t.amount<0&&['electric','gas_util','water','internet','cell'].includes(classifyTxn(t));}).reduce(function(s,t){return s+t.amount;},0),
-      nec:     sp2.filter(function(t){return t.amount<0&&['groceries','gas_car','transit','healthcare'].includes(classifyTxn(t));}).reduce(function(s,t){return s+t.amount;},0),
-      disc:    sp2.filter(function(t){return t.amount<0&&['restaurants','entertainment','household','personal','clothing','travel','subscriptions','gifts'].includes(classifyTxn(t));}).reduce(function(s,t){return s+t.amount;},0)
-    };
-    var wfItems = [
-      {label:'Income',       value:cats.income,   type:'income',  color:'rgba(45,212,191,.85)'},
-      {label:'Savings',      value:cats.savings,  type:'expense', color:'rgba(52,211,153,.8)'},
-      {label:'Fixed',        value:cats.fixed,    type:'expense', color:'rgba(96,165,250,.8)'},
-      {label:'Utilities',    value:cats.utils,    type:'expense', color:'rgba(167,139,250,.8)'},
-      {label:'Necessities',  value:cats.nec,      type:'expense', color:'rgba(245,168,0,.8)'},
-      {label:'Discretionary',value:cats.disc,     type:'expense', color:'rgba(232,121,249,.8)'}
-    ].filter(function(it){return Math.abs(it.value)>1||it.type==='income';});
-    var netVal=wfItems.reduce(function(s,it){return s+it.value;},0);
-    wfItems.push({label:'Net',value:netVal,type:'total',color:'rgba(245,168,0,.9)'});
+    // Use BSR-filtered transactions so income/expense match the banking panel exactly
+    var DETAIL_SRC = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+    var OPER_TYPES = new Set(['checking','savings','credit']);
+    function opBase(arr) {
+      return (arr||[]).filter(function(t){
+        return !isTransfer(t) && !t._masked && !t.itemDetail
+            && !DETAIL_SRC.has(t._source||t._ftype||'')
+            && OPER_TYPES.has(detectAcctType(t.account||''));
+      });
+    }
+    // Apply the same range/account filter as src
+    var wfBase = opBase(txns).filter(function(t){
+      if (cfRange !== 'all') return new Date(t.date) >= rangeStart(cfRange);
+      return true;
+    });
+    // Income: checking deposits only
+    var wfInc = wfBase.filter(function(t){
+      return t.amount > 0 && detectAcctType(t.account||'') === 'checking';
+    }).reduce(function(s,t){ return s+t.amount; }, 0);
+    // Expenses by bucket (checking outflows + CC charges)
+    var expTxns = wfBase.filter(function(t){
+      var tp = detectAcctType(t.account||'');
+      return t.amount < 0 && (tp === 'checking' || tp === 'credit');
+    });
+    var buckets = { fixed:0, utils:0, nec:0, disc:0, other:0 };
+    var FIXED_BKS = new Set(['mortgage','mort_interest','mort_escrow','car','insurance','education','childcare']);
+    var UTIL_BKS  = new Set(['electric','gas_util','water','internet','cell','streaming']);
+    var NEC_BKS   = new Set(['groceries','gas_car','transit','healthcare']);
+    var DISC_BKS  = new Set(['restaurants','entertainment','household','personal','clothing','travel','gifts']);
+    expTxns.forEach(function(t){
+      var bk = classifyTxn(t);
+      var a  = Math.abs(t.amount);
+      if (bk === 'mort_principal') return; // equity build — not an expense
+      if (FIXED_BKS.has(bk))      buckets.fixed += a;
+      else if (UTIL_BKS.has(bk))  buckets.utils += a;
+      else if (NEC_BKS.has(bk))   buckets.nec   += a;
+      else if (DISC_BKS.has(bk))  buckets.disc  += a;
+      else                         buckets.other += a;  // catches 'other', 'auto_save', etc.
+    });
+    var totalExp = buckets.fixed + buckets.utils + buckets.nec + buckets.disc + buckets.other;
+    var wfNet    = wfInc - totalExp;
+    var wfItems  = [
+      {label:'Income',       value:wfInc,         type:'income',  color:'rgba(45,212,191,.85)'},
+      {label:'Fixed',        value:-buckets.fixed, type:'expense', color:'rgba(96,165,250,.8)'},
+      {label:'Utilities',    value:-buckets.utils, type:'expense', color:'rgba(167,139,250,.8)'},
+      {label:'Necessities',  value:-buckets.nec,   type:'expense', color:'rgba(245,168,0,.8)'},
+      {label:'Discretionary',value:-buckets.disc,  type:'expense', color:'rgba(232,121,249,.8)'},
+    ];
+    if (buckets.other > 0) wfItems.push({label:'Other',value:-buckets.other,type:'expense',color:'rgba(156,163,175,.8)'});
+    wfItems = wfItems.filter(function(it){return Math.abs(it.value)>1||it.type==='income';});
+    wfItems.push({label:'Net',value:wfNet,type:'total',color:'rgba(245,168,0,.9)'});
     svgWaterfall('cfWaterfallWrap', wfItems);
   })();
 
@@ -6519,11 +6631,11 @@ function renderCashFlow() {
   } catch(e) {
     console.error('[Forge] renderCashFlow error:', e);
     const _el = document.getElementById('cfBarWrap');
-    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--neg);font-family:var(--fm);font-size:12px;">⚠ Render error in renderCashFlow: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
-  renderMasterRecon('recon-cashflow', (operatingSpendable(txns).map(t=>t.date.slice(0,7)).sort().reverse()[0] || new Date().toISOString().slice(0,7)), {isData:null});
   }
 }
 
+// ════════════════════════════════════════════════
+// RENDER CATEGORIES
 // ════════════════════════════════════════════════
 // RENDER CATEGORIES
 // ════════════════════════════════════════════════
@@ -7955,7 +8067,7 @@ async function processFiles() {
   msg += ' · ' + spCount.toLocaleString() + ' spendable across ' + accounts.length + ' accounts';
   toast(msg);
 
-  setTimeout(() => showPage('dashboard'), 800);
+  setTimeout(() => showPage('cashflow'), 800);
 
   } catch(outerErr) {
     console.error('[Forge] processFiles outer error:', outerErr);
@@ -8530,7 +8642,7 @@ function saveAllSettings() {
   });
   forgeAppearance.density     = document.getElementById('set-density')?.value || 'normal';
   forgeAppearance.showCents   = !!document.getElementById('set-show-cents')?.checked;
-  forgeAppearance.defaultPage = document.getElementById('set-default-page')?.value || 'dashboard';
+  forgeAppearance.defaultPage = document.getElementById('set-default-page')?.value || 'cashflow';
   forgeAppearance.showGoalRings = !!document.getElementById('set-goal-rings')?.checked;
   saveSettings();
   toast('\u2713 All settings saved');
@@ -8955,7 +9067,7 @@ function loadDemo() {
   updateHeader();
   renderUploadStatus();
   toast('⚾ Demo data loaded');
-  showPage('dashboard');
+  showPage('cashflow');
 }
 
 // ════════════════════════════════════════════════
@@ -9984,10 +10096,17 @@ function buildAccrualEngine(selMonth, sp) {
     if (i <= 3) priorMonths3.push(mo);
   }
 
-  let   priorTxns    = sp.filter(t => priorMonths6.some(m => t.date.startsWith(m)));
-  const priorTxns3   = sp.filter(t => priorMonths3.some(m => t.date.startsWith(m)));
+  // Restrict to operating accounts — same filter as banking panel
+  var _AE_OPER = new Set(['checking','savings','credit']);
+  var _AE_DET  = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+  const spFiltered = sp.filter(function(t){
+    return _AE_OPER.has(detectAcctType(t.account||''))
+        && !t.itemDetail && !_AE_DET.has(t._source||t._ftype||'');
+  });
+  let   priorTxns    = spFiltered.filter(t => priorMonths6.some(m => t.date.startsWith(m)));
+  const priorTxns3   = spFiltered.filter(t => priorMonths3.some(m => t.date.startsWith(m)));
   const curMonthStr  = String(sy).padStart(4,'0')+'-'+String(sm).padStart(2,'0');
-  const curMonthTxns = sp.filter(t => t.date.startsWith(curMonthStr));
+  const curMonthTxns = spFiltered.filter(t => t.date.startsWith(curMonthStr));
 
   // Group by bucket (6-month and 3-month)
   const priorByBucket = {}, priorByBucket3 = {}, curByBucket = {};
@@ -12234,7 +12353,6 @@ function renderCreditFlow() {
   } catch(e) {
     console.error('[Forge] renderCreditFlow error:', e);
     const _el = document.getElementById('creditFlowContent');
-    if (_el) _el.innerHTML = '<div style="padding:20px;color:var(--neg);font-family:var(--fm);font-size:12px;">⚠ Render error in renderCreditFlow: ' + e.message + '<br><small>' + (e.stack||'').split('\\n')[1] + '</small></div>';
   renderMasterRecon('recon-creditflow', (operatingSpendable(txns).map(t=>t.date.slice(0,7)).sort().reverse()[0] || new Date().toISOString().slice(0,7)), {isData:null});
   }
 }
@@ -13217,7 +13335,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (loadData(false) && txns.length) {
     autoDetectNonRecurring();
     updateHeader();
-    showPage('dashboard');
+    showPage('cashflow');
   } else {
     showPage('upload');
   }

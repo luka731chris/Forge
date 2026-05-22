@@ -3988,6 +3988,124 @@ function svgBar(elId, labels, datasets, opts) {
 }
 
 
+function buildMonthProjection(curMo, sp) {
+  if (!curMo || !txns.length) return null;
+  const today = new Date().toISOString().slice(0,7);
+  if (curMo !== today) return null;
+  try {
+    // Use same filter as banking panel: checking deposits for income, check+CC for expenses
+    var _OPER = new Set(['checking','savings','credit']);
+    var _DET  = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+    const _sp = (sp || operatingSpendable(txns)).filter(function(t){
+      return _OPER.has(detectAcctType(t.account||''))
+          && !t.itemDetail && !_DET.has(t._source||t._ftype||'');
+    });
+    const accrual = buildAccrualEngine && buildAccrualEngine(curMo, _sp);
+    if (!accrual) return null;
+    const norm = accrual.normalizeIncome ? accrual.normalizeIncome() : null;
+    if (!norm) return null;
+    const projIncome = norm.normalizedIncome > 0 ? norm.normalizedIncome
+                     : norm.earlyMonth            ? norm.normalPaycheck : 0;
+    const ALL_BKS = ['mortgage','car','insurance','education','childcare',
+      'electric','gas_util','water','internet','streaming',
+      'restaurants','groceries','gas_car','transit','healthcare',
+      'entertainment','household','personal','clothing','travel','gifts','other'];
+    let projExpenses = 0;
+    ALL_BKS.forEach(function(bk) {
+      try { projExpenses += (accrual.accrueAmount(bk) || 0); } catch(e) {}
+    });
+    return { income:projIncome, expenses:projExpenses, net:projIncome-projExpenses,
+             daysElapsed:accrual.daysElapsed||1, daysRemaining:accrual.daysRemaining||0, norm:norm };
+  } catch(e) { console.warn('[Forge] projection error', e); return null; }
+}
+
+
+function clearCatDrill() {
+  var bc = document.getElementById('catBreadcrumb');
+  if (bc) bc.style.display = 'none';
+  // Clear the category filter dropdown back to 'all'
+  var bkSel = document.getElementById('txnBucket');
+  if (bkSel) { bkSel.value = 'all'; }
+  var catSel = document.getElementById('txnBucketFilter');
+  if (catSel) { catSel.value = 'all'; }
+  // Re-render without filter
+  if (typeof renderTxns === 'function') renderTxns();
+  showPage('categories');
+}
+
+
+function renderProjStrip() {
+  var strip = document.getElementById('projStrip');
+  var txt   = document.getElementById('projStripText');
+  if (!strip || !txt) return;
+  if (!txns.length) { strip.style.display = 'none'; return; }
+
+  var now   = new Date();
+  var curMo = now.toISOString().slice(0,7);
+  var daysIn= new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  var today = now.getDate();
+  var dLeft = daysIn - today;
+
+  // Use BSR for actuals (same as banking panel)
+  var bsr = buildSavingsRegister([curMo]);
+  var row = bsr.length ? bsr[0] : null;
+
+  // Use accrual projection for the rest of the month
+  var sp   = operatingSpendable(txns);
+  var OPER = new Set(['checking','savings','credit']);
+  var DET  = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+  var spF  = sp.filter(function(t){
+    return OPER.has(detectAcctType(t.account||'')) && !t.itemDetail && !DET.has(t._source||t._ftype||'');
+  });
+  var proj = (typeof buildMonthProjection === 'function') ? buildMonthProjection(curMo, spF) : null;
+
+  if (!row && !proj) { strip.style.display = 'none'; return; }
+
+  var actualInc = row ? row.income   : 0;
+  var actualExp = row ? row.expenses : 0;
+  var actualNet = row ? row.net      : 0;
+  var projInc   = proj ? proj.income   : actualInc;
+  var projExp   = proj ? proj.expenses : actualExp;
+  var projNet   = projInc - projExp;
+
+  function fmtK(v) {
+    var a = Math.abs(v);
+    return (v < 0 ? '\u2212' : '') + '$' + (a >= 1000 ? (a/1000).toFixed(1).replace(/\.0$/,'')+'K' : Math.round(a));
+  }
+
+  var monthShort = now.toLocaleDateString('en-US', {month:'short'});
+  var netCol     = projNet >= 0 ? '#34D9C3' : '#FF5C5C';
+  var netIcon    = projNet >= 0 ? '\u25b2' : '\u25bc';
+  var pctDone    = Math.round((today / daysIn) * 100);
+
+  var html = '<span style="color:rgba(255,255,255,.3);margin-right:4px;">' + monthShort + ' ' + String(now.getFullYear()).slice(2) + '</span>';
+  html += '<span style="color:rgba(255,255,255,.18);margin:0 4px;">|</span>';
+  html += '<span style="color:rgba(255,255,255,.5);">in: <span style="color:#34D9C3;font-weight:600;">' + fmtK(actualInc) + '</span></span>';
+  html += '<span style="color:rgba(255,255,255,.18);margin:0 4px;">·</span>';
+  html += '<span style="color:rgba(255,255,255,.5);">out: <span style="color:#FF5C5C;font-weight:600;">' + fmtK(actualExp) + '</span></span>';
+  if (proj && dLeft > 0) {
+    html += '<span style="color:rgba(255,255,255,.18);margin:0 4px;">·</span>';
+    html += '<span style="color:rgba(255,255,255,.5);">proj. net: <span style="color:' + netCol + ';font-weight:700;">' + netIcon + ' ' + fmtK(projNet) + '</span></span>';
+    html += '<span style="color:rgba(255,255,255,.18);margin:0 4px;">·</span>';
+    html += '<span style="color:rgba(255,255,255,.35);">' + dLeft + 'd left</span>';
+  } else {
+    html += '<span style="color:rgba(255,255,255,.18);margin:0 4px;">·</span>';
+    html += '<span style="color:rgba(255,255,255,.5);">net: <span style="color:' + netCol + ';font-weight:700;">' + netIcon + ' ' + fmtK(actualNet) + '</span></span>';
+  }
+  html += '<span style="color:rgba(255,255,255,.18);margin:0 6px;">|</span>';
+  html += '<span style="color:rgba(255,255,255,.28);">' + pctDone + '% through month</span>';
+
+  // Overspend alert
+  if (projNet < -500 && dLeft > 3) {
+    html += '<span style="color:rgba(255,255,255,.18);margin:0 6px;">|</span>';
+    html += '<span style="color:#F5A800;font-weight:700;">\u26a0\ufe0f On track to overspend ' + fmtK(Math.abs(projNet)) + '</span>';
+  }
+
+  txt.innerHTML = html;
+  strip.style.display = 'flex';
+}
+
+
 function renderNetSavingsChart(elId, labels, data, opts) {
   opts = opts || {};
   const projectedIdx = (opts.projectedIdx !== undefined && opts.projectedIdx >= 0) ? opts.projectedIdx : -1;
@@ -6232,10 +6350,17 @@ function buildAccrualEngine(selMonth, sp) {
     if (i <= 3) priorMonths3.push(mo);
   }
 
-  const priorTxns    = sp.filter(t => priorMonths6.some(m => t.date.startsWith(m)));
-  const priorTxns3   = sp.filter(t => priorMonths3.some(m => t.date.startsWith(m)));
+  // Restrict to operating accounts — same filter as banking panel
+  var _AE_OPER = new Set(['checking','savings','credit']);
+  var _AE_DET  = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+  const spFiltered = sp.filter(function(t){
+    return _AE_OPER.has(detectAcctType(t.account||''))
+        && !t.itemDetail && !_AE_DET.has(t._source||t._ftype||'');
+  });
+  let   priorTxns    = spFiltered.filter(t => priorMonths6.some(m => t.date.startsWith(m)));
+  const priorTxns3   = spFiltered.filter(t => priorMonths3.some(m => t.date.startsWith(m)));
   const curMonthStr  = String(sy).padStart(4,'0')+'-'+String(sm).padStart(2,'0');
-  const curMonthTxns = sp.filter(t => t.date.startsWith(curMonthStr));
+  const curMonthTxns = spFiltered.filter(t => t.date.startsWith(curMonthStr));
 
   // Group by bucket (6-month and 3-month)
   const priorByBucket = {}, priorByBucket3 = {}, curByBucket = {};
@@ -6374,7 +6499,7 @@ function buildAccrualEngine(selMonth, sp) {
     // reimbursements, etc. Excluded from normalized operating income.
     const oneTimeItems = [];
     curOthTxns.forEach(t => {
-      const payee = (t.payee||'').toLowerCase().trim();
+      let   payee = (t.payee||'').toLowerCase().trim();
       const hist  = priorTxns.filter(p => classifyTxn(p) === 'other_inc' &&
                                           (p.payee||'').toLowerCase().trim() === payee)
                               .map(p => p.amount);
@@ -6651,7 +6776,7 @@ function buildAccrualEngine(selMonth, sp) {
 
   // ── isOneTime: flag transactions that look like one-offs ──────────────────
   function isOneTime(t, bk) {
-    const payee = (t.payee||'').toLowerCase().trim();
+    let   payee = (t.payee||'').toLowerCase().trim();
     const amt   = Math.abs(t.amount);
     const bkTxns = (priorByBucket[bk]||[]).filter(p =>
       (p.payee||'').toLowerCase().trim() === payee
@@ -6721,6 +6846,7 @@ function buildAccrualEngine(selMonth, sp) {
     FIXED_BUCKETS, UTILITY_BUCKETS, SUBSCRIPTION_BUCKETS, DISCRETIONARY_BUCKETS,
   };
 }
+
 
 
 
