@@ -1576,6 +1576,8 @@ function loadDemoDetails() {
 
 
 
+
+
 function detectAcctType(name) {
   const n = (name||'').toLowerCase();
   if (/credit|visa|mastercard|amex|american express|discover|card|cc|sapphire|freedom|venture|cash back|rewards|platinum/.test(n)) return 'credit';
@@ -3681,6 +3683,8 @@ function buildSavingsRegister(months) {
 
 
 
+
+
 function buildCfpProof(selMonth, isNetIncome) {
   if (!selMonth || !txns.length) return null;
 
@@ -4226,6 +4230,8 @@ function renderNetSavingsChart(elId, labels, data, opts) {
 
 
 
+
+
 function renderCashFlow() {
   try {
   if (!txns.length) return;
@@ -4575,6 +4581,8 @@ function renderCfBankDraw(months, projectedIdx) {
 
 
 
+
+
 function renderSavingsRegChart(el, labels, barData, lineData) {
   if (!el || !labels.length) return;
   var W = Math.max(el.offsetWidth || 520, 320);
@@ -4675,6 +4683,8 @@ function renderSavingsRegChart(el, labels, barData, lineData) {
   el.innerHTML = '<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'
     + defs + grid + bars + lineEl + dots + yLbls + xLbls + zeroLabels + legend + '</svg>';
 }
+
+
 
 
 

@@ -1212,7 +1212,7 @@ select:focus { border-color: var(--gold); }
     </div>
   </div>
 </div>
-  <div id="recon-dashboard" style="padding:0 16px;"></div>
+  
 
 <!-- ══ CASH FLOW ══ -->
 <div id="page-cashflow" class="page">
@@ -1235,10 +1235,7 @@ select:focus { border-color: var(--gold); }
     <div class="chart-title">Income vs Expenses — Monthly</div>
     <div class="chart-area" id="cfBarWrap" style="height:200px;"></div>
   </div>
-  <div class="chart-card" style="margin-bottom:16px;">
-    <div class="chart-title">Net Savings Trend</div>
-    <div class="chart-area" id="cfLineWrap" style="height:280px;"></div>
-  </div>
+
   <!-- ── Banking & Draw — core savings discipline panel ── -->
   <div id="cfBankDrawPanel" style="margin-bottom:16px;overflow:hidden;"></div>
 
@@ -1248,7 +1245,7 @@ select:focus { border-color: var(--gold); }
   </div>
   <div class="kpi-grid" id="cfKPIs"></div>
 </div>
-  <div id="recon-cashflow" style="padding:0 16px;"></div>
+  
 
 <!-- ══ CATEGORIES ══ -->
 <div id="page-categories" class="page">
@@ -1462,15 +1459,15 @@ select:focus { border-color: var(--gold); }
   <div id="isTrendWrap" style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;"></div>
   <div id="incomeStatement"></div>
 </div>
-  <div id="cfp-proof-income" style="padding:0 16px;margin-top:4px;margin-bottom:4px;"></div>
-  <div id="recon-income" style="padding:0 16px;"></div>
+  
+  
 
 <!-- ══ RECONCILE ══ -->
 <div id="page-reconcile" class="page">
   <div class="page-hdr">
     <div>
       <div class="page-title">Reconciliation Bridge</div>
-      <div class="page-sub" id="reconSub">Quicken register &rarr; Cash Flow (cash) &rarr; Income Statement (accrual) &nbsp;&middot;&nbsp; CFP-grade proof</div>
+      <div class="page-sub" id="reconSub">Trace any number from Quicken to every view in Forge &nbsp;&middot;&nbsp; select a month to verify</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <select id="reconMonth" onchange="renderReconcile()" style="font-size:12px;padding:5px 10px;"></select>
@@ -2319,172 +2316,133 @@ function renderReconcile() {
   var el = document.getElementById('reconContent');
   if (!el) return;
   if (!txns.length) {
-    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);font-size:14px;">Import Quicken data to use the Reconciliation Bridge.</div>';
+    el.innerHTML = '<div style="padding:60px;text-align:center;color:var(--ink4);font-size:14px;">Import Quicken data to use the Reconciliation page.</div>';
     return;
   }
 
+  // Month selector
   var moSel = document.getElementById('reconMonth');
   var sp    = operatingSpendable(txns);
   var allMonths = Array.from(new Set(sp.map(function(t){ return t.date.slice(0,7); }))).sort().reverse();
-
   if (moSel && moSel.options.length === 0) {
     allMonths.forEach(function(m) {
-      var parts = m.split('-');
+      var p = m.split('-');
       var opt = document.createElement('option');
-      opt.value = m;
-      opt.textContent = new Date(+parts[0],+parts[1]-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      opt.value = m; opt.textContent = new Date(+p[0],+p[1]-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
       moSel.appendChild(opt);
     });
   }
   var selMonth = (moSel && moSel.value) || allMonths[0];
-  if (!selMonth) { el.innerHTML = '<div style="padding:20px;color:var(--ink4);">No data.</div>'; return; }
+  if (!selMonth) return;
+  var mParts   = selMonth.split('-');
+  var monthName = new Date(+mParts[0],+mParts[1]-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
 
-  var parts = selMonth.split('-');
-  var monthName = new Date(+parts[0],+parts[1]-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
-
-  function mfmt(v) { var a=Math.abs(v||0); return (v<0?'\u2212':'')+'$'+Math.round(a).toLocaleString(); }
-  function kfmt(v) { var a=Math.abs(v||0); var s=a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a); return (v<0?'\u2212':v>0?'+':'')+s; }
-
-  // ── Gather Quicken source numbers for this month ──────────────────────────
+  // ── Gather numbers ─────────────────────────────────────────────────────────
   var DETAIL = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
-  var qkData = { income:0, expenses:0, savXferOut:0, savXferIn:0, ccPayments:0,
-                 chkOpen:0, chkClose:0, savOpen:0, savClose:0, ccOpen:0, ccClose:0 };
-  var chkAccts = {}, savAccts = {}, ccAccts = {};
-  txns.forEach(function(t) {
-    if (t.itemDetail || DETAIL.has(t._source||t._ftype||'')) return;
-    var tp = detectAcctType(t.account||'');
-    if (!tp || !['checking','savings','credit'].includes(tp)) return;
-    var bucket = tp==='checking' ? chkAccts : tp==='savings' ? savAccts : ccAccts;
-    if (!bucket[t.account]) bucket[t.account] = {open:0,in_:0,out:0};
-    if (t.date < selMonth+'-01')       bucket[t.account].open += t.amount;
-    else if (t.date <= selMonth+'-31') {
-      if (t.amount>0) bucket[t.account].in_ += t.amount;
-      else            bucket[t.account].out  += Math.abs(t.amount);
-    }
-    // Classify transfers
-    if (t.isTransfer && t.date >= selMonth+'-01' && t.date <= selMonth+'-31') {
-      var cat = (t.category||'').trim();
-      var isSavXfer = detectAcctType(cat.replace(/^\[|\]$/g,''))==='savings' || /^\[.*(savings|sav).*\]$/i.test(cat);
-      var isCCPay   = detectAcctType(cat.replace(/^\[|\]$/g,''))==='credit'  || /^\[.*(card|cc|visa|mastercard|amex).*\]$/i.test(cat);
-      if (isSavXfer && tp==='checking') t.amount<0 ? qkData.savXferOut+=Math.abs(t.amount) : qkData.savXferIn+=t.amount;
-      if (isCCPay   && tp==='checking') qkData.ccPayments += Math.abs(t.amount);
-    }
-    if (!t.isTransfer && t.date >= selMonth+'-01' && t.date <= selMonth+'-31') {
-      if (tp==='checking' && t.amount>0) qkData.income   += t.amount;
-      if (tp==='checking' && t.amount<0) qkData.expenses += Math.abs(t.amount);
+  var OPER   = new Set(['checking','savings','credit']);
+  function tp(n){ return detectAcctType(n||''); }
+
+  // Account balances
+  var chkOpen=0,chkClose=0,savOpen=0,savClose=0,ccOpen=0,ccClose=0;
+  txns.forEach(function(t){
+    if(!OPER.has(tp(t.account||''))) return;
+    if(t.itemDetail||DETAIL.has(t._source||t._ftype||'')) return;
+    var atp = tp(t.account||'');
+    var before = t.date < selMonth+'-01';
+    var during = t.date >= selMonth+'-01' && t.date <= selMonth+'-31';
+    if(atp==='checking'){
+      if(before) chkOpen+=t.amount;
+      if(before||during) chkClose+=t.amount;
+    } else if(atp==='savings'){
+      if(before) savOpen+=t.amount;
+      if(before||during) savClose+=t.amount;
+    } else if(atp==='credit'){
+      if(before) ccOpen+=t.amount;
+      if(before||during) ccClose+=t.amount;
     }
   });
-  function sumAcct(bucket, field) { return Object.values(bucket).reduce(function(s,a){ return s+a[field]; },0); }
-  qkData.chkOpen  = sumAcct(chkAccts,'open');
-  qkData.chkClose = qkData.chkOpen + sumAcct(chkAccts,'in_') - sumAcct(chkAccts,'out');
-  qkData.savOpen  = sumAcct(savAccts,'open');
-  qkData.savClose = qkData.savOpen + sumAcct(savAccts,'in_') - sumAcct(savAccts,'out');
-  qkData.ccOpen   = sumAcct(ccAccts,'open');
-  qkData.ccClose  = qkData.ccOpen  + sumAcct(ccAccts,'in_')  - sumAcct(ccAccts,'out');
 
-  // ── IS / Accrual numbers for this month ───────────────────────────────────
-  var isIncome=0, isFixed=0, isVar=0, isAutoSave=0;
-  var CAPITAL_BKS = new Set(['mort_principal']);
-  var FIXED_BKS   = new Set(['mortgage','mort_interest','mort_escrow','car','insurance','education','childcare','electric','gas_util','water','internet','streaming']);
-  var monthSp = sp.filter(function(t){ return t.date.startsWith(selMonth) && detectAcctType(t.account||'')==='checking'; });
-  monthSp.filter(function(t){ return t.amount>0&&classifyTxn(t)==='paycheck'; }).forEach(function(t){ isIncome+=t.amount; });
-  var ALL_DETAIL_SP = txns.filter(function(t){ return t.date.startsWith(selMonth)&&t.amount<0&&(t.itemDetail||DETAIL.has(t._source||t._ftype||'')); });
-  monthSp.filter(function(t){ return t.amount<0&&!t.itemDetail&&!DETAIL.has(t._source||t._ftype||''); }).forEach(function(t){
-    var bk=classifyTxn(t); if(FIXED_BKS.has(bk)) isFixed+=Math.abs(t.amount); else isVar+=Math.abs(t.amount);
-  });
-  ALL_DETAIL_SP.forEach(function(t){ var bk=classifyTxn(t); if(FIXED_BKS.has(bk)) isFixed+=Math.abs(t.amount); else isVar+=Math.abs(t.amount); });
-  var isDeploy = Math.max(isIncome - isAutoSave, 0);
-  var isNet    = isDeploy - isFixed - isVar;
-  var cfNet    = qkData.income - qkData.expenses;
-  var trueBank = qkData.income - qkData.expenses;  // non-transfer checking delta
+  // Cash flow net (same as Banking panel — the ground truth)
+  var bsrRows = buildSavingsRegister([selMonth]);
+  var bsr = bsrRows.length ? bsrRows[0] : {income:0,expenses:0,net:0,savXferOut:0,savXferIn:0};
 
-  // ── Render ────────────────────────────────────────────────────────────────
-  var out = '';
+  function mf(v){ var a=Math.abs(v||0); return (v<0?'\u2212':'')+'$'+Math.round(a).toLocaleString(); }
+  function mfS(v){ var a=Math.abs(v||0); var s='$'+Math.round(a).toLocaleString(); return v>0?'+'+s:v<0?'\u2212'+s:s; }
 
-  // ── Section: The Numbers Trail ─────────────────────────────────────────────
-  // One table that lets you trace a number from Quicken to every view
-  out += '<div style="margin-bottom:20px;">';
-  out += '<div style="font-size:11px;color:var(--ink4);margin-bottom:14px;line-height:1.8;">Every number in every view below traces back to your Quicken register. Pick a line, check it in Quicken, verify it matches.</div>';
+  var openLiq  = chkOpen  + savOpen  + ccOpen;
+  var closeLiq = chkClose + savClose + ccClose;
 
-  function bridgeSection(title, color, rows_) {
-    var h = '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;">';
-    h += '<div style="padding:8px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:8px;">';
-    h += '<span style="display:inline-block;width:3px;height:14px;border-radius:2px;background:'+color+';flex-shrink:0;"></span>';
-    h += '<span style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);">'+title+'</span>';
-    h += '</div>';
-    h += '<table style="width:100%;border-collapse:collapse;">';
-    rows_.forEach(function(r) {
-      var bg = r.header ? 'rgba(255,255,255,.04)' : 'transparent';
-      var fc = r.header ? 'var(--ink2)' : 'var(--ink4)';
-      h += '<tr style="border-top:1px solid rgba(255,255,255,.04);background:'+bg+';">';
-      h += '<td style="padding:5px 16px;font-size:11px;color:'+fc+';width:55%;">'+r.label+'</td>';
-      h += '<td style="padding:5px 16px;font-size:11px;font-family:var(--fm);text-align:right;width:20%;color:'+(r.col||'var(--ink2)')+';">'+r.val+'</td>';
-      h += '<td style="padding:5px 16px;font-size:10px;color:var(--ink4);width:25%;">'+( r.where||'' )+'</td>';
-      h += '</tr>';
+  // ── Render ─────────────────────────────────────────────────────────────────
+  var h = '';
+  h += '<div style="max-width:720px;">';
+
+  // Intro
+  h += '<div style="font-size:13px;color:var(--ink4);line-height:1.7;margin-bottom:24px;padding:14px 18px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid rgba(255,255,255,.07);">';
+  h +=   'Every number below comes from the same Quicken export. Use this page to verify that what you see in the Cash Flow and Banking charts matches your actual account registers.';
+  h += '</div>';
+
+  function section(num, title, col, rows) {
+    var s = '<div style="margin-bottom:20px;background:var(--float);border:1px solid rgba(255,255,255,.08);border-top:2px solid '+col+';border-radius:var(--r-lg);overflow:hidden;">';
+    s += '<div style="padding:14px 18px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.06);">';
+    s +=   '<div style="width:26px;height:26px;border-radius:50%;background:'+col+';display:flex;align-items:center;justify-content:center;flex-shrink:0;">';
+    s +=     '<span style="font-size:12px;font-weight:800;color:#000;">'+num+'</span>';
+    s +=   '</div>';
+    s +=   '<div style="font-size:13px;font-weight:700;color:var(--ink);">'+title+'</div>';
+    s += '</div>';
+    rows.forEach(function(r){
+      var bg = r.total ? 'rgba(255,255,255,.05)' : 'transparent';
+      var bt = r.total ? 'border-top:2px solid rgba(255,255,255,.1);' : 'border-top:1px solid rgba(255,255,255,.04);';
+      s += '<div style="display:flex;align-items:baseline;justify-content:space-between;padding:8px 18px;background:'+bg+';'+bt+'">';
+      s +=   '<div>';
+      s +=     '<span style="font-size:'+(r.total?'13':'12')+'px;font-weight:'+(r.total?'700':'400')+';color:'+(r.total?'var(--ink)':'var(--ink3)')+';">'+r.label+'</span>';
+      if(r.note) s += '<span style="font-size:10px;color:var(--ink4);margin-left:8px;">'+r.note+'</span>';
+      s +=   '</div>';
+      s +=   '<span style="font-size:'+(r.total?'14':'12')+'px;font-weight:'+(r.total?'800':'400')+';font-family:var(--fm);color:'+(r.col||'var(--ink2)')+';">'+r.val+'</span>';
+      s += '</div>';
     });
-    h += '</table></div>';
-    return h;
+    s += '</div>';
+    return s;
   }
 
-  // 1. Quicken source
-  out += bridgeSection('1 · Quicken Register · '+monthName, '#F5A800', [
-    { label:'Checking: opening balance', val:mfmt(qkData.chkOpen),   where:'Reports → Account Balances', col:'var(--ink3)' },
-    { label:'Checking: deposits (income + xfers in)', val:'+'+mfmt(qkData.chkOpen>0?sumAcct(chkAccts,'in_'):0), where:'Register filter by date', col:'var(--pos)' },
-    { label:'Checking: withdrawals (expenses + xfers out)', val:'\u2212'+mfmt(sumAcct(chkAccts,'out')), where:'Register filter by date', col:'var(--neg)' },
-    { label:'Checking: closing balance', val:mfmt(qkData.chkClose), where:'Reports → Account Balances', col:'var(--ink2)', header:true },
-    { label:'Savings transfers out (→ savings)', val: qkData.savXferOut>0?'\u2212'+mfmt(qkData.savXferOut):'\u2014', where:'Bracket category txns', col:'var(--river)' },
-    { label:'Savings transfers in (← savings)', val: qkData.savXferIn>0?'+'+mfmt(qkData.savXferIn):'\u2014', where:'Bracket category txns', col:'var(--gold)' },
-    { label:'CC payments sent from checking', val: qkData.ccPayments>0?'\u2212'+mfmt(qkData.ccPayments):'\u2014', where:'Bracket category txns', col:'var(--neg)' },
+  // Section 1 — Account Balances
+  h += section('1','Account Balances — '+monthName,'#F5A800',[
+    {label:'Checking: Opening', val:mf(chkOpen), note:'all txns before '+monthName},
+    {label:'Checking: Closing', val:mf(chkClose), col:chkClose>=0?'var(--pos)':'var(--neg)', total:true},
+    {label:'Savings: Opening',  val:mf(savOpen)},
+    {label:'Savings: Closing',  val:mf(savClose), col:'var(--river)', total:true},
+    {label:'Credit Card Balance', val:mf(ccClose), col:ccClose<0?'var(--neg)':'var(--ink2)', total:true},
+    {label:'Net Liquid (Chk + Sav − CC)', val:mf(closeLiq), col:closeLiq>=0?'var(--pos)':'var(--neg)', total:true, note:'matches Balance Sheet'},
   ]);
 
-  // 2. Cash Flow view
-  out += bridgeSection('2 · Cash Flow View', 'var(--river)', [
-    { label:'Income (non-transfer checking deposits)', val:'+'+mfmt(qkData.income), where:'Cash Flow \u2192 bar chart', col:'var(--pos)' },
-    { label:'Expenses (non-transfer checking outflows)', val:'\u2212'+mfmt(qkData.expenses), where:'Cash Flow \u2192 bar chart', col:'var(--neg)' },
-    { label:'Net (income \u2212 expenses)', val:kfmt(cfNet), where:'Cash Flow \u2192 net line', col:cfNet>=0?'var(--pos)':'var(--neg)', header:true },
-    { label:'Banking vs Drawing this month', val:kfmt(trueBank), where:'Cash Flow \u2192 Bank/Draw panel', col:trueBank>=0?'var(--pos)':'var(--neg)' },
+  // Section 2 — Cash Flow (what the bar chart shows)
+  h += section('2','Cash Flow — '+monthName+' (cash basis)','#60A5FA',[
+    {label:'Operating Income', val:mf(bsr.income), col:'var(--pos)', note:'payroll deposits to checking'},
+    {label:'Operating Expenses', val:'\u2212'+mf(bsr.expenses), col:'var(--neg)', note:'checking outflows + CC charges'},
+    {label:'Net (Income \u2212 Expenses)', val:mfS(bsr.net), col:bsr.net>=0?'var(--pos)':'var(--neg)', total:true, note:'= Banking panel net figure'},
+    {label:'Savings → Savings account', val:bsr.savXferOut>0?'\u2212'+mf(bsr.savXferOut):'\u2014', col:'var(--river)', note:'capital movement, not in net'},
+    {label:'Draw ← Savings account', val:bsr.savXferIn>0?'+'+mf(bsr.savXferIn):'\u2014', col:'#F5A800', note:'capital movement, not in net'},
   ]);
 
-  // 3. Income Statement (accrual)
-  out += bridgeSection('3 · Income Statement (Accrual)', 'var(--pos)', [
-    { label:'Gross pay (paycheck deposits)', val:'+'+mfmt(isIncome), where:'IS \u2192 Step 1: Net Pay', col:'var(--pos)' },
-    { label:'Fixed expenses', val:'\u2212'+mfmt(isFixed), where:'IS \u2192 fixed bucket rows', col:'var(--neg)' },
-    { label:'Variable expenses', val:'\u2212'+mfmt(isVar), where:'IS \u2192 variable bucket rows', col:'var(--gold)' },
-    { label:'Net remaining (deployable)', val:kfmt(isNet), where:'IS \u2192 Net row', col:isNet>=0?'var(--pos)':'var(--neg)', header:true },
+  // Section 3 — Why the numbers match
+  h += '<div style="padding:14px 18px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid rgba(255,255,255,.07);margin-bottom:20px;">';
+  h +=   '<div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:8px;">Why the Cash Flow chart and Banking panel show the same number</div>';
+  h +=   '<div style="font-size:12px;color:var(--ink4);line-height:1.75;">';
+  h +=     'Both views compute: <span style="font-family:var(--fm);color:var(--ink2);">Income (checking deposits) \u2212 Expenses (checking outflows + CC charges)</span>.<br>';
+  h +=     'Transfers between your own accounts (savings moves, CC payments) are excluded from all three. They appear separately as capital movements.';
+  h +=   '</div>';
+  h += '</div>';
+
+  // Section 4 — What to check in Quicken
+  h += section('4','How to Verify in Quicken','#34D9C3',[
+    {label:'Net income this month', val:mfS(bsr.net), note:'Reports → Income & Expense, filter to '+monthName},
+    {label:'Checking closing balance', val:mf(chkClose), note:'Quicken → Accounts → '+selMonth+' end'},
+    {label:'Savings closing balance', val:mf(savClose), note:'Quicken → Accounts → '+selMonth+' end'},
+    {label:'If Forge \u2260 Quicken...', val:'', note:'check for unclassified txns or missing detail CSVs'},
   ]);
 
-  // 4. Why Cash Flow \u2260 IS (the reconciling items)
-  var diff = cfNet - isNet;
-  out += bridgeSection('4 · Why Cash Flow \u2260 Income Statement', 'var(--ink4)', [
-    { label:'Cash Flow net (Quicken register)', val:kfmt(cfNet), col:cfNet>=0?'var(--pos)':'var(--neg)' },
-    { label:'IS net (accrual / bucket classification)', val:kfmt(isNet), col:isNet>=0?'var(--pos)':'var(--neg)' },
-    { label:'Difference', val:kfmt(diff), col:Math.abs(diff)<100?'var(--pos)':'var(--gold)',
-      where: Math.abs(diff)<100 ? '\u2713 close enough' : 'detail CSVs, timing diffs', header:true },
-    { label:'Common causes of difference:', val:'', where:'' },
-    { label:'\u2022 CC payments in CF (transfer), excluded from IS', val:'', where:'by design', col:'var(--ink4)' },
-    { label:'\u2022 Amazon/Apple detail: IS uses detail, CF uses Quicken lump', val:'', where:'unmasking', col:'var(--ink4)' },
-    { label:'\u2022 Savings auto-transfers: CF included, IS excluded', val:'', where:'IS: operating only', col:'var(--ink4)' },
-  ]);
-
-  // 5. Account balances
-  out += bridgeSection('5 · Account Closing Balances · '+monthName, 'var(--ink3)', [
-    { label:'Checking total', val:mfmt(qkData.chkClose), where:'Quicken → Account list', col:qkData.chkClose>=0?'var(--ink2)':'var(--neg)' },
-    { label:'Savings total',  val:mfmt(qkData.savClose), where:'Quicken → Account list', col:'var(--river)' },
-    { label:'Credit card balance', val:mfmt(qkData.ccClose), where:'Quicken → Account list', col:qkData.ccClose<0?'var(--neg)':'var(--ink3)' },
-    { label:'Net liquid (checking + savings)', val:mfmt(qkData.chkClose+qkData.savClose), where:'Balance Sheet view', col:(qkData.chkClose+qkData.savClose)>=0?'var(--pos)':'var(--neg)', header:true },
-  ]);
-
-  out += '</div>';
-  el.innerHTML = out;
-  // CFP proof panel — appended after render
-  var _proofEl = document.createElement('div');
-  _proofEl.style.cssText = 'padding:0;margin-top:12px;';
-  el.appendChild(_proofEl);
-  if (typeof renderCfpProof === 'function')
-    renderCfpProof(_proofEl.id = ('cfpProof_'+selMonth), selMonth,
-      (isNet || 0), monthName);
+  h += '</div>';
+  el.innerHTML = h;
 }
-
 function updateAccountOwner(sel) {
   const acct  = sel.getAttribute('data-acct');
   const owner = sel.value;
@@ -6479,7 +6437,7 @@ function renderCashFlow() {
   if (acct !== 'all') src = src.filter(t=>t.account===acct);
 
   const md  = monthlyData(src);
-  const net = md.income.map((v,i) => v - md.expenses[i]);
+
 
   // ── Project the current in-flight month ──────────────────────────────────
   const _curMo = new Date().toISOString().slice(0,7);
@@ -6515,7 +6473,7 @@ function renderCashFlow() {
     { label:'Income',   data:md.income,   backgroundColor:'rgba(45,212,191,.75)' },
     { label:'Expenses', data:md.expenses, backgroundColor:'rgba(248,113,113,.75)' },
   ], { projectedIdx: _projIdx });
-  renderNetSavingsChart('cfLineWrap', md.labels, net, { projectedIdx: _projIdx });
+  
 
   // Waterfall: cumulative flow from income through each spending category
   (function() {
@@ -12094,10 +12052,7 @@ function renderIncomeStatement() {
   el.innerHTML = out;
   // Recon container on Income tab is rendered inline in `out` via reconHtml variable
   // Also update the standalone recon-income container (for consistency with other tabs)
-  renderMasterRecon('recon-income', selMonth);
-  // CFP proof — wires IS net back to balance sheet
-  if (typeof renderCfpProof === 'function')
-    renderCfpProof('cfp-proof-income', selMonth, netRemaining, monthName);
+
 
   } catch(e) {
     console.error('[IS] render error:', e);
