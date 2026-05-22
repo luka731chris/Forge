@@ -2933,7 +2933,11 @@ function svgLine(elId, labels, datasets, opts) {
   const projectedIdx = (opts.projectedIdx !== undefined && opts.projectedIdx >= 0) ? opts.projectedIdx : -1;
   const el = document.getElementById(elId);
   if (!el) return;
-  const W = Math.max(el.offsetWidth || 0, 300);
+  var _slW = el.offsetWidth || el.getBoundingClientRect().width || 0;
+  if (_slW < 10) {
+    setTimeout(function(){ svgLine(elId, labels, datasets, opts); }, 60); return;
+  }
+  const W = Math.max(_slW, 300);
   const H = Math.max(el.offsetHeight || 0, 160);
   if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>'; return; }
 
@@ -3076,6 +3080,7 @@ function svgLine(elId, labels, datasets, opts) {
 
 
 
+
 function svgHBar(elId, labels, values, colors, bucketKeys) {
   const el = document.getElementById(elId);
   if (!el) return;
@@ -3160,7 +3165,9 @@ function svgHBar(elId, labels, values, colors, bucketKeys) {
 function svgWaterfall(elId, items) {
   var el = document.getElementById(elId);
   if (!el) return;
-  var W = Math.max(el.offsetWidth || 0, 300);
+  var _wfW = el.offsetWidth || el.getBoundingClientRect().width || 0;
+  if (_wfW < 10) { setTimeout(function(){ svgWaterfall(elId, items); }, 60); return; }
+  var W = Math.max(_wfW, 300);
   var H = Math.max(el.offsetHeight || 0, 240);
   if (!items || !items.length) {
     el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
@@ -3265,6 +3272,7 @@ function svgWaterfall(elId, items) {
   el.innerHTML='<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'+defs+grid+connectors+bars+yLbls+xLbls+hitAreas+'</svg>';
   bindChartTips(el);
 }
+
 
 
 
@@ -3846,7 +3854,13 @@ function svgBar(elId, labels, datasets, opts) {
   var _pIdx = (opts && opts.projectedIdx >= 0) ? opts.projectedIdx : -1;
   const el = document.getElementById(elId);
   if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
-  const W = Math.max(el.offsetWidth || 0, 300);
+  // If container has no width yet, retry once after a frame
+  var _sbW = el.offsetWidth || el.getBoundingClientRect().width || 0;
+  if (_sbW < 10) {
+    setTimeout(function(){ svgBar(elId, labels, datasets, opts); }, 60);
+    return;
+  }
+  const W = Math.max(_sbW, 300);
   const H = Math.max(el.offsetHeight || 0, 200);
   if (!labels.length) {
     el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
@@ -3986,6 +4000,7 @@ function svgBar(elId, labels, datasets, opts) {
     + '</svg>';
   bindChartTips(el);
 }
+
 
 
 function buildMonthProjection(curMo, sp) {
@@ -4703,7 +4718,12 @@ function renderCfBankDraw(months, projectedIdx) {
 
 function renderSavingsRegChart(el, labels, barData, lineData) {
   if (!el || !labels.length) return;
-  var W = Math.max(el.offsetWidth || 520, 320);
+  var _srcW = el.offsetWidth || el.getBoundingClientRect().width || 0;
+  if (_srcW < 10) {
+    var _srcEl=el, _la=labels, _bd=barData, _ld=lineData;
+    setTimeout(function(){ renderSavingsRegChart(_srcEl,_la,_bd,_ld); }, 60); return;
+  }
+  var W = Math.max(_srcW, 320);
   var H = 240;
   var PAD = {t:24, r:20, b:42, l:68};
   var cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
@@ -4801,6 +4821,7 @@ function renderSavingsRegChart(el, labels, barData, lineData) {
   el.innerHTML = '<svg width="'+W+'" height="'+H+'" style="width:100%;height:'+H+'px;display:block;overflow:visible;">'
     + defs + grid + bars + lineEl + dots + yLbls + xLbls + zeroLabels + legend + '</svg>';
 }
+
 
 
 

@@ -320,7 +320,7 @@ main::-webkit-scrollbar-thumb:hover { background: var(--line3); }
 }
 .chart-title  { font-size: 13px; font-weight: 600; color: var(--ink2); margin-bottom: 2px; }
 .chart-sub    { font-size: 10px; color: var(--ink4); font-family: var(--fm); margin-bottom: var(--sp3); }
-.chart-area   { position: relative; }
+.chart-area   { position: relative; width: 100%; height: 100%; min-height: 80px; }
 
 /* ── Tables ──────────────────────────────────────────────────────────────── */
 .table-card {
@@ -1012,8 +1012,8 @@ select:focus { border-color: var(--gold); }
   </div>
 </nav>
 
-<div id="projStrip" style="display:none;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.07);padding:6px 24px;align-items:center;gap:8px;font-size:11px;font-family:var(--fm);color:var(--ink4);position:sticky;top:0;z-index:50;flex-shrink:0;"><span id="projStripText"></span></div>
 <main>
+<div id="projStrip" style="display:none;background:rgba(20,20,28,.97);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.07);padding:7px 28px;align-items:center;gap:8px;font-size:11px;font-family:var(--fm);color:var(--ink4);position:sticky;top:0;z-index:50;margin:-28px -32px 20px;width:calc(100% + 64px);"><span id="projStripText"></span></div>
 
 <!-- ══ UPLOAD ══ -->
 <div id="page-upload" class="page active">
@@ -1338,7 +1338,6 @@ select:focus { border-color: var(--gold); }
   </div>
   <div id="balanceSheetContent"></div>
 </div>
-  <div id="recon-balancesheet" style="padding:0 16px;"></div>
 
 <!-- ══ FAMILY FINANCIALS ══ -->
 <div id="page-financials" class="page">
@@ -3878,7 +3877,13 @@ function svgBar(elId, labels, datasets, opts) {
   var _pIdx = (opts && opts.projectedIdx >= 0) ? opts.projectedIdx : -1;
   const el = document.getElementById(elId);
   if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
-  const W = Math.max(el.offsetWidth || 0, 300);
+  // If container has no width yet, retry once after a frame
+  var _sbW = el.offsetWidth || el.getBoundingClientRect().width || 0;
+  if (_sbW < 10) {
+    setTimeout(function(){ svgBar(elId, labels, datasets, opts); }, 60);
+    return;
+  }
+  const W = Math.max(_sbW, 300);
   const H = Math.max(el.offsetHeight || 0, 200);
   if (!labels.length) {
     el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
@@ -4024,7 +4029,11 @@ function svgLine(elId, labels, datasets, opts) {
   const projectedIdx = (opts.projectedIdx !== undefined && opts.projectedIdx >= 0) ? opts.projectedIdx : -1;
   const el = document.getElementById(elId);
   if (!el) return;
-  const W = Math.max(el.offsetWidth || 0, 300);
+  var _slW = el.offsetWidth || el.getBoundingClientRect().width || 0;
+  if (_slW < 10) {
+    setTimeout(function(){ svgLine(elId, labels, datasets, opts); }, 60); return;
+  }
+  const W = Math.max(_slW, 300);
   const H = Math.max(el.offsetHeight || 0, 160);
   if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>'; return; }
 
@@ -4223,7 +4232,9 @@ function svgHBar(elId, labels, values, colors, bucketKeys) {
 function svgWaterfall(elId, items) {
   var el = document.getElementById(elId);
   if (!el) return;
-  var W = Math.max(el.offsetWidth || 0, 300);
+  var _wfW = el.offsetWidth || el.getBoundingClientRect().width || 0;
+  if (_wfW < 10) { setTimeout(function(){ svgWaterfall(elId, items); }, 60); return; }
+  var W = Math.max(_wfW, 300);
   var H = Math.max(el.offsetHeight || 0, 240);
   if (!items || !items.length) {
     el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
@@ -5625,7 +5636,12 @@ function renderSavingsRegister() {
 // ── 3D bar+line chart for savings register ───────────────────────────────────
 function renderSavingsRegChart(el, labels, barData, lineData) {
   if (!el || !labels.length) return;
-  var W = Math.max(el.offsetWidth || 520, 320);
+  var _srcW = el.offsetWidth || el.getBoundingClientRect().width || 0;
+  if (_srcW < 10) {
+    var _srcEl=el, _la=labels, _bd=barData, _ld=lineData;
+    setTimeout(function(){ renderSavingsRegChart(_srcEl,_la,_bd,_ld); }, 60); return;
+  }
+  var W = Math.max(_srcW, 320);
   var H = 240;
   var PAD = {t:24, r:20, b:42, l:68};
   var cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
@@ -12994,7 +13010,6 @@ function renderBalanceSheet() {
   out += '</div>';
 
   el.innerHTML = out;
-  renderMasterRecon('recon-balancesheet', (operatingSpendable(txns).map(t=>t.date.slice(0,7)).sort().reverse()[0] || new Date().toISOString().slice(0,7)), {isData:null});
 }
 
 // ════════════════════════════════════════════════
