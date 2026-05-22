@@ -3857,7 +3857,9 @@ function svgBar(elId, labels, datasets, opts) {
   var _pIdx = (opts && opts.projectedIdx >= 0) ? opts.projectedIdx : -1;
   const el = document.getElementById(elId);
   if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
-  const W = Math.max(el.offsetWidth || el.getBoundingClientRect().width || 860, 300);
+  const _rawW = el.offsetWidth || el.getBoundingClientRect().width;
+  console.log('[Forge] svgBar', elId, 'W=' + _rawW + ' labels=' + labels.length);
+  const W = Math.max(_rawW || 860, 300);
   const H = Math.max(el.offsetHeight || 0, 200);
   if (!labels.length) {
     el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
@@ -3997,6 +3999,7 @@ function svgBar(elId, labels, datasets, opts) {
     + '</svg>';
   bindChartTips(el);
 }
+
 
 
 
@@ -4437,9 +4440,15 @@ function renderNetSavingsChart(elId, labels, data, opts) {
   });
 
   // ── function renderCashFlow() {
-  if (!txns || !txns.length) return;
+  const _t0 = performance.now();
+  console.log('[Forge] renderCashFlow START — txns:', txns ? txns.length : 'undefined');
 
-  // ── Source filter: operating accounts only ───────────────────────────────
+  if (!txns || !txns.length) {
+    console.log('[Forge] renderCashFlow ABORT — no txns');
+    return;
+  }
+
+  // ── Source filter ─────────────────────────────────────────────────────────
   const OPER = new Set(['checking', 'savings', 'credit']);
   const DET  = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
   let src = (txns || []).filter(t =>
@@ -4447,6 +4456,7 @@ function renderNetSavingsChart(elId, labels, data, opts) {
     !DET.has(t._source||t._ftype||'') &&
     OPER.has(detectAcctType(t.account||''))
   );
+  console.log('[Forge] renderCashFlow — src after oper filter:', src.length);
 
   // Populate account filter
   const acctSel = document.getElementById('cfAcct');
@@ -4458,19 +4468,35 @@ function renderNetSavingsChart(elId, labels, data, opts) {
   // Range filter
   const cfRangeVal = (typeof cfRange !== 'undefined') ? cfRange : '1y';
   if (cfRangeVal !== 'all') src = src.filter(t => new Date(t.date) >= rangeStart(cfRangeVal));
+  console.log('[Forge] renderCashFlow — src after range filter (' + cfRangeVal + '):', src.length);
 
   // Account filter
   const acct = acctSel ? acctSel.value : 'all';
   if (acct !== 'all') src = src.filter(t => t.account === acct);
 
   const md = monthlyData(src);
-  if (!md || !md.labels || !md.labels.length) return;
+  console.log('[Forge] renderCashFlow — monthlyData months:', md.labels.length, md.labels.slice(-3));
 
-  // ── Income vs Expenses bar chart ─────────────────────────────────────────
+  if (!md || !md.labels || !md.labels.length) {
+    console.log('[Forge] renderCashFlow ABORT — no monthly data');
+    return;
+  }
+
+  // ── Show placeholder while rendering ─────────────────────────────────────
+  const _bw = document.getElementById('cfBarWrap');
+  if (_bw) {
+    console.log('[Forge] cfBarWrap W=' + _bw.offsetWidth + ' H=' + _bw.offsetHeight);
+    _bw.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,.3);font-size:11px;font-family:var(--fm);">Rendering chart…</div>';
+  }
+
+  // ── Income vs Expenses bar chart ──────────────────────────────────────────
+  console.log('[Forge] renderCashFlow — calling svgBar');
   svgBar('cfBarWrap', md.labels, [
     { label: 'Income',   data: md.income,   backgroundColor: 'rgba(45,212,191,.75)' },
     { label: 'Expenses', data: md.expenses, backgroundColor: 'rgba(248,113,113,.75)' },
   ], { projectedIdx: -1 });
+  const _bwAfter = document.getElementById('cfBarWrap');
+  console.log('[Forge] cfBarWrap SVG after render:', !!(_bwAfter && _bwAfter.querySelector('svg')));
 
   // ── Annual Waterfall ──────────────────────────────────────────────────────
   (function() {
@@ -4500,11 +4526,11 @@ function renderNetSavingsChart(elId, labels, data, opts) {
     var totalExp = buckets.fixed + buckets.utils + buckets.nec + buckets.disc + buckets.other;
     var wfNet    = wfInc - totalExp;
     var wfItems  = [
-      { label:'Income',       value: wfInc,         type:'income',  color:'rgba(45,212,191,.85)' },
-      { label:'Fixed',        value:-buckets.fixed,  type:'expense', color:'rgba(96,165,250,.8)' },
-      { label:'Utilities',    value:-buckets.utils,  type:'expense', color:'rgba(167,139,250,.8)' },
-      { label:'Necessities',  value:-buckets.nec,    type:'expense', color:'rgba(245,168,0,.8)' },
-      { label:'Discretionary',value:-buckets.disc,   type:'expense', color:'rgba(232,121,249,.8)' },
+      { label:'Income',        value: wfInc,         type:'income',  color:'rgba(45,212,191,.85)' },
+      { label:'Fixed',         value:-buckets.fixed,  type:'expense', color:'rgba(96,165,250,.8)' },
+      { label:'Utilities',     value:-buckets.utils,  type:'expense', color:'rgba(167,139,250,.8)' },
+      { label:'Necessities',   value:-buckets.nec,    type:'expense', color:'rgba(245,168,0,.8)' },
+      { label:'Discretionary', value:-buckets.disc,   type:'expense', color:'rgba(232,121,249,.8)' },
     ];
     if (buckets.other > 0) wfItems.push({ label:'Other', value:-buckets.other, type:'expense', color:'rgba(156,163,175,.8)' });
     wfItems = wfItems.filter(function(it){ return Math.abs(it.value) > 1 || it.type === 'income'; });
@@ -4525,12 +4551,16 @@ function renderNetSavingsChart(elId, labels, data, opts) {
     kpiEl.innerHTML = [
       { label:'Total Income',   val: fmtK(totInc), sub: fmt(totInc/mo)+'/mo', cls:'positive' },
       { label:'Total Expenses', val: fmtK(totExp), sub: fmt(totExp/mo)+'/mo', cls:'' },
-      { label:'Net',            val: (totNet>=0?'+':'')+fmtK(totNet),
-        sub: 'Savings rate: '+(totInc>0?Math.round(totNet/totInc*100):0)+'%', cls: totNet>=0?'positive':'' },
-      { label:'Months',         val: mo, sub:'in view', cls:'' },
+      { label:'Net', val: (totNet>=0?'+':'')+fmtK(totNet),
+        sub:'Savings rate: '+(totInc>0?Math.round(totNet/totInc*100):0)+'%',
+        cls: totNet>=0?'positive':'' },
+      { label:'Months', val: mo, sub:'in view', cls:'' },
     ].map(k=>`<div class="kpi ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-val">${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
   }
+
+  console.log('[Forge] renderCashFlow COMPLETE in', Math.round(performance.now()-_t0) + 'ms');
 }
+
 
 
 
