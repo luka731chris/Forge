@@ -3992,8 +3992,8 @@ function renderNetSavingsChart(elId, labels, data, opts) {
   if (!data || !data.length) { el.innerHTML = ''; return; }
 
   const W  = Math.max(el.offsetWidth || 520, 320);
-  const H  = 260;
-  const PT = 32, PB = 42, PL = 68, PR = 22;
+  const H  = 280;
+  const PT = 32, PB = 44, PL = 68, PR = 22;
   const cW = W - PL - PR, cH = H - PT - PB;
 
   const n       = data.length;
@@ -4091,10 +4091,10 @@ function renderNetSavingsChart(elId, labels, data, opts) {
     <text x="${PL-8}" y="${y0.toFixed(1)}" text-anchor="end" dominant-baseline="middle"
       fill="rgba(255,255,255,0.55)" font-size="10" font-family="var(--fm)" font-weight="700">$0</text>
     <!-- ABOVE label -->
-    ${y0 > PT + 8 ? `<text x="${(W-PR-4).toFixed(1)}" y="${(y0-8).toFixed(1)}" text-anchor="end"
+    ${y0 > PT + 4 ? `<text x="${(W-PR-4).toFixed(1)}" y="${(y0-8).toFixed(1)}" text-anchor="end"
       fill="rgba(52,217,195,.65)" font-size="9" font-weight="700" font-family="var(--fm)" letter-spacing=".1em">SURPLUS ▲</text>` : ''}
     <!-- BELOW label -->
-    ${y0 < PT + cH - 8 ? `<text x="${(W-PR-4).toFixed(1)}" y="${(y0+14).toFixed(1)}" text-anchor="end"
+    ${y0 < PT + cH - 4 ? `<text x="${(W-PR-4).toFixed(1)}" y="${(y0+14).toFixed(1)}" text-anchor="end"
       fill="rgba(255,59,59,.65)" font-size="9" font-weight="700" font-family="var(--fm)" letter-spacing=".1em">DEFICIT ▼</text>` : ''}`;
 
   // ── Area fills (clipped to above / below zero) ─────────────────────────────
@@ -4223,6 +4223,7 @@ function renderNetSavingsChart(elId, labels, data, opts) {
   </svg>`;
   bindChartTips(el);
 }
+
 
 
 function renderCashFlow() {
