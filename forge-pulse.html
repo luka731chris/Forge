@@ -4437,143 +4437,101 @@ function renderNetSavingsChart(elId, labels, data, opts) {
   });
 
   // ── function renderCashFlow() {
-  try {
-  if (!txns.length) return;
+  if (!txns || !txns.length) return;
 
-  // Operating accounts only — exclude investment, retirement, 529, HSA
-  const OPER_TYPES = new Set(['checking', 'savings', 'credit']);
-  let src = spendable(txns).filter(t => OPER_TYPES.has(detectAcctType(t.account||'')));
+  // ── Source filter: operating accounts only ───────────────────────────────
+  const OPER = new Set(['checking', 'savings', 'credit']);
+  const DET  = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+  let src = (txns || []).filter(t =>
+    !isTransfer(t) && !t._masked && !t.itemDetail &&
+    !DET.has(t._source||t._ftype||'') &&
+    OPER.has(detectAcctType(t.account||''))
+  );
 
-  // Populate account filter on first call
+  // Populate account filter
   const acctSel = document.getElementById('cfAcct');
   if (acctSel && acctSel.options.length <= 1) {
     acctSel.innerHTML = '<option value="all">All Accounts</option>' +
       [...new Set(src.map(t=>t.account))].sort().map(a=>`<option>${a}</option>`).join('');
   }
 
-  // Apply range filter (rolling window)
-  if (cfRange !== 'all') src = src.filter(t => new Date(t.date) >= rangeStart(cfRange));
+  // Range filter
+  const cfRangeVal = (typeof cfRange !== 'undefined') ? cfRange : '1y';
+  if (cfRangeVal !== 'all') src = src.filter(t => new Date(t.date) >= rangeStart(cfRangeVal));
 
-  // Apply account filter
+  // Account filter
   const acct = acctSel ? acctSel.value : 'all';
-  if (acct !== 'all') src = src.filter(t=>t.account===acct);
+  if (acct !== 'all') src = src.filter(t => t.account === acct);
 
-  const md  = monthlyData(src);
+  const md = monthlyData(src);
+  if (!md || !md.labels || !md.labels.length) return;
 
-
-  // ── Project the current in-flight month ──────────────────────────────────
-  const _curMo = new Date().toISOString().slice(0,7);
-  let _projIdx = -1, _projNet = null;
-  const _lastKey = md.fullKeys[md.fullKeys.length - 1];
-  if (_lastKey === _curMo) {
-    _projIdx = md.fullKeys.length - 1;
-    try {
-      const _accrual = buildAccrualEngine && buildAccrualEngine(_curMo, operatingSpendable(txns));
-      if (_accrual && _accrual.normalizeIncome) {
-        const _norm = _accrual.normalizeIncome();
-        if (_norm) {
-          // Project income: normalizedIncome (actual + estimated remaining paychecks)
-          const _projInc = _norm.normalizedIncome || 0;
-          // Project expenses: actual so far + accrued remaining days via accrual engine
-          const _actualExp = md.expenses[_projIdx] || 0;
-          const _allBks = ['mortgage','car','insurance','education','childcare',
-            'electric','gas_util','water','internet','streaming',
-            'restaurants','groceries','gas_car','transit','healthcare',
-            'entertainment','household','personal','clothing','travel','gifts','other'];
-          let _projExp = _actualExp;
-          _allBks.forEach(bk => {
-            try { _projExp += (_accrual.accrueAmount(bk) || 0); } catch(e) {}
-          });
-          _projNet = _projInc - _projExp;
-        }
-      }
-    } catch(e) { console.warn('[CF] projection error', e); }
-  }
-
+  // ── Income vs Expenses bar chart ─────────────────────────────────────────
   svgBar('cfBarWrap', md.labels, [
-    { label:'Income',   data:md.income,   backgroundColor:'rgba(45,212,191,.75)' },
-    { label:'Expenses', data:md.expenses, backgroundColor:'rgba(248,113,113,.75)' },
-  ], { projectedIdx: _projIdx });
-  
+    { label: 'Income',   data: md.income,   backgroundColor: 'rgba(45,212,191,.75)' },
+    { label: 'Expenses', data: md.expenses, backgroundColor: 'rgba(248,113,113,.75)' },
+  ], { projectedIdx: -1 });
 
-  // Waterfall: same source as banking panel — guaranteed to match
+  // ── Annual Waterfall ──────────────────────────────────────────────────────
   (function() {
     var wfEl = document.getElementById('cfWaterfallWrap');
     if (!wfEl) return;
-    // Use BSR-filtered transactions so income/expense match the banking panel exactly
-    var DETAIL_SRC = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
-    var OPER_TYPES = new Set(['checking','savings','credit']);
-    function opBase(arr) {
-      return (arr||[]).filter(function(t){
-        return !isTransfer(t) && !t._masked && !t.itemDetail
-            && !DETAIL_SRC.has(t._source||t._ftype||'')
-            && OPER_TYPES.has(detectAcctType(t.account||''));
-      });
-    }
-    // Apply the same range/account filter as src
-    var wfBase = opBase(txns).filter(function(t){
-      if (cfRange !== 'all') return new Date(t.date) >= rangeStart(cfRange);
-      return true;
-    });
-    // Income: checking deposits only
-    var wfInc = wfBase.filter(function(t){
+    var wfInc = src.filter(function(t){
       return t.amount > 0 && detectAcctType(t.account||'') === 'checking';
-    }).reduce(function(s,t){ return s+t.amount; }, 0);
-    // Expenses by bucket (checking outflows + CC charges)
-    var expTxns = wfBase.filter(function(t){
+    }).reduce(function(s,t){ return s + t.amount; }, 0);
+    var expTxns = src.filter(function(t){
       var tp = detectAcctType(t.account||'');
       return t.amount < 0 && (tp === 'checking' || tp === 'credit');
     });
     var buckets = { fixed:0, utils:0, nec:0, disc:0, other:0 };
-    var FIXED_BKS = new Set(['mortgage','mort_interest','mort_escrow','car','insurance','education','childcare']);
-    var UTIL_BKS  = new Set(['electric','gas_util','water','internet','cell','streaming']);
-    var NEC_BKS   = new Set(['groceries','gas_car','transit','healthcare']);
-    var DISC_BKS  = new Set(['restaurants','entertainment','household','personal','clothing','travel','gifts']);
+    var FIXED = new Set(['mortgage','mort_interest','mort_escrow','car','insurance','education','childcare']);
+    var UTILS = new Set(['electric','gas_util','water','internet','cell','streaming']);
+    var NEC   = new Set(['groceries','gas_car','transit','healthcare']);
+    var DISC  = new Set(['restaurants','entertainment','household','personal','clothing','travel','gifts']);
     expTxns.forEach(function(t){
-      var bk = classifyTxn(t);
-      var a  = Math.abs(t.amount);
-      if (bk === 'mort_principal') return; // equity build — not an expense
-      if (FIXED_BKS.has(bk))      buckets.fixed += a;
-      else if (UTIL_BKS.has(bk))  buckets.utils += a;
-      else if (NEC_BKS.has(bk))   buckets.nec   += a;
-      else if (DISC_BKS.has(bk))  buckets.disc  += a;
-      else                         buckets.other += a;  // catches 'other', 'auto_save', etc.
+      var bk = classifyTxn(t), a = Math.abs(t.amount);
+      if (bk === 'mort_principal') return;
+      if (FIXED.has(bk))      buckets.fixed += a;
+      else if (UTILS.has(bk)) buckets.utils += a;
+      else if (NEC.has(bk))   buckets.nec   += a;
+      else if (DISC.has(bk))  buckets.disc  += a;
+      else                    buckets.other += a;
     });
     var totalExp = buckets.fixed + buckets.utils + buckets.nec + buckets.disc + buckets.other;
     var wfNet    = wfInc - totalExp;
     var wfItems  = [
-      {label:'Income',       value:wfInc,         type:'income',  color:'rgba(45,212,191,.85)'},
-      {label:'Fixed',        value:-buckets.fixed, type:'expense', color:'rgba(96,165,250,.8)'},
-      {label:'Utilities',    value:-buckets.utils, type:'expense', color:'rgba(167,139,250,.8)'},
-      {label:'Necessities',  value:-buckets.nec,   type:'expense', color:'rgba(245,168,0,.8)'},
-      {label:'Discretionary',value:-buckets.disc,  type:'expense', color:'rgba(232,121,249,.8)'},
+      { label:'Income',       value: wfInc,         type:'income',  color:'rgba(45,212,191,.85)' },
+      { label:'Fixed',        value:-buckets.fixed,  type:'expense', color:'rgba(96,165,250,.8)' },
+      { label:'Utilities',    value:-buckets.utils,  type:'expense', color:'rgba(167,139,250,.8)' },
+      { label:'Necessities',  value:-buckets.nec,    type:'expense', color:'rgba(245,168,0,.8)' },
+      { label:'Discretionary',value:-buckets.disc,   type:'expense', color:'rgba(232,121,249,.8)' },
     ];
-    if (buckets.other > 0) wfItems.push({label:'Other',value:-buckets.other,type:'expense',color:'rgba(156,163,175,.8)'});
-    wfItems = wfItems.filter(function(it){return Math.abs(it.value)>1||it.type==='income';});
-    wfItems.push({label:'Net',value:wfNet,type:'total',color:'rgba(245,168,0,.9)'});
+    if (buckets.other > 0) wfItems.push({ label:'Other', value:-buckets.other, type:'expense', color:'rgba(156,163,175,.8)' });
+    wfItems = wfItems.filter(function(it){ return Math.abs(it.value) > 1 || it.type === 'income'; });
+    wfItems.push({ label:'Net', value: wfNet, type:'total', color:'rgba(245,168,0,.9)' });
     svgWaterfall('cfWaterfallWrap', wfItems);
   })();
 
-  // ── Banking & Draw panel — core savings discipline view ──────────────────
-  renderCfBankDraw(md.fullKeys, _projIdx);
+  // ── Banking & Draw panel ──────────────────────────────────────────────────
+  if (typeof renderCfBankDraw === 'function') renderCfBankDraw(md.fullKeys, -1);
 
-  // KPIs
-  const totInc = md.income.reduce((a,b)=>a+b,0);
-  const totExp = md.expenses.reduce((a,b)=>a+b,0);
-  const totNet = totInc - totExp;
-  const mo = md.labels.length || 1;
-  document.getElementById('cfKPIs').innerHTML = [
-    { label:'Total Income',    val:fmtK(totInc), sub:fmt(totInc/mo)+'/mo', cls:'positive' },
-    { label:'Total Expenses',  val:fmtK(totExp), sub:fmt(totExp/mo)+'/mo', cls:'' },
-    { label:'Net',             val:(totNet>=0?'+':'')+fmtK(totNet), sub:'Savings rate: '+(totInc>0?((totNet/totInc)*100).toFixed(1):0)+'%', cls:totNet>=0?'positive':'negative' },
-    { label:'Months',          val:mo, sub:'in view', cls:'' },
-  ].map(k=>`<div class="kpi ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-val">${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
-
-  } catch(e) {
-    console.error('[Forge] renderCashFlow error:', e);
-    const _el = document.getElementById('cfBarWrap');
+  // ── KPI strip ─────────────────────────────────────────────────────────────
+  var totInc = md.income.reduce(function(a,b){ return a+b; }, 0);
+  var totExp = md.expenses.reduce(function(a,b){ return a+b; }, 0);
+  var totNet = totInc - totExp;
+  var mo     = md.labels.length || 1;
+  var kpiEl  = document.getElementById('cfKPIs');
+  if (kpiEl) {
+    kpiEl.innerHTML = [
+      { label:'Total Income',   val: fmtK(totInc), sub: fmt(totInc/mo)+'/mo', cls:'positive' },
+      { label:'Total Expenses', val: fmtK(totExp), sub: fmt(totExp/mo)+'/mo', cls:'' },
+      { label:'Net',            val: (totNet>=0?'+':'')+fmtK(totNet),
+        sub: 'Savings rate: '+(totInc>0?Math.round(totNet/totInc*100):0)+'%', cls: totNet>=0?'positive':'' },
+      { label:'Months',         val: mo, sub:'in view', cls:'' },
+    ].map(k=>`<div class="kpi ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-val">${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
   }
 }
+
 
 
 
