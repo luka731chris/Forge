@@ -6591,7 +6591,6 @@ function renderNetSavingsChart(elId, labels, data, opts) {
             try { _projExp += (_accrual.accrueAmount(bk) || 0); } catch(e) {}
           });
           _projNet = _projInc - _projExp;
-          net[_projIdx] = _projNet;
         }
       }
     } catch(e) { console.warn('[CF] projection error', e); }
@@ -6682,8 +6681,6 @@ function renderNetSavingsChart(elId, labels, data, opts) {
   }
 }
 
-// ════════════════════════════════════════════════
-// RENDER CATEGORIES
 // ════════════════════════════════════════════════
 // RENDER CATEGORIES
 // ════════════════════════════════════════════════
