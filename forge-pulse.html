@@ -605,6 +605,97 @@ body {
 /* ── Input zoom prevention ─────────────────────────────────── */
 select, input[type="text"], input[type="search"] { font-size: 16px !important; }
 
+/* ── KPI card upgrades ─────────────────────────────── */
+.kpi {
+  background:
+    linear-gradient(160deg, rgba(255,255,255,.045) 0%, rgba(255,255,255,.008) 60%, transparent 100%);
+  border-top: 1.5px solid rgba(255,255,255,.22) !important;
+  border-radius: var(--r-xl) !important;
+  padding: 20px 22px 18px !important;
+  backdrop-filter: blur(12px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
+  box-shadow: var(--depth-1), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  animation: forge-fade-in .35s ease both !important;
+}
+.kpi:hover {
+  border-top-color: rgba(255,255,255,.38) !important;
+  box-shadow: var(--depth-2), 0 0 0 1px rgba(255,255,255,.07), inset 0 1px 0 rgba(255,255,255,.14) !important;
+  transform: translateY(-2px) !important;
+}
+.kpi-val {
+  font-size: 34px !important;
+  letter-spacing: -0.025em !important;
+  text-shadow: 0 1px 8px rgba(0,0,0,.4);
+}
+.kpi-val.positive {
+  color: #34D9C3 !important;
+  text-shadow: 0 0 20px rgba(52,217,195,.3), 0 1px 8px rgba(0,0,0,.4);
+}
+.kpi-val.negative {
+  color: #FF5C5C !important;
+  text-shadow: 0 0 20px rgba(255,92,92,.25), 0 1px 8px rgba(0,0,0,.4);
+}
+.kpi-label {
+  letter-spacing: .14em !important;
+  margin-bottom: 10px !important;
+}
+.kpi-label::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: .6;
+  flex-shrink: 0;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* ── Chart card upgrades ───────────────────────────── */
+.chart-card {
+  border-radius: var(--r-xl) !important;
+  padding: 20px 22px !important;
+  box-shadow: var(--depth-1), inset 0 1px 0 rgba(255,255,255,.06) !important;
+  animation: forge-fade-in .4s ease both !important;
+}
+.chart-card:hover {
+  border-top-color: rgba(255,255,255,.28) !important;
+  box-shadow: var(--depth-2), inset 0 1px 0 rgba(255,255,255,.1) !important;
+}
+.chart-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink2);
+  letter-spacing: .01em;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chart-title::before {
+  content: '';
+  display: block;
+  width: 3px;
+  height: 14px;
+  background: linear-gradient(180deg, var(--gold), rgba(245,168,0,.25));
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Table upgrades ─────────────────────────────────── */
+tbody tr:hover td {
+  background: rgba(255,255,255,.025) !important;
+}
+tbody tr:hover td:first-child {
+  border-left: 2px solid rgba(245,168,0,.4) !important;
+  padding-left: 14px !important;
+}
+td.positive { color: #34D9C3 !important; font-family: var(--font-m); font-weight: 600; }
+td.negative { color: #FF5C5C !important; font-family: var(--font-m); font-weight: 600; }
+td { padding: 11px 16px !important; transition: background .1s; }
+th { padding: 10px 16px !important; background: rgba(255,255,255,.015) !important;
+     border-bottom: 1px solid rgba(255,255,255,.08) !important; }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -779,6 +870,192 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
 </div>
 
 <script>
+function buildMonthProjection(selMonth, sp) {
+  // Returns projected month-end income and expenses using accrual engine.
+  // sp = operatingSpendable(txns) already filtered to OPER accounts.
+  var OPER = new Set(['checking','savings','credit']);
+  var DET  = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+  var spF  = (sp || operatingSpendable(txns)).filter(function(t){
+    return OPER.has(detectAcctType(t.account||''))
+        && !t.itemDetail && !DET.has(t._source||t._ftype||'');
+  });
+
+  var accrual = (typeof buildAccrualEngine === 'function')
+                ? buildAccrualEngine(selMonth, spF) : null;
+  if (!accrual) return null;
+
+  // Actual-to-date from BSR
+  var bsr = buildSavingsRegister([selMonth]);
+  var row = bsr.length ? bsr[0] : { income:0, expenses:0 };
+
+  // Project income: use 3-month normalized paycheck median
+  var priorMos = [];
+  var parts = selMonth.split('-');
+  var yr = +parts[0], mo = +parts[1];
+  for (var i = 1; i <= 3; i++) {
+    var d = new Date(yr, mo-1-i, 1);
+    priorMos.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
+  }
+  var priorInc = spF.filter(function(t){
+    return priorMos.some(function(m){ return t.date.startsWith(m); })
+        && t.amount > 0 && detectAcctType(t.account||'') === 'checking'
+        && !isTransfer(t);
+  });
+  var incByMo = {};
+  priorInc.forEach(function(t){
+    var k = t.date.slice(0,7);
+    incByMo[k] = (incByMo[k]||0) + t.amount;
+  });
+  var incVals = Object.values(incByMo).sort(function(a,b){return a-b;});
+  var projIncome = incVals.length
+    ? incVals[Math.floor(incVals.length/2)]   // median of prior months
+    : row.income;
+
+  // Already-received income this month + remaining projected
+  var finalIncome = Math.max(row.income, projIncome);
+
+  // Project expenses: actual + accrued remaining
+  var BUCKET_META = (typeof window !== 'undefined' && window.BUCKET_META) || {};
+  var allBuckets  = ['mortgage','mort_interest','mort_escrow','mort_principal',
+                     'car','insurance','education','childcare',
+                     'electric','gas_util','water','internet','cell','streaming',
+                     'groceries','gas_car','transit','healthcare',
+                     'restaurants','entertainment','household','personal',
+                     'clothing','travel','gifts','other'];
+  var projExpenses = row.expenses;
+  allBuckets.forEach(function(bk){
+    if (bk === 'mort_principal') return; // equity, not expense
+    try { projExpenses += accrual.accrueAmount(bk) || 0; } catch(e){}
+  });
+
+  return {
+    income:   Math.round(finalIncome),
+    expenses: Math.round(projExpenses),
+    net:      Math.round(finalIncome - projExpenses),
+    daysRemaining: accrual.daysRemaining,
+  };
+}
+
+
+function normalizedIncome(txnArr, selMonth) {
+  // Returns: { normalPaycheck, isBonus, bonusAmount, totalIncome }
+  // Identifies the typical recurring direct deposit vs irregular/bonus deposits.
+  // Income = positive checking deposits, transfers excluded.
+  var inc = (txnArr||[]).filter(function(t){
+    return t.date.startsWith(selMonth)
+        && t.amount > 0
+        && detectAcctType(t.account||'') === 'checking'
+        && !isTransfer(t);
+  });
+  if (!inc.length) return { normalPaycheck:0, isBonus:false, bonusAmount:0, totalIncome:0 };
+
+  // Build prior 6-month paycheck baseline
+  var parts = selMonth.split('-');
+  var yr = +parts[0], mo = +parts[1];
+  var priorMos = [];
+  for (var i = 1; i <= 6; i++) {
+    var d2 = new Date(yr, mo-1-i, 1);
+    priorMos.push(d2.getFullYear()+'-'+String(d2.getMonth()+1).padStart(2,'0'));
+  }
+
+  // Identify recurring payees (appeared in ≥3 of 6 prior months)
+  var payeeMonths = {};
+  (txnArr||[]).filter(function(t){
+    return priorMos.some(function(m){ return t.date.startsWith(m); })
+        && t.amount > 0
+        && detectAcctType(t.account||'') === 'checking'
+        && !isTransfer(t);
+  }).forEach(function(t){
+    var p = (t.payee||'UNKNOWN').trim();
+    if (!payeeMonths[p]) payeeMonths[p] = new Set();
+    payeeMonths[p].add(t.date.slice(0,7));
+  });
+
+  var recurringPayees = new Set(
+    Object.entries(payeeMonths)
+      .filter(function(e){ return e[1].size >= 3; })
+      .map(function(e){ return e[0]; })
+  );
+
+  var totalIncome = inc.reduce(function(s,t){ return s+t.amount; }, 0);
+  var normalPaycheck = 0, bonusAmount = 0;
+  inc.forEach(function(t){
+    var p = (t.payee||'UNKNOWN').trim();
+    if (recurringPayees.has(p)) normalPaycheck += t.amount;
+    else                        bonusAmount    += t.amount;
+  });
+
+  return {
+    normalPaycheck: Math.round(normalPaycheck),
+    bonusAmount:    Math.round(bonusAmount),
+    isBonus:        bonusAmount > normalPaycheck * 0.15,
+    totalIncome:    Math.round(totalIncome),
+  };
+}
+
+
+function renderScenario() {
+  // Get slider values
+  var spendCut = parseInt(document.getElementById('scenSpendCut')?.value || 500);
+  var savAdd   = parseInt(document.getElementById('scenSavAdd')?.value || 500);
+
+  var lbl1 = document.getElementById('scenSpendLabel');
+  var lbl2 = document.getElementById('scenSavLabel');
+  if (lbl1) lbl1.textContent = '$'+spendCut.toLocaleString()+'/mo';
+  if (lbl2) lbl2.textContent = '$'+savAdd.toLocaleString()+'/mo';
+
+  // Get baseline from last 3 months BSR
+  var now   = new Date();
+  var months = [];
+  for (var i = 1; i <= 3; i++) {
+    var d2 = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    months.push(d2.getFullYear()+'-'+String(d2.getMonth()+1).padStart(2,'0'));
+  }
+  var bsr   = buildSavingsRegister(months);
+  var avgInc = bsr.length ? bsr.reduce(function(s,r){return s+r.income;},0)/bsr.length : 0;
+  var avgExp = bsr.length ? bsr.reduce(function(s,r){return s+r.expenses;},0)/bsr.length : 0;
+  var baseNet = avgInc - avgExp;
+  var newNet  = baseNet + spendCut - savAdd;
+
+  function fmtK(v){
+    var a=Math.abs(v);
+    return (v<0?'\u2212':'+')+' $'+(a>=1000?(a/1000).toFixed(1)+'K':Math.round(a));
+  }
+
+  // Spend reduction result
+  var r1 = document.getElementById('scenSpendResult');
+  if (r1) {
+    r1.innerHTML = '<div style="padding:12px;background:rgba(52,217,195,.08);border-radius:8px;border-left:3px solid #34D9C3;">'
+      + '<div style="font-size:22px;font-weight:800;font-family:var(--font-d);color:#34D9C3;">'+fmtK(spendCut*12)+'/yr</div>'
+      + '<div style="font-size:11px;color:var(--ink4);margin-top:4px;">annual reduction in spending</div>'
+      + '<div style="font-size:11px;color:var(--ink4);">Baseline monthly expenses: $'+Math.round(avgExp).toLocaleString()
+      + ' → $'+(Math.round(avgExp-spendCut)).toLocaleString()+'</div>'
+      + '</div>';
+  }
+
+  // Savings result
+  var r2 = document.getElementById('scenSavResult');
+  if (r2) {
+    var yr5 = savAdd * 12 * 5;
+    r2.innerHTML = '<div style="padding:12px;background:rgba(96,165,250,.08);border-radius:8px;border-left:3px solid var(--river);">'
+      + '<div style="font-size:22px;font-weight:800;font-family:var(--font-d);color:var(--river);">$'+Math.round(yr5/1000)+'K in 5 yrs</div>'
+      + '<div style="font-size:11px;color:var(--ink4);margin-top:4px;">additional savings accumulated</div>'
+      + '<div style="font-size:11px;color:var(--ink4);">$'+savAdd.toLocaleString()+'/mo \xd7 60 months (no interest)</div>'
+      + '</div>';
+  }
+
+  // Summary
+  var sumEl = document.getElementById('scenSummary');
+  if (sumEl) {
+    var col = newNet >= baseNet ? '#34D9C3' : '#FF5C5C';
+    sumEl.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">'
+      + '<div class="kpi"><div class="kpi-label">Baseline Monthly Net</div><div class="kpi-val" style="font-size:18px;">'+(baseNet>=0?'+':'')+' $'+Math.round(Math.abs(baseNet)).toLocaleString()+'</div></div>'
+      + '<div class="kpi"><div class="kpi-label">Scenario Monthly Net</div><div class="kpi-val" style="color:'+col+';font-size:18px;">'+(newNet>=0?'+':'\u2212')+' $'+Math.round(Math.abs(newNet)).toLocaleString()+'</div></div>'
+      + '<div class="kpi"><div class="kpi-label">5-Year Cumulative Gain</div><div class="kpi-val" style="color:#34D9C3;font-size:18px;">+$'+Math.round((spendCut+savAdd)*12*5/1000)+'K</div></div>'
+      + '</div>';
+  }
+}
+
 // ════════════════════════════════════════════
 // FORGE PULSE — DATA BRIDGE
 // Reads from same localStorage as desktop app
@@ -1379,8 +1656,21 @@ function isSavingsTransfer(t) {
 }
 
 function operatingSpendable(arr) {
-  return (arr || []).filter(t => !isTransfer(t));
+  // Operating accounts only: checking, savings, credit
+  // Excludes: investment, retirement, 529, and transfer transactions
+  const OPER = new Set(['checking','savings','credit']);
+  const DET  = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+  return (arr || []).filter(function(t) {
+    if (isTransfer(t))  return false;
+    if (t._masked)      return false;
+    if (t.itemDetail)   return false;
+    if (DET.has(t._source || t._ftype || '')) return false;
+    return OPER.has(detectAcctType(t.account || ''));
+  });
 }
+
+
+
 
 function spendable(arr) {
   return operatingSpendable(arr);
@@ -1410,174 +1700,194 @@ const COLORS = [
   '#FCD34D','#F472B6','#818CF8','#6EE7B7','#FCA5A5'
 ];
 
-function svgBar(elId, labels, datasets) {
-  const el = document.getElementById(elId);
-  if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
-  const W = Math.max(el.offsetWidth || 0, 300);
-  const H = Math.max(el.offsetHeight || 0, 180);
-  if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;font-family:var(--font-m);">No data</div>'; return; }
-
-  const PAD = { t:12, r:16, b:52, l:58 };
-  const cW = W - PAD.l - PAD.r;
-  const cH = H - PAD.t - PAD.b;
-  const n  = labels.length;
-  const allVals = datasets.flatMap(d => d.data || []).filter(v => isFinite(v));
-  if (!allVals.length) return;
-
-  const maxV = Math.max(...allVals.map(Math.abs), 1);
-  const minV = Math.min(0, ...allVals);
-  const span = maxV - minV || 1;
-  const zeroY = cH * (maxV / span);
-
-  // Y grid + labels
-  const YTICKS = 4;
-  let grid = '', yLbls = '';
-  for (let i = 0; i <= YTICKS; i++) {
-    const v = minV + (span / YTICKS) * i;
-    const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
-    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
-    const lbl = Math.abs(v)>=1000 ? '$'+(v/1000).toFixed(0)+'K' : '$'+Math.round(v);
-    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="10" font-family="'DM Mono',monospace">${lbl}</text>`;
-  }
-
-  // Bars + invisible hit areas for tooltip
-  const nDS  = datasets.length;
-  const grpW = cW / n;
-  const barW = Math.max(Math.min((grpW / (nDS + 0.8)) - 1, 40), 3);
-  const off  = (grpW - barW * nDS) / 2;
-  let bars = '', hitAreas = '', legend = '';
-
-  datasets.forEach((ds, di) => {
-    const color = ds.backgroundColor || COLORS[di % COLORS.length];
-    const safeLabel = (ds.label||'').replace(/'/g, '&apos;');
-    legend += `<rect x="${di*90+PAD.l}" y="${H-16}" width="10" height="8" rx="2" fill="${color}"/>
-               <text x="${di*90+PAD.l+14}" y="${H-8}" fill="rgba(255,255,255,.5)" font-size="10" font-family="'DM Mono',monospace">${safeLabel}</text>`;
-    (ds.data || []).forEach((v, i) => {
-      if (!isFinite(v)) return;
-      const x  = (PAD.l + i * grpW + off + di * barW).toFixed(1);
-      const bH = Math.max((Math.abs(v) / span * cH).toFixed(1), 1);
-      const y  = (PAD.t + (v >= 0 ? zeroY - Math.abs(v)/span*cH : zeroY)).toFixed(1);
-      const fmtV = Math.abs(v)>=1000?'$'+(v/1000).toFixed(1)+'K':'$'+Math.round(Math.abs(v));
-      const tip = `${labels[i]} · ${safeLabel}: ${fmtV}`;
-      bars += `<rect x="${x}" y="${y}" width="${barW.toFixed(1)}" height="${bH}" rx="2" fill="${color}" opacity=".85"/>`;
-    });
-  });
-
-  // Per-column hit areas — all dataset values + computed net in one tooltip
-  labels.forEach(function(colLbl, ci) {
-    var parts = [String(colLbl)];
-    var incV = 0, expV = 0;
-    datasets.forEach(function(ds) {
-      var v = (ds.data||[])[ci];
-      if (!isFinite(v)) return;
-      var av=Math.abs(v), fv=av>=1000?(av/1000).toFixed(1)+'K':Math.round(av).toString();
-      var sign=v>=0?'+':'-';
-      parts.push((ds.label||'').replace(/['"&<>]/g,' ')+': '+sign+'$'+fv);
-      if(/income/i.test(ds.label||'')) incV=v;
-      if(/expense/i.test(ds.label||'')) expV=v;
-    });
-    if(incV&&expV){var net=incV-Math.abs(expV),nAbs=Math.abs(net),nFv=nAbs>=1000?(nAbs/1000).toFixed(1)+'K':Math.round(nAbs).toString();parts.push('Net: '+(net>=0?'+':'-')+'$'+nFv);}
-    var colTip=parts.join('  |  ');
-    var dd=JSON.stringify({month:String(colLbl)}).replace(/"/g,'&quot;');
-    hitAreas+='<rect x="'+(PAD.l+ci*grpW).toFixed(1)+'" y="'+PAD.t+'" width="'+grpW.toFixed(1)+'" height="'+cH+'" fill="transparent" style="cursor:pointer;" data-tip="'+colTip.replace(/"/g,'&quot;')+'" data-drill="'+dd+'"/>';
-  });
-
-  // X labels — adaptive: skip labels to prevent overlap
-  // Calculate how many chars fit per slot
-  const charsPerSlot = Math.floor(grpW / 6.5); // ~6.5px per char at font-size 10
-  const minStep = Math.ceil(n / Math.max(1, Math.floor(cW / 48)));
-  let xLbls = '';
-  labels.forEach((lbl, i) => {
-    if (i % minStep !== 0 && i !== n-1) return;
-    const x = (PAD.l + i * grpW + grpW / 2).toFixed(1);
-    const s = String(lbl).length > charsPerSlot ? String(lbl).slice(-Math.max(4, charsPerSlot)) : String(lbl);
-    xLbls += `<text x="${x}" y="${PAD.t+cH+16}" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10" font-family="'DM Mono',monospace">${s}</text>`;
-  });
-
-  const zY = (PAD.t + zeroY).toFixed(1);
-  const zeroLine = `<line x1="${PAD.l}" y1="${zY}" x2="${W-PAD.r}" y2="${zY}" stroke="rgba(255,255,255,.18)" stroke-width="1"/>`;
-
-  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:hidden;">
-    ${grid}${zeroLine}${bars}${yLbls}${xLbls}${legend}${hitAreas}
-  </svg>`;
-  bindChartTips(el);
-}
-
-
-function svgLine(elId, labels, datasets) {
+function svgBar(elId, labels, datasets, opts) {
+  opts = opts || {};
   const el = document.getElementById(elId);
   if (!el) return;
-  const W = Math.max(el.offsetWidth || 0, 300);
-  const H = Math.max(el.offsetHeight || 0, 140);
-  if (!labels.length) { el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>'; return; }
-
-  const PAD = { t:10, r:16, b:30, l:58 };
-  const cW  = W - PAD.l - PAD.r;
-  const cH  = H - PAD.t - PAD.b;
-  const n   = labels.length;
-  const allVals = datasets.flatMap(d => d.data || []).filter(v => isFinite(v));
-  if (!allVals.length) return;
-
-  const maxV = Math.max(...allVals, 1);
-  const minV = Math.min(0, ...allVals);
-  const span = maxV - minV || 1;
-
-  let grid = '', yLbls = '';
-  for (let i = 0; i <= 4; i++) {
-    const v = minV + (span / 4) * i;
-    const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
-    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
-    const lbl = Math.abs(v)>=1000?'$'+(v/1000).toFixed(0)+'K':'$'+Math.round(v);
-    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="10" font-family="'DM Mono',monospace">${lbl}</text>`;
+  const W = Math.max(el.offsetWidth || el.getBoundingClientRect().width || 860, 300);
+  const H = Math.max(el.offsetHeight || 200, 120);
+  if (!labels || !labels.length) {
+    el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.25);font-size:12px;">No data</div>';
+    return;
   }
 
-  let paths = '', areas = '', dots = '', hitAreas = '';
-  datasets.forEach((ds, di) => {
-    const color = ds.color || ds.borderColor || COLORS[di];
-    const pts = (ds.data || []).map((v, i) => {
-      const x = (PAD.l + (i / Math.max(n-1,1)) * cW).toFixed(1);
-      const y = (PAD.t + cH - cH * (v - minV) / span).toFixed(1);
-      return {x, y, v, lbl:labels[i]};
-    });
-    if (pts.length < 2) return;
-    const d = 'M' + pts.map(p=>p.x+','+p.y).join(' L');
-    paths += `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
-    if (ds.fill) {
-      const last = pts[pts.length-1];
-      areas += `<path d="${d} L${last.x},${PAD.t+cH} L${PAD.l},${PAD.t+cH} Z" fill="${color}" opacity=".12"/>`;
+  const nDS    = datasets.length;
+  const LEG_H  = nDS > 1 ? 24 : 0;
+  const PAD    = { t:20, r:16, b:44 + LEG_H, l:60 };
+  const cW     = W - PAD.l - PAD.r;
+  const cH     = H - PAD.t - PAD.b;
+  const n      = labels.length;
+  const allV   = datasets.flatMap(d => d.data || []).filter(v => isFinite(v));
+  if (!allV.length) return;
+
+  const sc   = computeScale(allV, { showZero:true, forceZeroBase:true, padPct:0.12 });
+  const zeroY = cH * (sc.maxV / sc.span);
+
+  // Grid
+  let grid = '', yLbls = '';
+  (sc.ticks || []).forEach(function(v) {
+    const y   = (PAD.t + cH - cH * (v - sc.minV) / sc.span).toFixed(1);
+    const isZ = Math.abs(v) < sc.span * 0.015;
+    if (parseFloat(y) < PAD.t - 2 || parseFloat(y) > PAD.t + cH + 2) return;
+    grid += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="${isZ?'rgba(255,255,255,.45)':'rgba(255,255,255,.055)'}" stroke-width="${isZ?1.5:1}"/>`;
+    const av = Math.abs(v);
+    const lbl = (v<0?'\u2212$':'$') + (av>=1000?(av/1000).toFixed(1).replace(/\.0$/,'')+'K':Math.round(av));
+    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="${isZ?'rgba(255,255,255,.55)':'rgba(255,255,255,.32)'}" font-size="10" font-family="var(--font-m)"${isZ?' font-weight="600"':''}>${lbl}</text>`;
+  });
+
+  // Zero line shadow
+  const zY = (PAD.t + zeroY).toFixed(1);
+  const zeroLine = `<line x1="${PAD.l}" y1="${(parseFloat(zY)+2).toFixed(1)}" x2="${W-PAD.r}" y2="${(parseFloat(zY)+2).toFixed(1)}" stroke="rgba(0,0,0,.4)" stroke-width="2"/>
+<line x1="${PAD.l}" y1="${zY}" x2="${W-PAD.r}" y2="${zY}" stroke="rgba(255,255,255,.5)" stroke-width="1.5"/>`;
+
+  const grpW = cW / n;
+  const barW = Math.max(Math.min((grpW / (nDS + 0.6)) - 1, 48), 2);
+  const off  = (grpW - barW * nDS) / 2;
+
+  const htchId = 'h' + elId.replace(/[^a-z0-9]/gi,'');
+  let defs = `<defs>
+    <pattern id="${htchId}" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="5" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
+    </pattern>
+    <filter id="blur-${elId}" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+  </defs>`;
+
+  let bars = '', xLbls = '', legend = '';
+  const projIdx = opts.projectedIdx >= 0 ? opts.projectedIdx : -1;
+
+  datasets.forEach(function(ds, di) {
+    const color = ds.backgroundColor || ['rgba(45,212,191,.8)','rgba(248,113,113,.8)','rgba(245,168,0,.8)'][di % 3];
+    const colSolid = color.replace(/[\d.]+\)$/, '1)');
+    if (nDS > 1) {
+      const lgX = PAD.l + di * 100;
+      const lgY = H - 8;
+      legend += `<rect x="${lgX}" y="${lgY-8}" width="10" height="8" rx="2" fill="${color}"/>
+<text x="${lgX+14}" y="${lgY}" fill="rgba(255,255,255,.45)" font-size="10" font-family="var(--font-m)">${(ds.label||'').replace(/'/g,'&apos;')}</text>`;
     }
-    pts.forEach(function(p) {
-      dots += '<circle cx="'+p.x+'" cy="'+p.y+'" r="3" fill="'+color+'" opacity=".8"/>';
+    (ds.data || []).forEach(function(v, i) {
+      if (!isFinite(v)) return;
+      const isP = i === projIdx;
+      const x   = (PAD.l + i * grpW + off + di * barW).toFixed(1);
+      const bH  = Math.max(Math.abs(v) / sc.span * cH, 1.5);
+      const y   = (PAD.t + (v >= 0 ? zeroY - Math.abs(v)/sc.span*cH : zeroY)).toFixed(1);
+      const bRx = Math.min(bH/2, 3);
+      const av  = Math.abs(v);
+      const tip = (labels[i]||'') + ' | ' + (ds.label||'') + ': ' + (v<0?'\u2212':'') + '$' + (av>=1000?(av/1000).toFixed(1)+'K':Math.round(av));
+
+      // Bloom shadow
+      bars += `<rect x="${x}" y="${(parseFloat(y)+3).toFixed(1)}" width="${barW.toFixed(1)}" height="${bH.toFixed(1)}" rx="${bRx}" fill="${color}" opacity="0.25" filter="url(#blur-${elId})"/>`;
+      // Main bar
+      bars += `<rect x="${x}" y="${y}" width="${barW.toFixed(1)}" height="${bH.toFixed(1)}" rx="${bRx}" fill="${color}" opacity="${isP?'0.45':'0.9'}" data-tip="${tip.replace(/'/g,'&apos;')}"/>`;
+      // Top highlight
+      bars += `<rect x="${x}" y="${y}" width="${barW.toFixed(1)}" height="${(Math.min(bH*0.35, 8)).toFixed(1)}" rx="${bRx}" fill="rgba(255,255,255,.18)" style="pointer-events:none;"/>`;
+      // Value label on taller bars
+      if (bH > 32 && nDS === 1) {
+        const avL = Math.abs(v); const lv = avL>=1000?'$'+(avL/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(avL);
+        bars += `<text x="${(parseFloat(x)+barW/2).toFixed(1)}" y="${(parseFloat(y)+bH/2+4).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,.6)" font-size="9" font-family="var(--font-m)" font-weight="600" style="pointer-events:none;">${lv}</text>`;
+      }
+      if (isP) {
+        bars += `<rect x="${x}" y="${y}" width="${barW.toFixed(1)}" height="${bH.toFixed(1)}" rx="${bRx}" fill="url(#${htchId})" opacity="0.65"/>`;
+        bars += `<text x="${(parseFloat(x)+barW/2).toFixed(1)}" y="${(parseFloat(y)-6).toFixed(1)}" text-anchor="middle" font-size="8" font-family="var(--font-m)" fill="${colSolid}" opacity="0.8" font-style="italic">est.</text>`;
+      }
     });
   });
 
-  const minStep = Math.ceil(n / Math.max(1, Math.floor(cW / 48)));
-  let xLbls = '';
-  labels.forEach((lbl, i) => {
+  // X labels — adaptive step
+  const minStep = Math.ceil(n / Math.max(1, Math.floor(cW / 50)));
+  const xLblY   = (PAD.t + cH + 16).toFixed(1);
+  labels.forEach(function(lbl, i) {
     if (i % minStep !== 0 && i !== n-1) return;
-    const x = (PAD.l + (i / Math.max(n-1,1)) * cW).toFixed(1);
-    xLbls += `<text x="${x}" y="${H-4}" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10" font-family="'DM Mono',monospace">${String(lbl).slice(-5)}</text>`;
-  });
-  // Vertical strip hit areas — show all datasets at each x position
-  var slotPx = n > 1 ? cW / (n-1) : cW;
-  labels.forEach(function(lbl2, ii) {
-    var stripCx = PAD.l + (ii / Math.max(n-1,1)) * cW;
-    var tp = [String(lbl2)];
-    datasets.forEach(function(ds) {
-      var v=(ds.data||[])[ii];
-      if(v===undefined||!isFinite(v))return;
-      var av=Math.abs(v),fv=av>=1000?(av/1000).toFixed(1)+'K':Math.round(av).toString();
-      tp.push((ds.label||ds.color||'').replace(/['"&<>]/g,' ')+(v<0?' -':' +')+'$'+fv);
-    });
-    var sw=Math.max(slotPx*0.9,12);
-    hitAreas+='<rect x="'+(stripCx-sw/2).toFixed(1)+'" y="'+PAD.t+'" width="'+sw.toFixed(1)+'" height="'+cH+'" fill="transparent" style="cursor:crosshair;" data-tip="'+tp.join('  |  ').replace(/"/g,'&quot;')+'"/>';
+    const x = (PAD.l + i * grpW + grpW/2).toFixed(1);
+    xLbls += `<text x="${x}" y="${xLblY}" text-anchor="middle" fill="rgba(255,255,255,.38)" font-size="10" font-family="var(--font-m)">${lbl}</text>`;
   });
 
-  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:hidden;">
-    ${grid}${areas}${paths}${dots}${yLbls}${xLbls}${hitAreas}
-  </svg>`;
-  bindChartTips(el);
+  // Hit areas
+  let hits = '';
+  labels.forEach(function(lbl, ci) {
+    const dd = JSON.stringify({month: String(lbl)}).replace(/"/g,'&quot;');
+    hits += `<rect x="${(PAD.l + ci*grpW).toFixed(1)}" y="${PAD.t}" width="${grpW.toFixed(1)}" height="${cH}" fill="transparent" data-tip="${String(lbl)}" data-drill="${dd}" style="cursor:crosshair;"/>`;
+  });
+
+  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:visible;">${defs}${grid}${zeroLine}${bars}${yLbls}${xLbls}${legend}${hits}</svg>`;
+  if (typeof bindChartTips === 'function') bindChartTips(el);
 }
+
+
+
+
+function svgLine(elId, labels, datasets, opts) {
+  opts = opts || {};
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const W = Math.max(el.offsetWidth || el.getBoundingClientRect().width || 860, 300);
+  const H = Math.max(el.offsetHeight || 180, 100);
+  if (!labels || !labels.length) return;
+
+  const PAD = { t:22, r:18, b:38, l:62 };
+  const cW  = W - PAD.l - PAD.r;
+  const cH  = H - PAD.t - PAD.b;
+
+  const allV = datasets.flatMap(d => d.data || []).filter(v => isFinite(v));
+  if (!allV.length) return;
+
+  const sc = computeScale(allV, { showZero: opts.showZero !== false, padPct: opts.padPct || 0.2, minSpan: opts.minSpan });
+  const xOf = i => PAD.l + (cW / Math.max(labels.length-1, 1)) * i;
+  const yOf = v => PAD.t + cH - cH * (v - sc.minV) / sc.span;
+
+  let grid = '', yLbls = '', paths = '', dots = '', xLbls = '';
+
+  (sc.ticks||[]).forEach(v => {
+    const y   = yOf(v).toFixed(1);
+    const isZ = Math.abs(v) < sc.span * 0.015;
+    if (parseFloat(y) < PAD.t-2 || parseFloat(y) > PAD.t+cH+2) return;
+    grid   += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="${isZ?'rgba(255,255,255,.4)':'rgba(255,255,255,.05)'}" stroke-width="${isZ?1.5:1}"/>`;
+    const av = Math.abs(v);
+    const lbl = (v<0?'\u2212$':'$')+(av>=1000?(av/1000).toFixed(1).replace(/\.0$/,'')+'K':Math.round(av));
+    yLbls += `<text x="${PAD.l-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="${isZ?'rgba(255,255,255,.5)':'rgba(255,255,255,.28)'}" font-size="10" font-family="var(--font-m)">${lbl}</text>`;
+  });
+
+  datasets.forEach(function(ds) {
+    const color = ds.color || '#60A5FA';
+    const data  = (ds.data || []).filter((v,i) => isFinite(v));
+    if (!data.length) return;
+    // Fill area
+    if (ds.fill) {
+      let fillPath = `M${xOf(0).toFixed(1)},${yOf(ds.data[0]).toFixed(1)}`;
+      labels.forEach((_, i) => { if (isFinite(ds.data[i])) fillPath += ` L${xOf(i).toFixed(1)},${yOf(ds.data[i]).toFixed(1)}`; });
+      const yZero = yOf(0).toFixed(1);
+      fillPath += ` L${xOf(labels.length-1).toFixed(1)},${yZero} L${xOf(0).toFixed(1)},${yZero} Z`;
+      paths += `<defs><linearGradient id="lg-${elId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.35"/><stop offset="100%" stop-color="${color}" stop-opacity="0.03"/></linearGradient></defs>`;
+      paths += `<path d="${fillPath}" fill="url(#lg-${elId})"/>`;
+    }
+    // Line
+    let linePath = '';
+    labels.forEach((_, i) => {
+      if (!isFinite(ds.data[i])) return;
+      linePath += (linePath ? ' L' : 'M') + `${xOf(i).toFixed(1)},${yOf(ds.data[i]).toFixed(1)}`;
+    });
+    paths += `<path d="${linePath}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    // Dots
+    labels.forEach((lbl, i) => {
+      if (!isFinite(ds.data[i])) return;
+      const x = xOf(i).toFixed(1), y = yOf(ds.data[i]).toFixed(1);
+      const tip = `${lbl} | ${ds.label||''}: ${ds.data[i]<0?'\u2212':''}$${Math.abs(ds.data[i])>=1000?(Math.abs(ds.data[i])/1000).toFixed(1)+'K':Math.round(Math.abs(ds.data[i]))}`;
+      dots += `<circle cx="${x}" cy="${y}" r="4" fill="${color}" stroke="rgba(14,14,20,1)" stroke-width="2" data-tip="${tip.replace(/'/g,'&apos;')}" style="cursor:crosshair;"/>`;
+    });
+  });
+
+  // X labels
+  const minStep = Math.ceil(labels.length / Math.max(1, Math.floor(cW/50)));
+  labels.forEach((lbl, i) => {
+    if (i % minStep !== 0 && i !== labels.length-1) return;
+    xLbls += `<text x="${xOf(i).toFixed(1)}" y="${H-10}" text-anchor="middle" fill="rgba(255,255,255,.38)" font-size="10" font-family="var(--font-m)">${lbl}</text>`;
+  });
+
+  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;">${grid}${paths}${dots}${yLbls}${xLbls}</svg>`;
+  if (typeof bindChartTips === 'function') bindChartTips(el);
+}
+
 
 
 function svgHBar(elId, labels, values, colors) {
@@ -1719,11 +2029,45 @@ function showChartTip(e, text) {
   const tip = document.getElementById('chartTip');
   if (!tip) return;
   const hasDrill = e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.drill;
-  tip.innerHTML = (text||'').replace(/&apos;/g,"'").replace(/&quot;/g,'"') +
-    (hasDrill ? '<span style="display:block;font-size:9px;color:var(--gold);margin-top:3px;">↗ click to view transactions</span>' : '');
+  const raw = (text||'').replace(/&apos;/g,"'").replace(/&quot;/g,'"').replace(/&#39;/g,"'");
+  const parts = raw.split(/\s*\|\s*/);
+  let html = '';
+  parts.forEach(function(p, i) {
+    p = p.trim(); if (!p) return;
+    if (i === 0) {
+      html += '<div style="font-size:9.5px;font-weight:700;letter-spacing:.13em;'
+            + 'text-transform:uppercase;'
+            + 'background:linear-gradient(90deg,rgba(245,168,0,.7),rgba(245,168,0,.35));'
+            + '-webkit-background-clip:text;-webkit-text-fill-color:transparent;'
+            + 'background-clip:text;'
+            + 'margin-bottom:9px;padding-bottom:7px;'
+            + 'border-bottom:1px solid rgba(255,255,255,.07);">' + p + '</div>';
+    } else {
+      const colon = p.indexOf(':');
+      if (colon > 0) {
+        const label = p.slice(0, colon).trim();
+        const val   = p.slice(colon+1).trim();
+        const isNet = /net/i.test(label);
+        const isNeg = val.startsWith('-') || val.startsWith('\u2212');
+        const valCol = isNet ? (isNeg ? '#FF5C5C' : '#34D9C3') : 'rgba(255,255,255,.88)';
+        html += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:18px;padding:2.5px 0;">'
+              + '<span style="color:rgba(255,255,255,.48);font-size:11px;">' + label + '</span>'
+              + '<span style="color:' + valCol + ';font-weight:' + (isNet?'700':'500') + ';font-size:12px;font-family:var(--font-m);">' + val + '</span>'
+              + '</div>';
+      } else {
+        html += '<div style="color:rgba(255,255,255,.45);font-size:11px;padding:2px 0;">' + p + '</div>';
+      }
+    }
+  });
+  if (hasDrill) {
+    html += '<div style="font-size:9px;color:var(--gold);margin-top:7px;padding-top:5px;'
+          + 'border-top:1px solid rgba(255,255,255,.07);">\u2197 click to drill</div>';
+  }
+  tip.innerHTML = html;
   tip.style.display = 'block';
   positionChartTip(e);
 }
+
 
 function hideChartTip() {
   const tip = document.getElementById('chartTip');
@@ -2206,6 +2550,199 @@ function go(tab) {
 // ════════════════════════════════════════════
 // SNAPSHOT — THE GAUGE
 // ════════════════════════════════════════════
+function monthlyData(txnArr) {
+  // CFA-grade: income = checking deposits only; expenses = checking outflows + CC charges
+  // This matches buildSavingsRegister so all views show identical numbers.
+  const m = {};
+  (txnArr || []).forEach(function(t) {
+    const k  = t.date.slice(0,7);
+    if (!m[k]) m[k] = { inc:0, exp:0 };
+    const tp = detectAcctType(t.account || '');
+    if (t.amount > 0 && tp === 'checking') {
+      m[k].inc += t.amount;                          // operating income: payroll, deposits
+    } else if (t.amount < 0 && (tp === 'checking' || tp === 'credit')) {
+      m[k].exp += Math.abs(t.amount);               // operating expenses: outflows + CC charges
+    }
+    // savings credits (interest), CC credits, and savings outflows
+    // are excluded — they are not operating income/expense
+  });
+  const keys = Object.keys(m).sort();
+  // Ensure all months from the txnArr date range appear even if no qualifying txns
+  const allKeys = Array.from(new Set((txnArr||[]).map(t => t.date.slice(0,7)))).sort();
+  allKeys.forEach(function(k){ if(!m[k]) m[k]={inc:0,exp:0}; });
+  const sortedKeys = Object.keys(m).sort();
+  return {
+    labels:   sortedKeys.map(k => k.slice(2)),
+    fullKeys: sortedKeys,
+    income:   sortedKeys.map(k => m[k].inc),
+    expenses: sortedKeys.map(k => m[k].exp),
+  };
+}
+
+
+function buildSavingsRegister(months) {
+  if (!months || !months.length) return [];
+  const DETAIL = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+  const OPER   = new Set(['checking','savings','credit']);
+  const rows   = [];
+
+  months.forEach(function(mo) {
+    const moTxns = (txns||[]).filter(function(t) {
+      if (!t.date.startsWith(mo)) return false;
+      if (isTransfer(t)) return false;
+      if (t._masked || t.itemDetail) return false;
+      if (DETAIL.has(t._source||t._ftype||'')) return false;
+      if (!OPER.has(detectAcctType(t.account||''))) return false;
+      return true;
+    });
+
+    // Income: non-transfer positive amounts on CHECKING accounts only
+    const income = moTxns.filter(function(t) {
+      return t.amount > 0 && detectAcctType(t.account||'') === 'checking';
+    }).reduce(function(s,t){ return s+t.amount; }, 0);
+
+    // Expenses: checking outflows + CC charges (not CC payments which are transfers)
+    const expenses = moTxns.filter(function(t) {
+      const tp = detectAcctType(t.account||'');
+      return t.amount < 0 && (tp === 'checking' || tp === 'credit');
+    }).reduce(function(s,t){ return s+Math.abs(t.amount); }, 0);
+
+    // Savings transfers out (checking → savings)
+    const savXferOut = (txns||[]).filter(function(t) {
+      return t.date.startsWith(mo) && isTransfer(t) && t.amount < 0 && detectAcctType(t.account||'') === 'checking';
+    }).reduce(function(s,t){ return s+Math.abs(t.amount); }, 0);
+
+    // Savings transfers in (savings → checking draw)
+    const savXferIn = (txns||[]).filter(function(t) {
+      return t.date.startsWith(mo) && isTransfer(t) && t.amount > 0 && detectAcctType(t.account||'') === 'checking';
+    }).reduce(function(s,t){ return s+t.amount; }, 0);
+
+    const mParts   = mo.split('-');
+    const monthName = new Date(+mParts[0], +mParts[1]-1, 1).toLocaleDateString('en-US',{month:'short', year:'2-digit'});
+
+    rows.push({
+      month:      mo,
+      monthName:  monthName,
+      income:     income,
+      expenses:   expenses,
+      net:        income - expenses,
+      savXferOut: savXferOut,
+      savXferIn:  savXferIn,
+      cumulative: 0  // filled in below
+    });
+  });
+
+  // Compute running cumulative net
+  let cum = 0;
+  rows.forEach(function(r) { cum += r.net; r.cumulative = cum; });
+  return rows;
+}
+
+
+function computeScale(vals, opts) {
+  opts = opts || {};
+  var showZero      = opts.showZero !== false;
+  var forceZeroBase = opts.forceZeroBase || false;
+  var padPct        = opts.padPct != null ? opts.padPct : 0.18;
+  var finite        = vals.filter(isFinite);
+  if (!finite.length) return { maxV:1, minV:0, span:1, y0Pct:0, ticks:[], zero:true };
+
+  var dMax  = finite.reduce(function(m,v){ return Math.max(m,v); }, finite[0]);
+  var dMin  = finite.reduce(function(m,v){ return Math.min(m,v); }, finite[0]);
+  var dSpan = Math.max(Math.abs(dMax - dMin), 1);
+  var pad   = dSpan * padPct;
+  var rawMax = dMax + pad;
+  var rawMin = dMin - pad;
+
+  if (forceZeroBase) {
+    rawMax = Math.max(rawMax, 0);
+    rawMin = Math.min(rawMin, 0);
+  } else if (showZero) {
+    var distToZero = (dMin >= 0) ? dMin : (dMax <= 0 ? Math.abs(dMax) : 0);
+    if (distToZero <= dSpan * 2.0) {
+      rawMax = Math.max(rawMax, 0);
+      rawMin = Math.min(rawMin, 0);
+    }
+  }
+
+  if (opts.minSpan && (rawMax - rawMin) < opts.minSpan) {
+    var mid = (rawMax + rawMin) / 2;
+    rawMax = Math.max(rawMax, mid + opts.minSpan / 2);
+    rawMin = Math.min(rawMin, mid - opts.minSpan / 2);
+    if (showZero || forceZeroBase) { rawMax = Math.max(rawMax,0); rawMin = Math.min(rawMin,0); }
+  }
+
+  var span = Math.max(rawMax - rawMin, 1);
+
+  function niceTicks(lo, hi) {
+    var range = hi - lo, rough = range / 5;
+    if (rough <= 0) return [lo, hi];
+    var mag   = Math.pow(10, Math.floor(Math.log10(rough)));
+    var cands = [mag*0.5, mag, mag*2, mag*2.5, mag*5, mag*10];
+    var iv    = cands.find(function(c){ return range/c >= 3 && range/c <= 7; }) || rough;
+    var start = Math.ceil(lo / iv) * iv;
+    var ticks = [];
+    for (var v = start; v <= hi + iv*0.01; v += iv)
+      ticks.push(Math.round(v * 1000) / 1000);
+    return ticks;
+  }
+
+  return {
+    maxV:      rawMax,
+    minV:      rawMin,
+    span:      span,
+    y0Pct:     Math.max(0, Math.min(1, (0 - rawMin) / span)),
+    ticks:     niceTicks(rawMin, rawMax),
+    zero:      rawMin <= 0 && rawMax >= 0,
+    truncated: dMin > 0 && rawMin > 0
+  };
+}
+
+function renderProjStrip() {
+  var strip = document.getElementById('projStrip');
+  var txt   = document.getElementById('projStripText');
+  if (!strip || !txt || !txns.length) {
+    if (strip) strip.style.display = 'none';
+    return;
+  }
+  var now    = new Date();
+  var curMo  = now.toISOString().slice(0,7);
+  var daysIn = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  var today  = now.getDate();
+  var dLeft  = daysIn - today;
+  var pctDone = Math.round((today / daysIn) * 100);
+  var bsr = (typeof buildSavingsRegister === 'function') ? buildSavingsRegister([curMo]) : [];
+  var row = bsr.length ? bsr[0] : null;
+  if (!row) { strip.style.display = 'none'; return; }
+
+  function fmtKabs(v) { var a=Math.abs(v); return '$'+(a>=1000?(a/1000).toFixed(1).replace(/\.0$/,'')+'K':Math.round(a)); }
+  function fmtKsign(v) { var a=Math.abs(v); var s='$'+(a>=1000?(a/1000).toFixed(1).replace(/\.0$/,'')+'K':Math.round(a)); return (v>0?'+':v<0?'\u2212':'')+s; }
+
+  var actCol  = row.net >= 0 ? '#34D9C3' : '#FF5C5C';
+  var actIcon = row.net >= 0 ? '\u25b2' : '\u25bc';
+  var sep = '<span style="color:rgba(255,255,255,.15);margin:0 10px;">|</span>';
+  var dot = '<span style="color:rgba(255,255,255,.2);margin:0 6px;">&middot;</span>';
+
+  var html = '<span style="font-weight:700;color:rgba(255,255,255,.5);">'
+    + now.toLocaleDateString('en-US',{month:'short'})+" '"+String(now.getFullYear()).slice(2)+'</span>';
+  html += sep;
+  html += '<span style="color:rgba(255,255,255,.38);font-size:11px;">so far:</span> ';
+  html += '<span style="color:#34D9C3;font-weight:600;">'+fmtKabs(row.income)+' in</span>';
+  html += dot;
+  html += '<span style="color:#FF5C5C;font-weight:600;">'+fmtKabs(row.expenses)+' out</span>';
+  html += dot;
+  html += '<span style="color:'+actCol+';font-weight:700;">'+actIcon+' '+fmtKsign(row.net)+' net</span>';
+  if (dLeft > 0) {
+    html += sep;
+    html += '<span style="color:rgba(255,255,255,.28);">'+dLeft+'d remaining &middot; '+pctDone+'% done</span>';
+    if (row.net < -300 && dLeft > 2) {
+      html += sep+'<span style="color:#F5A800;font-weight:700;">\u26a0\ufe0f On track to overspend</span>';
+    }
+  }
+  txt.innerHTML = html;
+  strip.style.display = 'flex';
+}
+
 function renderSnapshot() {
   const el = document.getElementById('snap-out');
   if (!txns.length) { el.innerHTML = emptyHTML('snapshot'); return; }
@@ -3231,7 +3768,6 @@ function buildAccrualEngine(selMonth, sp) {
   const daysElapsed   = Math.min(today.getDate(), daysInMonth);
   const daysRemaining = daysInMonth - daysElapsed;
 
-  // ── Bucket classification sets ─────────────────────────────────────────────
   const FIXED_BUCKETS        = new Set(['mortgage','car','insurance','education','childcare']);
   const UTILITY_BUCKETS      = new Set(['electric','gas_util','water','internet','cell']);
   const SUBSCRIPTION_BUCKETS = new Set(['subscriptions']);
@@ -3240,32 +3776,35 @@ function buildAccrualEngine(selMonth, sp) {
                                          'personal','clothing','travel','gifts','other']);
   const ZERO_ACCRUAL_BUCKETS = new Set(['paycheck','other_inc','auto_save']);
 
-  // ── Historical window: 6 months for stability ─────────────────────────────
-  // (3 months is too short for quarterly/semi-annual bills)
-  const priorMonths6 = [], priorMonths3 = [];
-  for (let i = 1; i <= 6; i++) {
+  const priorMonths = [];
+  for (let i = 1; i <= 3; i++) {
     const d = new Date(sy, sm - 1 - i, 1);
-    const mo = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-    priorMonths6.push(mo);
-    if (i <= 3) priorMonths3.push(mo);
+    priorMonths.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
+  }
+  // Restrict to operating accounts — same filter as banking panel
+  var _AE_OPER = new Set(['checking','savings','credit']);
+  var _AE_DET  = new Set(['apple_card','amazon_orders','home_depot','lowes','venmo']);
+  const spFiltered = sp.filter(function(t){
+    return _AE_OPER.has(detectAcctType(t.account||''))
+        && !t.itemDetail && !_AE_DET.has(t._source||t._ftype||'');
+  });
+  const priorTxns    = sp.filter(t => priorMonths.some(m => t.date.startsWith(m)));
+  const curMonthStr  = String(sy).padStart(4,'0')+'-'+String(sm).padStart(2,'0');
+  const curMonthTxns = spFiltered.filter(t => t.date.startsWith(curMonthStr));
+
+  function removeOutliers(totals) {
+    if (totals.length < 2) return totals;
+    const mean  = totals.reduce((s,v)=>s+v,0) / totals.length;
+    const sigma = Math.sqrt(totals.reduce((s,v)=>s+Math.pow(v-mean,2),0) / totals.length);
+    const clean = totals.filter(v => v <= mean + 2*sigma);
+    return clean.length > 0 ? clean : totals;
   }
 
-  const priorTxns    = sp.filter(t => priorMonths6.some(m => t.date.startsWith(m)));
-  const priorTxns3   = sp.filter(t => priorMonths3.some(m => t.date.startsWith(m)));
-  const curMonthStr  = String(sy).padStart(4,'0')+'-'+String(sm).padStart(2,'0');
-  const curMonthTxns = sp.filter(t => t.date.startsWith(curMonthStr));
-
-  // Group by bucket (6-month and 3-month)
-  const priorByBucket = {}, priorByBucket3 = {}, curByBucket = {};
+  const priorByBucket = {}, curByBucket = {};
   priorTxns.forEach(t => {
     const bk = classifyTxn(t);
     if (!priorByBucket[bk]) priorByBucket[bk] = [];
     priorByBucket[bk].push(t);
-  });
-  priorTxns3.forEach(t => {
-    const bk = classifyTxn(t);
-    if (!priorByBucket3[bk]) priorByBucket3[bk] = [];
-    priorByBucket3[bk].push(t);
   });
   curMonthTxns.forEach(t => {
     const bk = classifyTxn(t);
@@ -3273,191 +3812,40 @@ function buildAccrualEngine(selMonth, sp) {
     curByBucket[bk].push(t);
   });
 
-  // ── Statistical helpers ────────────────────────────────────────────────────
-  function median(arr) {
-    if (!arr.length) return 0;
-    const s = arr.slice().sort((a,b)=>a-b);
-    const mid = Math.floor(s.length/2);
-    return s.length % 2 ? s[mid] : (s[mid-1]+s[mid])/2;
-  }
-
-  function mean(arr) {
-    return arr.length ? arr.reduce((s,v)=>s+v,0)/arr.length : 0;
-  }
-
-  function sigma(arr, m) {
-    if (arr.length < 2) return 0;
-    const avg = m !== undefined ? m : mean(arr);
-    return Math.sqrt(arr.reduce((s,v)=>s+Math.pow(v-avg,2),0)/arr.length);
-  }
-
-  function removeOutliers(vals, threshold=2.0) {
-    if (vals.length < 3) return vals;
-    const m  = mean(vals);
-    const sd = sigma(vals, m);
-    if (sd === 0) return vals;
-    const clean = vals.filter(v => Math.abs(v - m) <= threshold * sd);
-    return clean.length >= 2 ? clean : vals;
-  }
-
-  // ── Income normalization ───────────────────────────────────────────────────
-  // Handles: 3-paycheck months, bonus payments, one-time receipts
-  // Returns { normalizedIncome, rawIncome, extraPaycheck, oneTimeItems }
-  function normalizeIncome() {
-    const incTxns    = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'paycheck');
-    const otherInc   = sp.filter(t => t.amount > 0 && classifyTxn(t) === 'other_inc');
-    const autoSaves  = sp.filter(t => classifyTxn(t) === 'auto_save');
-
-    // Build monthly paycheck totals across all history
-    const payByMonth = {};
-    incTxns.forEach(t => {
-      const mo = t.date.slice(0,7);
-      payByMonth[mo] = (payByMonth[mo]||0) + t.amount;
-    });
-
-    // Current month paycheck
-    const curPaycheck = (curByBucket['paycheck']||[]).reduce((s,t)=>s+t.amount,0);
-    const curAutoSave = (curByBucket['auto_save']||[]).reduce((s,t)=>s+Math.abs(t.amount),0);
-
-    // Prior monthly paycheck amounts (6 months, excluding current)
-    const priorPayAmts = priorMonths6
-      .map(mo => payByMonth[mo] || 0)
-      .filter(v => v > 0);
-
-    // Detect biweekly pay pattern: count paycheck transactions per month
-    const payCountByMonth = {};
-    incTxns.forEach(t => {
-      const mo = t.date.slice(0,7);
-      payCountByMonth[mo] = (payCountByMonth[mo]||0) + 1;
-    });
-    const priorPayCounts = priorMonths6.map(mo => payCountByMonth[mo] || 0).filter(v => v > 0);
-    const avgPayCount = priorPayCounts.length ? mean(priorPayCounts) : 2;
-    const curPayCount = (payCountByMonth[curMonthStr]||0);
-    const isThreePayMonth = curPayCount > 0 && curPayCount > Math.round(avgPayCount) + 0.5;
-
-    // Normalized paycheck: use median of prior months if this is a 3-pay month
-    const normalPaycheck = priorPayAmts.length > 0
-      ? median(removeOutliers(priorPayAmts))
-      : curPaycheck;
-    const extraPaycheck = isThreePayMonth ? Math.max(0, curPaycheck - normalPaycheck) : 0;
-
-    // Detect one-time income in other_inc (bonuses, tax refunds, etc.)
-    // Per-payee: if amount is >2σ above that payee's historical average, flag it
-    const oneTimeItems = [];
-    const curOtherInc = (curByBucket['other_inc']||[]);
-    curOtherInc.forEach(t => {
-      const payee = (t.payee||'').toLowerCase().trim();
-      const hist  = priorTxns.filter(p => classifyTxn(p)==='other_inc' &&
-                                          (p.payee||'').toLowerCase().trim() === payee)
-                              .map(p => p.amount);
-      if (!hist.length) {
-        // Never seen before — flag as one-time if > $500
-        if (t.amount > 500) oneTimeItems.push({ payee: t.payee, amount: t.amount, reason: 'first occurrence' });
-        return;
-      }
-      const m  = mean(hist);
-      const sd = sigma(hist, m);
-      if (sd > 0 && t.amount > m + 2*sd) {
-        oneTimeItems.push({ payee: t.payee, amount: t.amount, normal: m, reason: 'spike' });
-      }
-    });
-
-    const oneTimeTotal = oneTimeItems.reduce((s,v)=>s+v.amount,0);
-
-    const rawIncome        = curPaycheck + curOtherInc.reduce((s,t)=>s+t.amount,0);
-    const normalizedIncome = (isThreePayMonth ? normalPaycheck : curPaycheck)
-                           + curOtherInc.reduce((s,t)=>s+t.amount,0)
-                           - oneTimeTotal;
-
-    return {
-      rawIncome,
-      normalizedIncome: Math.max(0, normalizedIncome),
-      extraPaycheck,
-      oneTimeItems,
-      oneTimeTotal,
-      isThreePayMonth,
-      curPayCount,
-      avgPayCount: Math.round(avgPayCount * 10)/10,
-      normalPaycheck,
-      curAutoSave,
-      normalDeployable: Math.max(0, normalizedIncome - curAutoSave),
-    };
-  }
-
-  // ── Fixed-bill accrual: per-payee discrete median, uncharged only ─────────
-  // Uses 6-month history to catch quarterly (every 3mo) and semi-annual bills.
-  // A payee must appear in at least 2 of the prior 6 months to be projected.
+  // ── Per-payee discrete known-amount accrual for fixed bills ───────────────
+  // Groups prior transactions by payee, computes median per-payee expected
+  // amount, then projects ONLY payees that haven't yet been charged this month.
   function getFixedAccrual(bk) {
-    // Use 3-month window for month-to-month fixed bills (mortgage, car, etc.)
-    // Use 6-month window for infrequent ones (insurance, HOA, etc.)
-    const useWide  = bk === 'insurance' || bk === 'education';
-    const prior    = useWide ? (priorByBucket[bk]||[]) : (priorByBucket3[bk]||[]);
-    const cur      = curByBucket[bk] || [];
+    const prior = priorByBucket[bk] || [];
+    const cur   = curByBucket[bk]   || [];
     if (!prior.length) return 0;
 
-    // Group prior by payee → month → amount
     const payeeData = {};
     prior.forEach(t => {
-      const p  = (t.payee||'').toLowerCase().trim();
-      const mo = t.date.slice(0,7);
+      const p = (t.payee||'').toLowerCase().trim();
       if (!payeeData[p]) payeeData[p] = {};
+      const mo = t.date.slice(0,7);
       payeeData[p][mo] = (payeeData[p][mo]||0) + Math.abs(t.amount);
     });
 
-    // Which payees has the current month already seen?
     const chargedPayees = new Set(cur.map(t => (t.payee||'').toLowerCase().trim()));
 
-    const horizon = useWide ? 6 : 3;
     let accrued = 0;
     Object.entries(payeeData).forEach(([payee, moAmts]) => {
       const monthlyAmounts = Object.values(moAmts);
-
-      // Must appear in at least 2 distinct months OR be >50% of months (covers quarterly)
-      const appearCount = Object.keys(moAmts).length;
-      if (appearCount < 2) return; // one-time charge in history, skip
-
-      if (chargedPayees.has(payee)) return; // already paid this month
-
-      // For infrequent bills: check if it's "due" this month based on pattern
-      if (appearCount < horizon * 0.5) {
-        // Appeared in less than half the months — quarterly or semi-annual
-        // Estimate when it's next due from the most recent occurrence
-        const sortedMonths = Object.keys(moAmts).sort();
-        const lastMo = sortedMonths[sortedMonths.length-1];
-        const lastDate = new Date(lastMo + '-01');
-        const curDate  = new Date(curMonthStr + '-01');
-        const monthsApart = (curDate - lastDate) / (1000*60*60*24*30.44);
-
-        // Estimate period: if appeared every ~3mo, project if we're 3mo from last
-        const avgPeriod = sortedMonths.length > 1
-          ? (new Date(sortedMonths[sortedMonths.length-1]+'-01') -
-             new Date(sortedMonths[0]+'-01')) / (1000*60*60*24*30.44)
-            / (sortedMonths.length - 1)
-          : 12; // default: annual
-
-        // Only project if we're within ±1 month of expected due date
-        if (Math.abs(monthsApart - avgPeriod) > 1.5) return;
-      }
-
-      const med = median(monthlyAmounts);
-      accrued += med;
+      if (monthlyAmounts.length < 2) return; // appeared in only 1 prior month = one-time, skip
+      if (chargedPayees.has(payee)) return;  // already charged this month
+      const sorted = monthlyAmounts.slice().sort((a,b)=>a-b);
+      const median = sorted[Math.floor(sorted.length/2)];
+      accrued += median;
     });
 
     return parseFloat(accrued.toFixed(2));
   }
 
-  // ── Utility accrual: per-payee discrete, but allow for seasonality ────────
-  // Gas and electric vary by season — use median of 3 prior months rather than
-  // same-month prior year (we don't always have that data)
-  function getUtilityAccrual(bk) {
-    // Utilities are fixed-schedule but variable-amount — same logic as fixed
-    return getFixedAccrual(bk);
-  }
-
-  // ── Discretionary: daily run rate × remaining days ────────────────────────
-  // Uses outlier removal so one big Amazon haul month doesn't inflate projection
+  // ── Discretionary: daily run rate x remaining days ────────────────────────
   function getDiscretionaryAccrual(bk) {
-    const prior = priorByBucket3[bk] || [];
+    const prior = priorByBucket[bk] || [];
     if (!prior.length) return 0;
     const byMonth = {};
     prior.forEach(t => {
@@ -3465,19 +3853,17 @@ function buildAccrualEngine(selMonth, sp) {
       byMonth[mo] = (byMonth[mo]||0) + Math.abs(t.amount);
     });
     const totals   = removeOutliers(Object.values(byMonth));
-    if (!totals.length) return 0;
-    // Current month partial actual already counted — project only remaining days
-    const avgDaily = mean(totals) / 30.44;
+    const avgDaily = (totals.reduce((s,v)=>s+v,0) / totals.length) / 30.44;
     return parseFloat((avgDaily * daysRemaining).toFixed(2));
   }
 
   function getDailyRate(bk) {
-    const prior = priorByBucket3[bk] || [];
+    const prior = priorByBucket[bk] || [];
     if (!prior.length) return 0;
     const byMonth = {};
     prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
     const totals = removeOutliers(Object.values(byMonth));
-    return totals.length ? mean(totals)/30.44 : 0;
+    return (totals.reduce((s,v)=>s+v,0)/totals.length)/30.44;
   }
 
   function currentMonthActual(bk) {
@@ -3485,47 +3871,45 @@ function buildAccrualEngine(selMonth, sp) {
   }
 
   function priorMonthlyAvg(bk) {
-    const prior = priorByBucket3[bk] || [];
+    const prior = priorByBucket[bk] || [];
     if (!prior.length) return 0;
     const byMonth = {};
     prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
     const totals = removeOutliers(Object.values(byMonth));
-    return totals.length ? mean(totals) : 0;
+    return totals.reduce((s,v)=>s+v,0)/totals.length;
   }
 
-  // ── isOneTime: flag transactions that look like one-offs ──────────────────
+  function accrueAmount(bk) {
+    if (ZERO_ACCRUAL_BUCKETS.has(bk)) return 0;
+    if (FIXED_BUCKETS.has(bk) || UTILITY_BUCKETS.has(bk) || SUBSCRIPTION_BUCKETS.has(bk)) {
+      return getFixedAccrual(bk);
+    }
+    if (DISCRETIONARY_BUCKETS.has(bk)) {
+      return getDiscretionaryAccrual(bk);
+    }
+    // Fallback
+    const prior = priorByBucket[bk] || [];
+    if (!prior.length) return 0;
+    const byMonth = {};
+    prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
+    const totals = removeOutliers(Object.values(byMonth));
+    return parseFloat(((totals.reduce((s,v)=>s+v,0)/totals.length)/30.44*daysRemaining).toFixed(2));
+  }
+
   function isOneTime(t, bk) {
     const payee = (t.payee||'').toLowerCase().trim();
     const amt   = Math.abs(t.amount);
-    const bkTxns = (priorByBucket[bk]||[]).filter(p =>
-      (p.payee||'').toLowerCase().trim() === payee
-    );
-    if (!bkTxns.length) return true; // never seen this payee before
-    const months = new Set(bkTxns.map(p => p.date.slice(0,7)));
-    if (months.size <= 1) return true; // only one prior month
-    const amts  = bkTxns.map(p => Math.abs(p.amount));
-    const m     = mean(amts);
-    const sd    = sigma(amts, m);
-    return sd > 0 && amt > m + 2.5*sd; // raised threshold to avoid false positives
+    const bkTxns = priorByBucket[bk] || [];
+    const payeeTxns = bkTxns.filter(p => (p.payee||'').toLowerCase().trim() === payee);
+    if (!payeeTxns.length) return false;
+    const months = new Set(payeeTxns.map(p => p.date.slice(0,7)));
+    if (months.size <= 1) return true;
+    const amts  = payeeTxns.map(p => Math.abs(p.amount));
+    const mean  = amts.reduce((s,v)=>s+v,0)/amts.length;
+    const sigma = Math.sqrt(amts.reduce((s,v)=>s+Math.pow(v-mean,2),0)/amts.length);
+    return sigma > 0 && amt > mean + 2*sigma;
   }
 
-  // ── Central accrual dispatch ───────────────────────────────────────────────
-  function accrueAmount(bk) {
-    if (ZERO_ACCRUAL_BUCKETS.has(bk)) return 0;
-    if (FIXED_BUCKETS.has(bk))        return getFixedAccrual(bk);
-    if (UTILITY_BUCKETS.has(bk))      return getUtilityAccrual(bk);
-    if (SUBSCRIPTION_BUCKETS.has(bk)) return getFixedAccrual(bk);
-    if (DISCRETIONARY_BUCKETS.has(bk)) return getDiscretionaryAccrual(bk);
-    // Unknown bucket: daily rate fallback
-    const prior = priorByBucket3[bk] || [];
-    if (!prior.length) return 0;
-    const byMonth = {};
-    prior.forEach(t => { const mo=t.date.slice(0,7); byMonth[mo]=(byMonth[mo]||0)+Math.abs(t.amount); });
-    const totals = removeOutliers(Object.values(byMonth));
-    return parseFloat((mean(totals)/30.44*daysRemaining).toFixed(2));
-  }
-
-  // ── Projection breakdown (used by IS hero and thermometer) ───────────────
   function getProjectionBreakdown(sectionData) {
     let fixedActual = 0, fixedProjected = 0, variableActual = 0, variableProjected = 0;
     const fixedDueItems = [], varPaceItems = [];
@@ -3538,13 +3922,13 @@ function buildAccrualEngine(selMonth, sp) {
         if (FIXED_BUCKETS.has(bk) || UTILITY_BUCKETS.has(bk) || SUBSCRIPTION_BUCKETS.has(bk)) {
           fixedActual    += bd.actual  || 0;
           fixedProjected += bd.accrued || 0;
-          if ((bd.accrued||0) > 10)
-            fixedDueItems.push({ label: bMeta.label, amount: bd.accrued });
+          if ((bd.accrued||0) > 10) fixedDueItems.push({ label: bMeta.label, amount: bd.accrued });
         } else if (DISCRETIONARY_BUCKETS.has(bk)) {
           variableActual    += bd.actual  || 0;
           variableProjected += bd.accrued || 0;
-          if ((bd.accrued||0) > 10)
+          if ((bd.accrued||0) > 10) {
             varPaceItems.push({ label: bMeta.label, dailyRate: getDailyRate(bk), projected: bd.accrued||0 });
+          }
         }
       });
     });
@@ -3561,10 +3945,11 @@ function buildAccrualEngine(selMonth, sp) {
 
   return {
     isInFlight, daysElapsed, daysRemaining, daysInMonth,
-    getDailyRate, isOneTime, accrueAmount, getProjectionBreakdown, normalizeIncome,
+    getDailyRate, isOneTime, accrueAmount, getProjectionBreakdown,
     FIXED_BUCKETS, UTILITY_BUCKETS, SUBSCRIPTION_BUCKETS, DISCRETIONARY_BUCKETS,
   };
 }
+
 
 
 let _piDrillOpen = {};
