@@ -3343,34 +3343,42 @@ function fmtK(v) { return Math.abs(v)>=1000 ? '$'+(Math.abs(v)/1000).toFixed(1)+
 // NAVIGATION
 // ════════════════════════════════════════════════
 function showPage(name) {
-  if (typeof renderProjStrip === "function") renderProjStrip();
   console.log('[Forge] showPage:', name, '| txns:', txns.length);
-  document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display='none'; });
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const pg = document.getElementById('page-'+name);
-  if (pg) { pg.classList.add('active'); pg.style.display='block'; }
-  const nv = document.getElementById('nav-'+name);
-  if (nv) nv.classList.add('active');
-  // scrollTop reset happens on page element itself after display
 
-  // Render after a frame so the page is visible and has real dimensions
-  requestAnimationFrame(() => {
+  // Hide all pages (inline style beats CSS class during transitions)
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.remove('active');
+    p.style.display = 'none';
+  });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  // Show target page
+  const pg = document.getElementById('page-' + name);
+  if (pg) { pg.classList.add('active'); pg.style.display = 'block'; }
+  const nv = document.getElementById('nav-' + name);
+  if (nv) nv.classList.add('active');
+
+  // Update projection strip
+  if (typeof renderProjStrip === 'function') renderProjStrip();
+
+  // Render after a frame so dimensions are real
+  requestAnimationFrame(function() {
     console.log('[Forge] rAF render. page:', name, 'txns:', txns.length);
-    if (name === 'dashboard'    && txns.length) renderDashboard();
     if (name === 'cashflow'     && txns.length) renderCashFlow();
     if (name === 'categories'   && txns.length) renderCategories();
     if (name === 'transactions' && txns.length) renderTxns();
-    if (name === 'income'        && txns.length) renderIncomeStatement();
-    if (name === 'creditflow'    && txns.length) renderCreditFlow();
-    if (name === 'validate'      ) renderValidation();
-    if (name === 'budget'        ) renderBudget(); if(typeof renderBudgetPressure==='function') renderBudgetPressure();;
-    if (name === 'calendar'      ) renderBillCalendar();
-    if (name === 'balancesheet'  ) renderBalanceSheet();
-    if (name === 'financials'    ) renderFinancials();
-    if (name === 'upload')                      renderUploadStatus();
-    if (name === 'crosswalk')                   renderCrosswalk();
-    if (name === 'reconcile')                   renderReconcile();
-    if (name === 'settings')                    renderSettings();
+    if (name === 'income'       && txns.length) renderIncomeStatement();
+    if (name === 'creditflow'   && txns.length) renderCreditFlow();
+    if (name === 'balancesheet'               ) renderBalanceSheet();
+    if (name === 'budget') {
+      if (txns.length) renderBudget();
+      if (typeof renderBudgetPressure === 'function') renderBudgetPressure();
+    }
+    if (name === 'upload'     ) renderUploadStatus();
+    if (name === 'crosswalk'  ) renderCrosswalk();
+    if (name === 'reconcile'  ) renderReconcile();
+    if (name === 'settings'   ) renderSettings();
+    if (name === 'planner'    ) { if (typeof renderPlanner === 'function') renderPlanner(); }
   });
 }
 
@@ -8970,7 +8978,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (loadData(false) && txns.length) {
     autoDetectNonRecurring();
     updateHeader();
-    showPage('dashboard');
+    showPage('cashflow');
   } else {
     showPage('upload');
   }
