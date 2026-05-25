@@ -4390,17 +4390,17 @@ function makeDonut(canvasId, labels, values, existingChart) {
 // MONTHLY DATA HELPER
 // ════════════════════════════════════════════════
 function monthlyData(txnArr) {
-  // CFA-grade: income = checking deposits only; expenses = checking + CC charges
+  // Visualization layer: simple +/- split on whatever array is passed in.
+  // Upstream callers (renderCashFlow, etc.) already apply OPER filter + transfer exclusion.
+  // BSR (buildSavingsRegister) handles the stricter checking-only income definition
+  // for financial calculations. This function is for charting.
   const m = {};
   (txnArr || []).forEach(function(t) {
-    const k  = t.date.slice(0,7);
+    const k = t.date.slice(0,7);
     if (!m[k]) m[k] = { inc:0, exp:0 };
-    const tp = detectAcctType(t.account || '');
-    if (t.amount > 0 && tp === 'checking')                           m[k].inc += t.amount;
-    else if (t.amount < 0 && (tp === 'checking' || tp === 'credit')) m[k].exp += Math.abs(t.amount);
+    if (t.amount > 0) m[k].inc += t.amount;
+    else              m[k].exp += Math.abs(t.amount);
   });
-  const allKeys = [...new Set((txnArr||[]).map(t => t.date.slice(0,7)))].sort();
-  allKeys.forEach(k => { if (!m[k]) m[k] = {inc:0,exp:0}; });
   const keys = Object.keys(m).sort();
   return {
     labels:   keys.map(k => k.slice(2)),
