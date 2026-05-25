@@ -181,7 +181,7 @@ body {
   min-height: 44px;
 }
 .tab-btn.active { color: var(--gold); }
-.tab-btn.active svg { filter: drop-shadow(0 0 5px rgba(245,168,0,.4)); }
+.tab-btn.active > svg { filter: drop-shadow(0 0 5px rgba(245,168,0,.4)); }
 .tab-dot {
   position: absolute; top: 3px; right: 8px;
   width: 6px; height: 6px;
@@ -617,7 +617,7 @@ select, input[type="text"], input[type="search"] { font-size: 16px !important; }
 .tab-bar { background:rgba(4,4,5,.97); backdrop-filter:blur(32px) saturate(1.8); -webkit-backdrop-filter:blur(32px) saturate(1.8); box-shadow:0 -1px 0 rgba(255,255,255,.04),0 -8px 32px rgba(0,0,0,.4); }
 .tab-bar::before { content:''; position:absolute; top:0; left:12%; right:12%; height:1px; background:linear-gradient(90deg,transparent,rgba(245,168,0,.35),transparent); }
 .tab-btn.active { color:var(--gold); }
-.tab-btn.active svg { filter:drop-shadow(0 0 6px rgba(245,168,0,.5)) drop-shadow(0 0 2px rgba(245,168,0,.3)); }
+.tab-btn.active > svg { filter:drop-shadow(0 0 6px rgba(245,168,0,.5)) drop-shadow(0 0 2px rgba(245,168,0,.3)); }
 .tab-btn:active { transform:scale(.88); }
 .kpi-card { position:relative; overflow:hidden; border-top:1.5px solid rgba(255,255,255,.22); box-shadow:var(--depth-1),inset 0 1px 0 rgba(255,255,255,.08); transition:box-shadow .25s; }
 .kpi-card::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 10% 0%,rgba(255,255,255,.07) 0%,transparent 55%); pointer-events:none; }

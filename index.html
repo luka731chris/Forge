@@ -188,8 +188,8 @@ nav::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
   background: var(--gold-dim);
   font-weight: 500;
 }
-.nav-item svg { opacity: .5; flex-shrink: 0; }
-.nav-item.active svg { opacity: 1; }
+.nav-item > svg { opacity: .5; flex-shrink: 0; }
+.nav-item.active > svg { opacity: 1; }
 
 /* ── Main content area ──────────────────────────────────────────────────── */
 main {
@@ -305,6 +305,7 @@ main::-webkit-scrollbar-thumb:hover { background: var(--line3); }
 }
 .chart-grid-1 { margin-bottom: var(--sp2); }
 .chart-card {
+  position: relative;
   background: var(--float);
   border: 1px solid rgba(255,255,255,.07);
   border-top: 1px solid rgba(255,255,255,.11);
@@ -319,7 +320,7 @@ main::-webkit-scrollbar-thumb:hover { background: var(--line3); }
 }
 .chart-title  { font-size: 13px; font-weight: 600; color: var(--ink2); margin-bottom: 2px; }
 .chart-sub    { font-size: 10px; color: var(--ink4); font-family: var(--fm); margin-bottom: var(--sp3); }
-.chart-area   { position: relative; width: 100%; height: 100%; min-height: 80px; }
+.chart-area   { position: relative; width: 100%; height: 100%; min-height: 80px; z-index: 1; }
 
 /* ── Tables ──────────────────────────────────────────────────────────────── */
 .table-card {
@@ -905,7 +906,7 @@ select:focus { border-color: var(--gold); }
   background: linear-gradient(90deg, rgba(245,168,0,.1) 0%, rgba(245,168,0,.02) 100%);
   border-left-color: var(--gold);
 }
-.nav-item.active svg { filter: drop-shadow(0 0 4px rgba(245,168,0,.35)); }
+.nav-item.active > svg { filter: drop-shadow(0 0 4px rgba(245,168,0,.35)); }
 /* Range tabs */
 .rtab.active {
   background: linear-gradient(135deg, #F5A800 0%, #D48A00 100%);
