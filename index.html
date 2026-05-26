@@ -184,9 +184,10 @@ nav::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
 .nav-item:hover { color: var(--ink2); background: var(--hover); }
 .nav-item.active {
   color: var(--gold);
-  border-left-color: var(--gold);
-  background: var(--gold-dim);
-  font-weight: 500;
+  border-left-color: #F5A800;
+  background: linear-gradient(90deg, rgba(245,168,0,.12) 0%, rgba(245,168,0,.02) 100%);
+  font-weight: 600;
+  box-shadow: inset 0 0 24px rgba(245,168,0,.05);
 }
 .nav-item svg { opacity: .5; flex-shrink: 0; }
 .nav-item.active svg { opacity: 1; }
@@ -208,7 +209,10 @@ main::-webkit-scrollbar-thumb:hover { background: var(--line3); }
 
 /* ── Pages ───────────────────────────────────────────────────────────────── */
 .page { display: none; }
-.page.active { display: block; width: 100%; min-width: 0; }
+.page.active {
+  display: block; width: 100%; min-width: 0;
+  animation: forge-fade-up .3s cubic-bezier(.16,1,.3,1) both;
+}
 
 /* ── Page header ─────────────────────────────────────────────────────────── */
 .page-hdr {
@@ -252,14 +256,21 @@ main::-webkit-scrollbar-thumb:hover { background: var(--line3); }
   margin-bottom: var(--sp4);
 }
 .kpi {
-  background: var(--float);
-  border: 1px solid rgba(255,255,255,.08);
-  border-top: 1px solid rgba(255,255,255,.14);
-  border-radius: var(--r-lg);
-  padding: var(--sp3) var(--sp4);
   position: relative;
   overflow: hidden;
-  transition: border-color .15s, box-shadow .15s;
+  background: linear-gradient(160deg,
+    rgba(255,255,255,.052) 0%,
+    rgba(255,255,255,.018) 40%,
+    rgba(255,255,255,.004) 100%);
+  border: 1px solid rgba(255,255,255,.1);
+  border-top: 1.5px solid rgba(255,255,255,.22);
+  border-radius: var(--r-lg);
+  padding: var(--sp3) var(--sp4);
+  backdrop-filter: blur(16px) saturate(160%) brightness(1.04);
+  -webkit-backdrop-filter: blur(16px) saturate(160%) brightness(1.04);
+  box-shadow: 0 1px 2px rgba(0,0,0,.5), 0 4px 16px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.09);
+  transition: box-shadow .3s ease, transform .22s ease, border-color .2s;
+  animation: forge-pop .4s cubic-bezier(.16,1,.3,1) both;
 }
 .kpi::before {
   content: '';
@@ -269,8 +280,11 @@ main::-webkit-scrollbar-thumb:hover { background: var(--line3); }
   pointer-events: none;
 }
 .kpi:hover {
-  border-color: rgba(255,255,255,.18);
-  box-shadow: 0 4px 18px rgba(0,0,0,.4);
+  border-top-color: rgba(255,255,255,.4);
+  border-color: rgba(255,255,255,.16);
+  box-shadow: 0 2px 6px rgba(0,0,0,.55), 0 10px 36px rgba(0,0,0,.45), 0 28px 72px rgba(0,0,0,.28),
+              0 0 0 1px rgba(255,255,255,.07), inset 0 1px 0 rgba(255,255,255,.15);
+  transform: translateY(-2px);
 }
 .kpi-label {
   font-size: 11px;
@@ -305,17 +319,27 @@ main::-webkit-scrollbar-thumb:hover { background: var(--line3); }
 }
 .chart-grid-1 { margin-bottom: var(--sp2); }
 .chart-card {
-  background: var(--float);
-  border: 1px solid rgba(255,255,255,.07);
-  border-top: 1px solid rgba(255,255,255,.11);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg,
+    rgba(255,255,255,.038) 0%,
+    rgba(255,255,255,.01) 55%,
+    rgba(255,255,255,.002) 100%);
+  border: 1px solid rgba(255,255,255,.09);
+  border-top: 1.5px solid rgba(255,255,255,.2);
   border-radius: var(--r-lg);
   padding: var(--sp4);
-  overflow: hidden;
-  transition: border-color .15s, box-shadow .15s;
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  box-shadow: 0 1px 2px rgba(0,0,0,.5), 0 4px 16px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.07);
+  transition: box-shadow .3s, border-color .2s, transform .22s;
+  animation: forge-fade-up .45s cubic-bezier(.16,1,.3,1) both;
 }
 .chart-card:hover {
-  border-color: rgba(255,255,255,.13);
-  box-shadow: 0 2px 16px rgba(0,0,0,.35);
+  border-top-color: rgba(255,255,255,.34);
+  border-color: rgba(255,255,255,.15);
+  box-shadow: 0 2px 6px rgba(0,0,0,.55), 0 10px 36px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.11);
+  transform: translateY(-1px);
 }
 .chart-title  { font-size: 13px; font-weight: 600; color: var(--ink2); margin-bottom: 2px; }
 .chart-sub    { font-size: 10px; color: var(--ink4); font-family: var(--fm); margin-bottom: var(--sp3); }
@@ -781,20 +805,20 @@ select:focus { border-color: var(--gold); }
 /* ── Chart tooltip ────────────────────────────────────────────────────────── */
 #chartTip {
   position: fixed;
-  background: rgba(12,12,18,0.96);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,.12);
-  border-top: 1px solid rgba(255,255,255,.22);
-  border-radius: 10px;
-  padding: 10px 14px 9px;
+  background: linear-gradient(160deg, rgba(14,14,24,.97) 0%, rgba(8,8,16,.99) 100%);
+  backdrop-filter: blur(32px) saturate(220%) brightness(1.08);
+  -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(1.08);
+  border: 1px solid rgba(255,255,255,.1);
+  border-top: 1px solid rgba(255,255,255,.32);
+  border-radius: 14px;
+  padding: 12px 16px 11px;
   font-size: 12px; font-family: var(--fm); color: var(--ink2);
   pointer-events: none; z-index: 9999;
   white-space: nowrap;
-  box-shadow: 0 8px 32px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 6px 28px rgba(0,0,0,.8),
+              0 20px 56px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.12);
   display: none;
-  min-width: 140px;
-  max-width: 320px;
-  transition: opacity .08s;
+  min-width: 160px; max-width: 320px;
 }
 
 /* ── Transfer badge ───────────────────────────────────────────────────────── */
@@ -835,31 +859,18 @@ select:focus { border-color: var(--gold); }
   .fin-row { grid-template-columns: 1fr 90px 90px; }
 }
 
-
 /* ════════════════════════════════════════════════════════════════════════════
-   FORGE v4.0 — PREMIUM VISUAL SYSTEM
-   Pittsburgh Black & Gold · Etched Glass · Bloom · Motion
+   FORGE v4.0 — PREMIUM ADDITIONS (keyframes, pseudo-elements, new selectors)
    ════════════════════════════════════════════════════════════════════════════ */
 
-/* ── Design tokens ────────────────────────────────────────────────────────── */
 :root {
-  /* Depth shadows */
   --depth-1: 0 1px 2px rgba(0,0,0,.5), 0 4px 16px rgba(0,0,0,.4);
   --depth-2: 0 2px 6px rgba(0,0,0,.55), 0 10px 36px rgba(0,0,0,.45), 0 28px 72px rgba(0,0,0,.28);
-  --depth-3: 0 4px 12px rgba(0,0,0,.65), 0 20px 56px rgba(0,0,0,.5), 0 48px 96px rgba(0,0,0,.32);
-  /* Glow */
-  --glow-gold:  0 0 16px rgba(245,168,0,.28), 0 0 56px rgba(245,168,0,.1);
-  --glow-teal:  0 0 16px rgba(45,212,191,.2),  0 0 48px rgba(45,212,191,.08);
-  --glow-river: 0 0 14px rgba(96,165,250,.22),  0 0 40px rgba(96,165,250,.07);
-  --glow-red:   0 0 14px rgba(248,113,113,.2);
-  /* Glass edges */
-  --glass-top:  rgba(255,255,255,.22);
+  --glow-gold: 0 0 16px rgba(245,168,0,.28), 0 0 56px rgba(245,168,0,.1);
+  --glass-top: rgba(255,255,255,.22);
   --glass-edge: rgba(255,255,255,.09);
-  --glass-bg:   rgba(255,255,255,.032);
-  --r-xl: 20px;
 }
 
-/* ── Keyframes ────────────────────────────────────────────────────────────── */
 @keyframes forge-shimmer {
   0%   { transform: translateX(-120%) skewX(-8deg); opacity: 0; }
   15%  { opacity: 1; }
@@ -870,50 +881,21 @@ select:focus { border-color: var(--gold); }
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-@keyframes forge-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
 @keyframes forge-pop {
   0%   { opacity: 0; transform: scale(.88) translateY(4px); }
-  65%  { transform: scale(1.02) translateY(-1px); }
+  65%  { transform: scale(1.025) translateY(-1px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
-@keyframes forge-bar-rise {
-  from { transform: scaleY(0); transform-origin: bottom; opacity: 0; }
-  to   { transform: scaleY(1); transform-origin: bottom; opacity: 1; }
-}
-@keyframes forge-pulse-gold {
-  0%, 100% { box-shadow: var(--depth-1); }
-  50%       { box-shadow: var(--depth-1), var(--glow-gold); }
-}
 @keyframes forge-led {
-  0%, 100% { opacity: .5; }
-  50%       { opacity: 1; }
+  0%, 100% { opacity: .45; box-shadow: 0 0 6px #34D9C3, 0 0 14px rgba(45,212,191,.35); }
+  50%       { opacity: 1;   box-shadow: 0 0 10px #34D9C3, 0 0 28px rgba(45,212,191,.55); }
 }
 @keyframes forge-number-tick {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(5px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── KPI cards — etched glass ─────────────────────────────────────────────── */
-.kpi {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(160deg,
-    rgba(255,255,255,.052) 0%,
-    rgba(255,255,255,.018) 40%,
-    rgba(255,255,255,.004) 100%);
-  border: 1px solid var(--glass-edge);
-  border-top: 1.5px solid var(--glass-top);
-  border-radius: var(--r-xl);
-  padding: 18px 20px 16px;
-  box-shadow: var(--depth-1), inset 0 1px 0 rgba(255,255,255,.09);
-  backdrop-filter: blur(16px) saturate(160%) brightness(1.04);
-  -webkit-backdrop-filter: blur(16px) saturate(160%) brightness(1.04);
-  transition: box-shadow .3s ease, transform .22s ease, border-color .2s;
-  animation: forge-pop .4s cubic-bezier(.16,1,.3,1) both;
-}
+/* ── KPI pseudo-elements ────────────────────────────────────────────────── */
 .kpi::before {
   content: '';
   position: absolute; inset: 0;
@@ -921,236 +903,134 @@ select:focus { border-color: var(--gold); }
     radial-gradient(ellipse at 12% 0%, rgba(255,255,255,.09) 0%, transparent 52%),
     radial-gradient(ellipse at 88% 100%, rgba(255,255,255,.03) 0%, transparent 50%);
   pointer-events: none;
+  z-index: 0;
 }
 .kpi::after {
   content: '';
   position: absolute;
   top: 0; left: -80%; width: 50%; height: 100%;
   background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255,255,255,.06) 40%,
-    rgba(255,255,255,.14) 50%,
-    rgba(255,255,255,.06) 60%,
-    transparent 100%);
+    transparent 0%, rgba(255,255,255,.06) 40%,
+    rgba(255,255,255,.16) 50%, rgba(255,255,255,.06) 60%, transparent 100%);
   animation: forge-shimmer 6s ease-in-out 1s infinite;
   pointer-events: none;
+  z-index: 1;
 }
-.kpi:hover {
-  border-top-color: rgba(255,255,255,.38);
-  border-color: rgba(255,255,255,.14);
-  box-shadow: var(--depth-2), 0 0 0 1px rgba(255,255,255,.06), inset 0 1px 0 rgba(255,255,255,.15);
-  transform: translateY(-2px);
-}
-.kpi-val {
-  text-shadow: 0 2px 12px rgba(0,0,0,.55);
-  animation: forge-number-tick .35s ease both;
-}
+.kpi-label { position: relative; z-index: 2; }
+.kpi-val   { position: relative; z-index: 2; text-shadow: 0 2px 12px rgba(0,0,0,.55); animation: forge-number-tick .35s ease both; }
 .kpi-val.positive { color: #34D9C3; text-shadow: 0 0 28px rgba(45,212,191,.3), 0 2px 12px rgba(0,0,0,.5); }
 .kpi-val.negative { color: #F87171; text-shadow: 0 0 24px rgba(248,113,113,.25), 0 2px 12px rgba(0,0,0,.5); }
-.kpi-val.gold     { color: #F5A800; text-shadow: var(--glow-gold), 0 2px 12px rgba(0,0,0,.5); }
+.kpi-val.gold     { color: #F5A800; text-shadow: 0 0 16px rgba(245,168,0,.28), 0 0 56px rgba(245,168,0,.1), 0 2px 12px rgba(0,0,0,.5); }
+.kpi-sub { position: relative; z-index: 2; }
 
-/* ── Chart cards — etched glass ───────────────────────────────────────────── */
-.chart-card {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(160deg,
-    rgba(255,255,255,.038) 0%,
-    rgba(255,255,255,.01) 55%,
-    rgba(255,255,255,.002) 100%);
-  border: 1px solid var(--glass-edge);
-  border-top: 1.5px solid rgba(255,255,255,.2);
-  border-radius: var(--r-xl);
-  box-shadow: var(--depth-1), inset 0 1px 0 rgba(255,255,255,.07);
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-  transition: box-shadow .3s, border-color .2s, transform .22s;
-  animation: forge-fade-up .45s cubic-bezier(.16,1,.3,1) both;
-}
-.chart-card:hover {
-  border-top-color: rgba(255,255,255,.32);
-  border-color: rgba(255,255,255,.14);
-  box-shadow: var(--depth-2), inset 0 1px 0 rgba(255,255,255,.11);
-  transform: translateY(-1px);
-}
-/* Gold accent line at top of chart titles */
-.chart-title::before {
-  content: '';
-  display: block; width: 3px; height: 15px; flex-shrink: 0;
-  background: linear-gradient(180deg, #F5A800 0%, rgba(245,168,0,.18) 100%);
-  border-radius: 2px;
-  box-shadow: 0 0 10px rgba(245,168,0,.4);
-}
-/* Etched horizontal rule inside chart cards */
+/* ── Chart card pseudo-elements ─────────────────────────────────────────── */
 .chart-card::after {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0; height: 1px;
   background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255,255,255,.18) 30%,
-    rgba(255,255,255,.32) 50%,
-    rgba(255,255,255,.18) 70%,
-    transparent 100%);
+    transparent 0%, rgba(255,255,255,.18) 30%,
+    rgba(255,255,255,.32) 50%, rgba(255,255,255,.18) 70%, transparent 100%);
   pointer-events: none;
+}
+.chart-title { display: flex; align-items: center; gap: 9px; }
+.chart-title::before {
+  content: '';
+  display: block; width: 3px; height: 15px; flex-shrink: 0;
+  background: linear-gradient(180deg, #F5A800 0%, rgba(245,168,0,.15) 100%);
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(245,168,0,.45);
 }
 
-/* ── Chart tooltip — premium glass ───────────────────────────────────────── */
-#chartTip {
-  position: fixed;
-  background: linear-gradient(160deg,
-    rgba(16,16,26,.97) 0%,
-    rgba(10,10,18,.99) 100%);
-  backdrop-filter: blur(32px) saturate(220%) brightness(1.08);
-  -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(1.08);
-  border: 1px solid rgba(255,255,255,.1);
-  border-top: 1px solid rgba(255,255,255,.3);
-  border-radius: 14px;
-  padding: 12px 16px 11px;
-  font-size: 12px;
-  font-family: var(--fm);
-  color: var(--ink2);
-  pointer-events: none;
-  z-index: 9999;
-  display: none;
-  min-width: 160px;
-  max-width: 300px;
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,.06),
-    0 6px 28px rgba(0,0,0,.8),
-    0 20px 56px rgba(0,0,0,.55),
-    inset 0 1px 0 rgba(255,255,255,.12);
-  animation: forge-pop .18s cubic-bezier(.16,1,.3,1) both;
-}
-/* Gold accent stripe on tooltip */
+/* ── Tooltip ─────────────────────────────────────────────────────────────── */
 #chartTip::before {
   content: '';
   position: absolute;
   top: 0; left: 12px; right: 12px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(245,168,0,.55), transparent);
+  background: linear-gradient(90deg, transparent, rgba(245,168,0,.5), transparent);
 }
 
-/* ── Navigation — gold active ─────────────────────────────────────────────── */
-.nav-item {
-  transition: color .15s, background .18s, border-color .18s, transform .12s;
-}
-.nav-item:hover {
-  transform: translateX(2px);
-}
-.nav-item.active {
-  background: linear-gradient(90deg, rgba(245,168,0,.1) 0%, rgba(245,168,0,.018) 100%);
-  border-left-color: #F5A800;
-  font-weight: 600;
-  box-shadow: inset 0 0 24px rgba(245,168,0,.04);
-}
-.nav-item.active > svg {
-  filter: drop-shadow(0 0 5px rgba(245,168,0,.45));
-}
+/* ── Nav enhancements ────────────────────────────────────────────────────── */
+.nav-item { transition: color .15s, background .18s, border-color .18s, transform .12s; }
+.nav-item:hover { transform: translateX(2px); }
+.nav-item.active > svg { filter: drop-shadow(0 0 5px rgba(245,168,0,.5)); }
 
-/* ── Range tabs — gold active ─────────────────────────────────────────────── */
-.rtab {
-  transition: all .18s cubic-bezier(.16,1,.3,1);
-  position: relative;
-  overflow: hidden;
-}
-.rtab::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,.08) 0%, transparent 60%);
-  opacity: 0;
-  transition: opacity .18s;
-  pointer-events: none;
-}
-.rtab:hover::after { opacity: 1; }
+/* ── Range tab active ────────────────────────────────────────────────────── */
 .rtab.active {
   background: linear-gradient(135deg, #F5A800 0%, #D08800 100%);
-  border-color: transparent;
-  color: #000;
-  font-weight: 800;
-  box-shadow: 0 2px 14px rgba(245,168,0,.42), 0 0 0 1px rgba(245,168,0,.3), inset 0 1px 0 rgba(255,255,255,.35);
+  border-color: transparent; color: #000; font-weight: 800;
+  box-shadow: 0 2px 14px rgba(245,168,0,.45), 0 0 0 1px rgba(245,168,0,.28),
+              inset 0 1px 0 rgba(255,255,255,.35);
   text-shadow: 0 1px 2px rgba(0,0,0,.2);
 }
 
-/* ── Header stat pills ────────────────────────────────────────────────────── */
-.hdr-stat {
-  transition: background .15s, border-color .15s;
-}
-.hdr-stat:hover {
-  background: rgba(255,255,255,.06);
-  border-color: rgba(255,255,255,.16);
-}
-
-/* ── Buttons — premium ────────────────────────────────────────────────────── */
+/* ── Btn gold ────────────────────────────────────────────────────────────── */
 .btn-gold {
   background: linear-gradient(135deg, #F5A800 0%, #D08800 100%) !important;
   box-shadow: 0 2px 12px rgba(245,168,0,.38), inset 0 1px 0 rgba(255,255,255,.3) !important;
   transition: box-shadow .2s, transform .15s !important;
 }
 .btn-gold:hover {
-  box-shadow: 0 4px 20px rgba(245,168,0,.52), inset 0 1px 0 rgba(255,255,255,.35) !important;
+  box-shadow: 0 4px 20px rgba(245,168,0,.55), inset 0 1px 0 rgba(255,255,255,.35) !important;
   transform: translateY(-1px);
 }
-.btn-gold:active { transform: translateY(0); }
 
-/* ── Tables ───────────────────────────────────────────────────────────────── */
+/* ── Table hover ─────────────────────────────────────────────────────────── */
 tbody tr { transition: background .1s; }
-tbody tr:hover td {
-  background: rgba(255,255,255,.028);
-}
-tbody tr:hover td:first-child {
-  border-left: 2px solid rgba(245,168,0,.45);
-  padding-left: 14px;
-  transition: padding-left .15s;
-}
+tbody tr:hover td { background: rgba(255,255,255,.028); }
+tbody tr:hover td:first-child { border-left: 2px solid rgba(245,168,0,.45); padding-left: 14px; }
 
-/* ── Income Statement rows ────────────────────────────────────────────────── */
-.is-bk-row  { transition: background .12s; }
-.is-mg-row  { transition: background .12s; }
-
-/* ── Page transitions ─────────────────────────────────────────────────────── */
-.page.active {
-  animation: forge-fade-up .3s cubic-bezier(.16,1,.3,1) both;
-}
-
-/* ── Projection strip ─────────────────────────────────────────────────────── */
-#projStrip {
-  box-shadow: 0 1px 0 rgba(255,255,255,.04), 0 4px 24px rgba(0,0,0,.5);
-}
-
-/* ── Scrollbar ────────────────────────────────────────────────────────────── */
-main::-webkit-scrollbar { width: 5px; }
-main::-webkit-scrollbar-track { background: transparent; }
-main::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 3px; }
-main::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); transition: background .2s; }
-
-/* ── Forge badges ─────────────────────────────────────────────────────────── */
-.forge-badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 9px; border-radius: 100px;
-  font-size: 9px; font-weight: 700;
-  font-family: var(--fm); letter-spacing: .08em; text-transform: uppercase;
-}
-.forge-badge.positive { background: rgba(45,212,191,.1); color: #34D9C3; border: 1px solid rgba(45,212,191,.22); }
-.forge-badge.negative { background: rgba(248,113,113,.1); color: #F87171; border: 1px solid rgba(248,113,113,.22); }
-.forge-badge.gold     { background: rgba(245,168,0,.1);   color: #F5A800; border: 1px solid rgba(245,168,0,.28); box-shadow: 0 0 8px rgba(245,168,0,.14); }
-
-/* ── Page title gradient text ─────────────────────────────────────────────── */
+/* ── Page title gradient ──────────────────────────────────────────────────── */
 .page-title {
   background: linear-gradient(160deg, #FFFFFF 0%, #E8E3DA 42%, #B8B3AA 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 
-/* ── LED dot (live indicator) ─────────────────────────────────────────────── */
+/* ── LED dot ─────────────────────────────────────────────────────────────── */
 .forge-led {
   display: inline-block;
   width: 6px; height: 6px; border-radius: 50%;
   background: #34D9C3;
   box-shadow: 0 0 8px #34D9C3, 0 0 20px rgba(45,212,191,.4);
   animation: forge-led 2s ease-in-out infinite;
-  flex-shrink: 0;
+  flex-shrink: 0; vertical-align: middle;
 }
+
+/* ── Data freshness banners ──────────────────────────────────────────────── */
+.forge-import-banner {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,.025);
+  border: 1px solid rgba(255,255,255,.07);
+  border-left: 3px solid rgba(245,168,0,.5);
+  border-radius: var(--r-lg);
+  margin-bottom: 14px;
+  font-size: 11px;
+}
+.forge-import-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 11px; font-family: var(--fm); color: var(--ink2);
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+  text-decoration: none;
+}
+.forge-import-chip:hover {
+  background: rgba(245,168,0,.1); border-color: rgba(245,168,0,.3);
+  color: #F5A800;
+}
+.forge-import-chip.stale {
+  background: rgba(245,168,0,.08); border-color: rgba(245,168,0,.25); color: #F5A800;
+}
+.forge-import-chip.fresh {
+  background: rgba(45,212,191,.07); border-color: rgba(45,212,191,.2); color: #34D9C3;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+main::-webkit-scrollbar { width: 5px; }
+main::-webkit-scrollbar-track { background: transparent; }
+main::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 3px; }
+main::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); }
 </style>
 </head>
 <body>
@@ -1487,7 +1367,8 @@ main::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); transit
       <select id="cfAcct" onchange="renderCashFlow()" style="font-size:12px;padding:5px 10px;"></select>
     </div>
   </div>
-  <div class="chart-card" style="margin-bottom:16px;">
+  <div id="cfImportBanner" style="margin-bottom:12px;"></div>
+    <div class="chart-card" style="margin-bottom:16px;">
     <div class="chart-title">Income vs Expenses — Monthly</div>
     <div class="chart-area" id="cfBarWrap" style="height:200px;"></div>
   </div>
@@ -1685,7 +1566,8 @@ main::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); transit
   <div id="isThermo" style="display:none;"></div>
   <!-- Expense trend chart -->
   <div id="isTrendWrap" style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;"></div>
-  <div id="incomeStatement"></div>
+  <div id="isImportBanner" style="margin-bottom:12px;"></div>
+    <div id="incomeStatement"></div>
 </div>
   
   
@@ -4937,6 +4819,54 @@ function planStep(n) {
 }
 
 
+// ── Data freshness banner helper ────────────────────────────────────────────
+function renderImportBanner(containerId, fileTypes) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  // Check recency of data by file source
+  const now   = new Date();
+  const today = now.toISOString().slice(0,7);
+  const srcLastDate = {};
+  (txns||[]).forEach(function(t) {
+    const src = t._source || t._ftype || (t.account ? 'quicken' : '');
+    if (!src) return;
+    if (!srcLastDate[src] || t.date > srcLastDate[src]) srcLastDate[src] = t.date;
+  });
+  function staleness(src) {
+    const last = srcLastDate[src];
+    if (!last) return 'missing';
+    const diffDays = Math.round((now - new Date(last+'T12:00:00')) / 86400000);
+    return diffDays <= 7 ? 'fresh' : diffDays <= 30 ? 'ok' : 'stale';
+  }
+  const FILE_META = {
+    quicken:       { icon:'📊', label:'Quicken CSV',     hint:'File → Export → Transactions',         src:'quicken' },
+    apple_card:    { icon:'💳', label:'Apple Card',       hint:'Wallet app → Apple Card → Statements → Export', src:'apple_card' },
+    amazon_orders: { icon:'📦', label:'Amazon Orders',    hint:'amazon.com/gp/b2b/reports',             src:'amazon_orders' },
+    venmo:         { icon:'💸', label:'Venmo',            hint:'Settings → Statements → Download CSV',  src:'venmo' },
+    home_depot:    { icon:'🏠', label:'Home Depot',       hint:'homedepot.com → Order History → Export',src:'home_depot' },
+    lowes:         { icon:'🔧', label:"Lowe's",           hint:'lowes.com → Order History → Export',    src:'lowes' },
+    target:        { icon:'🎯', label:'Target',           hint:'target.com → Orders → Download',        src:'target' },
+    nordstrom:     { icon:'👔', label:'Nordstrom Card',   hint:'nordstrom.com → Statement → Download',  src:'nordstrom' },
+    costco:        { icon:'🏪', label:'Costco',           hint:'costco.com → Orders → Export',          src:'costco' },
+  };
+  let html = '<div class="forge-import-banner">';
+  html += '<span style="color:rgba(255,255,255,.3);font-size:10px;letter-spacing:.08em;text-transform:uppercase;align-self:center;margin-right:4px;white-space:nowrap;">Keep current:</span>';
+  fileTypes.forEach(function(key) {
+    const meta = FILE_META[key];
+    if (!meta) return;
+    const st   = staleness(meta.src);
+    const cls  = st === 'fresh' ? 'fresh' : st === 'stale' || st === 'missing' ? 'stale' : '';
+    const dot  = st === 'fresh' ? '🟢' : st === 'missing' ? '⬜' : st === 'stale' ? '🟡' : '⚪';
+    const lastTxt = srcLastDate[meta.src] ? srcLastDate[meta.src].slice(0,7) : 'never';
+    html += '<span class="forge-import-chip ' + cls + '" title="' + meta.hint + ' · Last: ' + lastTxt + '">'
+          + dot + ' ' + meta.icon + ' ' + meta.label
+          + (cls === 'stale' || cls === '' && st === 'ok' ? '<span style="opacity:.5;font-size:9px;margin-left:3px;">' + lastTxt + '</span>' : '')
+          + '</span>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
 function showPage(name) {
   if (typeof renderProjStrip === 'function') renderProjStrip();
   document.querySelectorAll('.page').forEach(p => {
@@ -4982,7 +4912,12 @@ function showPage(name) {
         return w.offsetWidth > 10 && !w.querySelector('svg') && !w.querySelector('canvas') && !w.textContent.trim();
       });
       if (_anyEmpty) {
-        console.log('[Forge] re-rendering empty charts for:', _n2);
+        // Render import banners
+    if (_n2 === 'cashflow')    renderImportBanner('cfImportBanner', ['quicken','apple_card','amazon_orders','venmo']);
+    if (_n2 === 'income')      renderImportBanner('isImportBanner', ['quicken','apple_card','amazon_orders','venmo','home_depot','lowes','target','nordstrom']);
+    if (_n2 === 'balancesheet')renderImportBanner('nwImportBanner', ['quicken']);
+    if (_n2 === 'transactions')renderImportBanner('txImportBanner', ['quicken','apple_card','amazon_orders','venmo','home_depot','lowes','target','nordstrom']);
+    console.log('[Forge] re-rendering empty charts for:', _n2);
         _doRender(_n2);
       }
     }, 350);
@@ -10598,7 +10533,13 @@ function buildAccrualEngine(selMonth, sp) {
     // Group current-month checking deposits by employer payee
     const employerBreakdown = {};
     curPayTxns.forEach(t => {
-      const key = (t.payee||'Unknown').toLowerCase().trim();
+      const _rawKey = (t.payee||'Unknown').toLowerCase().trim();
+        // Normalize: strip common DD suffixes so "Highmark Health direct dep"
+        // and "Highmark Health" map to the same employer group
+        const key = _rawKey
+          .replace(/\s+(direct\s*dep(osit)?|dd|payroll|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?)\.?\s*$/, '')
+          .replace(/\s+\d{4,}$/, '')   // trailing account numbers
+          .trim();
       if (!employerBreakdown[key]) {
         const hist = (byPayee[key]||{}).amounts || [];
         const typicalPerCheck = hist.length >= 2 ? median(removeOutliers(hist)) : (hist[0]||0);
@@ -10620,7 +10561,13 @@ function buildAccrualEngine(selMonth, sp) {
 
     // Add savings deposits per employer
     curSavPayTxns.forEach(t => {
-      const key = (t.payee||'Unknown').toLowerCase().trim();
+      const _rawKey = (t.payee||'Unknown').toLowerCase().trim();
+        // Normalize: strip common DD suffixes so "Highmark Health direct dep"
+        // and "Highmark Health" map to the same employer group
+        const key = _rawKey
+          .replace(/\s+(direct\s*dep(osit)?|dd|payroll|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?)\.?\s*$/, '')
+          .replace(/\s+\d{4,}$/, '')   // trailing account numbers
+          .trim();
       if (!employerBreakdown[key]) {
         employerBreakdown[key] = {
           payee: t.payee||'Unknown', received:0, checkCount:0,
@@ -12110,7 +12057,11 @@ function renderIncomeStatement() {
   const _p2m  = {};
   (bkt.paycheck||[]).forEach(t => {
     const own = _aO[t.account] || '';
-    const pk  = (t.payee||'').toLowerCase().trim();
+    const _pkRaw = (t.payee||'').toLowerCase().trim();
+    const pk  = _pkRaw
+      .replace(/\s+(direct\s*dep(osit)?|dd|payroll|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?)\.?\s*$/, '')
+      .replace(/\s+\d{4,}$/, '')
+      .trim();
     if (own && pk) _p2m[pk] = own;
   });
   const empKeys2 = Object.keys(empBreakdown).sort();
