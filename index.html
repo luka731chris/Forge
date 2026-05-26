@@ -834,6 +834,323 @@ select:focus { border-color: var(--gold); }
   .chart-grid-2 { grid-template-columns: 1fr; }
   .fin-row { grid-template-columns: 1fr 90px 90px; }
 }
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   FORGE v4.0 — PREMIUM VISUAL SYSTEM
+   Pittsburgh Black & Gold · Etched Glass · Bloom · Motion
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Design tokens ────────────────────────────────────────────────────────── */
+:root {
+  /* Depth shadows */
+  --depth-1: 0 1px 2px rgba(0,0,0,.5), 0 4px 16px rgba(0,0,0,.4);
+  --depth-2: 0 2px 6px rgba(0,0,0,.55), 0 10px 36px rgba(0,0,0,.45), 0 28px 72px rgba(0,0,0,.28);
+  --depth-3: 0 4px 12px rgba(0,0,0,.65), 0 20px 56px rgba(0,0,0,.5), 0 48px 96px rgba(0,0,0,.32);
+  /* Glow */
+  --glow-gold:  0 0 16px rgba(245,168,0,.28), 0 0 56px rgba(245,168,0,.1);
+  --glow-teal:  0 0 16px rgba(45,212,191,.2),  0 0 48px rgba(45,212,191,.08);
+  --glow-river: 0 0 14px rgba(96,165,250,.22),  0 0 40px rgba(96,165,250,.07);
+  --glow-red:   0 0 14px rgba(248,113,113,.2);
+  /* Glass edges */
+  --glass-top:  rgba(255,255,255,.22);
+  --glass-edge: rgba(255,255,255,.09);
+  --glass-bg:   rgba(255,255,255,.032);
+  --r-xl: 20px;
+}
+
+/* ── Keyframes ────────────────────────────────────────────────────────────── */
+@keyframes forge-shimmer {
+  0%   { transform: translateX(-120%) skewX(-8deg); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(120%) skewX(-8deg); opacity: 0; }
+}
+@keyframes forge-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes forge-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes forge-pop {
+  0%   { opacity: 0; transform: scale(.88) translateY(4px); }
+  65%  { transform: scale(1.02) translateY(-1px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes forge-bar-rise {
+  from { transform: scaleY(0); transform-origin: bottom; opacity: 0; }
+  to   { transform: scaleY(1); transform-origin: bottom; opacity: 1; }
+}
+@keyframes forge-pulse-gold {
+  0%, 100% { box-shadow: var(--depth-1); }
+  50%       { box-shadow: var(--depth-1), var(--glow-gold); }
+}
+@keyframes forge-led {
+  0%, 100% { opacity: .5; }
+  50%       { opacity: 1; }
+}
+@keyframes forge-number-tick {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── KPI cards — etched glass ─────────────────────────────────────────────── */
+.kpi {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg,
+    rgba(255,255,255,.052) 0%,
+    rgba(255,255,255,.018) 40%,
+    rgba(255,255,255,.004) 100%);
+  border: 1px solid var(--glass-edge);
+  border-top: 1.5px solid var(--glass-top);
+  border-radius: var(--r-xl);
+  padding: 18px 20px 16px;
+  box-shadow: var(--depth-1), inset 0 1px 0 rgba(255,255,255,.09);
+  backdrop-filter: blur(16px) saturate(160%) brightness(1.04);
+  -webkit-backdrop-filter: blur(16px) saturate(160%) brightness(1.04);
+  transition: box-shadow .3s ease, transform .22s ease, border-color .2s;
+  animation: forge-pop .4s cubic-bezier(.16,1,.3,1) both;
+}
+.kpi::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 12% 0%, rgba(255,255,255,.09) 0%, transparent 52%),
+    radial-gradient(ellipse at 88% 100%, rgba(255,255,255,.03) 0%, transparent 50%);
+  pointer-events: none;
+}
+.kpi::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -80%; width: 50%; height: 100%;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255,255,255,.06) 40%,
+    rgba(255,255,255,.14) 50%,
+    rgba(255,255,255,.06) 60%,
+    transparent 100%);
+  animation: forge-shimmer 6s ease-in-out 1s infinite;
+  pointer-events: none;
+}
+.kpi:hover {
+  border-top-color: rgba(255,255,255,.38);
+  border-color: rgba(255,255,255,.14);
+  box-shadow: var(--depth-2), 0 0 0 1px rgba(255,255,255,.06), inset 0 1px 0 rgba(255,255,255,.15);
+  transform: translateY(-2px);
+}
+.kpi-val {
+  text-shadow: 0 2px 12px rgba(0,0,0,.55);
+  animation: forge-number-tick .35s ease both;
+}
+.kpi-val.positive { color: #34D9C3; text-shadow: 0 0 28px rgba(45,212,191,.3), 0 2px 12px rgba(0,0,0,.5); }
+.kpi-val.negative { color: #F87171; text-shadow: 0 0 24px rgba(248,113,113,.25), 0 2px 12px rgba(0,0,0,.5); }
+.kpi-val.gold     { color: #F5A800; text-shadow: var(--glow-gold), 0 2px 12px rgba(0,0,0,.5); }
+
+/* ── Chart cards — etched glass ───────────────────────────────────────────── */
+.chart-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg,
+    rgba(255,255,255,.038) 0%,
+    rgba(255,255,255,.01) 55%,
+    rgba(255,255,255,.002) 100%);
+  border: 1px solid var(--glass-edge);
+  border-top: 1.5px solid rgba(255,255,255,.2);
+  border-radius: var(--r-xl);
+  box-shadow: var(--depth-1), inset 0 1px 0 rgba(255,255,255,.07);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  transition: box-shadow .3s, border-color .2s, transform .22s;
+  animation: forge-fade-up .45s cubic-bezier(.16,1,.3,1) both;
+}
+.chart-card:hover {
+  border-top-color: rgba(255,255,255,.32);
+  border-color: rgba(255,255,255,.14);
+  box-shadow: var(--depth-2), inset 0 1px 0 rgba(255,255,255,.11);
+  transform: translateY(-1px);
+}
+/* Gold accent line at top of chart titles */
+.chart-title::before {
+  content: '';
+  display: block; width: 3px; height: 15px; flex-shrink: 0;
+  background: linear-gradient(180deg, #F5A800 0%, rgba(245,168,0,.18) 100%);
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(245,168,0,.4);
+}
+/* Etched horizontal rule inside chart cards */
+.chart-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255,255,255,.18) 30%,
+    rgba(255,255,255,.32) 50%,
+    rgba(255,255,255,.18) 70%,
+    transparent 100%);
+  pointer-events: none;
+}
+
+/* ── Chart tooltip — premium glass ───────────────────────────────────────── */
+#chartTip {
+  position: fixed;
+  background: linear-gradient(160deg,
+    rgba(16,16,26,.97) 0%,
+    rgba(10,10,18,.99) 100%);
+  backdrop-filter: blur(32px) saturate(220%) brightness(1.08);
+  -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(1.08);
+  border: 1px solid rgba(255,255,255,.1);
+  border-top: 1px solid rgba(255,255,255,.3);
+  border-radius: 14px;
+  padding: 12px 16px 11px;
+  font-size: 12px;
+  font-family: var(--fm);
+  color: var(--ink2);
+  pointer-events: none;
+  z-index: 9999;
+  display: none;
+  min-width: 160px;
+  max-width: 300px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.06),
+    0 6px 28px rgba(0,0,0,.8),
+    0 20px 56px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.12);
+  animation: forge-pop .18s cubic-bezier(.16,1,.3,1) both;
+}
+/* Gold accent stripe on tooltip */
+#chartTip::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 12px; right: 12px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245,168,0,.55), transparent);
+}
+
+/* ── Navigation — gold active ─────────────────────────────────────────────── */
+.nav-item {
+  transition: color .15s, background .18s, border-color .18s, transform .12s;
+}
+.nav-item:hover {
+  transform: translateX(2px);
+}
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(245,168,0,.1) 0%, rgba(245,168,0,.018) 100%);
+  border-left-color: #F5A800;
+  font-weight: 600;
+  box-shadow: inset 0 0 24px rgba(245,168,0,.04);
+}
+.nav-item.active > svg {
+  filter: drop-shadow(0 0 5px rgba(245,168,0,.45));
+}
+
+/* ── Range tabs — gold active ─────────────────────────────────────────────── */
+.rtab {
+  transition: all .18s cubic-bezier(.16,1,.3,1);
+  position: relative;
+  overflow: hidden;
+}
+.rtab::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.08) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity .18s;
+  pointer-events: none;
+}
+.rtab:hover::after { opacity: 1; }
+.rtab.active {
+  background: linear-gradient(135deg, #F5A800 0%, #D08800 100%);
+  border-color: transparent;
+  color: #000;
+  font-weight: 800;
+  box-shadow: 0 2px 14px rgba(245,168,0,.42), 0 0 0 1px rgba(245,168,0,.3), inset 0 1px 0 rgba(255,255,255,.35);
+  text-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
+
+/* ── Header stat pills ────────────────────────────────────────────────────── */
+.hdr-stat {
+  transition: background .15s, border-color .15s;
+}
+.hdr-stat:hover {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.16);
+}
+
+/* ── Buttons — premium ────────────────────────────────────────────────────── */
+.btn-gold {
+  background: linear-gradient(135deg, #F5A800 0%, #D08800 100%) !important;
+  box-shadow: 0 2px 12px rgba(245,168,0,.38), inset 0 1px 0 rgba(255,255,255,.3) !important;
+  transition: box-shadow .2s, transform .15s !important;
+}
+.btn-gold:hover {
+  box-shadow: 0 4px 20px rgba(245,168,0,.52), inset 0 1px 0 rgba(255,255,255,.35) !important;
+  transform: translateY(-1px);
+}
+.btn-gold:active { transform: translateY(0); }
+
+/* ── Tables ───────────────────────────────────────────────────────────────── */
+tbody tr { transition: background .1s; }
+tbody tr:hover td {
+  background: rgba(255,255,255,.028);
+}
+tbody tr:hover td:first-child {
+  border-left: 2px solid rgba(245,168,0,.45);
+  padding-left: 14px;
+  transition: padding-left .15s;
+}
+
+/* ── Income Statement rows ────────────────────────────────────────────────── */
+.is-bk-row  { transition: background .12s; }
+.is-mg-row  { transition: background .12s; }
+
+/* ── Page transitions ─────────────────────────────────────────────────────── */
+.page.active {
+  animation: forge-fade-up .3s cubic-bezier(.16,1,.3,1) both;
+}
+
+/* ── Projection strip ─────────────────────────────────────────────────────── */
+#projStrip {
+  box-shadow: 0 1px 0 rgba(255,255,255,.04), 0 4px 24px rgba(0,0,0,.5);
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+main::-webkit-scrollbar { width: 5px; }
+main::-webkit-scrollbar-track { background: transparent; }
+main::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 3px; }
+main::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); transition: background .2s; }
+
+/* ── Forge badges ─────────────────────────────────────────────────────────── */
+.forge-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 100px;
+  font-size: 9px; font-weight: 700;
+  font-family: var(--fm); letter-spacing: .08em; text-transform: uppercase;
+}
+.forge-badge.positive { background: rgba(45,212,191,.1); color: #34D9C3; border: 1px solid rgba(45,212,191,.22); }
+.forge-badge.negative { background: rgba(248,113,113,.1); color: #F87171; border: 1px solid rgba(248,113,113,.22); }
+.forge-badge.gold     { background: rgba(245,168,0,.1);   color: #F5A800; border: 1px solid rgba(245,168,0,.28); box-shadow: 0 0 8px rgba(245,168,0,.14); }
+
+/* ── Page title gradient text ─────────────────────────────────────────────── */
+.page-title {
+  background: linear-gradient(160deg, #FFFFFF 0%, #E8E3DA 42%, #B8B3AA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── LED dot (live indicator) ─────────────────────────────────────────────── */
+.forge-led {
+  display: inline-block;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #34D9C3;
+  box-shadow: 0 0 8px #34D9C3, 0 0 20px rgba(45,212,191,.4);
+  animation: forge-led 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
 </style>
 </head>
 <body>
@@ -916,12 +1233,7 @@ select:focus { border-color: var(--gold); }
     <div id="lock-spinner-lbl" style="font-size:11px;color:var(--ink4,#7A7672);margin-top:8px;letter-spacing:.06em;">Encrypting…</div>
   </div>
 
-  <style>
-    @keyframes lock-spin { to { transform:rotate(360deg); } }
-    #lock-pass:focus, #lock-pass-new:focus, #lock-pass-confirm:focus {
-      border-color:var(--gold,#F5A800);outline:none;
-    }
-  </style>
+  
 </div>
 
 
@@ -3737,48 +4049,42 @@ function inRange(t, r) {
 // ════════════════════════════════════════════════
 // CHART TOOLTIP + BINDING
 // ════════════════════════════════════════════════
-function showChartTip(e, text) {
-  const tip = document.getElementById('chartTip');
-  if (!tip) return;
-  const hasDrill = e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.drill;
-  const raw = (text||'').replace(/&apos;/g,"'").replace(/&quot;/g,'"');
-  // Parse pipe-delimited sections into styled rows
-  const parts = raw.split(/\s*\|\s*/);
-  let html = '';
-  parts.forEach(function(p, i) {
-    p = p.trim();
-    if (!p) return;
-    if (i === 0) {
-      // Header row: month label
-      html += '<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;'
-            + 'color:rgba(255,255,255,.45);margin-bottom:6px;padding-bottom:5px;'
-            + 'border-bottom:1px solid rgba(255,255,255,.08);">'+p+'</div>';
-    } else {
-      // Data row: "Label: value" — color value by sign
+function showChartTip(e, rawText) {
+  const t = document.getElementById('chartTip');
+  if (!t || !rawText) return;
+  // Format: pipe-separated — first segment is the header (month/label)
+  // remaining segments are key: value pairs
+  const parts = rawText.split('|');
+  if (parts.length > 1) {
+    const head = parts[0].trim();
+    const body = parts.slice(1).map(function(p) {
       const colon = p.indexOf(':');
       if (colon > 0) {
-        const label = p.slice(0, colon).trim();
-        const val   = p.slice(colon+1).trim();
-        const isPos = val.startsWith('+') || (!val.startsWith('-') && !val.startsWith('−'));
-        const isNeg = val.startsWith('-') || val.startsWith('−');
-        const isNet = label.toLowerCase().includes('net');
-        const valCol = isNet ? (isNeg ? '#FF5C5C' : '#34D9C3') : 'rgba(255,255,255,.85)';
-        html += '<div style="display:flex;justify-content:space-between;align-items:baseline;'
-              + 'gap:16px;padding:2px 0;">'
-              + '<span style="color:rgba(255,255,255,.55);font-size:11px;">'+label+'</span>'
-              + '<span style="color:'+valCol+';font-weight:'+(isNet?'700':'500')+';font-size:12px;font-family:var(--fm);">'+val+'</span>'
-              + '</div>';
-      } else {
-        html += '<div style="color:rgba(255,255,255,.55);font-size:11px;padding:2px 0;">'+p+'</div>';
+        const k = p.slice(0, colon).trim();
+        const v = p.slice(colon+1).trim();
+        const isPos = v.charAt(0) === '+' || v.indexOf('surplus') >= 0;
+        const isNeg = v.charAt(0) === '-' || v.charAt(0) === '−' || v.indexOf('deficit') >= 0;
+        const vCol  = isPos ? '#34D9C3' : isNeg ? '#F87171' : '#F5A800';
+        return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:18px;padding:2px 0;">'
+             + '<span style="color:rgba(255,255,255,.42);font-size:10.5px;">' + k + '</span>'
+             + '<span style="font-weight:600;color:' + vCol + ';font-family:var(--fm);font-size:11px;">' + v + '</span></div>';
       }
-    }
-  });
-  if (hasDrill) {
-    html += '<div style="font-size:9px;color:var(--gold);margin-top:6px;padding-top:5px;'
-          + 'border-top:1px solid rgba(255,255,255,.07);">↗ click to view transactions</div>';
+      return '<div style="color:rgba(255,255,255,.45);font-size:10.5px;padding:1px 0;">' + p.trim() + '</div>';
+    }).join('');
+    t.innerHTML =
+      '<div style="font-size:10px;font-weight:700;color:#F5A800;letter-spacing:.06em;text-transform:uppercase;'
+      + 'margin-bottom:7px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08);">'
+      + head + '</div>'
+      + '<div>' + body + '</div>';
+  } else {
+    t.innerHTML = '<div style="font-size:11px;">' + rawText + '</div>';
   }
-  tip.innerHTML = html;
-  tip.style.display = 'block';
+  // Animate pop
+  t.style.display = 'block';
+  t.style.animation = 'none';
+  void t.offsetHeight;
+  t.style.animation = 'forge-pop .18s cubic-bezier(.16,1,.3,1) both';
+  // Smart positioning via positionChartTip
   positionChartTip(e);
 }
 function positionChartTip(e) {
@@ -6081,6 +6387,8 @@ function renderProjStrip() {
   }
 
   var monthName = now.toLocaleDateString('en-US', {month:'short'});
+  var _ledDot = dLeft > 0 ? '<span class="forge-led" style="margin-right:6px;"></span>' : '';
+
   var yr2       = String(now.getFullYear()).slice(2);
 
   // Actual net color/icon
@@ -6096,7 +6404,7 @@ function renderProjStrip() {
 
   var html = '';
   // Month label
-  html += '<span style="font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.04em;">'
+  html += _ledDot + '<span style="font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.04em;">'
         + monthName + ' \'' + yr2 + '</span>';
   html += sep;
 
@@ -6115,6 +6423,8 @@ function renderProjStrip() {
     html += '<span style="color:rgba(255,255,255,.38);font-size:11px;">month-end est.:</span> ';
     html += '<span style="color:' + prjCol + ';font-weight:700;">'
           + prjIcon + ' ' + fmtK(projNet) + '</span>';
+    html += '<span style="font-size:10px;color:rgba(255,255,255,.2);margin:0 3px;">(';
+    html += fmtKabs(proj.income) + ' in − ' + fmtKabs(proj.expenses) + ' out)</span>';
     html += dot;
     html += '<span style="color:rgba(255,255,255,.32);">' + dLeft + 'd remaining</span>';
     html += dot;
@@ -11574,602 +11884,538 @@ function renderIncomeStatement() {
     </div>`;
   }
 
-  // ── BUILD OUTPUT ───────────────────────────────────────────────────
+
+  // ── BUILD OUTPUT ─────────────────────────────────────────────────────────
   try {
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  const C = { pos:'#34D9C3', neg:'#F87171', gold:'#F5A800', river:'#60A5FA', ink:'#EEEAE4', ink2:'#C8C4BE', ink4:'#6B6560' };
+  function mfmt(v) { const a=Math.abs(v); return '$'+(a>=10?Math.round(a).toLocaleString('en-US'):a.toFixed(2)); }
+  function pctOf(v, base) { return base>0 ? (v/base*100).toFixed(0)+'%' : '—'; }
+
+  // ── Data refs (from data pipeline above) ──────────────────────────────────
+  const totalFixed   = fixedRows.reduce((s,g)=>s+g.actual+g.proj, 0);
+  const totalVar     = varRows.reduce((s,g)=>s+g.actual+g.proj, 0);
+  const totalExp     = totalFixed + totalVar;
+  const netRemaining = deployable - totalExp;
+  const onTrack      = netRemaining >= 0;
+
+  // ── Layout helpers ─────────────────────────────────────────────────────────
+  // Compact ledger row: label left, number right, no gap
+  function ledgerRow(label, amount, opts) {
+    opts = opts || {};
+    const indent  = opts.indent  || 0;
+    const color   = opts.color   || C.ink2;
+    const bold    = opts.bold    ? '700' : '400';
+    const size    = opts.size    || 13;
+    const sub     = opts.sub     || '';
+    const badge   = opts.badge   || '';
+    const bkid    = opts.bkid    || '';
+    const mgid    = opts.mgid    || '';
+    const hasMore = opts.hasMore || false;
+    const isOpen  = opts.isOpen  || false;
+    const projected = opts.projected || 0;
+    const dimColor  = opts.dimColor || C.ink4;
+
+    const pl = 12 + indent * 20;
+    const cls = bkid  ? ' class="is-bk-row"'  :
+                mgid  ? ' class="is-mg-row"'   : '';
+    const dat = bkid  ? ` data-bkid="${bkid}"` :
+                mgid  ? ` data-mgid="${mgid}"`  : '';
+    const cursor = (hasMore || bkid || mgid) ? 'cursor:pointer;' : '';
+
+    let html = `<div${cls}${dat} style="display:flex;align-items:baseline;gap:0;`
+             + `padding:6px ${pl}px 6px ${pl}px;`
+             + `border-bottom:1px solid rgba(255,255,255,.035);`
+             + `${cursor}transition:background .1s;"`;
+    if (bkid || mgid) html += ` onmouseenter="this.style.background='rgba(255,255,255,.025)'" onmouseleave="this.style.background=''"`;
+    html += '>';
+
+    // Label
+    html += `<div style="flex:1;font-size:${size}px;font-weight:${bold};color:${color};line-height:1.4;">`;
+    html += label;
+    if (badge) html += ` ${badge}`;
+    if (sub)   html += `<span style="display:block;font-size:10px;color:${C.ink4};font-weight:400;margin-top:1px;">${sub}</span>`;
+    html += '</div>';
+
+    // Amount
+    if (amount !== null && amount !== undefined) {
+      html += `<div style="font-family:var(--fm);font-size:${bold==='700'?size+1:size}px;font-weight:${bold};color:${color};white-space:nowrap;padding-left:16px;flex-shrink:0;">`;
+      html += mfmt(Math.abs(amount));
+      html += '</div>';
+    }
+
+    // Projected add-on
+    if (projected > 1) {
+      html += `<div style="font-family:var(--fm);font-size:10px;color:${C.river};white-space:nowrap;padding-left:8px;flex-shrink:0;">+${mfmt(projected)} est.</div>`;
+    }
+
+    // % column
+    if (opts.pct) {
+      html += `<div style="font-size:11px;color:${dimColor};width:38px;text-align:right;flex-shrink:0;padding-left:6px;">${opts.pct}</div>`;
+    }
+
+    // Chevron
+    if (hasMore || bkid || mgid) {
+      html += `<div style="font-size:10px;color:${C.ink4};width:14px;text-align:right;flex-shrink:0;padding-left:4px;">${isOpen?'▾':'▸'}</div>`;
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  function divider(label, amount, color) {
+    color = color || C.ink;
+    return `<div style="display:flex;align-items:center;padding:8px 12px 7px;background:rgba(255,255,255,.025);border-top:1.5px solid ${color}33;border-bottom:1.5px solid ${color}33;">
+      <div style="flex:1;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${color};">${label}</div>
+      <div style="font-family:var(--fm);font-size:17px;font-weight:700;color:${color};">${amount}</div>
+    </div>`;
+  }
+
+  function section(label, icon, total, sub, color) {
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px 6px;border-top:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.02);">
+      <span style="font-size:16px;">${icon}</span>
+      <div style="flex:1;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${color};">${label}</div>
+        ${sub?`<div style="font-size:10px;color:${C.ink4};margin-top:1px;">${sub}</div>`:''}
+      </div>
+      <div style="font-family:var(--fm);font-size:18px;font-weight:700;color:${color};">${mfmt(total)}</div>
+      <div style="font-size:11px;color:${C.ink4};width:36px;text-align:right;">${pctOf(total,deployable)}</div>
+    </div>`;
+  }
+
+  function drillRows(txnList) {
+    if (!txnList || !txnList.length) return '';
+    const DET = txnList.filter(t => t._isDetail);
+    const PLN = txnList.filter(t => !t._isDetail);
+    let html = '<div style="background:rgba(0,0,0,.22);border-top:1px solid rgba(255,255,255,.04);">';
+
+    // Group detail rows by payee
+    if (DET.length) {
+      const grps = {};
+      DET.forEach(t => {
+        const k = (t.payee||t.itemDetail||'Unknown').trim();
+        if (!grps[k]) grps[k] = { payee:k, txns:[], total:0, src:t._ftype||t._source||'' };
+        grps[k].txns.push(t); grps[k].total += Math.abs(t.amount);
+      });
+      Object.values(grps).sort((a,b)=>b.total-a.total).forEach(g => {
+        const srcLbl = {apple_card:'Apple Card',amazon_orders:'Amazon',home_depot:'Home Depot',venmo:'Venmo'}[g.src]||'';
+        const srcBadge = srcLbl ? `<span style="font-size:9px;background:rgba(96,165,250,.12);color:${C.river};padding:1px 5px;border-radius:3px;margin-left:6px;">${srcLbl}</span>` : '';
+        const mgId = 'mg-'+g.payee.replace(/[^a-z0-9]/gi,'').slice(0,20)+'-'+selMonth;
+        const isOpenM = !!document.getElementById(mgId);
+        html += `<div class="is-mg-row" data-mgid="${mgId}" style="display:flex;align-items:baseline;padding:5px 12px 5px 32px;border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer;"
+          onmouseenter="this.style.background='rgba(255,255,255,.02)'" onmouseleave="this.style.background=''">
+          <div style="flex:1;font-size:12px;font-weight:600;color:var(--ink);">${g.payee}${srcBadge}
+            <span style="font-size:10px;color:${C.ink4};font-weight:400;margin-left:6px;">${g.txns.length} item${g.txns.length!==1?'s':''}</span>
+          </div>
+          <div style="font-family:var(--fm);font-size:13px;font-weight:700;color:${C.gold};">${mfmt(g.total)}</div>
+          <span class="mg-chev" style="font-size:10px;color:${C.ink4};padding-left:8px;">${isOpenM?'▾':'▸'}</span>
+        </div>`;
+        html += `<div id="${mgId}" style="display:none;background:rgba(0,0,0,.14);">`;
+        g.txns.sort((a,b)=>a.date.localeCompare(b.date)).forEach(t => {
+          const title = (t.itemDetail && t.itemDetail!==t.payee) ? t.itemDetail : (t.payee||'—');
+          html += `<div style="display:grid;grid-template-columns:52px 1fr auto;gap:6px;padding:3px 12px 3px 44px;border-bottom:1px solid rgba(255,255,255,.025);">
+            <div style="font-family:var(--fm);font-size:10px;color:${C.ink4};">${t.date.slice(5)}</div>
+            <div style="font-size:11px;color:#A8A4A0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title}</div>
+            <div style="font-family:var(--fm);font-size:11px;font-weight:600;color:${C.gold};">${mfmt(Math.abs(t.amount))}</div>
+          </div>`;
+        });
+        html += '</div>';
+      });
+    }
+    PLN.sort((a,b)=>b.date.localeCompare(a.date)||Math.abs(b.amount)-Math.abs(a.amount)).forEach(t => {
+      html += `<div style="display:grid;grid-template-columns:60px 1fr auto;gap:6px;padding:5px 12px 5px 32px;border-bottom:1px solid rgba(255,255,255,.025);">
+        <div style="font-family:var(--fm);font-size:10px;color:${C.ink4};padding-top:2px;">${t.date.slice(5)}</div>
+        <div style="font-size:12px;color:#A8A4A0;">${t.payee||'—'}</div>
+        <div style="font-family:var(--fm);font-size:12px;font-weight:600;color:${C.gold};">${mfmt(Math.abs(t.amount))}</div>
+      </div>`;
+    });
+    html += '</div>';
+    return html;
+  }
+
   let out = '';
 
-  // Compact 2-column layout: left = content (max 680px), right = margin rail (200px)
-  // On narrow screens, margin collapses under content
-  const WRAP_OPEN  = `<div style="display:grid;grid-template-columns:1fr minmax(0,188px);gap:12px;align-items:start;max-width:900px;">`;
-  const WRAP_CLOSE = `</div>`;
-  const MARGIN_OPEN  = `<div style="padding-top:2px;">`;
-  const MARGIN_CLOSE = `</div>`;
+  // ── CARD WRAPPER ────────────────────────────────────────────────────────────
+  const outerStyle = 'background:var(--float);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;';
 
-  function row(content, marginContent) {
-    return `<div style="display:contents;">
-      <div>${content}</div>
-      ${MARGIN_OPEN}${marginContent||''}${MARGIN_CLOSE}
+  // ── STATUS HEADER ──────────────────────────────────────────────────────────
+  {
+    const pct = Math.round((new Date().getDate() / (new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate())) * 100);
+    const dLeft = isInFlight ? daysRemaining : 0;
+    const statusTxt = isInFlight
+      ? `<span style="background:rgba(96,165,250,.15);color:${C.river};border:1px solid rgba(96,165,250,.3);border-radius:20px;font-size:10px;font-weight:700;padding:2px 8px;letter-spacing:.06em;">IN-FLIGHT</span>
+         <span style="font-size:11px;color:${C.ink4};">${dLeft}d remaining · ${pct}% done</span>`
+      : `<span style="background:rgba(255,255,255,.06);color:${C.ink4};border:1px solid rgba(255,255,255,.1);border-radius:20px;font-size:10px;font-weight:700;padding:2px 8px;letter-spacing:.06em;">CLOSED</span>`;
+    out += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+      <div style="font-size:17px;font-weight:700;color:${C.ink};">${monthName}</div>
+      ${statusTxt}
     </div>`;
   }
 
-  // ── Status header ──────────────────────────────────────────────────
-  const statusBadge = isInFlight
-    ? `<span style="background:rgba(96,165,250,.15);border:1px solid rgba(96,165,250,.3);color:${C.river};font-size:9px;font-family:var(--fm);letter-spacing:.1em;padding:2px 8px;border-radius:20px;">⚡ IN FLIGHT · Day ${daysElapsed}/${daysInMonth}</span>`
-    : `<span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:${C.ink4};font-size:9px;font-family:var(--fm);letter-spacing:.1em;padding:2px 8px;border-radius:20px;">📋 CLOSED · Actuals Only</span>`;
+  // ── TRAFFIC LIGHT — big single answer ─────────────────────────────────────
+  {
+    const tl_col = onTrack ? (netRemaining > deployable*0.1 ? C.pos : C.gold) : C.neg;
+    const tl_em  = onTrack ? (netRemaining > deployable*0.1 ? '🟢' : '🟡') : '🔴';
+    const tl_lbl = isInFlight
+      ? (onTrack ? 'On pace for a ' + kfmt(netRemaining) + ' surplus' : 'On pace to be ' + kfmt(Math.abs(netRemaining)) + ' over budget')
+      : (onTrack ? 'Closed with a ' + kfmt(netRemaining) + ' surplus' : 'Closed ' + kfmt(Math.abs(netRemaining)) + ' over budget');
+    const tl_sub = 'Savings rate: ' + pctOf(totalAutoSave + (onTrack?netRemaining:0), displayGross);
+    out += `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
+      border-radius:var(--r-lg);margin-bottom:14px;
+      background:${onTrack?'rgba(52,217,195,.07)':'rgba(248,113,113,.09)'};
+      border:1px solid ${tl_col}33;">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+          <span style="font-size:16px;">${tl_em}</span>
+          <span style="font-size:14px;font-weight:700;color:${tl_col};">${tl_lbl}</span>
+        </div>
+        <div style="font-size:11px;color:${C.ink4};">${tl_sub} · Deployable: ${kfmt(deployable)}</div>
+      </div>
+      <div style="font-family:var(--fm);font-size:32px;font-weight:700;color:${tl_col};letter-spacing:-.02em;">${netRemaining>=0?'+':'-'}${kfmt(Math.abs(netRemaining))}</div>
+    </div>`;
+  }
 
-  out += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
-    <div style="font-size:15px;font-weight:700;color:${C.ink};">${monthName}</div>
-    ${statusBadge}
-    ${isInFlight?`<span style="font-size:11px;color:${C.ink4};">${daysRemaining} days remaining</span>`:''}
+  // ── MAIN LEDGER ────────────────────────────────────────────────────────────
+  out += `<div style="${outerStyle}">`;
+
+  // ── SECTION 1: GROSS PAY ───────────────────────────────────────────────────
+  const incPayId = 'isp-'+selMonth.replace('-','');
+  const incPayOpen = !!isBucketOpen['__incPay'];
+  out += `<div class="is-bk-row" data-bkid="__incPay" style="display:flex;align-items:baseline;padding:10px 12px;background:rgba(52,217,195,.04);border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer;"
+    onmouseenter="this.style.background='rgba(52,217,195,.07)'" onmouseleave="this.style.background='rgba(52,217,195,.04)'">
+    <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${C.pos};flex:1;">
+      💵 Gross Pay
+      ${earlyMonthIS ? `<span style="font-size:10px;color:${C.river};font-weight:400;margin-left:8px;">estimated</span>` : ''}
+    </div>
+    <div style="font-family:var(--fm);font-size:18px;font-weight:700;color:${C.pos};">+${kfmt(displayGross)}</div>
+    <div style="font-size:10px;color:${C.ink4};width:14px;text-align:right;padding-left:8px;">${incPayOpen?'▾':'▸'}</div>
   </div>`;
 
-  // Clear separate chart container; bar is now inline
-  (function(){ var tw=document.getElementById("isTrendWrap"); if(tw) tw.innerHTML=""; })();
-
-  // ── Break-even indicator ────────────────────────────────────────────────
-  {
-    const _broke = !onTrack;
-    const _col   = _broke ? C.neg : netRemaining < 50 ? C.gold : C.pos;
-    const _emoji = _broke ? '🔴' : netRemaining < 50 ? '🟡' : '🟢';
-    const _label = isInFlight
-      ? (_broke ? 'On pace to be '+kfmt(Math.abs(netRemaining))+' over budget'
-                : netRemaining<50?'Essentially break-even':'On pace for '+kfmt(netRemaining)+' surplus')
-      : (_broke ? 'Closed '+kfmt(Math.abs(netRemaining))+' over budget'
-                : netRemaining<50?'Closed break-even':'Closed with '+kfmt(netRemaining)+' surplus');
-    out += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;'
-         + 'border-radius:var(--r-lg);margin-bottom:10px;border:1px solid rgba(255,255,255,.08);'
-         + 'background:'+(_broke?'rgba(248,113,113,.09)':netRemaining<50?'rgba(245,168,0,.08)':'rgba(52,217,195,.07)')+';">'
-         + '<div style="display:flex;align-items:center;gap:8px;">'
-           + '<span style="font-size:16px;">'+_emoji+'</span>'
-           + '<span style="font-size:13px;color:'+_col+';font-weight:600;">'+_label+'</span>'
-         + '</div>'
-         + '<div style="font-size:24px;font-weight:700;font-family:var(--fd);color:'+_col+';">'
-           + (_broke?'−':'+') + kfmt(Math.abs(netRemaining))
-         + '</div></div>';
-  }
-
-  // ── Inline Budget Pressure Bar ─────────────────────────────────────────
-  {
-    var _i=totalIncome>0?totalIncome:(earlyMonthIS?normPaycheck:0);
-    var _s=totalAutoSave,_fx=totalFixed,_vx=totalVar;
-    var _d=Math.max(_i-_s,1),_sp=_fx+_vx,_b=_d-_sp,_ov=_b<0;
-    var _sc=Math.max(_d,_sp,1)*(_ov?1.08:1);
-    var _fp=Math.min(_fx/_sc*100,100);
-    var _vp=Math.min(_vx/_sc*100,Math.max(0,100-_fp));
-    var _bp=!_ov?Math.max(0,Math.min(_d/_sc*100-_fp-_vp,100-_fp-_vp)):0;
-    var _op=_ov?Math.min(Math.abs(_b)/_sc*100,100-_fp-_vp):0;
-    var _il=Math.min(_d/_sc*100,99.5).toFixed(2);
-    var _bc=_ov?"#FF3B3B":(Math.abs(_b)/_d<.08?"#FBBF24":"#34D9C3");
-    var _fk=function(n){var a=Math.abs(n||0);return(n<0?"-":"")+(a>=1000?"$"+(a/1000).toFixed(1).replace(/\.0$/,"")+"K":"$"+Math.round(a));};
-    var _bar="";
-    _bar+="<div style=\"background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px 12px;margin-bottom:14px;\">";
-    _bar+="<div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px;flex-wrap:wrap;\">";
-    _bar+="<div style=\"font-size:15px;font-weight:700;color:var(--ink);\">" + "Budget Pressure &middot; " + monthName + "</div>";
-    _bar+="<div style=\"font-size:20px;font-weight:700;font-family:var(--fd);color:" + _bc + ";letter-spacing:-.01em;\">" + (_ov?"&minus;":"+") + _fk(Math.abs(_b)) + "<span style=\"font-size:11px;font-weight:500;margin-left:4px;opacity:.7;\">" + (_ov?"over":"free") + "</span></div>";
-    _bar+="</div>";
-    _bar+="<div style=\"font-size:11px;color:var(--ink4);font-family:var(--fm);margin-bottom:9px;\">" + _fk(_i) + (earlyMonthIS?" (est.)":"") + (_s>0?" &minus; "+_fk(_s)+" saved ":" ") + "= " + _fk(_d) + " deployable</div>";
-    _bar+="<div style=\"position:relative;height:14px;margin-bottom:3px;\"><div style=\"position:absolute;left:"+_il+"%;transform:translateX(-50%);font-size:9px;font-family:var(--fm);color:rgba(255,255,255,.4);white-space:nowrap;\">&lt; "+_fk(_d)+"</div></div>";
-    _bar+="<div style=\"position:relative;height:44px;border-radius:7px;overflow:hidden;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);box-shadow:0 3px 14px rgba(0,0,0,.5);\">";
-    _bar+="<div style=\"position:absolute;left:0;top:0;height:100%;width:"+_fp.toFixed(2)+"%;background:linear-gradient(to bottom,#FF9494,#C94444);\">";
-    if(_fp>18)_bar+="<div style=\"position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;gap:1px;\"><div style=\"font-size:11px;font-weight:800;color:rgba(255,255,255,.95);\">FIXED</div><div style=\"font-size:13px;font-weight:700;font-family:var(--fm);color:rgba(255,255,255,.9);\">" + _fk(_fx) + "</div></div>";
-    _bar+="</div>";
-    _bar+="<div style=\"position:absolute;top:0;height:100%;left:"+_fp.toFixed(2)+"%;width:"+_vp.toFixed(2)+"%;background:linear-gradient(to bottom,#FFCA40,#C07A00);\">";
-    if(_vp>16)_bar+="<div style=\"position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;gap:1px;\"><div style=\"font-size:11px;font-weight:800;color:rgba(0,0,0,.8);\">VAR</div><div style=\"font-size:13px;font-weight:700;font-family:var(--fm);color:rgba(0,0,0,.75);\">" + _fk(_vx) + "</div></div>";
-    _bar+="</div>";
-    if(!_ov&&_bp>0.5){_bar+="<div style=\"position:absolute;top:0;height:100%;left:"+(_fp+_vp).toFixed(2)+"%;width:"+_bp.toFixed(2)+"%;background:repeating-linear-gradient(-45deg,rgba(52,217,195,.55) 0,rgba(52,217,195,.55) 3px,rgba(52,217,195,.08) 3px,rgba(52,217,195,.08) 14px);\">";if(_bp>10)_bar+="<div style=\"position:absolute;inset:0;display:flex;align-items:center;justify-content:center;\"><span style=\"font-size:12px;font-weight:700;color:rgba(52,217,195,.9);font-family:var(--fm);\">" + _fk(_b) + "</span></div>";_bar+="</div>";}
-    if(_ov&&_op>0){_bar+="<div style=\"position:absolute;top:0;height:100%;left:"+(_fp+_vp).toFixed(2)+"%;width:"+_op.toFixed(2)+"%;background:repeating-linear-gradient(45deg,rgba(255,59,59,.7) 0,rgba(255,59,59,.7) 3px,rgba(255,59,59,.14) 3px,rgba(255,59,59,.14) 12px);\">";if(_op>6)_bar+="<div style=\"position:absolute;inset:0;display:flex;align-items:center;justify-content:center;\"><span style=\"font-size:12px;font-weight:700;color:#FF3B3B;font-family:var(--fm);\">&minus;" + _fk(Math.abs(_b)) + "</span></div>";_bar+="</div>";}
-    _bar+="<div style=\"position:absolute;inset:0;background:linear-gradient(to bottom,rgba(255,255,255,.18),rgba(255,255,255,0) 40%,rgba(0,0,0,.25));pointer-events:none;border-radius:inherit;\"></div>";
-    _bar+="<div style=\"position:absolute;top:0;bottom:0;left:"+_il+"%;width:2px;background:rgba(255,255,255,.75);box-shadow:0 0 6px rgba(255,255,255,.4);pointer-events:none;\"></div>";
-    _bar+="</div>";
-    _bar+="<div style=\"display:flex;gap:12px;margin-top:7px;font-size:11px;font-family:var(--fm);flex-wrap:wrap;\">";
-    _bar+="<span style=\"color:#F87171;\">&#9632; Fixed " + Math.round(_fx/Math.max(_d,1)*100) + "%</span>";
-    _bar+="<span style=\"color:#F5A800;\">&#9632; Variable " + Math.round(_vx/Math.max(_d,1)*100) + "%</span>";
-    _bar+="<span style=\"color:" + _bc + ";\">"+(_ov?"Over":"Free")+" "+Math.round(Math.abs(_b)/Math.max(_d,1)*100)+"%</span>";
-    if(isInFlight)_bar+="<span style=\"color:var(--ink4);margin-left:auto;\">" + daysElapsed + "d actual &middot; " + daysRemaining + "d remaining</span>";
-    _bar+="</div></div>";
-    out += _bar;
-  }
-
-  // ── Recommendations — KPI card grid ──────────────────────────────────
-  if (recs.length > 0) {
-    out += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px;">`;
-    recs.forEach(r => {
-      const bc = recBorders[r.level] || 'rgba(255,255,255,.2)';
-      const bg = recColors[r.level]  || 'rgba(255,255,255,.04)';
-      out += `<div style="background:${bg};border:1px solid ${bc}33;border-top:3px solid ${bc};border-radius:var(--r-lg);padding:12px 14px;position:relative;">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-          <span style="font-size:16px;">${r.icon}</span>
-          <span style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${bc};">${r.label}</span>
-        </div>
-        <div style="font-size:22px;font-weight:700;font-family:var(--fd);color:${bc};line-height:1;margin-bottom:4px;">${r.value}</div>
-        <div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:2px;">${r.action}</div>
-        <div style="font-size:11px;color:var(--ink4);">${r.sub}</div>
-      </div>`;
-    });
-    out += `</div>`;
-  }
-
-  // ── Helper: compact table section ────────────────────────────────
-  function tableSection(title, icon, color, rows, totalLabel, total, pctBase, sub, commentKey) {
-    const pct = pctBase>0 ? (total/pctBase*100).toFixed(0)+'%' : '';
-    const commentHtml = commentWidget(commentKey, 'Note on '+title+'…');
-    let html = `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">
-      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px 6px;border-bottom:1px solid rgba(255,255,255,.06);">
-        <span style="font-size:14px;">${icon}</span>
-        <div style="flex:1;">
-          <span style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${C.ink4};">${title}</span>
-          ${sub?`<span style="font-size:10px;color:${C.ink4};margin-left:8px;">${sub}</span>`:''}
-        </div>
-        <div style="font-size:20px;font-weight:700;font-family:var(--fd);color:${color};">${kfmt(total)}</div>
-        <div style="font-size:10px;color:${C.ink4};min-width:36px;text-align:right;">${pct}</div>
-      </div>`;
-    // ── 3-level drill-down render ────────────────────────────────────────
-    // Level 1: Bucket row (click toggles Level 2)
-    // Level 2: Merchant group rows (click toggles Level 3)
-    // Level 3: Individual item rows (inline, no further nesting)
-    rows.forEach((g,i) => {
-      const tot    = g.actual + g.proj;
-      const gPct   = pctBase>0 ? (tot/pctBase*100).toFixed(0)+'%' : '';
-      const barW   = pctBase>0 ? Math.min(100,tot/pctBase*100) : 0;
-      const isOpen = !!isBucketOpen[g.key];
-      const bkId   = 'bk-'+g.key+'-'+selMonth;
-
-      // Bucket-level row (Level 1)
-      html += '<div data-bkid="'+g.key+'" class="is-bk-row" style="border-bottom:1px solid rgba(255,255,255,.024);background:'+(i%2===0?'transparent':'rgba(255,255,255,.012)')+';cursor:'+(g.txns.length?'pointer':'default')+';">';
-      html +=   '<div style="display:grid;grid-template-columns:18px 1fr 56px 36px;gap:4px;align-items:center;padding:6px 12px;">';
-      html +=     '<span style="font-size:12px;">'+g.icon+'</span>';
-      html +=     '<div>';
-      html +=       '<div style="font-size:14px;color:'+C.ink+';">'+g.label+(g.proj>0?' <span style="font-size:10px;color:'+C.river+';">+'+kfmt(g.proj)+' proj</span>':'')+'</div>';
-      html +=       '<div style="height:2px;background:rgba(255,255,255,.06);border-radius:1px;margin-top:3px;overflow:hidden;"><div style="height:100%;width:'+barW.toFixed(1)+'%;background:'+color+';border-radius:1px;opacity:.7;"></div></div>';
-      html +=     '</div>';
-      html +=     '<div style="font-size:15px;font-weight:700;font-family:var(--fm);color:'+color+';text-align:right;">'+kfmt(tot)+'</div>';
-      html +=     '<div style="font-size:12px;color:'+C.ink4+';text-align:right;">'+gPct+'</div>';
-      html +=   '</div>';
-
-      // Level 2: Merchant groups (only when bucket is open)
-      if (g.txns.length && isOpen) {
-        html += '<div style="background:rgba(0,0,0,.18);border-top:1px solid rgba(255,255,255,.04);">';
-
-        // Separate detail vs plain
-        const _dRows = g.txns.filter(t => t._isDetail);
-        const _pRows = g.txns.filter(t => !t._isDetail);
-
-        // Build merchant groups from detail rows
-        const _mGroups = {};
-        _dRows.forEach(t => {
-          const mk = (t.payee||t.itemDetail||'Unknown').trim();
-          const ft = t._ftype || t._source || '';
-          if (!_mGroups[mk]) _mGroups[mk] = { payee:mk, txns:[], total:0, ftype:ft, source:ft };
-          _mGroups[mk].txns.push(t);
-          _mGroups[mk].total += Math.abs(t.amount);
-        });
-        const _mKeys = Object.keys(_mGroups).sort((a,b) => _mGroups[b].total - _mGroups[a].total);
-
-        // Level 2 merchant rows
-        _mKeys.forEach((mk, mi) => {
-          const mg    = _mGroups[mk];
-          const mgId  = 'mg-'+g.key+'-'+mk.replace(/[^a-z0-9]/gi,'')+'-'+selMonth;
-          const isOpenM = !!document.getElementById(mgId);
-          const _ft = mg.ftype || mg.source || '';
-          const ftypeLbl = {apple_card:'Apple Card',amazon_orders:'Amazon',home_depot:'Home Depot',venmo:'Venmo'}[_ft]||_ft;
-          const srcBadge = _ft ? ' <span style="font-size:9px;background:rgba(96,165,250,.15);color:'+C.river+';padding:1px 5px;border-radius:4px;font-family:var(--fm);">'+ftypeLbl+'</span>' : '';
-          const dates = mg.txns.map(t=>t.date).sort();
-          const dateRange = dates.length>1 ? dates[0].slice(5)+' – '+dates[dates.length-1].slice(5) : dates[0]?.slice(5)||'';
-
-          html += '<div class="is-mg-row" data-mgid="'+mgId+'" style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:6px 12px 5px 28px;border-bottom:1px solid rgba(255,255,255,.04);background:'+(mi%2?'rgba(255,255,255,.02)':'transparent')+';cursor:pointer;">';
-          html +=   '<div>';
-          html +=     '<div style="font-size:13px;font-weight:600;color:var(--ink);">'+mk+srcBadge+'</div>';
-          html +=     '<div style="font-size:10px;color:'+C.ink4+';margin-top:1px;">'+mg.txns.length+(mg.txns.length===1?' item':' items')+' · '+dateRange+'</div>';
-          html +=   '</div>';
-          html +=   '<div style="display:flex;align-items:center;gap:6px;">';
-          html +=     '<div style="font-size:13px;font-weight:700;color:'+color+';font-family:var(--fm);">−'+kfmt(mg.total)+'</div>';
-          html +=     '<span class="mg-chev" style="font-size:10px;color:'+C.ink4+';">▸</span>';
-          html +=   '</div>';
-          html += '</div>';
-
-          // Level 3: Individual items (rendered but collapsed)
-          html += '<div id="'+mgId+'" style="display:none;background:rgba(0,0,0,.14);">';
-          mg.txns.slice().sort((a,b)=>a.date.localeCompare(b.date)||(a.itemDetail||a.payee||'').localeCompare(b.itemDetail||b.payee||'')).forEach((t,ti) => {
-            const title = (t.itemDetail && t.itemDetail!==t.payee) ? t.itemDetail : (t.payee||'—');
-            html += '<div style="display:grid;grid-template-columns:60px 1fr auto;gap:6px;padding:3px 12px 3px 40px;border-bottom:1px solid rgba(255,255,255,.02);background:'+(ti%2?'rgba(255,255,255,.015)':'transparent')+';">';
-            html +=   '<div style="font-family:var(--fm);font-size:10px;color:'+C.ink4+';padding-top:2px;">'+t.date.slice(5)+'</div>';
-            html +=   '<div style="font-size:12px;color:#B8B4AE;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+title+'</div>';
-            html +=   '<div style="font-family:var(--fm);font-size:12px;font-weight:600;color:'+color+';white-space:nowrap;text-align:right;">−'+mfmt(Math.abs(t.amount))+'</div>';
-            html += '</div>';
-          });
-          html += '</div>';
-        });
-
-        // Plain Quicken rows (no merchant grouping needed) — date desc
-        _pRows.slice().sort((a,b)=>b.date.localeCompare(a.date)||Math.abs(b.amount)-Math.abs(a.amount)).forEach(t => {
-          const det  = t.itemDetail && t.itemDetail!==t.payee ? '<div style="font-size:11px;color:'+C.river+';font-style:italic;margin-top:1px;">'+t.itemDetail+'</div>' : '';
-          const meta = [t.category, t.account].filter(Boolean).join(' · ');
-          html += '<div style="display:grid;grid-template-columns:80px 1fr auto;gap:6px;padding:5px 12px 5px 32px;border-bottom:1px solid rgba(255,255,255,.028);">';
-          html +=   '<div style="font-family:var(--fm);font-size:11px;color:'+C.ink4+';padding-top:2px;">'+t.date+'</div>';
-          html +=   '<div><div style="font-size:13px;color:#C8C4BE;">'+(t.payee||t._xferTo||'—')+'</div>'+det+'<div style="font-size:10px;color:'+C.ink4+';">'+meta+'</div></div>';
-          html +=   '<div style="font-family:var(--fm);font-size:13px;font-weight:600;color:'+(t.amount<0?color:C.pos)+';white-space:nowrap;text-align:right;">'+(t.amount<0?'−':'+')+mfmt(Math.abs(t.amount))+'</div>';
-          html += '</div>';
-        });
-
-        html += '</div>'; // end Level 2 container
-      }
-      html += '</div>'; // end Level 1 bucket row
-    });
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 12px;background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.08);">
-      <div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:.08em;">${totalLabel}</div>
-      <div style="font-size:18px;font-weight:700;font-family:var(--fd);color:${color};">−${kfmt(total)}</div>
-    </div></div>`;
-    return { html, commentHtml };
-  }
-
-  // ── INCOME BLOCK ─────────────────────────────────────────────────
-  const incomeCKey    = 'income';
-  const incomeComment = commentWidget(incomeCKey, 'Overall income note...');
-
-  // Adjustment note from accrual engine
-  let adjNote = '';
-  if (normNote) {
-    const adjIcon = earlyMonthIS ? '&#128197;' : normNote.includes('3-pay') ? '&#128202;' : '&#128161;';
-    adjNote = '<div style="font-size:11px;background:rgba(245,168,0,.08);border:1px solid rgba(245,168,0,.2);border-radius:6px;padding:6px 10px;margin-top:6px;color:'+C.gold+';">'+adjIcon+' <strong>Note:</strong> '+normNote+'</div>';
-  }
-
-  // Per-employer breakdown
-  const empBreakdown = (normData && normData.employerBreakdown) ? normData.employerBreakdown : {};
-  const settingsObj  = (function(){ try{ return JSON.parse(localStorage.getItem('forge_settings_v2')||'{}'); }catch(e){return{};} })();
-  const acctOwners   = settingsObj.accountOwners || {};
-  const payeeToMember= {};
-  (bkt.paycheck||[]).filter(t => detectAcctType(t.account||'')==='checking').forEach(t => {
-    const owner = acctOwners[t.account] || '';
-    if (owner && t.payee) payeeToMember[(t.payee||'').toLowerCase().trim()] = owner;
+  // Gross pay drill — dynamic employer labels from settings.accountOwners
+  out += `<div id="${incPayId}" style="display:${isInFlight?'block':'none'};background:rgba(0,0,0,.18);">`;
+  const _sObj = (function(){ try{ return JSON.parse(localStorage.getItem('forge_settings_v2')||'{}'); } catch(e){ return {}; } })();
+  const _aO   = _sObj.accountOwners || {};
+  // Build payee → member map dynamically from account ownership settings
+  const _p2m  = {};
+  (bkt.paycheck||[]).forEach(t => {
+    const own = _aO[t.account] || '';
+    const pk  = (t.payee||'').toLowerCase().trim();
+    if (own && pk) _p2m[pk] = own;
   });
-
-  // Gross pay (checking deposits only) + projections
-  const grossPayChk  = (bkt.paycheck||[]).filter(t=>detectAcctType(t.account||'')==='checking').reduce((s,t)=>s+t.amount,0);
-  const savDepAmt    = (bkt.paycheck||[]).filter(t=>detectAcctType(t.account||'')==='savings').reduce((s,t)=>s+t.amount,0);
-  const projGross    = Object.values(empBreakdown).reduce((s,e)=>s+(e.projectedAmount||0),0);
-  const projSav      = Object.values(empBreakdown).reduce((s,e)=>s+(e.projectedSavings||0),0);
-  const displayGross = earlyMonthIS && normData ? normData.normalPaycheck : grossPayChk + projGross;
-  const preSaveTotal = savDepAmt + totalAutoSave;
-  const displaySave  = preSaveTotal + projSav;
-  const empKeys2     = Object.keys(empBreakdown).sort();
-
-  // Detail collapse IDs
-  const incPayId  = 'isp-'+selMonth.replace('-','');
-  const incSavId  = 'iss-'+selMonth.replace('-','');
-
-  let incomeHtml = '';
-
-  // ── STEP 1: Net Pay ───────────────────────────────────────────────
-  incomeHtml += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:4px;">';
-  incomeHtml += '<div style="padding:5px 14px 0;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:'+C.ink4+';">STEP 1 &mdash; NET PAY</div>';
-  incomeHtml += '<div class="is-inc-hdr" data-iid="'+incPayId+'" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px 10px;cursor:pointer;user-select:none;">';
-  incomeHtml +=   '<div>';
-  const grossLabel = earlyMonthIS ? 'Gross Pay <span style="font-size:11px;color:'+C.river+';">(estimated)</span>' : 'Gross Pay';
-  incomeHtml +=     '<div style="font-size:16px;font-weight:700;color:'+C.ink+';">'+grossLabel+'</div>';
-  const memberList = empKeys2.map(k => payeeToMember[k] || empBreakdown[k].payee).join(' + ');
-  if (memberList) incomeHtml += '<div style="font-size:11px;color:'+C.ink4+';margin-top:1px;">'+memberList+'</div>';
-  incomeHtml +=   '</div>';
-  incomeHtml +=   '<div style="display:flex;align-items:center;gap:8px;"><div style="font-size:22px;font-weight:700;font-family:var(--fd);color:'+C.pos+';">+'+kfmt(displayGross)+'</div><span style="font-size:11px;color:'+C.ink4+';">&#9660;</span></div>';
-  incomeHtml += '</div>';
-  // Drill-down
-  incomeHtml += '<div id="'+incPayId+'" style="display:'+(isInFlight?'block':'none')+';border-top:1px solid rgba(255,255,255,.06);">';
-  if (!empKeys2.length) {
-    (bkt.paycheck||[]).filter(t=>detectAcctType(t.account||'')==='checking').sort((a,b)=>b.amount-a.amount).forEach((t,i) => {
-      incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:4px 14px;border-top:1px solid rgba(255,255,255,.028);background:'+(i%2?'rgba(255,255,255,.012)':'transparent')+';">';
-      incomeHtml += '<div style="font-size:12px;color:'+C.ink3+';">'+(t.payee||'Paycheck')+'</div>';
-      incomeHtml += '<div style="font-size:11px;color:'+C.ink4+';font-family:var(--fm);">'+t.date+'</div>';
-      incomeHtml += '<div style="font-size:13px;font-weight:600;color:'+C.pos+';font-family:var(--fm);">+'+mfmt(t.amount)+'</div>';
-      incomeHtml += '</div>';
+  const empKeys2 = Object.keys(empBreakdown).sort();
+  if (empKeys2.length) {
+    empKeys2.forEach(key => {
+      const emp   = empBreakdown[key];
+      const mbr   = _p2m[key] || '';
+      const rxAmt = emp.received;        // already-received paychecks
+      const prAmt = emp.projectedAmount; // estimated remaining
+      const tot   = rxAmt + prAmt;
+      const hasRx = emp.checkCount > 0;
+      const hasPr = prAmt > 1;
+      // Clean label: employer name + member chip
+      const mbrBadge = mbr
+        ? `<span style="font-size:9px;background:rgba(96,165,250,.15);color:${C.river};border:1px solid rgba(96,165,250,.25);border-radius:12px;padding:1px 7px;margin-left:7px;font-weight:600;">${mbr}</span>`
+        : '';
+      // Sub: "2 received" or "1 received · 1 est." — no employer jargon
+      const sub = hasRx && hasPr ? `${emp.checkCount} received · ${emp.projectedChecks} estimated`
+                : hasRx           ? `${emp.checkCount} paycheck${emp.checkCount!==1?'s':''} received`
+                :                   `${emp.projectedChecks} paycheck${emp.projectedChecks!==1?'s':''} estimated`;
+      out += `<div style="padding:7px 12px 7px 28px;border-bottom:1px solid rgba(255,255,255,.035);">`;
+      // Employer header row
+      out += `<div style="display:flex;align-items:baseline;margin-bottom:3px;">
+        <div style="flex:1;font-size:13px;font-weight:600;color:${C.ink};">${emp.payee}${mbrBadge}</div>
+        <div style="font-family:var(--fm);font-size:14px;font-weight:700;color:${C.pos};">+${mfmt(tot)}</div>
+      </div>`;
+      // Sub-breakdown: received vs projected in distinct colors
+      if (hasRx || hasPr) {
+        out += `<div style="display:flex;gap:12px;margin-top:2px;">`;
+        if (hasRx) out += `<span style="font-size:11px;color:${C.ink2};font-family:var(--fm);">
+          <span style="color:${C.ink4};">received</span> +${mfmt(rxAmt)}</span>`;
+        if (hasPr) out += `<span style="font-size:11px;color:rgba(96,165,250,.7);font-family:var(--fm);">
+          <span style="color:${C.ink4};">estimated</span> +${mfmt(prAmt)}</span>`;
+        out += `</div>`;
+      }
+      out += `<div style="font-size:10px;color:${C.ink4};margin-top:2px;">${sub}</div>`;
+      out += `</div>`;
     });
   } else {
-    empKeys2.forEach(function(key, ei) {
-      const emp = empBreakdown[key];
-      const mbr = payeeToMember[key] || '';
-      const lbl = emp.payee + (mbr ? ' &middot; <span style="color:'+C.river+';">'+mbr+'</span>' : '');
-      const tot = emp.received + emp.projectedAmount;
-      const sub = emp.checkCount > 0 && emp.projectedAmount > 0
-        ? emp.checkCount+' received + '+emp.projectedChecks+' projected'
-        : emp.checkCount > 0 ? emp.checkCount+' paycheck'+(emp.checkCount!==1?'s':'')
-        : emp.projectedChecks+' paycheck'+(emp.projectedChecks!==1?'s':'')+' projected';
-      incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:5px 14px;border-top:1px solid rgba(255,255,255,.028);background:'+(ei%2?'rgba(255,255,255,.012)':'transparent')+';">';
-      incomeHtml +=   '<div><div style="font-size:13px;font-weight:600;color:'+C.ink+';">'+lbl+'</div><div style="font-size:11px;color:'+C.ink4+';margin-top:1px;">'+sub+'</div></div>';
-      incomeHtml +=   '<div style="text-align:right;"><div style="font-size:14px;font-weight:700;color:'+C.pos+';font-family:var(--fm);">+'+kfmt(tot)+'</div>'+(emp.projectedAmount>0?'<div style="font-size:10px;color:'+C.river+';">+'+kfmt(emp.projectedAmount)+' est.</div>':'')+'</div>';
-      incomeHtml += '</div>';
+    (bkt.paycheck||[]).filter(t=>detectAcctType(t.account||'')==='checking').sort((a,b)=>b.amount-a.amount).forEach(t => {
+      const mbr = _aO[t.account] || '';
+      const mbrBadge = mbr ? `<span style="font-size:9px;background:rgba(96,165,250,.15);color:${C.river};border:1px solid rgba(96,165,250,.25);border-radius:12px;padding:1px 7px;margin-left:7px;font-weight:600;">${mbr}</span>` : '';
+      out += ledgerRow((t.payee||'Paycheck')+mbrBadge, t.amount, { indent:1, color:C.ink2, sub:t.date, bold:false, size:13 });
     });
   }
-  if (adjNote) incomeHtml += '<div style="padding:0 14px 8px;">'+adjNote+'</div>';
-  incomeHtml += '</div></div>'; // close detail + card
+  if (normNote) {
+    out += `<div style="padding:6px 24px 8px;font-size:11px;color:${C.river};background:rgba(245,168,0,.06);border-top:1px solid rgba(245,168,0,.15);">📅 ${normNote}</div>`;
+  }
+  out += '</div>';
 
-  // ── STEP 2: Direct Savings ────────────────────────────────────────
+  // ── SECTION 2: PRE-COMMITTED SAVINGS ──────────────────────────────────────
   if (displaySave > 1) {
-    const savPct    = displayGross > 0 ? (displaySave/displayGross*100).toFixed(0) : 0;
-    const savTarget = settingsObj.savingsTarget || settingsObj.savingsRate || 0;
-    const savSub    = savTarget > 0 ? savPct+'% of gross (target '+savTarget+'%)' : savPct+'% of gross pay';
-    incomeHtml += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:4px;">';
-    incomeHtml += '<div style="padding:5px 14px 0;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:'+C.ink4+';">STEP 2 &mdash; DIRECT SAVINGS</div>';
-    incomeHtml += '<div class="is-inc-hdr" data-iid="'+incSavId+'" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px 10px;cursor:pointer;user-select:none;">';
-    incomeHtml +=   '<div><div style="font-size:16px;font-weight:700;color:'+C.ink+';">Pre-Committed Savings</div><div style="font-size:11px;color:'+C.ink4+';margin-top:1px;">'+savSub+'</div></div>';
-    incomeHtml +=   '<div style="display:flex;align-items:center;gap:8px;"><div style="font-size:22px;font-weight:700;font-family:var(--fd);color:'+C.river+';">&minus;'+kfmt(displaySave)+'</div><span style="font-size:11px;color:'+C.ink4+';">&#9660;</span></div>';
-    incomeHtml += '</div>';
-    incomeHtml += '<div id="'+incSavId+'" style="display:none;border-top:1px solid rgba(255,255,255,.06);">';
-    empKeys2.forEach(function(key, ei) {
-      const emp = empBreakdown[key];
-      const mbr = payeeToMember[key] || '';
-      const st  = emp.savingsReceived + emp.projectedSavings;
-      if (st < 1) return;
-      const lbl = emp.payee + (mbr ? ' &middot; <span style="color:'+C.river+';">'+mbr+'</span>' : '');
-      incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:5px 14px;border-top:1px solid rgba(255,255,255,.028);background:'+(ei%2?'rgba(255,255,255,.012)':'transparent')+';">';
-      incomeHtml +=   '<div style="font-size:13px;color:'+C.ink3+';">'+lbl+'</div>';
-      incomeHtml +=   '<div style="text-align:right;"><div style="font-size:13px;font-weight:600;color:'+C.river+';font-family:var(--fm);">&minus;'+kfmt(st)+'</div>'+(emp.projectedSavings>0?'<div style="font-size:10px;color:'+C.ink4+';">+'+kfmt(emp.projectedSavings)+' est.</div>':'')+'</div>';
-      incomeHtml += '</div>';
-    });
-    if (!empKeys2.length && autoSaveTxns.length > 0) {
-      autoSaveTxns.forEach((t,i) => {
-        incomeHtml += '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:4px 14px;border-top:1px solid rgba(255,255,255,.028);background:'+(i%2?'rgba(255,255,255,.012)':'transparent')+';">';
-        incomeHtml += '<div style="font-size:12px;color:'+C.ink3+';">&rarr; '+(t._xferTo||'Savings')+'</div>';
-        incomeHtml += '<div style="font-size:11px;color:'+C.ink4+';font-family:var(--fm);">'+t.date+'</div>';
-        incomeHtml += '<div style="font-size:13px;font-weight:600;color:'+C.river+';font-family:var(--fm);">&minus;'+mfmt(Math.abs(t.amount))+'</div>';
-        incomeHtml += '</div>';
+    const incSavId   = 'iss-'+selMonth.replace('-','');
+    const incSavOpen = !!isBucketOpen['__incSav'];
+    const savRate    = displayGross > 0 ? Math.round(displaySave/displayGross*100) : 0;
+    const savTarget  = (function(){ try{ return JSON.parse(localStorage.getItem('forge_settings_v2')||'{}').savingsTarget||0; }catch(e){return 0;} })();
+    const savStatus  = savTarget ? (savRate >= savTarget ? C.pos : savRate >= savTarget*0.85 ? C.gold : C.neg) : C.river;
+    const savSub     = savTarget ? `${savRate}% of gross · target ${savTarget}%` : `${savRate}% of gross`;
+    out += `<div class="is-bk-row" data-bkid="__incSav" style="display:flex;align-items:baseline;padding:10px 12px;background:rgba(96,165,250,.04);border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer;"
+      onmouseenter="this.style.background='rgba(96,165,250,.07)'" onmouseleave="this.style.background='rgba(96,165,250,.04)'">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${C.river};flex:1;">
+        💰 Pre-Committed Savings
+        <span style="font-size:10px;color:${savStatus};font-weight:400;margin-left:8px;">${savSub}</span>
+      </div>
+      <div style="font-family:var(--fm);font-size:18px;font-weight:700;color:${C.river};">−${kfmt(displaySave)}</div>
+      <div style="font-size:10px;color:${C.ink4};width:14px;text-align:right;padding-left:8px;">${incSavOpen?'▾':'▸'}</div>
+    </div>`;
+    out += `<div id="${incSavId}" style="display:${incSavOpen?'block':'none'};background:rgba(0,0,0,.18);">`;
+    if (empKeys2.length) {
+      empKeys2.forEach(key => {
+        const emp = empBreakdown[key];
+        const st  = emp.savingsReceived + emp.projectedSavings;
+        if (st < 1) return;
+        out += ledgerRow(emp.payee+' → savings', st, { indent:1, color:C.ink2, bold:false, size:13 });
+      });
+    } else if (autoSaveTxns.length) {
+      autoSaveTxns.forEach(t => {
+        out += ledgerRow('→ '+(t._xferTo||'Savings'), Math.abs(t.amount), { indent:1, color:C.ink2, sub:t.date, bold:false, size:13 });
       });
     }
-    incomeHtml += '</div></div>'; // close detail + card
+    out += '</div>';
   }
 
-  // ── STEP 3: Operating Income ──────────────────────────────────────
-  incomeHtml += '<div style="border:2px solid rgba(52,217,195,.35);border-radius:var(--r-lg);margin-bottom:8px;padding:10px 14px;background:rgba(52,217,195,.04);">';
-  incomeHtml += '<div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:'+C.ink4+';margin-bottom:4px;">= OPERATING INCOME &mdash; DEPLOYABLE TO EXPENSES</div>';
-  incomeHtml += '<div style="display:flex;align-items:center;justify-content:space-between;">';
-  incomeHtml +=   '<div>';
-  incomeHtml +=     '<div style="font-size:15px;font-weight:600;color:'+C.ink+';">Available for monthly expenses</div>';
-  if (displaySave > 1) incomeHtml += '<div style="font-size:11px;color:'+C.ink4+';margin-top:2px;">'+kfmt(displayGross)+' gross &minus; '+kfmt(displaySave)+' to savings</div>';
-  incomeHtml +=   '</div>';
-  incomeHtml +=   '<div style="font-size:30px;font-weight:700;font-family:var(--fd);color:'+C.pos+';">'+kfmt(deployable)+'</div>';
-  incomeHtml += '</div>';
-  if (incomeComment) incomeHtml += incomeComment;
-  incomeHtml += '</div>';
+  // ── DEPLOYABLE ─────────────────────────────────────────────────────────────
+  out += divider('= Deployable (your monthly budget)', '+'+kfmt(deployable), C.pos);
 
-
-  // ── Margin for income ──────────────────────────────────────────────
-  const incomeMargin = `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 12px;font-size:11px;">
-    <div style="font-weight:700;color:${C.ink4};margin-bottom:6px;font-size:9px;text-transform:uppercase;letter-spacing:.1em;">Income Breakdown</div>
-    <div style="display:flex;justify-content:space-between;padding:2px 0;"><span style="color:${C.ink4};">Gross paychecks</span><span style="color:${C.pos};font-family:var(--fm);">${kfmt(actualPaycheckTotal)}</span></div>
-    ${totalAutoSave>0?`<div style="display:flex;justify-content:space-between;padding:2px 0;"><span style="color:${C.ink4};">Pre-saved</span><span style="color:${C.river};font-family:var(--fm);">−${kfmt(totalAutoSave)}</span></div>`:''}
-    <div style="display:flex;justify-content:space-between;padding:3px 0;border-top:1px solid rgba(255,255,255,.08);margin-top:3px;"><span style="color:${C.ink};font-weight:600;">Deployable</span><span style="color:${C.ink};font-weight:700;font-family:var(--fm);">${kfmt(deployable)}</span></div>
-    ${incomeComment}
-  </div>`;
-
-  // ── Fixed & Variable sections ──────────────────────────────────────
-  // ── Unmasking status banner ─────────────────────────────────────────────
-  let unmaskBannerHtml = '';
-  if (_unmaskStatus.length) {
-    unmaskBannerHtml = '<div style="margin-bottom:10px;">';
-    _unmaskStatus.forEach(function(s) {
-      if (s.active) {
-        unmaskBannerHtml += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(52,217,195,.07);border:1px solid rgba(52,217,195,.2);border-radius:6px;margin-bottom:4px;font-size:11px;">';
-        unmaskBannerHtml += '<span style="font-size:13px;">&#128279;</span>';
-        unmaskBannerHtml += '<span style="color:var(--pos);font-weight:600;">'+s.label+'</span>';
-        unmaskBannerHtml += '<span style="color:var(--ink4);">active &mdash; '+s.items+' item'+(s.items!==1?'s':'')+' replacing Quicken lump-sums</span>';
-        unmaskBannerHtml += '</div>';
-      } else {
-        unmaskBannerHtml += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(245,168,0,.06);border:1px solid rgba(245,168,0,.2);border-radius:6px;margin-bottom:4px;font-size:11px;">';
-        unmaskBannerHtml += '<span style="font-size:13px;">&#128258;</span>';
-        unmaskBannerHtml += '<span style="color:var(--gold);font-weight:600;">'+s.label+'</span>';
-        unmaskBannerHtml += '<span style="color:var(--ink4);">not loaded &mdash; Quicken shows: <em>'+s.payees+'</em> &mdash; import '+s.label+' to unmask</span>';
-        unmaskBannerHtml += '</div>';
-      }
+  // ── SECTION 3: FIXED COSTS ─────────────────────────────────────────────────
+  if (fixedRows.length) {
+    const fixedActual = fixedRows.reduce((s,g)=>s+g.actual, 0);
+    const fixedProj   = fixedRows.reduce((s,g)=>s+g.proj,   0);
+    const fixedSub    = isInFlight && fixedProj > 0 ? `${kfmt(fixedActual)} posted + ${kfmt(fixedProj)} estimated` : '';
+    out += section('Fixed Costs', '🔒', totalFixed, fixedSub, C.neg);
+    fixedRows.forEach(g => {
+      const isOpen = !!isBucketOpen[g.key];
+      const tot    = g.actual + g.proj;
+      out += `<div data-bkid="${g.key}" class="is-bk-row" style="display:flex;align-items:baseline;padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.035);cursor:pointer;"
+        onmouseenter="this.style.background='rgba(255,255,255,.02)'" onmouseleave="this.style.background=''">
+        <span style="font-size:13px;margin-right:8px;">${g.icon}</span>
+        <div style="flex:1;font-size:13px;color:${C.ink2};">
+          ${g.label}
+          ${g.proj>0?`<span style="font-size:10px;color:${C.river};font-weight:400;margin-left:6px;">+${kfmt(g.proj)} est.</span>`:''}
+        </div>
+        <div style="font-family:var(--fm);font-size:14px;font-weight:600;color:${C.neg};">${mfmt(tot)}</div>
+        <div style="font-size:11px;color:${C.ink4};width:38px;text-align:right;padding-left:6px;">${pctOf(tot,deployable)}</div>
+        ${g.txns.length?`<div style="font-size:10px;color:${C.ink4};width:14px;text-align:right;padding-left:4px;">${isOpen?'▾':'▸'}</div>`:'<div style="width:18px;"></div>'}
+      </div>`;
+      if (g.txns.length && isOpen) out += drillRows(g.txns);
     });
-    unmaskBannerHtml += '</div>';
   }
 
-  const fixedSub = isInFlight && fixedRows.some(g=>g.proj>0) ? `${kfmt(fixedRows.reduce((s,g)=>s+g.actual,0))} posted` : '';
-  const varSub   = isInFlight && varRows.some(g=>g.proj>0) ? `${kfmt(varRows.reduce((s,g)=>s+g.actual,0))} posted` : '';
+  // ── AFTER FIXED ────────────────────────────────────────────────────────────
+  const afterFixed = deployable - totalFixed;
+  out += divider('After Fixed Costs', (afterFixed>=0?'+':'-')+kfmt(Math.abs(afterFixed)), afterFixed>=0?C.pos:C.neg);
 
-  const {html:fixedHtml, commentHtml:fixedComment} = fixedRows.length > 0
-    ? tableSection('FIXED', '🔒', C.neg, fixedRows, 'Fixed Total', totalFixed, deployable, fixedSub, 'fixed')
-    : {html:'', commentHtml:''};
+  // ── SECTION 4: VARIABLE SPENDING ──────────────────────────────────────────
+  if (varRows.length) {
+    const varActual = varRows.reduce((s,g)=>s+g.actual, 0);
+    const varProj   = varRows.reduce((s,g)=>s+g.proj,   0);
+    const varSub    = isInFlight && varProj > 0 ? `${kfmt(varActual)} posted + ${kfmt(varProj)} estimated` : '';
+    out += section('Variable Spending', '🎛️', totalVar, varSub, C.gold);
+    varRows.forEach(g => {
+      const isOpen = !!isBucketOpen[g.key];
+      const tot    = g.actual + g.proj;
+      // Daily pace: how much per day remaining?
+      const dayRate = isInFlight && daysElapsed > 0 ? (g.actual / daysElapsed) * daysRemaining : 0;
+      const paceNote = isInFlight && dayRate > 50 ? `+${kfmt(dayRate)} pace` : '';
+      out += `<div data-bkid="${g.key}" class="is-bk-row" style="display:flex;align-items:baseline;padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.035);cursor:pointer;"
+        onmouseenter="this.style.background='rgba(255,255,255,.02)'" onmouseleave="this.style.background=''">
+        <span style="font-size:13px;margin-right:8px;">${g.icon}</span>
+        <div style="flex:1;font-size:13px;color:${C.ink2};">
+          ${g.label}
+          ${g.proj>0?`<span style="font-size:10px;color:${C.river};font-weight:400;margin-left:6px;">+${kfmt(g.proj)} est.</span>`:''}
+          ${paceNote?`<span style="font-size:10px;color:${C.gold};font-weight:400;margin-left:6px;">${paceNote}</span>`:''}
+        </div>
+        <div style="font-family:var(--fm);font-size:14px;font-weight:600;color:${C.gold};">${mfmt(tot)}</div>
+        <div style="font-size:11px;color:${C.ink4};width:38px;text-align:right;padding-left:6px;">${pctOf(tot,deployable)}</div>
+        ${g.txns.length?`<div style="font-size:10px;color:${C.ink4};width:14px;text-align:right;padding-left:4px;">${isOpen?'▾':'▸'}</div>`:'<div style="width:18px;"></div>'}
+      </div>`;
+      if (g.txns.length && isOpen) out += drillRows(g.txns);
+    });
+  }
 
-  const afterFixed  = deployable - totalFixed;
-  const afColor     = afterFixed >= 0 ? C.pos : C.neg;
-  const runningHtml = `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 12px;background:rgba(255,255,255,.025);border-radius:6px;margin-bottom:8px;">
-    <div style="font-size:10px;color:${C.ink4};font-family:var(--fm);text-transform:uppercase;letter-spacing:.06em;">After fixed</div>
-    <div style="font-size:15px;font-weight:700;font-family:var(--fd);color:${afColor};">${afterFixed>=0?'+':''}${kfmt(afterFixed)}</div>
-  </div>`;
+  // ── NET LINE ───────────────────────────────────────────────────────────────
+  out += divider(onTrack ? '= Surplus' : '= Deficit', (netRemaining>=0?'+':'-')+kfmt(Math.abs(netRemaining)), onTrack ? C.pos : C.neg);
 
-  const {html:varHtml, commentHtml:varComment} = varRows.length > 0
-    ? tableSection('VARIABLE', '🎛️', C.gold, varRows, 'Variable Total', totalVar, deployable, varSub, 'variable')
-    : {html:'', commentHtml:''};
-
-  // ── Net ───────────────────────────────────────────────────────────
-  const netColor  = onTrack ? C.pos : C.neg;
-  const netBg     = onTrack ? 'rgba(52,217,195,.08)' : 'rgba(248,113,113,.1)';
-  const netHtml = `<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:${netBg};">
-      <div style="font-size:13px;font-weight:700;color:${netColor};">
-        ${onTrack?'✅ Net Remaining':'⛔ Deficit'}
-        ${isInFlight?`<span style="font-size:10px;font-weight:400;color:var(--ink4);"> projected</span>`:''}
-      </div>
-      <div style="font-size:20px;font-weight:700;font-family:var(--fd);color:${netColor};">${netRemaining>=0?'+':''}${kfmt(netRemaining)}</div>
-    </div>
-    <div style="padding:6px 12px;font-size:11px;color:${C.ink4};">${pctOf(Math.abs(netRemaining),deployable)} of deployable · ${pctOf(totalExp,totalIncome||1)} total expense ratio</div>
-    ${onTrack && netRemaining > 100 ? `<div style="padding:6px 12px 10px;border-top:1px solid rgba(255,255,255,.06);">
-      <div style="font-size:10px;font-weight:600;color:${C.ink4};margin-bottom:6px;">💡 Deploy surplus</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        ${[['40%','Emergency Fund'],['35%','Brokerage'],['25%','529 College']].map(([p,l])=>`<div style="flex:1;min-width:80px;background:rgba(52,217,195,.06);border:1px solid rgba(52,217,195,.12);border-radius:6px;padding:6px 8px;">
-          <div style="font-size:10px;color:${C.ink4};">${p} → ${l}</div>
-          <div style="font-size:13px;font-weight:700;color:${C.pos};font-family:var(--fd);">${kfmt(netRemaining*parseFloat(p)/100)}</div>
-        </div>`).join('')}
-      </div>
-    </div>` : ''}
-  </div>`;
-
-  // ── Savings draw ─────────────────────────────────────────────────
-  let drawHtml = '';
+  // ── SAVINGS DRAW WARNING ───────────────────────────────────────────────────
   if (totalDraw > 0) {
-    drawHtml = `<div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;padding:10px 12px;">
+    out += `<div style="padding:10px 14px;background:rgba(248,113,113,.08);border-top:1px solid rgba(248,113,113,.25);">
       <div style="font-size:12px;font-weight:700;color:${C.neg};margin-bottom:4px;">⚠️ Savings Draw — ${kfmt(totalDraw)}</div>
-      <div style="font-size:11px;color:var(--ink3);margin-bottom:6px;">Expenses exceeded checking. You pulled from savings to cover bills.</div>
-      ${savingsDrawTxns.map(t=>`<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span style="color:var(--ink3);">${t.payee||'Transfer'} ← ${(t.category||'').replace(/^\[|\]$/g,'')}</span><span style="color:${C.neg};font-family:var(--fm);">+${mfmt(t.amount)}</span></div>`).join('')}
+      <div style="font-size:11px;color:${C.ink2};">Expenses exceeded checking income. You pulled from savings to cover the gap.</div>
+      ${savingsDrawTxns.map(t=>`<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;color:${C.ink4};">
+        <span>${t.date} · ${t.payee||t._xferTo||'Transfer'}</span>
+        <span style="color:${C.neg};">${mfmt(Math.abs(t.amount))}</span>
+      </div>`).join('')}
     </div>`;
   }
 
-  // ── Reconciliation — income/expense tie-out to Quicken ─────────────────
-  // ── Reconciliation ────────────────────────────────────────────────────────
-  var _reconId  = 'isr-'+selMonth.replace('-','');
-  var _RTYPES   = new Set(['checking','savings','credit']);
-  var _TYPE_LBL = {checking:'Checking', savings:'Savings', credit:'Credit Cards'};
-  var _raccts   = {};
-  txns.forEach(function(t) {
-    var tp = detectAcctType(t.account||'');
-    if (!_RTYPES.has(tp)) return;
-    if (t.itemDetail) return;
-    var src = t._source||'';
-    if (['apple_card','amazon_orders','home_depot','venmo'].indexOf(src)>=0) return;
-    var a = t.account;
-    if (!_raccts[a]) _raccts[a] = {name:a, type:tp, open:0, income:0, charges:0};
-    if (t.date < selMonth+'-01')        _raccts[a].open    += t.amount;
-    else if (t.date <= selMonth+'-31') {
-      if (t.amount > 0) _raccts[a].income  += t.amount;
-      else              _raccts[a].charges += Math.abs(t.amount);
+  out += '</div>'; // end main ledger card
+
+  // ── MICRO-DECISIONS (in-flight only) ──────────────────────────────────────
+  if (isInFlight && daysRemaining > 0) {
+    const dailyBudget = afterFixed > 0 ? (afterFixed / (daysElapsed + daysRemaining)) : 0;
+    const dailyActual = totalVar > 0 && daysElapsed > 0 ? totalVar / daysElapsed : 0;
+    const isHot       = dailyActual > dailyBudget * 1.1;
+    const isLight     = dailyActual < dailyBudget * 0.8;
+    const projVar     = dailyActual * (daysElapsed + daysRemaining);
+    const savingsTarget = (function(){ try{ return JSON.parse(localStorage.getItem('forge_settings_v2')||'{}').savingsTarget||0; }catch(e){return 0;} })();
+    const targetSave  = savingsTarget > 0 ? Math.round(displayGross * savingsTarget / 100) : 0;
+    const topVar      = varRows.filter(g=>g.actual>0).sort((a,b)=>(b.actual+b.proj)-(a.actual+a.proj))[0];
+
+    out += `<div style="background:var(--float);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;">
+      <div style="padding:10px 14px 8px;background:rgba(245,168,0,.06);border-bottom:1px solid rgba(245,168,0,.2);">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${C.gold};">⚡ This Week's Micro-Decisions</div>
+        <div style="font-size:11px;color:${C.ink4};margin-top:2px;">You have ${daysRemaining} days left. Here's where small choices move the needle.</div>
+      </div>`;
+
+    // Pace alert
+    if (isHot) {
+      const overPace = dailyActual - dailyBudget;
+      const projImpact = Math.round(overPace * daysRemaining);
+      out += `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);">
+        <span style="font-size:16px;">🔥</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:${C.neg};">Running ${kfmt(overPace)}/day over pace</div>
+          <div style="font-size:11px;color:${C.ink4};margin-top:2px;">At this rate, variable spending will hit ${kfmt(projVar)} vs ${kfmt(afterFixed)} available — ${kfmt(projImpact)} over by month end.</div>
+        </div>
+      </div>`;
+    } else if (isLight) {
+      const underPace = dailyBudget - dailyActual;
+      out += `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);">
+        <span style="font-size:16px;">✅</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:${C.pos};">Running ${kfmt(underPace)}/day under pace — great</div>
+          <div style="font-size:11px;color:${C.ink4};margin-top:2px;">On this trajectory, you'll end the month with a ${kfmt(Math.round(netRemaining))} surplus. Consider moving extra to savings.</div>
+        </div>
+      </div>`;
     }
-  });
-  var _rgroups = {checking:[], savings:[], credit:[]};
-  Object.values(_raccts).forEach(function(a) { if(_rgroups[a.type]) _rgroups[a.type].push(a); });
-  ['checking','savings','credit'].forEach(function(tp) {
-    _rgroups[tp].sort(function(a,b){ return a.name.localeCompare(b.name); });
-  });
 
-  var reconHtml = (function buildRecon(){
-    var h = '';
-    h += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">';
-    h += '<div class="frh" data-rb="'+_reconId+'" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;cursor:pointer;user-select:none;">';
-    h +=   '<span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">Quicken Tie-Out &mdash; '+monthName+'</span>';
-    h +=   '<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:var(--ink4);font-family:var(--fm);">verify in Quicken</span><span class="frh-c" style="font-size:11px;color:var(--ink4);">&#9654;</span></div>';
-    h += '</div>';
-    h += '<div id="'+_reconId+'" style="display:none;border-top:1px solid rgba(255,255,255,.07);">';
-    h += '<div style="display:grid;grid-template-columns:1fr 72px 72px 76px 80px;gap:4px;padding:4px 14px;border-bottom:1px solid rgba(255,255,255,.08);">';
-    h +=   '<span style="font-size:9px;font-weight:700;color:var(--ink4);">Account</span>';
-    h +=   '<span style="font-size:9px;font-weight:700;color:var(--ink4);text-align:right;">Open</span>';
-    h +=   '<span style="font-size:9px;font-weight:700;color:var(--pos);text-align:right;">In</span>';
-    h +=   '<span style="font-size:9px;font-weight:700;color:var(--neg);text-align:right;">Out</span>';
-    h +=   '<span style="font-size:9px;font-weight:700;color:var(--ink2);text-align:right;">Close</span>';
-    h += '</div>';
-    ['checking','savings','credit'].forEach(function(tp) {
-      var grp = _rgroups[tp];
-      if (!grp || !grp.length) return;
-      h += '<div style="padding:3px 14px 2px;background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.06);">';
-      h +=   '<span style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);">'+_TYPE_LBL[tp]+'</span>';
-      h += '</div>';
-      var tO=0,tI=0,tX=0;
-      grp.forEach(function(a,i) {
-        var close = a.open + a.income - a.charges;
-        tO+=a.open; tI+=a.income; tX+=a.charges;
-        var closeCol = tp==='credit'?(close<0?C.neg:'var(--ink3)'):(close>=0?C.ink2:C.neg);
-        h += '<div style="display:grid;grid-template-columns:1fr 72px 72px 76px 80px;gap:4px;align-items:center;padding:3px 14px;border-top:1px solid rgba(255,255,255,.028);background:'+(i%2?'rgba(255,255,255,.012)':'transparent')+'">';
-        h +=   '<span style="font-size:11px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+a.name+'</span>';
-        h +=   '<span style="font-size:11px;font-family:var(--fm);color:var(--ink4);text-align:right;">'+mfmt(a.open)+'</span>';
-        h +=   '<span style="font-size:11px;font-family:var(--fm);color:'+(a.income>0?'var(--pos)':'var(--ink4)')+';text-align:right;">'+(a.income>0?'+'+mfmt(a.income):'&mdash;')+'</span>';
-        h +=   '<span style="font-size:11px;font-family:var(--fm);color:'+(a.charges>0?'var(--neg)':'var(--ink4)')+';text-align:right;">'+(a.charges>0?'&minus;'+mfmt(a.charges):'&mdash;')+'</span>';
-        h +=   '<span style="font-size:12px;font-weight:600;font-family:var(--fm);color:'+closeCol+';text-align:right;">'+mfmt(close)+'</span>';
-        h += '</div>';
-      });
-      var tC=tO+tI-tX;
-      h += '<div style="display:grid;grid-template-columns:1fr 72px 72px 76px 80px;gap:4px;align-items:center;padding:3px 14px;border-top:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);">';
-      h +=   '<span style="font-size:11px;font-weight:700;color:var(--ink);">'+_TYPE_LBL[tp]+' total</span>';
-      h +=   '<span style="font-size:11px;font-family:var(--fm);color:var(--ink3);text-align:right;">'+mfmt(tO)+'</span>';
-      h +=   '<span style="font-size:11px;font-family:var(--fm);color:var(--pos);text-align:right;">+'+mfmt(tI)+'</span>';
-      h +=   '<span style="font-size:11px;font-family:var(--fm);color:var(--neg);text-align:right;">&minus;'+mfmt(tX)+'</span>';
-      h +=   '<span style="font-size:13px;font-weight:700;font-family:var(--fm);color:var(--ink);text-align:right;">'+mfmt(tC)+'</span>';
-      h += '</div>';
-    });
-    h += '<div style="padding:8px 14px 10px;border-top:1px solid rgba(255,255,255,.08);">';
-    h +=   '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;">IS Summary</div>';
-    h +=   '<div style="display:grid;grid-template-columns:1fr auto;gap:2px;font-size:11px;font-family:var(--fm);">';
-    h +=     '<span style="color:var(--ink4);">Gross pay</span><span style="color:var(--pos);text-align:right;">+'+kfmt(totalIncome)+'</span>';
-    if(totalAutoSave>0){h+='<span style="color:var(--ink4);">Pre-saved</span><span style="color:var(--river);text-align:right;">&minus;'+kfmt(totalAutoSave)+'</span>';}
-    h +=     '<span style="color:var(--ink4);">Fixed</span><span style="color:var(--neg);text-align:right;">&minus;'+kfmt(totalFixed)+'</span>';
-    h +=     '<span style="color:var(--ink4);">Variable</span><span style="color:var(--gold);text-align:right;">&minus;'+kfmt(totalVar)+'</span>';
-    if(totalDraw>0){h+='<span style="color:var(--neg);">Savings draw</span><span style="color:var(--neg);text-align:right;">+'+kfmt(totalDraw)+'</span>';}
-    h +=     '<div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,.08);margin:3px 0;"></div>';
-    h +=     '<span style="color:var(--ink);font-weight:600;">Net</span>';
-    h +=     '<span style="font-size:13px;font-weight:700;color:'+(onTrack?C.pos:C.neg)+';text-align:right;">'+(netRemaining>=0?'+':'&minus;')+kfmt(Math.abs(netRemaining))+'</span>';
-    h +=   '</div></div></div></div>';
-    return h;
-  })();
+    // Top variable category tip
+    if (topVar) {
+      const topRate = topVar.actual / Math.max(daysElapsed, 1);
+      const topProj = topRate * daysRemaining;
+      out += `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);">
+        <span style="font-size:16px;">${topVar.icon}</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:${C.ink};">${topVar.label} — ${kfmt(topVar.actual)} so far</div>
+          <div style="font-size:11px;color:${C.ink4};margin-top:2px;">Pace: ${kfmt(topRate)}/day → projected +${kfmt(topProj)} more over next ${daysRemaining} days. 
+            ${topProj > 200 ? `Cutting 1 day worth saves ${kfmt(topRate)} instantly.` : ''}</div>
+        </div>
+      </div>`;
+    }
 
+    // Savings rate nudge
+    if (targetSave > 0) {
+      const onTrackSav = totalAutoSave >= targetSave;
+      const savGap     = targetSave - totalAutoSave;
+      out += `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;">
+        <span style="font-size:16px;">${onTrackSav?'🏆':'🎯'}</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:${onTrackSav?C.pos:C.gold};">Savings target: ${savingsTarget}% — ${onTrackSav?'on track':''+kfmt(savGap)+' short'}</div>
+          <div style="font-size:11px;color:${C.ink4};margin-top:2px;">${onTrackSav
+            ? `Pre-committed ${kfmt(totalAutoSave)} — you're hitting your goal.`
+            : `You need ${kfmt(savGap)} more in savings this month to hit your ${savingsTarget}% target. Transfer before month end.`}</div>
+        </div>
+      </div>`;
+    }
 
-  // ── Margin cards ──────────────────────────────────────────────────
-  const fixedMargin = fixedRows.length > 0 ? `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:${C.neg};margin-bottom:6px;">Fixed ${pctOf(totalFixed,deployable)}</div>
-    ${fixedRows.map(g=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;"><span style="color:${C.ink4};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;">${g.label}</span><span style="color:${C.neg};font-family:var(--fm);font-weight:600;">${kfmt(g.actual+g.proj)}</span></div>`).join('')}
-    
-    ${fixedComment}
-  </div>` : '';
+    out += '</div>'; // end micro-decisions card
+  }
 
-  const varMargin = varRows.length > 0 ? `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:${C.gold};margin-bottom:6px;">Variable ${pctOf(totalVar,deployable)}</div>
-    ${varRows.map(g=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;"><span style="color:${C.ink4};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;">${g.label}</span><span style="color:${C.gold};font-family:var(--fm);font-weight:600;">${kfmt(g.actual+g.proj)}</span></div>`).join('')}
-    
-    ${varComment}
-  </div>` : '';
-
-  // ── Assemble final layout ─────────────────────────────────────────
-  out += `<div style="display:grid;grid-template-columns:1fr minmax(0,196px);gap:12px;align-items:start;">
-    <div>
-      ${incomeHtml}
-      ${unmaskBannerHtml}
-      ${fixedHtml}
-      ${runningHtml}
-      ${varHtml}
-      ${netHtml}
-      ${drawHtml}
-      ${reconHtml}
-    </div>
-    <div>
-      ${incomeMargin}
-      ${fixedMargin}
-      ${varMargin}
-      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
-        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:${onTrack?C.pos:C.neg};margin-bottom:6px;">Net ${onTrack?'Remaining':'Deficit'}</div>
-        <div style="font-size:22px;font-weight:700;font-family:var(--fd);color:${onTrack?C.pos:C.neg};">${netRemaining>=0?'+':''}${kfmt(netRemaining)}</div>
-        <div style="font-size:10px;color:${C.ink4};margin-top:2px;">${pctOf(Math.abs(netRemaining),deployable)} of deployable</div>
-        ${commentWidget('net', 'Overall note for this month…')}
+  // ── DEPLOY SURPLUS (closed or on-track) ────────────────────────────────────
+  if (onTrack && netRemaining > 100) {
+    out += `<div style="background:var(--float);border:1px solid rgba(52,217,195,.25);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;padding:12px 14px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${C.pos};margin-bottom:8px;">💡 Deploy Surplus — ${kfmt(netRemaining)}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${[['40%','Emergency Fund'],['35%','Brokerage'],['25%','529 College']].map(([p,l])=>`
+          <div style="flex:1;min-width:100px;background:rgba(52,217,195,.06);border:1px solid rgba(52,217,195,.15);border-radius:8px;padding:8px 10px;">
+            <div style="font-size:10px;color:${C.ink4};">${p} → ${l}</div>
+            <div style="font-size:16px;font-weight:700;color:${C.pos};font-family:var(--fm);">${kfmt(Math.round(netRemaining*parseFloat(p)/100))}</div>
+          </div>`).join('')}
       </div>
-    </div>
-  </div>`;
+    </div>`;
+  }
+
+  // ── RECONCILIATION (collapsible) ───────────────────────────────────────────
+  {
+    var _reconId  = 'isr-'+selMonth.replace('-','');
+    var _RTYPES   = new Set(['checking','savings','credit']);
+    var _TYPE_LBL = {checking:'Checking', savings:'Savings', credit:'Credit Cards'};
+    var _raccts   = {};
+    txns.forEach(function(t) {
+      var tp = detectAcctType(t.account||'');
+      if (!_RTYPES.has(tp)) return;
+      if (t.itemDetail) return;
+      var src = t._source||'';
+      if (['apple_card','amazon_orders','home_depot','venmo'].indexOf(src)>=0) return;
+      var a = t.account;
+      if (!_raccts[a]) _raccts[a] = {name:a, type:tp, open:0, income:0, charges:0};
+      if (t.date < selMonth+'-01')       _raccts[a].open    += t.amount;
+      else if (t.date <= selMonth+'-31') {
+        if (t.amount > 0) _raccts[a].income  += t.amount;
+        else              _raccts[a].charges += Math.abs(t.amount);
+      }
+    });
+    var _rgroups = {checking:[], savings:[], credit:[]};
+    Object.values(_raccts).forEach(function(a) { if(_rgroups[a.type]) _rgroups[a.type].push(a); });
+    ['checking','savings','credit'].forEach(function(tp) {
+      _rgroups[tp].sort(function(a,b){ return a.name.localeCompare(b.name); });
+    });
+
+    var reconHtml = '<div style="background:var(--float);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;">';
+    reconHtml += `<div class="frh" data-rb="${_reconId}" style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;cursor:pointer;background:rgba(255,255,255,.02);"
+      onmouseenter="this.style.background='rgba(255,255,255,.04)'" onmouseleave="this.style.background='rgba(255,255,255,.02)'">
+      <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${C.ink4};">🔎 Account Reconciliation</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:11px;color:${C.ink4};">Verify in Quicken</span>
+        <span class="frh-c" style="font-size:10px;color:${C.ink4};">▶</span>
+      </div>
+    </div>`;
+    reconHtml += `<div id="${_reconId}" style="display:none;border-top:1px solid rgba(255,255,255,.07);">`;
+    reconHtml += `<div style="display:grid;grid-template-columns:1fr 72px 72px 76px 80px;gap:4px;padding:5px 14px;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.02);">
+      <span style="font-size:9px;font-weight:700;color:${C.ink4};">Account</span>
+      <span style="font-size:9px;font-weight:700;color:${C.ink4};text-align:right;">Open</span>
+      <span style="font-size:9px;font-weight:700;color:${C.pos};text-align:right;">In</span>
+      <span style="font-size:9px;font-weight:700;color:${C.neg};text-align:right;">Out</span>
+      <span style="font-size:9px;font-weight:700;color:${C.ink2};text-align:right;">Close</span>
+    </div>`;
+    ['checking','savings','credit'].forEach(function(tp) {
+      var grp = _rgroups[tp]; if (!grp || !grp.length) return;
+      reconHtml += `<div style="padding:3px 14px 2px;background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.06);">
+        <span style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${C.ink4};">${_TYPE_LBL[tp]}</span>
+      </div>`;
+      grp.forEach(function(a) {
+        var close = a.open + a.income - a.charges;
+        var closeCol = tp==='credit'?(close<0?C.neg:C.ink2):(close>=0?C.ink2:C.neg);
+        reconHtml += `<div style="display:grid;grid-template-columns:1fr 72px 72px 76px 80px;gap:4px;align-items:center;padding:4px 14px;border-top:1px solid rgba(255,255,255,.03);">
+          <span style="font-size:11px;color:${C.ink2};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.name}</span>
+          <span style="font-size:11px;font-family:var(--fm);color:${C.ink4};text-align:right;">${mfmt(a.open)}</span>
+          <span style="font-size:11px;font-family:var(--fm);color:${a.income>0?C.pos:C.ink4};text-align:right;">${a.income>0?'+'+mfmt(a.income):'—'}</span>
+          <span style="font-size:11px;font-family:var(--fm);color:${a.charges>0?C.neg:C.ink4};text-align:right;">${a.charges>0?'−'+mfmt(a.charges):'—'}</span>
+          <span style="font-size:12px;font-weight:600;font-family:var(--fm);color:${closeCol};text-align:right;">${mfmt(close)}</span>
+        </div>`;
+      });
+    });
+    reconHtml += '</div></div>';
+    out += reconHtml;
+  }
 
   el.innerHTML = out;
-  // Recon container on Income tab is rendered inline in `out` via reconHtml variable
-  // Also update the standalone recon-income container (for consistency with other tabs)
-
 
   } catch(e) {
     console.error('[IS] render error:', e);
-    el.innerHTML = `<div style="padding:32px;text-align:center;color:var(--ink4);"><div style="font-size:24px;margin-bottom:12px;">⚠️</div><div style="font-size:14px;color:var(--ink2);">Income Statement error</div><div style="font-size:11px;color:var(--ink4);margin-top:6px;font-family:var(--fm);">${e.message}</div></div>`;
+    el.innerHTML = '<div style="padding:32px;text-align:center;color:var(--ink4);"><div style="font-size:24px;margin-bottom:8px;">⚠️</div>Render error: '+e.message+'</div>';
   }
 
-
-  // Income header collapse (closed months)
-  if (!isInFlight) {
-    el.querySelectorAll(".is-inc-hdr").forEach(function(hdr) {
-      hdr.addEventListener("click", function() {
-        var bd = document.getElementById(this.dataset.iid);
-        if (bd) bd.style.display = bd.style.display === "none" ? "block" : "none";
-      });
-    });
-  }
-
-  el.querySelectorAll(".frh").forEach(function(hdr){
-    hdr.addEventListener("click", function(){
-      var bd = document.getElementById(this.dataset.rb);
-      if (!bd) return;
-      var open = bd.style.display !== "none";
-      bd.style.display = open ? "none" : "block";
-      var ch = this.querySelector(".frh-c");
-      if (ch) ch.innerHTML = open ? "&#9654;" : "&#9660;";
-    });
-  });
-
-  // ── Single delegated click handler (3 levels) ─────────────────────────
   if (el.dataset.listenerBound) return;
   el.dataset.listenerBound = '1';
   el.addEventListener('click', function(e) {
