@@ -1031,6 +1031,185 @@ main::-webkit-scrollbar { width: 5px; }
 main::-webkit-scrollbar-track { background: transparent; }
 main::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 3px; }
 main::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); }
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   FORGE GLASS MODE — iOS liquid glass aesthetic
+   Toggle with .forge-glass on <body>
+   ════════════════════════════════════════════════════════════════════════════ */
+
+body.forge-glass {
+  background: radial-gradient(ellipse at 20% 10%, #1a1408 0%, #080808 50%, #060a10 100%);
+}
+body.forge-glass::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse at 15% 0%,   rgba(245,168,0,.06)  0%, transparent 40%),
+    radial-gradient(ellipse at 85% 100%, rgba(45,212,191,.04) 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 50%,  rgba(96,165,250,.02) 0%, transparent 60%);
+  z-index: 0;
+}
+
+/* Glass KPI cards */
+body.forge-glass .kpi {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,.06) 40%, rgba(255,255,255,.02) 100%);
+  border: 1px solid rgba(255,255,255,.25);
+  border-top: 1.5px solid rgba(255,255,255,.5);
+  backdrop-filter: blur(32px) saturate(200%) brightness(1.15);
+  -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(1.15);
+  box-shadow:
+    0 2px 4px rgba(0,0,0,.3),
+    0 8px 24px rgba(0,0,0,.25),
+    inset 0 1px 0 rgba(255,255,255,.35),
+    inset 0 -1px 0 rgba(255,255,255,.08);
+}
+body.forge-glass .kpi::before {
+  background:
+    radial-gradient(ellipse at 20% -20%, rgba(255,255,255,.25) 0%, transparent 55%),
+    linear-gradient(160deg, rgba(255,255,255,.12) 0%, transparent 50%);
+}
+body.forge-glass .kpi:hover {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.24) 0%, rgba(255,255,255,.1) 40%, rgba(255,255,255,.04) 100%);
+  border-top-color: rgba(255,255,255,.6);
+  box-shadow:
+    0 4px 12px rgba(0,0,0,.25),
+    0 16px 48px rgba(0,0,0,.2),
+    inset 0 1px 0 rgba(255,255,255,.5),
+    inset 0 -1px 0 rgba(255,255,255,.12),
+    0 0 0 1px rgba(255,255,255,.1);
+}
+
+/* Glass chart cards */
+body.forge-glass .chart-card {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,.04) 40%, rgba(255,255,255,.01) 100%);
+  border: 1px solid rgba(255,255,255,.2);
+  border-top: 1.5px solid rgba(255,255,255,.45);
+  backdrop-filter: blur(24px) saturate(180%) brightness(1.12);
+  -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.12);
+  box-shadow:
+    0 2px 4px rgba(0,0,0,.25),
+    0 8px 24px rgba(0,0,0,.2),
+    inset 0 1px 0 rgba(255,255,255,.3),
+    inset 0 -1px 0 rgba(255,255,255,.06);
+}
+body.forge-glass .chart-card:hover {
+  border-top-color: rgba(255,255,255,.6);
+  box-shadow:
+    0 4px 12px rgba(0,0,0,.22),
+    0 16px 40px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.45);
+}
+
+/* Glass nav */
+body.forge-glass nav {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.09) 0%, rgba(255,255,255,.04) 100%);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-right-color: rgba(255,255,255,.15);
+}
+body.forge-glass .nav-item.active {
+  background:
+    linear-gradient(90deg, rgba(245,168,0,.18) 0%, rgba(245,168,0,.04) 100%);
+  border-left-color: #F5A800;
+  box-shadow: inset 0 0 32px rgba(245,168,0,.08);
+}
+
+/* Glass header */
+body.forge-glass header {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.1) 0%, rgba(255,255,255,.04) 100%);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border-bottom-color: rgba(255,255,255,.18);
+}
+
+/* Glass projection strip */
+body.forge-glass #projStrip {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.09) 0%, rgba(255,255,255,.04) 100%);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border-bottom-color: rgba(255,255,255,.15);
+}
+
+/* Glass tooltip */
+body.forge-glass #chartTip {
+  background:
+    linear-gradient(160deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.1) 100%);
+  border: 1px solid rgba(255,255,255,.35);
+  border-top-color: rgba(255,255,255,.6);
+  color: #fff;
+  backdrop-filter: blur(48px) saturate(240%) brightness(1.2);
+  -webkit-backdrop-filter: blur(48px) saturate(240%) brightness(1.2);
+}
+
+/* Glass range tabs */
+body.forge-glass .rtab {
+  background: rgba(255,255,255,.1);
+  border-color: rgba(255,255,255,.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+body.forge-glass .rtab:hover {
+  background: rgba(255,255,255,.16);
+}
+body.forge-glass .rtab.active {
+  background: linear-gradient(135deg, rgba(245,168,0,.9) 0%, rgba(200,130,0,.9) 100%);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 16px rgba(245,168,0,.5), inset 0 1px 0 rgba(255,255,255,.4);
+}
+
+/* Glass import banner */
+body.forge-glass .forge-import-banner {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.14);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+body.forge-glass .forge-import-chip {
+  background: rgba(255,255,255,.1);
+  border-color: rgba(255,255,255,.22);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Glass toggle button */
+.forge-glass-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px 4px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.5);
+  font-size: 10.5px; font-family: var(--fm); font-weight: 600;
+  letter-spacing: .04em; cursor: pointer;
+  transition: all .2s;
+  user-select: none;
+}
+.forge-glass-toggle:hover {
+  background: rgba(255,255,255,.1);
+  border-color: rgba(255,255,255,.25);
+  color: rgba(255,255,255,.75);
+}
+.forge-glass-toggle.active {
+  background: rgba(255,255,255,.14);
+  border-color: rgba(255,255,255,.35);
+  color: #fff;
+}
+.forge-glass-toggle .fgt-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(255,255,255,.3);
+  transition: background .2s, box-shadow .2s;
+}
+.forge-glass-toggle.active .fgt-dot {
+  background: #34D9C3;
+  box-shadow: 0 0 8px rgba(45,212,191,.6);
+}
 </style>
 </head>
 <body>
@@ -1121,7 +1300,9 @@ main::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); }
   <div style="display:flex;align-items:center;gap:8px;"><svg width="22" height="13" viewBox="0 0 680 280" fill="none" style="display:inline-block;vertical-align:middle;flex-shrink:0;"><path d="M 680 10 C 548 10 422 30 338 58 C 270 82 210 112 170 145" stroke="#7EAFD6" stroke-width="48" stroke-linecap="round"/><path d="M 680 272 C 555 272 448 248 368 215 C 298 186 232 162 170 154" stroke="#7EAFD6" stroke-width="44" stroke-linecap="round"/><path d="M 170 149 C 148 142 118 120 92 92 C 66 64 44 40 8 22" stroke="#F5A800" stroke-width="42" stroke-linecap="round"/><circle cx="170" cy="149" r="26" fill="#F5A800"/></svg><div><div class="logo">F<span style="color:var(--gold)">O</span>RGE</div><div class="logo-sub">Est. 2026</div></div></div>
   <div class="header-right">
     <span class="hdr-stat" id="hdrStat"></span>
-    <button class="btn btn-ghost" onclick="showPage('upload')" style="font-size:11px;padding:6px 12px;">+ Import</button>
+    
+  <button class="forge-glass-toggle" id="glassToggle" onclick="toggleGlass()" title="Toggle iOS glass effect"><span class="fgt-dot"></span>Glass</button>
+  <button class="btn btn-ghost" onclick="showPage('upload')" style="font-size:11px;padding:6px 12px;">+ Import</button>
     <button class="btn btn-ghost" id="clearBtn" style="display:none;font-size:11px;padding:6px 12px;" onclick="clearAll()">Clear Data</button>
     <button onclick="toggleDemo()" style="font-size:10px;opacity:.45;background:none;border:1px solid var(--line);color:var(--ink4);padding:4px 10px;border-radius:var(--r-sm);cursor:pointer;">Demo</button>
   </div>
@@ -4865,6 +5046,23 @@ function renderImportBanner(containerId, fileTypes) {
   });
   html += '</div>';
   el.innerHTML = html;
+}
+
+// ── iOS Glass Mode toggle ────────────────────────────────────────────────────
+function toggleGlass() {
+  const on = document.body.classList.toggle('forge-glass');
+  try { localStorage.setItem('forge_glass', on ? '1' : '0'); } catch(e) {}
+  const btn = document.getElementById('glassToggle');
+  if (btn) btn.classList.toggle('active', on);
+}
+function initGlass() {
+  let on = false;
+  try { on = localStorage.getItem('forge_glass') === '1'; } catch(e) {}
+  if (on) {
+    document.body.classList.add('forge-glass');
+    const btn = document.getElementById('glassToggle');
+    if (btn) btn.classList.add('active');
+  }
 }
 
 function showPage(name) {
@@ -10404,7 +10602,8 @@ function buildAccrualEngine(selMonth, sp) {
     // Per-payee (employer) historical checking-only amounts for bonus detection
     const byPayee = {};
     incChkTxns.forEach(t => {
-      const p = (t.payee||'UNKNOWN').toLowerCase().trim();
+      const _pRaw = (t.payee||'UNKNOWN').toLowerCase().trim();
+      const p = _pRaw.replace(/\s+(direct\s*dep(osit)?|dd|payroll|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?)\.?\s*$/i, '').replace(/\s+\d{4,}$/, '').trim();
       if (!byPayee[p]) byPayee[p] = { amounts: [], months: new Set() };
       if (!t.date.startsWith(curMonthStr)) {
         byPayee[p].amounts.push(t.amount);
@@ -11575,6 +11774,25 @@ function renderIncomeStatement() {
   const displaySave  = preSaveTotal + projSav;
   const empBreakdown = (normData && normData.employerBreakdown) ? normData.employerBreakdown : {};
 
+  // Payee normalization helper (mirrors buildAccrualEngine)
+  function normPayeeKey(raw) {
+    return (raw||'').toLowerCase().trim()
+      .replace(/\s+(direct\s*dep(osit)?|dd|payroll|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?)\.*\s*$/i, '')
+      .replace(/\s+\d{4,}$/, '').trim();
+  }
+  // Merge bkt.paycheck by normalized payee for display
+  const _paycheckByEmp = {};
+  (bkt.paycheck||[]).forEach(function(t) {
+    const nk = normPayeeKey(t.payee||'');
+    if (!_paycheckByEmp[nk]) _paycheckByEmp[nk] = { payee: t.payee||'', txns: [], total: 0 };
+    else if ((t.payee||'').length < _paycheckByEmp[nk].payee.length) {
+      // Prefer the shorter (cleaner) payee name as the display name
+      _paycheckByEmp[nk].payee = t.payee||'';
+    }
+    _paycheckByEmp[nk].txns.push(t);
+    _paycheckByEmp[nk].total += t.amount;
+  });
+
   // ── Accrual projections (in-flight only) ────────────────────────────────
   function accrued(bucketKey) { return isInFlight && accrual ? (accrual.accrueAmount(bucketKey)||0) : 0; }
   function bucketTotal(bucketKey, projected) {
@@ -12101,10 +12319,29 @@ function renderIncomeStatement() {
       out += `</div>`;
     });
   } else {
-    (bkt.paycheck||[]).filter(t=>detectAcctType(t.account||'')==='checking').sort((a,b)=>b.amount-a.amount).forEach(t => {
-      const mbr = _aO[t.account] || '';
+    // No accrual data (past month) — use merged _paycheckByEmp
+    const _chkEmps = Object.values(_paycheckByEmp)
+      .filter(function(e){ return (detectAcctType(e.txns[0].account||'')==='checking'); })
+      .sort(function(a,b){ return b.total-a.total; });
+    _chkEmps.forEach(function(emp) {
+      const mbr = _aO[emp.txns[0].account] || '';
       const mbrBadge = mbr ? `<span style="font-size:9px;background:rgba(96,165,250,.15);color:${C.river};border:1px solid rgba(96,165,250,.25);border-radius:12px;padding:1px 7px;margin-left:7px;font-weight:600;">${mbr}</span>` : '';
-      out += ledgerRow((t.payee||'Paycheck')+mbrBadge, t.amount, { indent:1, color:C.ink2, sub:t.date, bold:false, size:13 });
+      const rxAmt = emp.total;
+      const sub   = emp.txns.length + ' paycheck' + (emp.txns.length!==1?'s':'') + ' · ' + emp.txns.map(function(t){return t.date.slice(5);}).join(', ');
+      out += `<div style="padding:7px 12px 7px 28px;border-bottom:1px solid rgba(255,255,255,.035);">`;
+      out += `<div style="display:flex;align-items:baseline;margin-bottom:3px;">`;
+      out += `<div style="flex:1;font-size:13px;font-weight:600;color:${C.ink};">${emp.payee}${mbrBadge}</div>`;
+      out += `<div style="font-family:var(--fm);font-size:14px;font-weight:700;color:${C.pos};">+${mfmt(rxAmt)}</div>`;
+      out += `</div>`;
+      out += `<div style="font-size:10px;color:${C.ink4};">${sub}</div>`;
+      // Date-level drill
+      emp.txns.slice().sort(function(a,b){return a.date.localeCompare(b.date);}).forEach(function(t) {
+        out += `<div style="display:flex;align-items:baseline;padding:3px 0 3px 16px;border-top:1px solid rgba(255,255,255,.03);">`;
+        out += `<div style="font-size:11px;color:${C.ink4};font-family:var(--fm);flex:1;">${t.date.slice(5)} · ${t.payee||'Paycheck'}</div>`;
+        out += `<div style="font-size:12px;font-weight:600;color:${C.pos};font-family:var(--fm);">+${mfmt(t.amount)}</div>`;
+        out += `</div>`;
+      });
+      out += `</div>`;
     });
   }
   if (normNote) {
@@ -13516,6 +13753,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   };
 
+  initGlass(); // Restore glass mode preference before anything renders
   // Start auth flow — will call forgeAppInit() after successful unlock
   forgeInitAuth();
 });
