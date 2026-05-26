@@ -188,8 +188,8 @@ nav::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
   background: var(--gold-dim);
   font-weight: 500;
 }
-.nav-item > svg { opacity: .5; flex-shrink: 0; }
-.nav-item.active > svg { opacity: 1; }
+.nav-item svg { opacity: .5; flex-shrink: 0; }
+.nav-item.active svg { opacity: 1; }
 
 /* ── Main content area ──────────────────────────────────────────────────── */
 main {
@@ -305,7 +305,6 @@ main::-webkit-scrollbar-thumb:hover { background: var(--line3); }
 }
 .chart-grid-1 { margin-bottom: var(--sp2); }
 .chart-card {
-  position: relative;
   background: var(--float);
   border: 1px solid rgba(255,255,255,.07);
   border-top: 1px solid rgba(255,255,255,.11);
@@ -320,7 +319,7 @@ main::-webkit-scrollbar-thumb:hover { background: var(--line3); }
 }
 .chart-title  { font-size: 13px; font-weight: 600; color: var(--ink2); margin-bottom: 2px; }
 .chart-sub    { font-size: 10px; color: var(--ink4); font-family: var(--fm); margin-bottom: var(--sp3); }
-.chart-area   { position: relative; width: 100%; height: 100%; min-height: 80px; z-index: 1; }
+.chart-area   { position: relative; width: 100%; height: 100%; min-height: 80px; }
 
 /* ── Tables ──────────────────────────────────────────────────────────────── */
 .table-card {
@@ -835,98 +834,6 @@ select:focus { border-color: var(--gold); }
   .chart-grid-2 { grid-template-columns: 1fr; }
   .fin-row { grid-template-columns: 1fr 90px 90px; }
 }
-
-/* ════════════════════════════════════════════════════════
-   FORGE v4.0 — Visual Enhancement Layer (5/23/26)
-   ════════════════════════════════════════════════════════ */
-:root {
-  --depth-1: 0 1px 3px rgba(0,0,0,.45), 0 4px 16px rgba(0,0,0,.35);
-  --depth-2: 0 2px 8px rgba(0,0,0,.55), 0 12px 40px rgba(0,0,0,.4), 0 32px 80px rgba(0,0,0,.25);
-}
-@keyframes forge-shimmer {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-@keyframes forge-fade-in {
-  from { opacity:0; transform:translateY(4px); }
-  to   { opacity:1; transform:translateY(0); }
-}
-/* KPI cards */
-.kpi {
-  position: relative; overflow: hidden;
-  border-top: 1.5px solid rgba(255,255,255,.22);
-  backdrop-filter: blur(12px) saturate(150%);
-  box-shadow: var(--depth-1), inset 0 1px 0 rgba(255,255,255,.08);
-  transition: box-shadow .25s, transform .18s;
-}
-.kpi::before {
-  content:''; position:absolute; inset:0;
-  background: radial-gradient(ellipse at 10% 0%, rgba(255,255,255,.07) 0%, transparent 55%);
-  pointer-events:none;
-}
-.kpi::after {
-  content:''; position:absolute; top:0; left:-80%; width:60%; height:1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
-  animation: forge-shimmer 5s ease-in-out infinite;
-  pointer-events:none;
-}
-.kpi:hover {
-  border-top-color: rgba(255,255,255,.38);
-  box-shadow: var(--depth-2), inset 0 1px 0 rgba(255,255,255,.14);
-  transform: translateY(-2px);
-}
-.kpi-val { text-shadow: 0 2px 12px rgba(0,0,0,.5); }
-/* Chart cards */
-.chart-card {
-  border-top: 1.5px solid rgba(255,255,255,.18);
-  box-shadow: var(--depth-1), inset 0 1px 0 rgba(255,255,255,.06);
-  transition: box-shadow .25s;
-}
-.chart-card:hover {
-  border-top-color: rgba(255,255,255,.28);
-  box-shadow: var(--depth-2), inset 0 1px 0 rgba(255,255,255,.1);
-}
-.chart-title { display:flex; align-items:center; gap:8px; }
-.chart-title::before {
-  content:''; display:block; width:3px; height:14px; flex-shrink:0;
-  background: linear-gradient(180deg, var(--gold), rgba(245,168,0,.25));
-  border-radius:2px; box-shadow:0 0 8px rgba(245,168,0,.28);
-}
-/* Tooltip */
-#chartTip {
-  background: linear-gradient(160deg, rgba(18,18,28,.98) 0%, rgba(10,10,16,.99) 100%);
-  backdrop-filter: blur(28px) saturate(200%);
-  -webkit-backdrop-filter: blur(28px) saturate(200%);
-  border-top: 1px solid rgba(255,255,255,.26);
-  border-radius: 14px;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 8px 32px rgba(0,0,0,.75), 0 24px 64px rgba(0,0,0,.5);
-}
-/* Nav */
-.nav-item.active {
-  background: linear-gradient(90deg, rgba(245,168,0,.1) 0%, rgba(245,168,0,.02) 100%);
-  border-left-color: var(--gold);
-}
-.nav-item.active > svg { filter: drop-shadow(0 0 4px rgba(245,168,0,.35)); }
-/* Range tabs */
-.rtab.active {
-  background: linear-gradient(135deg, #F5A800 0%, #D48A00 100%);
-  border-color: transparent; color:#000; font-weight:800;
-  box-shadow: 0 2px 14px rgba(245,168,0,.4);
-}
-/* Page title gradient */
-.page-title {
-  background: linear-gradient(160deg, #FFFFFF 0%, #E8E3DA 40%, #B8B3AA 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-/* Table hover */
-tbody tr:hover td { background: rgba(255,255,255,.025); }
-tbody tr:hover td:first-child { border-left:2px solid rgba(245,168,0,.45); padding-left:14px; }
-/* Badges */
-.forge-badge { display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:100px;font-size:9px;font-weight:700;font-family:var(--fm);letter-spacing:.08em;text-transform:uppercase; }
-.forge-badge.positive { background:rgba(52,217,195,.1);color:#34D9C3;border:1px solid rgba(52,217,195,.22); }
-.forge-badge.negative { background:rgba(255,92,92,.1);color:#FF5C5C;border:1px solid rgba(255,92,92,.22); }
-.forge-badge.gold { background:rgba(245,168,0,.1);color:var(--gold);border:1px solid rgba(245,168,0,.28); }
 </style>
 </head>
 <body>
@@ -4391,12 +4298,8 @@ function makeDonut(canvasId, labels, values, existingChart) {
 // MONTHLY DATA HELPER
 // ════════════════════════════════════════════════
 function monthlyData(txnArr) {
-  // Visualization layer: simple +/- split on whatever array is passed in.
-  // Upstream callers (renderCashFlow, etc.) already apply OPER filter + transfer exclusion.
-  // BSR (buildSavingsRegister) handles the stricter checking-only income definition
-  // for financial calculations. This function is for charting.
   const m = {};
-  (txnArr || []).forEach(function(t) {
+  txnArr.forEach(t => {
     const k = t.date.slice(0,7);
     if (!m[k]) m[k] = { inc:0, exp:0 };
     if (t.amount > 0) m[k].inc += t.amount;
@@ -4404,12 +4307,13 @@ function monthlyData(txnArr) {
   });
   const keys = Object.keys(m).sort();
   return {
-    labels:   keys.map(k => k.slice(2)),
+    labels:   keys.map(k => k.slice(2)),  // YY-MM
     fullKeys: keys,
     income:   keys.map(k => m[k].inc),
     expenses: keys.map(k => m[k].exp),
   };
 }
+
 function fmt(v) {
   const neg = v < 0;
   const a = Math.abs(v);
@@ -4465,78 +4369,6 @@ const _plan = {
   type: '', name: '', cost: 0, saved: 0, months: 3,
 };
 
-function renderBudgetPressure() {
-  const el = document.getElementById('budgetPressureContent');
-  if (!el) return;
-  if (!txns.length) { el.innerHTML='<div style="padding:60px;text-align:center;color:var(--ink4);">Import data first.</div>'; return; }
-  const moSel = document.getElementById('pressureMonth');
-  const sp    = operatingSpendable(txns);
-  const allMonths = [...new Set(sp.map(t=>t.date.slice(0,7)))].sort().reverse();
-  if (moSel && !moSel.options.length) allMonths.forEach(m => {
-    const [y,mo]=m.split('-'); const opt=document.createElement('option');
-    opt.value=m; opt.textContent=new Date(+y,+mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
-    moSel.appendChild(opt);
-  });
-  const sel=(moSel&&moSel.value)||allMonths[0]; if(!sel) return;
-  const [y,mo]=sel.split('-');
-  const monthName=new Date(+y,+mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  const dIM=new Date(+y,+mo,0).getDate(); const now=new Date();
-  const isCur=sel===now.toISOString().slice(0,7); const daysDone=isCur?now.getDate():dIM; const pct=daysDone/dIM;
-  const budgets=(typeof settings!=='undefined'&&settings.budgets)||{};
-  const BM=(typeof BUCKET_META!=='undefined')?BUCKET_META:{};
-  const selTxns=sp.filter(t=>t.date.startsWith(sel));
-  const actuals={}; selTxns.forEach(t=>{if(t.amount<0){const bk=classifyTxn(t);actuals[bk]=(actuals[bk]||0)+Math.abs(t.amount);}});
-  const accrual=(typeof buildAccrualEngine==='function')?buildAccrualEngine(sel,sp):null;
-  const BUCKETS=['mortgage','mort_interest','mort_escrow','car','insurance','education','childcare',
-    'electric','gas_util','water','internet','cell','streaming','groceries','gas_car','transit',
-    'healthcare','restaurants','entertainment','household','personal','clothing','travel','gifts','other'];
-  const rows=[]; BUCKETS.forEach(bk=>{
-    const actual=actuals[bk]||0; const budget=budgets[bk]||0;
-    const accrued=(accrual&&typeof accrual.accrueAmount==='function')?(accrual.accrueAmount(bk)||0):0;
-    const projected=actual+accrued; if(actual<0.5&&projected<0.5) return;
-    const meta=BM[bk]||{label:bk,icon:'·'};
-    const pctUsed=budget>0?projected/budget:null;
-    const status=pctUsed===null?'no-budget':pctUsed>1?'over':pctUsed>.85?'warning':'ok';
-    rows.push({bk,label:meta.label||bk,icon:meta.icon||'·',actual,projected,budget,pctUsed,status});
-  });
-  rows.sort((a,b)=>({over:0,warning:1,ok:2,'no-budget':3}[a.status]||3)-({over:0,warning:1,ok:2,'no-budget':3}[b.status]||3));
-  const maxVal=Math.max(...rows.map(r=>Math.max(r.projected,r.budget||r.projected)),1);
-  const fK=v=>{const a=Math.abs(v||0);return '$'+(a>=1000?(a/1000).toFixed(1).replace(/\.0$/,'')+'K':Math.round(a));};
-  const totA=rows.reduce((s,r)=>s+r.actual,0), totP=rows.reduce((s,r)=>s+r.projected,0), totB=rows.reduce((s,r)=>s+(r.budget||0),0);
-  let html=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">`;
-  [[monthName,'var(--ink)'],[`${fK(totA)} spent`,'var(--negative)'],[`${fK(totP)} projected`,totP>(totB||totP*1.05)?'#F5A800':'#34D9C3'],[totB?`${fK(totB)} budget`:'No budgets set','var(--ink4)']].forEach(([v,c])=>{
-    html+=`<div class="kpi"><div class="kpi-label">Period</div><div class="kpi-val" style="color:${c};font-size:18px;">${v}</div></div>`;
-  });
-  html+='</div>';
-  if(!rows.length){html+='<div style="padding:40px;text-align:center;color:var(--ink4);">No spending data.</div>';el.innerHTML=html;return;}
-  html+=`<div class="chart-card"><div class="chart-title">Spending Pressure — ${monthName}${isCur?` (${daysDone}d / ${dIM}d — ${Math.round(pct*100)}% done)`:''}</div><div>`;
-  rows.forEach(r=>{
-    const col=r.status==='over'?'#FF5C5C':r.status==='warning'?'#F5A800':'#34D9C3';
-    const projW=Math.max((r.projected/maxVal)*100,.5).toFixed(1);
-    const budgW=r.budget>0?((r.budget/maxVal)*100).toFixed(1):null;
-    const paceW=budgW?(pct*(r.budget/maxVal)*100).toFixed(1):null;
-    const pctLbl=r.pctUsed!==null?Math.round(r.pctUsed*100)+'%':'—';
-    html+=`<div style="display:grid;grid-template-columns:22px 160px 1fr 80px 52px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);">`;
-    html+=`<div style="font-size:15px;text-align:center;">${r.icon}</div>`;
-    html+=`<div style="font-size:12px;color:var(--ink2);font-weight:500;">${r.label}</div>`;
-    html+=`<div style="position:relative;height:20px;">`;
-    if(budgW) html+=`<div style="position:absolute;left:0;top:4px;bottom:4px;width:${budgW}%;background:rgba(255,255,255,.07);border-radius:3px;"></div>`;
-    if(isCur&&paceW) html+=`<div style="position:absolute;left:${paceW}%;top:0;bottom:0;width:1px;background:rgba(255,255,255,.2);"></div>`;
-    html+=`<div style="position:absolute;left:0;top:4px;bottom:4px;width:${projW}%;background:${col};border-radius:3px;opacity:.85;"></div></div>`;
-    html+=`<div style="font-size:12px;font-family:var(--fm);color:var(--neg);text-align:right;">${fK(r.projected)}</div>`;
-    html+=`<div style="font-size:11px;color:${r.status==='over'?'#FF5C5C':r.status==='warning'?'#F5A800':'rgba(255,255,255,.35)'};text-align:right;">${pctLbl}</div>`;
-    html+='</div>';
-  });
-  html+='</div></div>';
-  const over=rows.filter(r=>r.status==='over'),warn=rows.filter(r=>r.status==='warning');
-  if(over.length||warn.length){
-    html+='<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">';
-    over.forEach(r=>{html+=`<div style="padding:10px 14px;background:rgba(255,92,92,.08);border:1px solid rgba(255,92,92,.2);border-left:3px solid #FF5C5C;border-radius:10px;font-size:12px;color:var(--ink2);">⚠️ <strong>${r.label}</strong> projected at ${fK(r.projected)} — ${Math.round((r.projected/r.budget-1)*100)}% over ${fK(r.budget)} budget</div>`;});
-    warn.forEach(r=>{html+=`<div style="padding:10px 14px;background:rgba(245,168,0,.07);border:1px solid rgba(245,168,0,.2);border-left:3px solid #F5A800;border-radius:10px;font-size:12px;color:var(--ink2);">🟡 <strong>${r.label}</strong>: ${fK(r.projected)} projected — ${Math.round((r.pctUsed||0)*100)}% of ${fK(r.budget)} budget</div>`;});
-    html+='</div>';
-  }
-  el.innerHTML=html;
-}
 function renderPlanner() {
   const el = document.getElementById('plannerContent');
   if (!el) return;
@@ -6649,7 +6481,12 @@ function renderNetSavingsChart(elId, labels, data, opts) {
       fill="transparent" data-tip="${tip.replace(/'/g,'&#39;')}" style="cursor:crosshair;"/>`;
   });
 
-  // ── function renderCashFlow() {
+
+  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:visible;">${defs}${grid}${linesSvg}${dotsSvg}${xAxis}${hits}</svg>`;
+  bindChartTips(el);
+}
+
+function renderCashFlow() {
   const _t0 = performance.now();
   console.log('[Forge] renderCashFlow START — txns:', txns ? txns.length : 'undefined');
 
@@ -6700,15 +6537,6 @@ function renderNetSavingsChart(elId, labels, data, opts) {
   }
 
   // ── Income vs Expenses bar chart ──────────────────────────────────────────
-  // ── Visible diagnostic (remove after debugging) ──
-  if (_bw) {
-    _bw.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:rgba(255,255,255,.6);font-size:11px;font-family:monospace;">'
-      + '<div>txns: ' + txns.length + ' | src_oper: ' + src.length + ' | months: ' + md.labels.length + '</div>'
-      + '<div>income[0]: $' + Math.round(md.income[0]||0) + ' | exp[0]: $' + Math.round(md.expenses[0]||0) + '</div>'
-      + '<div>W: ' + (_bw.offsetWidth||0) + ' H: ' + (_bw.offsetHeight||0) + '</div>'
-      + '<div style="color:rgba(255,255,255,.3);">rendering…</div>'
-      + '</div>';
-  }
   console.log('[Forge] renderCashFlow — calling svgBar');
   svgBar('cfBarWrap', md.labels, [
     { label: 'Income',   data: md.income,   backgroundColor: 'rgba(45,212,191,.75)' },
@@ -6777,6 +6605,20 @@ function renderNetSavingsChart(elId, labels, data, opts) {
     ].map(k=>`<div class="kpi ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-val">${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
   }
 
+  // ── VISUAL DIAGNOSTIC ──
+  setTimeout(function() {
+    var _bwD = document.getElementById('cfBarWrap');
+    var _svg = _bwD && _bwD.querySelector('svg');
+    var _dbg = document.getElementById('cfDebug');
+    if (!_dbg) { _dbg = document.createElement('div'); _dbg.id='cfDebug';
+      _dbg.style.cssText='padding:6px 12px;background:rgba(245,168,0,.08);border-radius:6px;margin-top:8px;font-size:11px;font-family:monospace;color:rgba(255,255,255,.7);';
+      var _cc = document.querySelector('#page-cashflow .chart-card');
+      if (_cc) _cc.after(_dbg); }
+    _dbg.innerHTML = 'svgBar called | svg in DOM: '+!!_svg
+      +' | W:'+(_bwD?_bwD.offsetWidth:0)+' H:'+(_bwD?_bwD.offsetHeight:0)
+      +' | src:'+typeof src+' | md.months:'+(typeof md!=='undefined'?md.labels.length:'?');
+    if (_svg) { _dbg.innerHTML += ' | svg.W:'+_svg.getAttribute('width')+' svg.H:'+_svg.getAttribute('height'); }
+  }, 500);
   console.log('[Forge] renderCashFlow COMPLETE in', Math.round(performance.now()-_t0) + 'ms');
 }
 
