@@ -11618,6 +11618,16 @@ function renderIncomeStatement() {
 
   const deployable = Math.max(totalIncome - totalAutoSave, 0);
 
+  // ── Gross display amounts ───────────────────────────────────────────────
+  const grossPayChk  = (bkt.paycheck||[]).filter(t=>detectAcctType(t.account||'')=='checking').reduce((s,t)=>s+t.amount,0);
+  const savDepAmt    = (bkt.paycheck||[]).filter(t=>detectAcctType(t.account||'')=='savings').reduce((s,t)=>s+t.amount,0);
+  const projGross    = normData ? Object.values(normData.employerBreakdown||{}).reduce((s,e)=>s+(e.projectedAmount||0),0) : 0;
+  const projSav      = normData ? Object.values(normData.employerBreakdown||{}).reduce((s,e)=>s+(e.projectedSavings||0),0) : 0;
+  const displayGross = (earlyMonthIS && normData) ? normPaycheck : grossPayChk + projGross;
+  const preSaveTotal = savDepAmt + totalAutoSave;
+  const displaySave  = preSaveTotal + projSav;
+  const empBreakdown = (normData && normData.employerBreakdown) ? normData.employerBreakdown : {};
+
   // ── Accrual projections (in-flight only) ────────────────────────────────
   function accrued(bucketKey) { return isInFlight && accrual ? (accrual.accrueAmount(bucketKey)||0) : 0; }
   function bucketTotal(bucketKey, projected) {
