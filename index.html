@@ -6481,7 +6481,12 @@ function renderNetSavingsChart(elId, labels, data, opts) {
       fill="transparent" data-tip="${tip.replace(/'/g,'&#39;')}" style="cursor:crosshair;"/>`;
   });
 
-  // ── function renderCashFlow() {
+
+  el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;overflow:visible;">${defs}${grid}${linesSvg}${dotsSvg}${xAxis}${hits}</svg>`;
+  bindChartTips(el);
+}
+
+function renderCashFlow() {
   const _t0 = performance.now();
   console.log('[Forge] renderCashFlow START — txns:', txns ? txns.length : 'undefined');
 
