@@ -10644,7 +10644,7 @@ function buildAccrualEngine(selMonth, sp) {
       const _bRaw = (t.payee||'UNKNOWN').toLowerCase().trim();
       const _bNorm = (function(s) {
         s = s.replace(/\s+\d{4,}$/, '').trim();
-        s = s.replace(/\b(direct\s*dep(osit)?|dd|payroll\s*(services?|svc)?|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?|health\s*(system|sys|plan|services?|svc)|hlth\s*(sys|svc|plan)?|pension|retirement|benefits?|benefit\s*pay|employee\s*pay(ment)?|corp\s*(payroll|pay)|paygroup|biweekly|bi\s*wkly|bi\s*weekly)\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
+        s = s.replace(/\b(dir(ect)?\s*dep(osit)?|direct\s*dep(osit)?|dd|payroll\s*(services?|svc)?|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?|health\s*(system|sys|plan|services?|svc)|hlth\s*(sys|svc|plan)?|pension|retirement|benefits?|benefit\s*pay|employee\s*pay(ment)?|corp\s*(payroll|pay)|paygroup|biweekly|bi\s*wkly|bi\s*weekly)\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
         return s;
       })(_bRaw);
       const hist = (byPayee[_bNorm] || { amounts: [] }).amounts;
@@ -10742,7 +10742,7 @@ function buildAccrualEngine(selMonth, sp) {
         // and "UPMC" all map to the same employer key
         const key = (function(s) {
           s = s.replace(/\s+\d{4,}$/, '').trim();
-          s = s.replace(/\b(direct\s*dep(osit)?|dd|payroll\s*(services?|svc)?|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?|health\s*(system|sys|plan|services?|svc)|hlth\s*(sys|svc|plan)?|pension|retirement|benefits?|benefit\s*pay|employee\s*pay(ment)?|corp\s*(payroll|pay)|paygroup|biweekly|bi\s*wkly|bi\s*weekly)\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
+          s = s.replace(/\b(dir(ect)?\s*dep(osit)?|direct\s*dep(osit)?|dd|payroll\s*(services?|svc)?|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?|health\s*(system|sys|plan|services?|svc)|hlth\s*(sys|svc|plan)?|pension|retirement|benefits?|benefit\s*pay|employee\s*pay(ment)?|corp\s*(payroll|pay)|paygroup|biweekly|bi\s*wkly|bi\s*weekly)\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
           return s;
         })(_rawKey);
       if (!employerBreakdown[key]) {
@@ -10771,7 +10771,7 @@ function buildAccrualEngine(selMonth, sp) {
         // and "UPMC" all map to the same employer key
         const key = (function(s) {
           s = s.replace(/\s+\d{4,}$/, '').trim();
-          s = s.replace(/\b(direct\s*dep(osit)?|dd|payroll\s*(services?|svc)?|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?|health\s*(system|sys|plan|services?|svc)|hlth\s*(sys|svc|plan)?|pension|retirement|benefits?|benefit\s*pay|employee\s*pay(ment)?|corp\s*(payroll|pay)|paygroup|biweekly|bi\s*wkly|bi\s*weekly)\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
+          s = s.replace(/\b(dir(ect)?\s*dep(osit)?|direct\s*dep(osit)?|dd|payroll\s*(services?|svc)?|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?|health\s*(system|sys|plan|services?|svc)|hlth\s*(sys|svc|plan)?|pension|retirement|benefits?|benefit\s*pay|employee\s*pay(ment)?|corp\s*(payroll|pay)|paygroup|biweekly|bi\s*wkly|bi\s*weekly)\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
           return s;
         })(_rawKey);
       if (!employerBreakdown[key]) {
@@ -12285,7 +12285,7 @@ function renderIncomeStatement() {
     const _pkRaw = (t.payee||'').toLowerCase().trim();
     const pk = (function(s){
       s = s.replace(/\s+\d{4,}$/, '').trim();
-      s = s.replace(/\b(direct\s*dep(osit)?|dd|payroll\s*(services?|svc)?|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?|health\s*(system|sys|plan|services?|svc)|hlth\s*(sys|svc|plan)?|pension|retirement|benefits?|benefit\s*pay|employee\s*pay(ment)?|corp\s*(payroll|pay)|paygroup|biweekly|bi\s*wkly|bi\s*weekly)\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
+      s = s.replace(/\b(dir(ect)?\s*dep(osit)?|direct\s*dep(osit)?|dd|payroll\s*(services?|svc)?|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?|health\s*(system|sys|plan|services?|svc)|hlth\s*(sys|svc|plan)?|pension|retirement|benefits?|benefit\s*pay|employee\s*pay(ment)?|corp\s*(payroll|pay)|paygroup|biweekly|bi\s*wkly|bi\s*weekly)\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
       return s;
     })(_pkRaw);
     if (own && pk) _p2m[pk] = own;
