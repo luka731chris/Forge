@@ -5065,6 +5065,41 @@ function initGlass() {
   }
 }
 
+// ── Payee normalization: strips banking/payroll filler words token-by-token ──
+// Scalable: any new filler = add one word to PAYEE_NOISE.
+// Examples: "UPMC Dir Dep" → "upmc"
+//           "UPMC Health System" → "upmc"
+//           "Highmark Health Direct Dep" → "highmark"
+//           "Highmark Health" → "highmark"
+const PAYEE_NOISE = new Set([
+  'dir','direct','dep','deposit','dd','dda','ach',
+  'payroll','pay','pmt','payment','paymt','paymnt',
+  'svc','svcs','services','service',
+  'health','hlth','hlt','med','medical',
+  'system','sys','sys','plan','plans',
+  'corp','co','inc','llc','ltd',
+  'pension','retirement','ret',
+  'benefits','benefit','ben',
+  'employee','emp','employees',
+  'biweekly','bi','wkly','weekly','wk',
+  'group','grp','paygroup',
+  'us','usa','american','america',
+]);
+
+function normPayeeKey(raw) {
+  const tokens = (raw||'').toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')   // strip punctuation
+    .trim()
+    .replace(/\s+/g, ' ')
+    .split(' ');
+  // Remove trailing digits-only tokens (account numbers)
+  while (tokens.length && /^\d+$/.test(tokens[tokens.length - 1])) tokens.pop();
+  // Filter out noise words
+  const sig = tokens.filter(w => w.length > 0 && !PAYEE_NOISE.has(w));
+  // Fallback: if ALL words were noise (shouldn't happen), use original
+  return sig.join(' ') || (raw||'').toLowerCase().trim();
+}
+
 function showPage(name) {
   if (typeof renderProjStrip === 'function') renderProjStrip();
   document.querySelectorAll('.page').forEach(p => {
@@ -10603,7 +10638,7 @@ function buildAccrualEngine(selMonth, sp) {
     const byPayee = {};
     incChkTxns.forEach(t => {
       const _pRaw = (t.payee||'UNKNOWN').toLowerCase().trim();
-      const p = _pRaw.replace(/\s+(direct\s*dep(osit)?|dd|payroll|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?)\.?\s*$/i, '').replace(/\s+\d{4,}$/, '').trim();
+      const p = normPayeeKey(_pRaw);
       if (!byPayee[p]) byPayee[p] = { amounts: [], months: new Set() };
       if (!t.date.startsWith(curMonthStr)) {
         byPayee[p].amounts.push(t.amount);
@@ -10642,11 +10677,7 @@ function buildAccrualEngine(selMonth, sp) {
     const bonusItems   = [];
     curPayTxns.forEach(t => {
       const _bRaw = (t.payee||'UNKNOWN').toLowerCase().trim();
-      const _bNorm = (function(s) {
-        s = s.replace(/\s+\d{4,}$/, '').trim();
-        s = s.replace(/\b(dir(ect)?\s*dep(osit)?|direct\s*dep(osit)?|dd|payroll\s*(services?|svc)?|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?|health\s*(system|sys|plan|services?|svc)|hlth\s*(sys|svc|plan)?|pension|retirement|benefits?|benefit\s*pay|employee\s*pay(ment)?|corp\s*(payroll|pay)|paygroup|biweekly|bi\s*wkly|bi\s*weekly)\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
-        return s;
-      })(_bRaw);
+      const _bNorm = normPayeeKey(_bRaw);
       const hist = (byPayee[_bNorm] || { amounts: [] }).amounts;
       if (hist.length < 3) return; // need ≥3 prior checks to establish pattern
       const m  = mean(hist);
@@ -10740,11 +10771,7 @@ function buildAccrualEngine(selMonth, sp) {
       const _rawKey = (t.payee||'Unknown').toLowerCase().trim();
         // Normalize: strip filler words anywhere so "UPMC Health System", "UPMC Payroll Services"
         // and "UPMC" all map to the same employer key
-        const key = (function(s) {
-          s = s.replace(/\s+\d{4,}$/, '').trim();
-          s = s.replace(/\b(dir(ect)?\s*dep(osit)?|direct\s*dep(osit)?|dd|payroll\s*(services?|svc)?|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?|health\s*(system|sys|plan|services?|svc)|hlth\s*(sys|svc|plan)?|pension|retirement|benefits?|benefit\s*pay|employee\s*pay(ment)?|corp\s*(payroll|pay)|paygroup|biweekly|bi\s*wkly|bi\s*weekly)\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
-          return s;
-        })(_rawKey);
+        const key = normPayeeKey(_rawKey);
       if (!employerBreakdown[key]) {
         const hist = (byPayee[key]||{}).amounts || [];
         const typicalPerCheck = hist.length >= 2 ? median(removeOutliers(hist)) : (hist[0]||0);
@@ -10769,11 +10796,7 @@ function buildAccrualEngine(selMonth, sp) {
       const _rawKey = (t.payee||'Unknown').toLowerCase().trim();
         // Normalize: strip filler words anywhere so "UPMC Health System", "UPMC Payroll Services"
         // and "UPMC" all map to the same employer key
-        const key = (function(s) {
-          s = s.replace(/\s+\d{4,}$/, '').trim();
-          s = s.replace(/\b(dir(ect)?\s*dep(osit)?|direct\s*dep(osit)?|dd|payroll\s*(services?|svc)?|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?|health\s*(system|sys|plan|services?|svc)|hlth\s*(sys|svc|plan)?|pension|retirement|benefits?|benefit\s*pay|employee\s*pay(ment)?|corp\s*(payroll|pay)|paygroup|biweekly|bi\s*wkly|bi\s*weekly)\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
-          return s;
-        })(_rawKey);
+        const key = normPayeeKey(_rawKey);
       if (!employerBreakdown[key]) {
         employerBreakdown[key] = {
           payee: t.payee||'Unknown', received:0, checkCount:0,
@@ -12283,11 +12306,7 @@ function renderIncomeStatement() {
   (bkt.paycheck||[]).forEach(t => {
     const own = _aO[t.account] || '';
     const _pkRaw = (t.payee||'').toLowerCase().trim();
-    const pk = (function(s){
-      s = s.replace(/\s+\d{4,}$/, '').trim();
-      s = s.replace(/\b(dir(ect)?\s*dep(osit)?|direct\s*dep(osit)?|dd|payroll\s*(services?|svc)?|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?|health\s*(system|sys|plan|services?|svc)|hlth\s*(sys|svc|plan)?|pension|retirement|benefits?|benefit\s*pay|employee\s*pay(ment)?|corp\s*(payroll|pay)|paygroup|biweekly|bi\s*wkly|bi\s*weekly)\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
-      return s;
-    })(_pkRaw);
+    const pk = normPayeeKey(_pkRaw);
     if (own && pk) _p2m[pk] = own;
   });
   const empKeys2 = Object.keys(empBreakdown).sort();
