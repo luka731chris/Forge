@@ -10781,7 +10781,7 @@ function buildAccrualEngine(selMonth, sp) {
           typicalPerCheck,
           // Expected checks from this employer per month = their payByMonth count
           expectedChecks: Math.round(mean(priorMonths6.map(mo =>
-            incChkTxns.filter(x => x.date.startsWith(mo) && (x.payee||'').toLowerCase().trim()===key).length
+            incChkTxns.filter(x => x.date.startsWith(mo) && normPayeeKey((x.payee||'').toLowerCase().trim())===key).length
           ).filter(v => v > 0)) || 1),
           savingsReceived: 0,
           typicalSavings: 0,
@@ -10827,7 +10827,7 @@ function buildAccrualEngine(selMonth, sp) {
       const typicalPerCheck = median(removeOutliers(data.amounts));
       if (typicalPerCheck < 100) return; // filter noise
       const expChecks = Math.round(mean(priorMonths6.map(mo =>
-        incChkTxns.filter(x => x.date.startsWith(mo) && (x.payee||'').toLowerCase().trim()===key).length
+        incChkTxns.filter(x => x.date.startsWith(mo) && normPayeeKey((x.payee||'').toLowerCase().trim())===key).length
       ).filter(v => v > 0)) || 1);
       const savHist = (bySavPayee[key]||{}).amounts || [];
       const typSav  = savHist.length >= 2 ? median(removeOutliers(savHist)) : (savHist[0]||0);
@@ -11805,11 +11805,7 @@ function renderIncomeStatement() {
   const empBreakdown = (normData && normData.employerBreakdown) ? normData.employerBreakdown : {};
 
   // Payee normalization helper (mirrors buildAccrualEngine)
-  function normPayeeKey(raw) {
-    return (raw||'').toLowerCase().trim()
-      .replace(/\s+(direct\s*dep(osit)?|dd|payroll|p\/r|pay\s*roll|deposit|dda|ach\s*dep(osit)?)\.*\s*$/i, '')
-      .replace(/\s+\d{4,}$/, '').trim();
-  }
+  // normPayeeKey: global PAYEE_NOISE tokenizer used — not redefined here
   // Merge bkt.paycheck by normalized payee for display
   const _paycheckByEmp = {};
   (bkt.paycheck||[]).forEach(function(t) {
@@ -12347,6 +12343,9 @@ function renderIncomeStatement() {
     });
   } else {
     // No accrual data (past month) — use merged _paycheckByEmp
+    const _savEmps = Object.values(_paycheckByEmp)
+      .filter(function(e){ return (detectAcctType(e.txns[0].account||'')==='savings'); })
+      .sort(function(a,b){ return b.total-a.total; });
     const _chkEmps = Object.values(_paycheckByEmp)
       .filter(function(e){ return (detectAcctType(e.txns[0].account||'')==='checking'); })
       .sort(function(a,b){ return b.total-a.total; });
