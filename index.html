@@ -12086,562 +12086,496 @@ function renderIncomeStatement() {
   }
 
 
+
   // ── BUILD OUTPUT ─────────────────────────────────────────────────────────
   try {
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
-  const C = { pos:'#34D9C3', neg:'#F87171', gold:'#F5A800', river:'#60A5FA', ink:'#EEEAE4', ink2:'#C8C4BE', ink4:'#6B6560' };
-  function mfmt(v) { const a=Math.abs(v); return '$'+(a>=10?Math.round(a).toLocaleString('en-US'):a.toFixed(2)); }
-  function pctOf(v, base) { return base>0 ? (v/base*100).toFixed(0)+'%' : '—'; }
+  // ══════════════════════════════════════════════════════════════════════════
+  // MATH AUDIT — single source of truth for every number shown
+  // ══════════════════════════════════════════════════════════════════════════
+  //
+  // GROSS PAY = sum of all checking-account paycheck deposits this month
+  //             + projected remaining checks (mid-month only)
+  //             Uses normalPaycheck when earlyMonth (no deposits yet)
+  //
+  // PRE-COMMITTED SAVINGS = checking→savings transfers near payday (Pattern A)
+  //                       + employer split deposits to savings accounts
+  //                       + projected savings splits from unpaid checks
+  //                       NOTE: savDepAmt and totalAutoSave do NOT overlap:
+  //                         savDepAmt  = employer splits to SAVINGS accounts
+  //                         totalAutoSave = transfers FROM CHECKING to savings
+  //                         These are two distinct transaction types.
+  //
+  // DEPLOYABLE = totalIncome − totalAutoSave
+  //   where totalIncome = normalised checking paycheck income (projected if mid-month)
+  //   and   totalAutoSave = Pattern A transfers only
+  //
+  // The display numbers must match:
+  //   Gross Pay shown   = grossPayChk + projGross   (or normPaycheck if earlyMonth)
+  //   Savings shown     = savDepAmt + totalAutoSave + projSav
+  //   Deployable shown  = Gross Pay shown − Savings shown  ← enforced below
+  //   Fixed shown       = sum of fixedRows actual+proj
+  //   Variable shown    = sum of varRows  actual+proj
+  //   Surplus/Deficit   = Deployable − Fixed − Variable
+  // ══════════════════════════════════════════════════════════════════════════
 
-  // ── Data refs (from data pipeline above) ──────────────────────────────────
-  const totalFixed   = fixedRows.reduce((s,g)=>s+g.actual+g.proj, 0);
-  const totalVar     = varRows.reduce((s,g)=>s+g.actual+g.proj, 0);
-  const totalExp     = totalFixed + totalVar;
-  const netRemaining = deployable - totalExp;
-  const onTrack      = netRemaining >= 0;
+  // Re-derive display numbers with guaranteed arithmetic consistency
+  const _dispGross    = (earlyMonthIS && normData) ? normPaycheck
+                      : grossPayChk + projGross;
+  const _dispSave     = preSaveTotal + projSav;          // savDepAmt + totalAutoSave + projSav
+  const _dispDeploy   = Math.max(0, _dispGross - _dispSave);  // enforce: Gross − Savings
+  const _dispFixed    = fixedRows.reduce((s,g) => s + g.actual + g.proj, 0);
+  const _dispVar      = varRows.reduce((s,g)   => s + g.actual + g.proj, 0);
+  const _dispSurplus  = _dispDeploy - _dispFixed - _dispVar;
+  const _onTrack      = _dispSurplus >= 0;
 
-  // ── Layout helpers ─────────────────────────────────────────────────────────
-  // Compact ledger row: label left, number right, no gap
-  function ledgerRow(label, amount, opts) {
-    opts = opts || {};
-    const indent  = opts.indent  || 0;
-    const color   = opts.color   || C.ink2;
-    const bold    = opts.bold    ? '700' : '400';
-    const size    = opts.size    || 13;
-    const sub     = opts.sub     || '';
-    const badge   = opts.badge   || '';
-    const bkid    = opts.bkid    || '';
-    const mgid    = opts.mgid    || '';
-    const hasMore = opts.hasMore || false;
-    const isOpen  = opts.isOpen  || false;
-    const projected = opts.projected || 0;
-    const dimColor  = opts.dimColor || C.ink4;
+  // ── Local format helpers ──────────────────────────────────────────────────
+  function $$(v)  { // compact: $12.3K or $842
+    const a=Math.abs(v); const s=a>=1000?'$'+(a/1000).toFixed(1).replace(/\.0$/,'')+'K':'$'+Math.round(a).toLocaleString();
+    return s;
+  }
+  function $f(v)  { // full with cents for drill: $1,234 or $12.34
+    const a=Math.abs(v); return '$'+(a>=100?Math.round(a).toLocaleString('en-US'):a.toFixed(2));
+  }
+  function pct(v,base) { return base>1 ? Math.round(v/base*100)+'%' : '—'; }
+  const INK    = '#EEEAE4';
+  const INK2   = '#C8C4BE';
+  const INK4   = '#6B6560';
+  const GOLD   = '#F5A800';
+  const POS    = '#34D9C3';
+  const NEG    = '#F87171';
+  const RIVER  = '#60A5FA';
+  const LINE   = 'rgba(255,255,255,.06)';
 
-    const pl = 12 + indent * 20;
-    const cls = bkid  ? ' class="is-bk-row"'  :
-                mgid  ? ' class="is-mg-row"'   : '';
-    const dat = bkid  ? ` data-bkid="${bkid}"` :
-                mgid  ? ` data-mgid="${mgid}"`  : '';
-    const cursor = (hasMore || bkid || mgid) ? 'cursor:pointer;' : '';
-
-    let html = `<div${cls}${dat} style="display:flex;align-items:baseline;gap:0;`
-             + `padding:6px ${pl}px 6px ${pl}px;`
-             + `border-bottom:1px solid rgba(255,255,255,.035);`
-             + `${cursor}transition:background .1s;"`;
-    if (bkid || mgid) html += ` onmouseenter="this.style.background='rgba(255,255,255,.025)'" onmouseleave="this.style.background=''"`;
-    html += '>';
-
-    // Label
-    html += `<div style="flex:1;font-size:${size}px;font-weight:${bold};color:${color};line-height:1.4;">`;
-    html += label;
-    if (badge) html += ` ${badge}`;
-    if (sub)   html += `<span style="display:block;font-size:10px;color:${C.ink4};font-weight:400;margin-top:1px;">${sub}</span>`;
-    html += '</div>';
-
-    // Amount
-    if (amount !== null && amount !== undefined) {
-      html += `<div style="font-family:var(--fm);font-size:${bold==='700'?size+1:size}px;font-weight:${bold};color:${color};white-space:nowrap;padding-left:16px;flex-shrink:0;">`;
-      html += mfmt(Math.abs(amount));
-      html += '</div>';
-    }
-
-    // Projected add-on
-    if (projected > 1) {
-      html += `<div style="font-family:var(--fm);font-size:10px;color:${C.river};white-space:nowrap;padding-left:8px;flex-shrink:0;">+${mfmt(projected)} est.</div>`;
-    }
-
-    // % column
-    if (opts.pct) {
-      html += `<div style="font-size:11px;color:${dimColor};width:38px;text-align:right;flex-shrink:0;padding-left:6px;">${opts.pct}</div>`;
-    }
-
-    // Chevron
-    if (hasMore || bkid || mgid) {
-      html += `<div style="font-size:10px;color:${C.ink4};width:14px;text-align:right;flex-shrink:0;padding-left:4px;">${isOpen?'▾':'▸'}</div>`;
-    }
-
-    html += '</div>';
-    return html;
+  // ── Row helpers ───────────────────────────────────────────────────────────
+  // A ledger row: label flush left, amount flush right, no dead space
+  function row(label, amount, opts) {
+    opts = opts||{};
+    const indent = (opts.indent||0)*16;
+    const amtColor = opts.amtColor||INK2;
+    const lblColor = opts.lblColor||INK2;
+    const weight   = opts.bold ? '600' : '400';
+    const size     = opts.size||13;
+    const border   = opts.border ? `border-top:1px solid ${opts.border};` : '';
+    const bg       = opts.bg||'';
+    const sign     = (opts.sign===false) ? '' : (amount<0 ? '−' : '+');
+    const showSign = opts.showSign !== false;
+    const amtStr   = amount===null ? '' : (showSign ? sign : '') + $f(Math.abs(amount));
+    const sub      = opts.sub ? `<div style="font-size:10px;color:${INK4};margin-top:1px;">${opts.sub}</div>` : '';
+    const extra    = opts.extra ? `<span style="font-size:10px;color:${RIVER};font-family:var(--fm);margin-left:8px;">${opts.extra}</span>` : '';
+    const chevron  = opts.drillable ? `<span style="font-size:10px;color:${INK4};margin-left:6px;">${opts.open?'▾':'▸'}</span>` : '';
+    return `<div style="display:flex;align-items:baseline;padding:5px 14px 5px ${14+indent}px;`
+         + `${border}${bg?'background:'+bg+';':''}transition:background .1s;">`
+         + `<div style="flex:1;font-size:${size}px;font-weight:${weight};color:${lblColor};line-height:1.4;">`
+         + label + extra + sub + `</div>`
+         + (amtStr ? `<div style="font-family:var(--fm);font-size:${size}px;font-weight:${weight};color:${amtColor};white-space:nowrap;padding-left:20px;flex-shrink:0;">${amtStr}</div>` : '')
+         + chevron
+         + `</div>`;
   }
 
+  // Divider: heavier separation line with label and total
   function divider(label, amount, color) {
-    color = color || C.ink;
-    return `<div style="display:flex;align-items:center;padding:8px 12px 7px;background:rgba(255,255,255,.025);border-top:1.5px solid ${color}33;border-bottom:1.5px solid ${color}33;">
-      <div style="flex:1;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${color};">${label}</div>
-      <div style="font-family:var(--fm);font-size:17px;font-weight:700;color:${color};">${amount}</div>
-    </div>`;
+    color = color||INK;
+    return `<div style="display:flex;align-items:center;padding:7px 14px;`
+         + `background:rgba(255,255,255,.025);`
+         + `border-top:1px solid rgba(255,255,255,.1);`
+         + `border-bottom:1px solid rgba(255,255,255,.04);">`
+         + `<div style="flex:1;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${color};">${label}</div>`
+         + `<div style="font-family:var(--fm);font-size:16px;font-weight:700;color:${color};">${amount}</div>`
+         + `</div>`;
   }
 
-  function section(label, icon, total, sub, color) {
-    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px 6px;border-top:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.02);">
-      <span style="font-size:16px;">${icon}</span>
-      <div style="flex:1;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${color};">${label}</div>
-        ${sub?`<div style="font-size:10px;color:${C.ink4};margin-top:1px;">${sub}</div>`:''}
-      </div>
-      <div style="font-family:var(--fm);font-size:18px;font-weight:700;color:${color};">${mfmt(total)}</div>
-      <div style="font-size:11px;color:${C.ink4};width:36px;text-align:right;">${pctOf(total,deployable)}</div>
-    </div>`;
-  }
-
-  function drillRows(txnList) {
-    if (!txnList || !txnList.length) return '';
-    const DET = txnList.filter(t => t._isDetail);
-    const PLN = txnList.filter(t => !t._isDetail);
-    let html = '<div style="background:rgba(0,0,0,.22);border-top:1px solid rgba(255,255,255,.04);">';
-
-    // Group detail rows by payee
-    if (DET.length) {
-      const grps = {};
-      DET.forEach(t => {
-        const k = (t.payee||t.itemDetail||'Unknown').trim();
-        if (!grps[k]) grps[k] = { payee:k, txns:[], total:0, src:t._ftype||t._source||'' };
-        grps[k].txns.push(t); grps[k].total += Math.abs(t.amount);
-      });
-      Object.values(grps).sort((a,b)=>b.total-a.total).forEach(g => {
-        const srcLbl = {apple_card:'Apple Card',amazon_orders:'Amazon',home_depot:'Home Depot',venmo:'Venmo'}[g.src]||'';
-        const srcBadge = srcLbl ? `<span style="font-size:9px;background:rgba(96,165,250,.12);color:${C.river};padding:1px 5px;border-radius:3px;margin-left:6px;">${srcLbl}</span>` : '';
-        const mgId = 'mg-'+g.payee.replace(/[^a-z0-9]/gi,'').slice(0,20)+'-'+selMonth;
-        const isOpenM = !!document.getElementById(mgId);
-        html += `<div class="is-mg-row" data-mgid="${mgId}" style="display:flex;align-items:baseline;padding:5px 12px 5px 32px;border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer;"
-          onmouseenter="this.style.background='rgba(255,255,255,.02)'" onmouseleave="this.style.background=''">
-          <div style="flex:1;font-size:12px;font-weight:600;color:var(--ink);">${g.payee}${srcBadge}
-            <span style="font-size:10px;color:${C.ink4};font-weight:400;margin-left:6px;">${g.txns.length} item${g.txns.length!==1?'s':''}</span>
+  // Bucket row: emoji icon + label + optional proj badge + mini spark bar + amount + chevron
+  function bucketRow(g, base, color) {
+    const tot   = g.actual + g.proj;
+    const isOpen= !!isBucketOpen[g.key];
+    const hasTxn= g.txns.length > 0;
+    const barW  = base > 0 ? Math.min(100, tot/base*100).toFixed(1) : 0;
+    const projBadge = g.proj > 1 ? `<span style="font-size:10px;color:${RIVER};font-family:var(--fm);margin-left:7px;opacity:.8;">+${$$(g.proj)}</span>` : '';
+    const txnCt = hasTxn ? `<span style="font-size:10px;color:${INK4};margin-left:6px;">${g.txns.length}</span>` : '';
+    return `<div>
+      <div data-bkid="${g.key}" class="is-bk-row" style="display:flex;align-items:center;gap:10px;padding:7px 14px;cursor:${hasTxn?'pointer':'default'};"
+        onmouseenter="this.style.background='rgba(255,255,255,.028)'" onmouseleave="this.style.background=''">
+        <div style="font-size:14px;width:20px;text-align:center;flex-shrink:0;">${g.icon}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;">
+            <span style="font-size:13px;color:${INK};">${g.label}</span>
+            ${projBadge}${txnCt}
           </div>
-          <div style="font-family:var(--fm);font-size:13px;font-weight:700;color:${C.gold};">${mfmt(g.total)}</div>
-          <span class="mg-chev" style="font-size:10px;color:${C.ink4};padding-left:8px;">${isOpenM?'▾':'▸'}</span>
-        </div>`;
-        html += `<div id="${mgId}" style="display:none;background:rgba(0,0,0,.14);">`;
-        g.txns.sort((a,b)=>a.date.localeCompare(b.date)).forEach(t => {
-          const title = (t.itemDetail && t.itemDetail!==t.payee) ? t.itemDetail : (t.payee||'—');
-          html += `<div style="display:grid;grid-template-columns:52px 1fr auto;gap:6px;padding:3px 12px 3px 44px;border-bottom:1px solid rgba(255,255,255,.025);">
-            <div style="font-family:var(--fm);font-size:10px;color:${C.ink4};">${t.date.slice(5)}</div>
-            <div style="font-size:11px;color:#A8A4A0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title}</div>
-            <div style="font-family:var(--fm);font-size:11px;font-weight:600;color:${C.gold};">${mfmt(Math.abs(t.amount))}</div>
-          </div>`;
-        });
-        html += '</div>';
-      });
-    }
-    PLN.sort((a,b)=>b.date.localeCompare(a.date)||Math.abs(b.amount)-Math.abs(a.amount)).forEach(t => {
-      html += `<div style="display:grid;grid-template-columns:60px 1fr auto;gap:6px;padding:5px 12px 5px 32px;border-bottom:1px solid rgba(255,255,255,.025);">
-        <div style="font-family:var(--fm);font-size:10px;color:${C.ink4};padding-top:2px;">${t.date.slice(5)}</div>
-        <div style="font-size:12px;color:#A8A4A0;">${t.payee||'—'}</div>
-        <div style="font-family:var(--fm);font-size:12px;font-weight:600;color:${C.gold};">${mfmt(Math.abs(t.amount))}</div>
+          <div style="height:2px;background:rgba(255,255,255,.07);border-radius:1px;margin-top:4px;overflow:hidden;">
+            <div style="height:100%;width:${barW}%;background:${color};border-radius:1px;transition:width .6s cubic-bezier(.16,1,.3,1);"></div>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-family:var(--fm);font-size:14px;font-weight:600;color:${color};">${$$(tot)}</div>
+          <div style="font-size:10px;color:${INK4};">${pct(tot,base)}</div>
+        </div>
+        ${hasTxn ? `<div style="font-size:10px;color:${INK4};width:12px;flex-shrink:0;">${isOpen?'▾':'▸'}</div>` : '<div style="width:12px;"></div>'}
+      </div>
+      ${hasTxn&&isOpen ? `<div style="border-top:1px solid rgba(255,255,255,.05);">${txnRows(g.txns)}</div>` : ''}
+    </div>`;
+  }
+
+  // Employer row (inside gross pay drill)
+  function empRow(empKey, empData) {
+    const rx   = empData.received     || 0;      // checking deposits received
+    const pr   = empData.projectedAmount || 0;    // checking deposits projected
+    const sr   = empData.savingsReceived || 0;    // employer savings splits received
+    const sp2  = empData.projectedSavings || 0;   // savings splits projected
+    const totChk = rx + pr;
+    const totSav = sr + sp2;
+    const name   = empData.payee || empKey;
+    const mbr    = (function(){
+      try {
+        const ao = JSON.parse(localStorage.getItem('forge_settings_v2')||'{}').accountOwners||{};
+        // Find member by looking up account ownership for this employer's transactions
+        return '';  // member lookup requires txn reference — shown via empBreakdown
+      } catch(e){ return ''; }
+    })();
+
+    let html = `<div style="padding:6px 14px 6px 22px;border-bottom:1px solid rgba(255,255,255,.04);">`;
+    // Employer name + total
+    html += `<div style="display:flex;align-items:baseline;">
+      <div style="flex:1;font-size:13px;font-weight:600;color:${INK};">${name}</div>
+      <div style="font-family:var(--fm);font-size:14px;font-weight:700;color:${POS};">+${$f(totChk)}</div>
+    </div>`;
+    // Received vs projected breakdown (only if split)
+    if (rx > 0 && pr > 0) {
+      html += `<div style="display:flex;gap:16px;margin-top:2px;">
+        <span style="font-size:11px;color:${INK4};">received <span style="color:${INK2};font-family:var(--fm);">+${$f(rx)}</span></span>
+        <span style="font-size:11px;color:${INK4};">est. <span style="color:${RIVER};font-family:var(--fm);">+${$f(pr)}</span></span>
       </div>`;
-    });
-    html += '</div>';
+    } else if (pr > 0 && rx === 0) {
+      html += `<div style="font-size:11px;color:${INK4};margin-top:2px;">estimated · not yet deposited</div>`;
+    }
+    // Savings split (if any)
+    if (totSav > 0.5) {
+      html += `<div style="font-size:11px;color:${INK4};margin-top:2px;">
+        → savings split: <span style="color:${RIVER};font-family:var(--fm);">+${$f(totSav)}</span>
+        ${sp2>0.5?`<span style="color:${INK4};"> (${$f(sp2)} est.)</span>`:''}
+      </div>`;
+    }
+    html += `</div>`;
     return html;
   }
 
   let out = '';
 
-  // ── CARD WRAPPER ────────────────────────────────────────────────────────────
-  const outerStyle = 'background:var(--float);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;';
-
-  // ── STATUS HEADER ──────────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  // SECTION 0 — STATUS BANNER
+  // ══════════════════════════════════════════════════════════════════════════
   {
-    const pct = Math.round((new Date().getDate() / (new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate())) * 100);
-    const dLeft = isInFlight ? daysRemaining : 0;
-    const statusTxt = isInFlight
-      ? `<span style="background:rgba(96,165,250,.15);color:${C.river};border:1px solid rgba(96,165,250,.3);border-radius:20px;font-size:10px;font-weight:700;padding:2px 8px;letter-spacing:.06em;">IN-FLIGHT</span>
-         <span style="font-size:11px;color:${C.ink4};">${dLeft}d remaining · ${pct}% done</span>`
-      : `<span style="background:rgba(255,255,255,.06);color:${C.ink4};border:1px solid rgba(255,255,255,.1);border-radius:20px;font-size:10px;font-weight:700;padding:2px 8px;letter-spacing:.06em;">CLOSED</span>`;
-    out += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
-      <div style="font-size:17px;font-weight:700;color:${C.ink};">${monthName}</div>
-      ${statusTxt}
-    </div>`;
-  }
-
-  // ── TRAFFIC LIGHT — big single answer ─────────────────────────────────────
-  {
-    const tl_col = onTrack ? (netRemaining > deployable*0.1 ? C.pos : C.gold) : C.neg;
-    const tl_em  = onTrack ? (netRemaining > deployable*0.1 ? '🟢' : '🟡') : '🔴';
-    const tl_lbl = isInFlight
-      ? (onTrack ? 'On pace for a ' + kfmt(netRemaining) + ' surplus' : 'On pace to be ' + kfmt(Math.abs(netRemaining)) + ' over budget')
-      : (onTrack ? 'Closed with a ' + kfmt(netRemaining) + ' surplus' : 'Closed ' + kfmt(Math.abs(netRemaining)) + ' over budget');
-    const tl_sub = 'Savings rate: ' + pctOf(totalAutoSave + (onTrack?netRemaining:0), displayGross);
-    out += `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
-      border-radius:var(--r-lg);margin-bottom:14px;
-      background:${onTrack?'rgba(52,217,195,.07)':'rgba(248,113,113,.09)'};
-      border:1px solid ${tl_col}33;">
+    const surplusCol = _onTrack ? (_dispSurplus>_dispDeploy*.08?POS:GOLD) : NEG;
+    const surplusLbl = _onTrack
+      ? (isInFlight ? `On pace for ${$$(_dispSurplus)} surplus` : `Closed with ${$$(_dispSurplus)} surplus`)
+      : (isInFlight ? `On pace to be ${$$(Math.abs(_dispSurplus))} over budget` : `Closed ${$$(Math.abs(_dispSurplus))} over`);
+    const pctDone = isInFlight && daysInMonth>0 ? Math.round(daysElapsed/daysInMonth*100) : 100;
+    const statusTag = isInFlight
+      ? `<span style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;`
+        +`background:rgba(96,165,250,.15);color:${RIVER};border:1px solid rgba(96,165,250,.25);`
+        +`border-radius:3px;padding:2px 7px;">IN-FLIGHT ${pctDone}% done</span>`
+      : `<span style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;`
+        +`background:rgba(255,255,255,.06);color:${INK4};border:1px solid rgba(255,255,255,.1);`
+        +`border-radius:3px;padding:2px 7px;">CLOSED</span>`;
+    out += `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;
+      background:${_onTrack?'rgba(45,212,191,.06)':'rgba(248,113,113,.07)'};
+      border:1px solid ${_onTrack?'rgba(45,212,191,.2)':'rgba(248,113,113,.22)'};
+      border-radius:var(--r-lg);margin-bottom:2px;">
       <div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
-          <span style="font-size:16px;">${tl_em}</span>
-          <span style="font-size:14px;font-weight:700;color:${tl_col};">${tl_lbl}</span>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">${statusTag}
+          <span style="font-size:13px;font-weight:600;color:${surplusCol};">${surplusLbl}</span>
         </div>
-        <div style="font-size:11px;color:${C.ink4};">${tl_sub} · Deployable: ${kfmt(deployable)}</div>
+        <div style="font-size:11px;color:${INK4};">
+          Savings rate: ${pct(_dispSave,_dispGross)} of gross · Deployable: ${$$(_dispDeploy)}
+          ${normNote ? ` · <span style="color:${RIVER};">${normNote}</span>` : ''}
+        </div>
       </div>
-      <div style="font-family:var(--fm);font-size:32px;font-weight:700;color:${tl_col};letter-spacing:-.02em;">${netRemaining>=0?'+':'-'}${kfmt(Math.abs(netRemaining))}</div>
+      <div style="font-family:var(--fm);font-size:30px;font-weight:700;color:${surplusCol};letter-spacing:-.02em;">
+        ${_dispSurplus>=0?'+':'-'}${$$( Math.abs(_dispSurplus))}
+      </div>
     </div>`;
   }
 
-  // ── MAIN LEDGER ────────────────────────────────────────────────────────────
-  out += `<div style="${outerStyle}">`;
+  // ══════════════════════════════════════════════════════════════════════════
+  // MAIN LEDGER CARD
+  // ══════════════════════════════════════════════════════════════════════════
+  out += `<div style="background:var(--float);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-lg);overflow:hidden;margin-bottom:2px;">`;
 
-  // ── SECTION 1: GROSS PAY ───────────────────────────────────────────────────
-  const incPayId = 'isp-'+selMonth.replace('-','');
-  const incPayOpen = !!isBucketOpen['__incPay'];
-  out += `<div class="is-bk-row" data-bkid="__incPay" style="display:flex;align-items:baseline;padding:10px 12px;background:rgba(52,217,195,.04);border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer;"
-    onmouseenter="this.style.background='rgba(52,217,195,.07)'" onmouseleave="this.style.background='rgba(52,217,195,.04)'">
-    <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${C.pos};flex:1;">
-      💵 Gross Pay
-      ${earlyMonthIS ? `<span style="font-size:10px;color:${C.river};font-weight:400;margin-left:8px;">estimated</span>` : ''}
+  // ── GROSS PAY ──────────────────────────────────────────────────────────
+  const gpOpen  = !!isBucketOpen['__gp'];
+  const gpKeys  = Object.keys(empBreakdown);
+  const hasFallback = !gpKeys.length && (bkt.paycheck||[]).length>0;
+  out += `<div data-bkid="__gp" class="is-bk-row" style="display:flex;align-items:center;padding:9px 14px;cursor:pointer;"
+    onmouseenter="this.style.background='rgba(255,255,255,.028)'" onmouseleave="this.style.background=''">
+    <div style="flex:1;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${POS};">
+      Gross Pay ${earlyMonthIS?`<span style="color:${RIVER};font-size:10px;font-weight:400;margin-left:6px;">est. from history</span>`:''}
     </div>
-    <div style="font-family:var(--fm);font-size:18px;font-weight:700;color:${C.pos};">+${kfmt(displayGross)}</div>
-    <div style="font-size:10px;color:${C.ink4};width:14px;text-align:right;padding-left:8px;">${incPayOpen?'▾':'▸'}</div>
+    <div style="font-family:var(--fm);font-size:16px;font-weight:700;color:${POS};">+${$$(_dispGross)}</div>
+    <div style="font-size:10px;color:${INK4};margin-left:8px;">${gpOpen?'▾':'▸'}</div>
   </div>`;
 
-  // Gross pay drill — dynamic employer labels from settings.accountOwners
-  out += `<div id="${incPayId}" style="display:${isInFlight?'block':'none'};background:rgba(0,0,0,.18);">`;
-  const _sObj = (function(){ try{ return JSON.parse(localStorage.getItem('forge_settings_v2')||'{}'); } catch(e){ return {}; } })();
-  const _aO   = _sObj.accountOwners || {};
-  // Build payee → member map dynamically from account ownership settings
-  const _p2m  = {};
-  (bkt.paycheck||[]).forEach(t => {
-    const own = _aO[t.account] || '';
-    const _pkRaw = (t.payee||'').toLowerCase().trim();
-    const pk = normPayeeKey(_pkRaw);
-    if (own && pk) _p2m[pk] = own;
-  });
-  const empKeys2 = Object.keys(empBreakdown).sort();
-  if (empKeys2.length) {
-    empKeys2.forEach(key => {
-      const emp   = empBreakdown[key];
-      const mbr   = _p2m[key] || '';
-      const rxAmt = emp.received;        // already-received paychecks
-      const prAmt = emp.projectedAmount; // estimated remaining
-      const tot   = rxAmt + prAmt;
-      const hasRx = emp.checkCount > 0;
-      const hasPr = prAmt > 1;
-      // Clean label: employer name + member chip
-      const mbrBadge = mbr
-        ? `<span style="font-size:9px;background:rgba(96,165,250,.15);color:${C.river};border:1px solid rgba(96,165,250,.25);border-radius:12px;padding:1px 7px;margin-left:7px;font-weight:600;">${mbr}</span>`
-        : '';
-      // Sub: "2 received" or "1 received · 1 est." — no employer jargon
-      const sub = hasRx && hasPr ? `${emp.checkCount} received · ${emp.projectedChecks} estimated`
-                : hasRx           ? `${emp.checkCount} paycheck${emp.checkCount!==1?'s':''} received`
-                :                   `${emp.projectedChecks} paycheck${emp.projectedChecks!==1?'s':''} estimated`;
-      out += `<div style="padding:7px 12px 7px 28px;border-bottom:1px solid rgba(255,255,255,.035);">`;
-      // Employer header row
-      out += `<div style="display:flex;align-items:baseline;margin-bottom:3px;">
-        <div style="flex:1;font-size:13px;font-weight:600;color:${C.ink};">${emp.payee}${mbrBadge}</div>
-        <div style="font-family:var(--fm);font-size:14px;font-weight:700;color:${C.pos};">+${mfmt(tot)}</div>
-      </div>`;
-      // Sub-breakdown: received vs projected in distinct colors
-      if (hasRx || hasPr) {
-        out += `<div style="display:flex;gap:12px;margin-top:2px;">`;
-        if (hasRx) out += `<span style="font-size:11px;color:${C.ink2};font-family:var(--fm);">
-          <span style="color:${C.ink4};">received</span> +${mfmt(rxAmt)}</span>`;
-        if (hasPr) out += `<span style="font-size:11px;color:rgba(96,165,250,.7);font-family:var(--fm);">
-          <span style="color:${C.ink4};">estimated</span> +${mfmt(prAmt)}</span>`;
+  // Drill: employer breakdown
+  if (gpOpen) {
+    out += `<div style="border-top:1px solid ${LINE};">`;
+    if (gpKeys.length) {
+      gpKeys.sort().forEach(key => empRow(key, empBreakdown[key]).split('').forEach(()=>{}) || (out += empRow(key, empBreakdown[key])));
+    } else {
+      // Fallback: use _paycheckByEmp merged rows
+      const _chkEmps = Object.values(_paycheckByEmp)
+        .filter(e => detectAcctType(e.txns[0].account||'')==='checking')
+        .sort((a,b)=>b.total-a.total);
+      _chkEmps.forEach(emp => {
+        out += `<div style="padding:6px 14px 6px 22px;border-bottom:1px solid rgba(255,255,255,.04);">`;
+        out += `<div style="display:flex;align-items:baseline;">
+          <div style="flex:1;font-size:13px;font-weight:600;color:${INK};">${emp.payee}</div>
+          <div style="font-family:var(--fm);font-size:14px;font-weight:700;color:${POS};">+${$f(emp.total)}</div>
+        </div>`;
+        out += `<div style="font-size:10px;color:${INK4};margin-top:1px;">${emp.txns.length} check${emp.txns.length!==1?'s':''} · ${emp.txns.map(t=>t.date.slice(5)).sort().join(', ')}</div>`;
         out += `</div>`;
-      }
-      out += `<div style="font-size:10px;color:${C.ink4};margin-top:2px;">${sub}</div>`;
-      out += `</div>`;
-    });
-  } else {
-    // No accrual data (past month) — use merged _paycheckByEmp
-    const _savEmps = Object.values(_paycheckByEmp)
-      .filter(function(e){ return (detectAcctType(e.txns[0].account||'')==='savings'); })
-      .sort(function(a,b){ return b.total-a.total; });
-    const _chkEmps = Object.values(_paycheckByEmp)
-      .filter(function(e){ return (detectAcctType(e.txns[0].account||'')==='checking'); })
-      .sort(function(a,b){ return b.total-a.total; });
-    _chkEmps.forEach(function(emp) {
-      const mbr = _aO[emp.txns[0].account] || '';
-      const mbrBadge = mbr ? `<span style="font-size:9px;background:rgba(96,165,250,.15);color:${C.river};border:1px solid rgba(96,165,250,.25);border-radius:12px;padding:1px 7px;margin-left:7px;font-weight:600;">${mbr}</span>` : '';
-      const rxAmt = emp.total;
-      const sub   = emp.txns.length + ' paycheck' + (emp.txns.length!==1?'s':'') + ' · ' + emp.txns.map(function(t){return t.date.slice(5);}).join(', ');
-      out += `<div style="padding:7px 12px 7px 28px;border-bottom:1px solid rgba(255,255,255,.035);">`;
-      out += `<div style="display:flex;align-items:baseline;margin-bottom:3px;">`;
-      out += `<div style="flex:1;font-size:13px;font-weight:600;color:${C.ink};">${emp.payee}${mbrBadge}</div>`;
-      out += `<div style="font-family:var(--fm);font-size:14px;font-weight:700;color:${C.pos};">+${mfmt(rxAmt)}</div>`;
-      out += `</div>`;
-      out += `<div style="font-size:10px;color:${C.ink4};">${sub}</div>`;
-      // Date-level drill
-      emp.txns.slice().sort(function(a,b){return a.date.localeCompare(b.date);}).forEach(function(t) {
-        out += `<div style="display:flex;align-items:baseline;padding:3px 0 3px 16px;border-top:1px solid rgba(255,255,255,.03);">`;
-        out += `<div style="font-size:11px;color:${C.ink4};font-family:var(--fm);flex:1;">${t.date.slice(5)} · ${t.payee||'Paycheck'}</div>`;
-        out += `<div style="font-size:12px;font-weight:600;color:${C.pos};font-family:var(--fm);">+${mfmt(t.amount)}</div>`;
-        out += `</div>`;
-      });
-      out += `</div>`;
-    });
-  }
-  if (normNote) {
-    out += `<div style="padding:6px 24px 8px;font-size:11px;color:${C.river};background:rgba(245,168,0,.06);border-top:1px solid rgba(245,168,0,.15);">📅 ${normNote}</div>`;
-  }
-  out += '</div>';
-
-  // ── SECTION 2: PRE-COMMITTED SAVINGS ──────────────────────────────────────
-  if (displaySave > 1) {
-    const incSavId   = 'iss-'+selMonth.replace('-','');
-    const incSavOpen = !!isBucketOpen['__incSav'];
-    const savRate    = displayGross > 0 ? Math.round(displaySave/displayGross*100) : 0;
-    const savTarget  = (function(){ try{ return JSON.parse(localStorage.getItem('forge_settings_v2')||'{}').savingsTarget||0; }catch(e){return 0;} })();
-    const savStatus  = savTarget ? (savRate >= savTarget ? C.pos : savRate >= savTarget*0.85 ? C.gold : C.neg) : C.river;
-    const savSub     = savTarget ? `${savRate}% of gross · target ${savTarget}%` : `${savRate}% of gross`;
-    out += `<div class="is-bk-row" data-bkid="__incSav" style="display:flex;align-items:baseline;padding:10px 12px;background:rgba(96,165,250,.04);border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer;"
-      onmouseenter="this.style.background='rgba(96,165,250,.07)'" onmouseleave="this.style.background='rgba(96,165,250,.04)'">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${C.river};flex:1;">
-        💰 Pre-Committed Savings
-        <span style="font-size:10px;color:${savStatus};font-weight:400;margin-left:8px;">${savSub}</span>
-      </div>
-      <div style="font-family:var(--fm);font-size:18px;font-weight:700;color:${C.river};">−${kfmt(displaySave)}</div>
-      <div style="font-size:10px;color:${C.ink4};width:14px;text-align:right;padding-left:8px;">${incSavOpen?'▾':'▸'}</div>
-    </div>`;
-    out += `<div id="${incSavId}" style="display:${incSavOpen?'block':'none'};background:rgba(0,0,0,.18);">`;
-    if (empKeys2.length) {
-      empKeys2.forEach(key => {
-        const emp = empBreakdown[key];
-        const st  = emp.savingsReceived + emp.projectedSavings;
-        if (st < 1) return;
-        out += ledgerRow(emp.payee+' → savings', st, { indent:1, color:C.ink2, bold:false, size:13 });
-      });
-    } else if (autoSaveTxns.length) {
-      autoSaveTxns.forEach(t => {
-        out += ledgerRow('→ '+(t._xferTo||'Savings'), Math.abs(t.amount), { indent:1, color:C.ink2, sub:t.date, bold:false, size:13 });
       });
     }
-    out += '</div>';
+    out += `</div>`;
   }
 
-  // ── DEPLOYABLE ─────────────────────────────────────────────────────────────
-  out += divider('= Deployable (your monthly budget)', '+'+kfmt(deployable), C.pos);
+  // ── PRE-COMMITTED SAVINGS ──────────────────────────────────────────────
+  if (_dispSave > 0.5) {
+    const svOpen = !!isBucketOpen['__sv'];
+    const svRate = pct(_dispSave, _dispGross);
+    out += `<div data-bkid="__sv" class="is-bk-row" style="display:flex;align-items:center;padding:9px 14px;cursor:pointer;border-top:1px solid ${LINE};"
+      onmouseenter="this.style.background='rgba(255,255,255,.028)'" onmouseleave="this.style.background=''">
+      <div style="flex:1;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${RIVER};">
+        Pre-Committed Savings
+        <span style="font-size:10px;color:${INK4};font-weight:400;margin-left:6px;">${svRate} of gross</span>
+      </div>
+      <div style="font-family:var(--fm);font-size:16px;font-weight:700;color:${RIVER};">−${$$(_dispSave)}</div>
+      <div style="font-size:10px;color:${INK4};margin-left:8px;">${svOpen?'▾':'▸'}</div>
+    </div>`;
+    if (svOpen) {
+      out += `<div style="border-top:1px solid ${LINE};">`;
+      // Employer savings splits
+      if (gpKeys.length) {
+        gpKeys.filter(k => (empBreakdown[k].savingsReceived||0) + (empBreakdown[k].projectedSavings||0) > 0.5)
+              .forEach(k => {
+          const emp = empBreakdown[k];
+          const tot = (emp.savingsReceived||0) + (emp.projectedSavings||0);
+          out += row(`${emp.payee} → savings`, tot, { indent:1, amtColor:RIVER, lblColor:INK2, showSign:false });
+        });
+      }
+      // Pattern A: checking→savings transfers
+      autoSaveTxns.forEach(t => {
+        out += row(`→ ${t._xferTo||'Savings'}`, Math.abs(t.amount), { indent:1, amtColor:RIVER, lblColor:INK2, sub:t.date, showSign:false });
+      });
+      if (projSav > 0.5) {
+        out += row('Projected savings deposits', projSav, { indent:1, amtColor:RIVER, lblColor:INK4, extra:'est.', showSign:false });
+      }
+      out += `</div>`;
+    }
+  }
 
-  // ── SECTION 3: FIXED COSTS ─────────────────────────────────────────────────
+  // ── DEPLOYABLE ────────────────────────────────────────────────────────
+  out += divider('= Deployable', '+' + $$(_dispDeploy), POS);
+
+  // ── FIXED COSTS ───────────────────────────────────────────────────────
   if (fixedRows.length) {
-    const fixedActual = fixedRows.reduce((s,g)=>s+g.actual, 0);
-    const fixedProj   = fixedRows.reduce((s,g)=>s+g.proj,   0);
-    const fixedSub    = isInFlight && fixedProj > 0 ? `${kfmt(fixedActual)} posted + ${kfmt(fixedProj)} estimated` : '';
-    out += section('Fixed Costs', '🔒', totalFixed, fixedSub, C.neg);
-    fixedRows.forEach(g => {
-      const isOpen = !!isBucketOpen[g.key];
-      const tot    = g.actual + g.proj;
-      out += `<div data-bkid="${g.key}" class="is-bk-row" style="display:flex;align-items:baseline;padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.035);cursor:pointer;"
-        onmouseenter="this.style.background='rgba(255,255,255,.02)'" onmouseleave="this.style.background=''">
-        <span style="font-size:13px;margin-right:8px;">${g.icon}</span>
-        <div style="flex:1;font-size:13px;color:${C.ink2};">
-          ${g.label}
-          ${g.proj>0?`<span style="font-size:10px;color:${C.river};font-weight:400;margin-left:6px;">+${kfmt(g.proj)} est.</span>`:''}
-        </div>
-        <div style="font-family:var(--fm);font-size:14px;font-weight:600;color:${C.neg};">${mfmt(tot)}</div>
-        <div style="font-size:11px;color:${C.ink4};width:38px;text-align:right;padding-left:6px;">${pctOf(tot,deployable)}</div>
-        ${g.txns.length?`<div style="font-size:10px;color:${C.ink4};width:14px;text-align:right;padding-left:4px;">${isOpen?'▾':'▸'}</div>`:'<div style="width:18px;"></div>'}
-      </div>`;
-      if (g.txns.length && isOpen) out += drillRows(g.txns);
-    });
+    const fixActual = fixedRows.reduce((s,g)=>s+g.actual,0);
+    const fixProj   = fixedRows.reduce((s,g)=>s+g.proj,  0);
+    const fixSub    = isInFlight && fixProj > 1 ? `${$$(fixActual)} posted · ${$$(fixProj)} est.` : '';
+    out += `<div style="display:flex;align-items:center;gap:8px;padding:7px 14px 5px;border-top:1px solid ${LINE};">
+      <div style="flex:1;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${INK4};">
+        Fixed Costs ${fixSub?`<span style="font-weight:400;margin-left:6px;">${fixSub}</span>`:''}
+      </div>
+      <div style="font-family:var(--fm);font-size:15px;font-weight:700;color:${NEG};">−${$$(_dispFixed)}</div>
+      <div style="font-size:11px;color:${INK4};min-width:40px;text-align:right;">${pct(_dispFixed,_dispDeploy)}</div>
+    </div>`;
+    fixedRows.forEach(g => { out += bucketRow(g, _dispDeploy, NEG); });
   }
 
-  // ── AFTER FIXED ────────────────────────────────────────────────────────────
-  const afterFixed = deployable - totalFixed;
-  out += divider('After Fixed Costs', (afterFixed>=0?'+':'-')+kfmt(Math.abs(afterFixed)), afterFixed>=0?C.pos:C.neg);
+  // ── AFTER FIXED ──────────────────────────────────────────────────────
+  const _afterFixed = _dispDeploy - _dispFixed;
+  out += divider('After Fixed', (_afterFixed>=0?'+':'-')+$$( Math.abs(_afterFixed)), _afterFixed>=0?INK2:NEG);
 
-  // ── SECTION 4: VARIABLE SPENDING ──────────────────────────────────────────
+  // ── VARIABLE SPENDING ────────────────────────────────────────────────
   if (varRows.length) {
-    const varActual = varRows.reduce((s,g)=>s+g.actual, 0);
-    const varProj   = varRows.reduce((s,g)=>s+g.proj,   0);
-    const varSub    = isInFlight && varProj > 0 ? `${kfmt(varActual)} posted + ${kfmt(varProj)} estimated` : '';
-    out += section('Variable Spending', '🎛️', totalVar, varSub, C.gold);
-    varRows.forEach(g => {
-      const isOpen = !!isBucketOpen[g.key];
-      const tot    = g.actual + g.proj;
-      // Daily pace: how much per day remaining?
-      const dayRate = isInFlight && daysElapsed > 0 ? (g.actual / daysElapsed) * daysRemaining : 0;
-      const paceNote = isInFlight && dayRate > 50 ? `+${kfmt(dayRate)} pace` : '';
-      out += `<div data-bkid="${g.key}" class="is-bk-row" style="display:flex;align-items:baseline;padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.035);cursor:pointer;"
-        onmouseenter="this.style.background='rgba(255,255,255,.02)'" onmouseleave="this.style.background=''">
-        <span style="font-size:13px;margin-right:8px;">${g.icon}</span>
-        <div style="flex:1;font-size:13px;color:${C.ink2};">
-          ${g.label}
-          ${g.proj>0?`<span style="font-size:10px;color:${C.river};font-weight:400;margin-left:6px;">+${kfmt(g.proj)} est.</span>`:''}
-          ${paceNote?`<span style="font-size:10px;color:${C.gold};font-weight:400;margin-left:6px;">${paceNote}</span>`:''}
-        </div>
-        <div style="font-family:var(--fm);font-size:14px;font-weight:600;color:${C.gold};">${mfmt(tot)}</div>
-        <div style="font-size:11px;color:${C.ink4};width:38px;text-align:right;padding-left:6px;">${pctOf(tot,deployable)}</div>
-        ${g.txns.length?`<div style="font-size:10px;color:${C.ink4};width:14px;text-align:right;padding-left:4px;">${isOpen?'▾':'▸'}</div>`:'<div style="width:18px;"></div>'}
-      </div>`;
-      if (g.txns.length && isOpen) out += drillRows(g.txns);
-    });
+    const varActual = varRows.reduce((s,g)=>s+g.actual,0);
+    const varProj   = varRows.reduce((s,g)=>s+g.proj,  0);
+    const dailyPace = isInFlight && daysElapsed>0 ? varActual/daysElapsed : 0;
+    const varSub    = isInFlight && varProj > 1 ? `${$$(varActual)} posted · ${$$(varProj)} est. · ${$$(dailyPace)}/day pace` : '';
+    out += `<div style="display:flex;align-items:center;gap:8px;padding:7px 14px 5px;border-top:1px solid ${LINE};">
+      <div style="flex:1;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${INK4};">
+        Variable ${varSub?`<span style="font-weight:400;margin-left:6px;">${varSub}</span>`:''}
+      </div>
+      <div style="font-family:var(--fm);font-size:15px;font-weight:700;color:${GOLD};">−${$$(_dispVar)}</div>
+      <div style="font-size:11px;color:${INK4};min-width:40px;text-align:right;">${pct(_dispVar,_dispDeploy)}</div>
+    </div>`;
+    varRows.forEach(g => { out += bucketRow(g, _dispDeploy, GOLD); });
   }
 
-  // ── NET LINE ───────────────────────────────────────────────────────────────
-  out += divider(onTrack ? '= Surplus' : '= Deficit', (netRemaining>=0?'+':'-')+kfmt(Math.abs(netRemaining)), onTrack ? C.pos : C.neg);
+  // ── SURPLUS / DEFICIT ────────────────────────────────────────────────
+  out += divider(_dispSurplus>=0 ? '= Surplus' : '= Deficit',
+    (_dispSurplus>=0?'+':'-') + $$( Math.abs(_dispSurplus)),
+    _onTrack ? POS : NEG);
 
-  // ── SAVINGS DRAW WARNING ───────────────────────────────────────────────────
-  if (totalDraw > 0) {
-    out += `<div style="padding:10px 14px;background:rgba(248,113,113,.08);border-top:1px solid rgba(248,113,113,.25);">
-      <div style="font-size:12px;font-weight:700;color:${C.neg};margin-bottom:4px;">⚠️ Savings Draw — ${kfmt(totalDraw)}</div>
-      <div style="font-size:11px;color:${C.ink2};">Expenses exceeded checking income. You pulled from savings to cover the gap.</div>
-      ${savingsDrawTxns.map(t=>`<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;color:${C.ink4};">
-        <span>${t.date} · ${t.payee||t._xferTo||'Transfer'}</span>
-        <span style="color:${C.neg};">${mfmt(Math.abs(t.amount))}</span>
-      </div>`).join('')}
+  // Savings draw warning
+  if (totalDraw > 0.5) {
+    out += `<div style="padding:8px 14px;background:rgba(248,113,113,.07);border-top:1px solid rgba(248,113,113,.2);">
+      <div style="font-size:11px;font-weight:700;color:${NEG};margin-bottom:2px;">⚠️ Savings Draw — ${$$(totalDraw)}</div>
+      <div style="font-size:11px;color:${INK2};">Expenses exceeded checking income. Pulled from savings to cover the gap.</div>
     </div>`;
   }
 
-  out += '</div>'; // end main ledger card
+  out += `</div>`; // end main ledger card
 
-  // ── MICRO-DECISIONS (in-flight only) ──────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  // MICRO-DECISIONS (in-flight only)
+  // ══════════════════════════════════════════════════════════════════════════
   if (isInFlight && daysRemaining > 0) {
-    const dailyBudget = afterFixed > 0 ? (afterFixed / (daysElapsed + daysRemaining)) : 0;
-    const dailyActual = totalVar > 0 && daysElapsed > 0 ? totalVar / daysElapsed : 0;
-    const isHot       = dailyActual > dailyBudget * 1.1;
+    const dailyBudget = _afterFixed > 0 && (daysElapsed+daysRemaining)>0 ? _afterFixed/(daysElapsed+daysRemaining) : 0;
+    const dailyActual = varRows.reduce((s,g)=>s+g.actual,0) / Math.max(daysElapsed,1);
+    const paceGap     = dailyActual - dailyBudget;
+    const isHot       = paceGap > dailyBudget * 0.1;
     const isLight     = dailyActual < dailyBudget * 0.8;
-    const projVar     = dailyActual * (daysElapsed + daysRemaining);
-    const savingsTarget = (function(){ try{ return JSON.parse(localStorage.getItem('forge_settings_v2')||'{}').savingsTarget||0; }catch(e){return 0;} })();
-    const targetSave  = savingsTarget > 0 ? Math.round(displayGross * savingsTarget / 100) : 0;
-    const topVar      = varRows.filter(g=>g.actual>0).sort((a,b)=>(b.actual+b.proj)-(a.actual+a.proj))[0];
+    const topVar      = varRows.filter(g=>g.actual>0)[0];
 
-    out += `<div style="background:var(--float);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;">
-      <div style="padding:10px 14px 8px;background:rgba(245,168,0,.06);border-bottom:1px solid rgba(245,168,0,.2);">
-        <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${C.gold};">⚡ This Week's Micro-Decisions</div>
-        <div style="font-size:11px;color:${C.ink4};margin-top:2px;">You have ${daysRemaining} days left. Here's where small choices move the needle.</div>
+    const settingsObj = (function(){ try{return JSON.parse(localStorage.getItem('forge_settings_v2')||'{}');}catch(e){return {};} })();
+    const savTarget   = settingsObj.savingsTarget || 0;
+    const savTargetAmt= savTarget > 0 ? Math.round(_dispGross * savTarget / 100) : 0;
+
+    out += `<div style="background:var(--float);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-lg);overflow:hidden;margin-bottom:2px;">
+      <div style="padding:8px 14px 6px;border-bottom:1px solid ${LINE};">
+        <span style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${GOLD};">⚡ ${daysRemaining} days left — micro-decisions</span>
       </div>`;
 
-    // Pace alert
     if (isHot) {
-      const overPace = dailyActual - dailyBudget;
-      const projImpact = Math.round(overPace * daysRemaining);
-      out += `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);">
-        <span style="font-size:16px;">🔥</span>
+      out += `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 14px;border-bottom:1px solid ${LINE};">
+        <span style="font-size:14px;">🔥</span>
         <div>
-          <div style="font-size:13px;font-weight:600;color:${C.neg};">Running ${kfmt(overPace)}/day over pace</div>
-          <div style="font-size:11px;color:${C.ink4};margin-top:2px;">At this rate, variable spending will hit ${kfmt(projVar)} vs ${kfmt(afterFixed)} available — ${kfmt(projImpact)} over by month end.</div>
+          <div style="font-size:12px;font-weight:600;color:${NEG};">Running ${$$(paceGap)}/day over pace</div>
+          <div style="font-size:11px;color:${INK4};margin-top:2px;">Projected variable: ${$$(dailyActual*(daysElapsed+daysRemaining))} vs ${$$(_afterFixed)} available. Cut ${$$(Math.round(paceGap*daysRemaining))} over next ${daysRemaining} days.</div>
         </div>
       </div>`;
     } else if (isLight) {
-      const underPace = dailyBudget - dailyActual;
-      out += `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);">
-        <span style="font-size:16px;">✅</span>
+      out += `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 14px;border-bottom:1px solid ${LINE};">
+        <span style="font-size:14px;">✅</span>
         <div>
-          <div style="font-size:13px;font-weight:600;color:${C.pos};">Running ${kfmt(underPace)}/day under pace — great</div>
-          <div style="font-size:11px;color:${C.ink4};margin-top:2px;">On this trajectory, you'll end the month with a ${kfmt(Math.round(netRemaining))} surplus. Consider moving extra to savings.</div>
+          <div style="font-size:12px;font-weight:600;color:${POS};">${$$(-paceGap)}/day under pace</div>
+          <div style="font-size:11px;color:${INK4};margin-top:2px;">On track for ${$$(_dispSurplus)} month-end surplus. Consider moving excess to savings.</div>
         </div>
       </div>`;
     }
 
-    // Top variable category tip
     if (topVar) {
-      const topRate = topVar.actual / Math.max(daysElapsed, 1);
-      const topProj = topRate * daysRemaining;
-      out += `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);">
-        <span style="font-size:16px;">${topVar.icon}</span>
+      const topDaily = topVar.actual / Math.max(daysElapsed,1);
+      out += `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 14px;border-bottom:1px solid ${LINE};">
+        <span style="font-size:14px;">${topVar.icon}</span>
         <div>
-          <div style="font-size:13px;font-weight:600;color:${C.ink};">${topVar.label} — ${kfmt(topVar.actual)} so far</div>
-          <div style="font-size:11px;color:${C.ink4};margin-top:2px;">Pace: ${kfmt(topRate)}/day → projected +${kfmt(topProj)} more over next ${daysRemaining} days. 
-            ${topProj > 200 ? `Cutting 1 day worth saves ${kfmt(topRate)} instantly.` : ''}</div>
+          <div style="font-size:12px;font-weight:600;color:${INK};">${topVar.label} — ${$$(topVar.actual)} so far</div>
+          <div style="font-size:11px;color:${INK4};margin-top:2px;">${$$(topDaily)}/day pace → +${$$(Math.round(topDaily*daysRemaining))} more. One fewer day saves ${$$(topDaily)}.</div>
         </div>
       </div>`;
     }
 
-    // Savings rate nudge
-    if (targetSave > 0) {
-      const onTrackSav = totalAutoSave >= targetSave;
-      const savGap     = targetSave - totalAutoSave;
-      out += `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;">
-        <span style="font-size:16px;">${onTrackSav?'🏆':'🎯'}</span>
+    if (savTargetAmt > 0) {
+      const onSavTrack = _dispSave >= savTargetAmt;
+      const savGap     = savTargetAmt - _dispSave;
+      out += `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 14px;">
+        <span style="font-size:14px;">${onSavTrack?'🏆':'🎯'}</span>
         <div>
-          <div style="font-size:13px;font-weight:600;color:${onTrackSav?C.pos:C.gold};">Savings target: ${savingsTarget}% — ${onTrackSav?'on track':''+kfmt(savGap)+' short'}</div>
-          <div style="font-size:11px;color:${C.ink4};margin-top:2px;">${onTrackSav
-            ? `Pre-committed ${kfmt(totalAutoSave)} — you're hitting your goal.`
-            : `You need ${kfmt(savGap)} more in savings this month to hit your ${savingsTarget}% target. Transfer before month end.`}</div>
+          <div style="font-size:12px;font-weight:600;color:${onSavTrack?POS:GOLD};">Savings target: ${savTarget}% — ${onSavTrack?'on track':`${$$(savGap)} short`}</div>
+          <div style="font-size:11px;color:${INK4};margin-top:2px;">${onSavTrack
+            ? `Pre-committed ${$$(_dispSave)} — hitting your ${savTarget}% target.`
+            : `Need ${$$(savGap)} more to hit ${savTarget}%. Transfer before month end.`}</div>
         </div>
       </div>`;
     }
 
-    out += '</div>'; // end micro-decisions card
+    out += `</div>`;
   }
 
-  // ── DEPLOY SURPLUS (closed or on-track) ────────────────────────────────────
-  if (onTrack && netRemaining > 100) {
-    out += `<div style="background:var(--float);border:1px solid rgba(52,217,195,.25);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;padding:12px 14px;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${C.pos};margin-bottom:8px;">💡 Deploy Surplus — ${kfmt(netRemaining)}</div>
+  // ══════════════════════════════════════════════════════════════════════════
+  // DEPLOY SURPLUS
+  // ══════════════════════════════════════════════════════════════════════════
+  if (_onTrack && _dispSurplus > 100) {
+    out += `<div style="background:var(--float);border:1px solid rgba(45,212,191,.2);border-radius:var(--r-lg);overflow:hidden;margin-bottom:2px;padding:10px 14px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${POS};margin-bottom:8px;">
+        💡 Deploy ${$$(_dispSurplus)} Surplus
+      </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        ${[['40%','Emergency Fund'],['35%','Brokerage'],['25%','529 College']].map(([p,l])=>`
-          <div style="flex:1;min-width:100px;background:rgba(52,217,195,.06);border:1px solid rgba(52,217,195,.15);border-radius:8px;padding:8px 10px;">
-            <div style="font-size:10px;color:${C.ink4};">${p} → ${l}</div>
-            <div style="font-size:16px;font-weight:700;color:${C.pos};font-family:var(--fm);">${kfmt(Math.round(netRemaining*parseFloat(p)/100))}</div>
+        ${[['Emergency Fund','40%'],['Brokerage','35%'],['529 College','25%']].map(([l,p])=>`
+          <div style="flex:1;min-width:90px;background:rgba(45,212,191,.06);border:1px solid rgba(45,212,191,.15);border-radius:8px;padding:8px 10px;">
+            <div style="font-size:10px;color:${INK4};margin-bottom:2px;">${p} → ${l}</div>
+            <div style="font-size:16px;font-weight:700;color:${POS};font-family:var(--fm);">${$$(Math.round(_dispSurplus*parseFloat(p)/100))}</div>
           </div>`).join('')}
       </div>
     </div>`;
   }
 
-  // ── RECONCILIATION (collapsible) ───────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  // RECONCILIATION (collapsible)
+  // ══════════════════════════════════════════════════════════════════════════
   {
-    var _reconId  = 'isr-'+selMonth.replace('-','');
-    var _RTYPES   = new Set(['checking','savings','credit']);
-    var _TYPE_LBL = {checking:'Checking', savings:'Savings', credit:'Credit Cards'};
-    var _raccts   = {};
-    txns.forEach(function(t) {
-      var tp = detectAcctType(t.account||'');
-      if (!_RTYPES.has(tp)) return;
-      if (t.itemDetail) return;
-      var src = t._source||'';
-      if (['apple_card','amazon_orders','home_depot','venmo'].indexOf(src)>=0) return;
-      var a = t.account;
-      if (!_raccts[a]) _raccts[a] = {name:a, type:tp, open:0, income:0, charges:0};
-      if (t.date < selMonth+'-01')       _raccts[a].open    += t.amount;
-      else if (t.date <= selMonth+'-31') {
-        if (t.amount > 0) _raccts[a].income  += t.amount;
-        else              _raccts[a].charges += Math.abs(t.amount);
-      }
-    });
-    var _rgroups = {checking:[], savings:[], credit:[]};
-    Object.values(_raccts).forEach(function(a) { if(_rgroups[a.type]) _rgroups[a.type].push(a); });
-    ['checking','savings','credit'].forEach(function(tp) {
-      _rgroups[tp].sort(function(a,b){ return a.name.localeCompare(b.name); });
-    });
-
-    var reconHtml = '<div style="background:var(--float);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;">';
-    reconHtml += `<div class="frh" data-rb="${_reconId}" style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;cursor:pointer;background:rgba(255,255,255,.02);"
-      onmouseenter="this.style.background='rgba(255,255,255,.04)'" onmouseleave="this.style.background='rgba(255,255,255,.02)'">
-      <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${C.ink4};">🔎 Account Reconciliation</span>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <span style="font-size:11px;color:${C.ink4};">Verify in Quicken</span>
-        <span class="frh-c" style="font-size:10px;color:${C.ink4};">▶</span>
-      </div>
-    </div>`;
-    reconHtml += `<div id="${_reconId}" style="display:none;border-top:1px solid rgba(255,255,255,.07);">`;
-    reconHtml += `<div style="display:grid;grid-template-columns:1fr 72px 72px 76px 80px;gap:4px;padding:5px 14px;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.02);">
-      <span style="font-size:9px;font-weight:700;color:${C.ink4};">Account</span>
-      <span style="font-size:9px;font-weight:700;color:${C.ink4};text-align:right;">Open</span>
-      <span style="font-size:9px;font-weight:700;color:${C.pos};text-align:right;">In</span>
-      <span style="font-size:9px;font-weight:700;color:${C.neg};text-align:right;">Out</span>
-      <span style="font-size:9px;font-weight:700;color:${C.ink2};text-align:right;">Close</span>
-    </div>`;
-    ['checking','savings','credit'].forEach(function(tp) {
-      var grp = _rgroups[tp]; if (!grp || !grp.length) return;
-      reconHtml += `<div style="padding:3px 14px 2px;background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.06);">
-        <span style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${C.ink4};">${_TYPE_LBL[tp]}</span>
+    const _rKey = 'isr-'+selMonth;
+    const _rOpen = !!isBucketOpen['__recon'];
+    out += `<div style="background:var(--float);border:1px solid rgba(255,255,255,.07);border-radius:var(--r-lg);overflow:hidden;">
+      <div data-bkid="__recon" class="is-bk-row" style="display:flex;align-items:center;padding:8px 14px;cursor:pointer;"
+        onmouseenter="this.style.background='rgba(255,255,255,.03)'" onmouseleave="this.style.background=''">
+        <div style="flex:1;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${INK4};">🔎 Account Reconciliation</div>
+        <div style="font-size:10px;color:${INK4};">${_rOpen?'▾':'▸'}</div>
       </div>`;
-      grp.forEach(function(a) {
-        var close = a.open + a.income - a.charges;
-        var closeCol = tp==='credit'?(close<0?C.neg:C.ink2):(close>=0?C.ink2:C.neg);
-        reconHtml += `<div style="display:grid;grid-template-columns:1fr 72px 72px 76px 80px;gap:4px;align-items:center;padding:4px 14px;border-top:1px solid rgba(255,255,255,.03);">
-          <span style="font-size:11px;color:${C.ink2};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.name}</span>
-          <span style="font-size:11px;font-family:var(--fm);color:${C.ink4};text-align:right;">${mfmt(a.open)}</span>
-          <span style="font-size:11px;font-family:var(--fm);color:${a.income>0?C.pos:C.ink4};text-align:right;">${a.income>0?'+'+mfmt(a.income):'—'}</span>
-          <span style="font-size:11px;font-family:var(--fm);color:${a.charges>0?C.neg:C.ink4};text-align:right;">${a.charges>0?'−'+mfmt(a.charges):'—'}</span>
-          <span style="font-size:12px;font-weight:600;font-family:var(--fm);color:${closeCol};text-align:right;">${mfmt(close)}</span>
-        </div>`;
+    if (_rOpen) {
+      const RTYPES = new Set(['checking','savings','credit']);
+      const raccts = {};
+      txns.forEach(function(t) {
+        const tp = detectAcctType(t.account||'');
+        if (!RTYPES.has(tp) || t.itemDetail) return;
+        const src = t._source||'';
+        if (['apple_card','amazon_orders','home_depot','venmo'].indexOf(src)>=0) return;
+        const a = t.account;
+        if (!raccts[a]) raccts[a] = {name:a,type:tp,open:0,income:0,charges:0};
+        if (t.date < selMonth+'-01')       raccts[a].open    += t.amount;
+        else if (t.date<=selMonth+'-31') {
+          if (t.amount>0) raccts[a].income  += t.amount;
+          else            raccts[a].charges += Math.abs(t.amount);
+        }
       });
-    });
-    reconHtml += '</div></div>';
-    out += reconHtml;
+      const rgrps = {checking:[],savings:[],credit:[]};
+      Object.values(raccts).forEach(a => { if(rgrps[a.type]) rgrps[a.type].push(a); });
+      ['checking','savings','credit'].forEach(tp=>{rgrps[tp].sort((a,b)=>a.name.localeCompare(b.name));});
+      const TL = {checking:'Checking',savings:'Savings',credit:'Credit Cards'};
+      out += `<div style="border-top:1px solid ${LINE};">`;
+      out += `<div style="display:grid;grid-template-columns:1fr 72px 72px 72px 80px;gap:4px;padding:4px 14px;background:rgba(255,255,255,.02);">
+        ${['Account','Open','In','Out','Balance'].map((h,i)=>`<div style="font-size:9px;font-weight:700;color:${INK4};${i?'text-align:right;':''}">${h}</div>`).join('')}
+      </div>`;
+      ['checking','savings','credit'].forEach(tp => {
+        const grp = rgrps[tp]; if (!grp.length) return;
+        out += `<div style="padding:3px 14px 2px;background:rgba(255,255,255,.02);border-top:1px solid rgba(255,255,255,.05);">
+          <span style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${INK4};">${TL[tp]}</span>
+        </div>`;
+        grp.forEach(a => {
+          const bal = a.open + a.income - a.charges;
+          const bCol = tp==='credit'?(bal<0?NEG:INK2):(bal>=0?INK2:NEG);
+          out += `<div style="display:grid;grid-template-columns:1fr 72px 72px 72px 80px;gap:4px;align-items:center;padding:4px 14px;border-top:1px solid rgba(255,255,255,.03);">
+            <span style="font-size:11px;color:${INK2};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.name}</span>
+            <span style="font-size:11px;font-family:var(--fm);color:${INK4};text-align:right;">${$f(a.open)}</span>
+            <span style="font-size:11px;font-family:var(--fm);color:${a.income>0?POS:INK4};text-align:right;">${a.income>0?'+'+$f(a.income):'—'}</span>
+            <span style="font-size:11px;font-family:var(--fm);color:${a.charges>0?NEG:INK4};text-align:right;">${a.charges>0?'−'+$f(a.charges):'—'}</span>
+            <span style="font-size:12px;font-weight:600;font-family:var(--fm);color:${bCol};text-align:right;">${$f(bal)}</span>
+          </div>`;
+        });
+      });
+      out += `</div>`;
+    }
+    out += `</div>`;
   }
 
   el.innerHTML = out;
 
   } catch(e) {
     console.error('[IS] render error:', e);
-    el.innerHTML = '<div style="padding:32px;text-align:center;color:var(--ink4);"><div style="font-size:24px;margin-bottom:8px;">⚠️</div>Render error: '+e.message+'</div>';
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);"><div style="font-size:32px;margin-bottom:10px;">⚠️</div>'
+      +'<div style="font-size:14px;">Render error: ' + e.message + '</div>'
+      +'<div style="font-size:11px;margin-top:8px;color:rgba(255,255,255,.2);">Check console for details</div></div>';
   }
 
-  if (el.dataset.listenerBound) return;
-  el.dataset.listenerBound = '1';
   el.addEventListener('click', function(e) {
     let node = e.target;
     while (node && node !== el) {
