@@ -859,357 +859,256 @@ select:focus { border-color: var(--gold); }
   .fin-row { grid-template-columns: 1fr 90px 90px; }
 }
 
-/* ════════════════════════════════════════════════════════════════════════════
-   FORGE v4.0 — PREMIUM ADDITIONS (keyframes, pseudo-elements, new selectors)
-   ════════════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════
+   FORGE v4.1 — LUXURY VISUAL SYSTEM
+   Pittsburgh Black & Gold · Liquid Glass · Bloom · Spring Physics
+   ═══════════════════════════════════════════════════════════════════ */
 
+/* ── Tokens ─────────────────────────────────────────────────────── */
 :root {
-  --depth-1: 0 1px 2px rgba(0,0,0,.5), 0 4px 16px rgba(0,0,0,.4);
-  --depth-2: 0 2px 6px rgba(0,0,0,.55), 0 10px 36px rgba(0,0,0,.45), 0 28px 72px rgba(0,0,0,.28);
-  --glow-gold: 0 0 16px rgba(245,168,0,.28), 0 0 56px rgba(245,168,0,.1);
-  --glass-top: rgba(255,255,255,.22);
-  --glass-edge: rgba(255,255,255,.09);
+  --d1: 0 1px 2px rgba(0,0,0,.55), 0 4px 16px rgba(0,0,0,.45);
+  --d2: 0 2px 8px rgba(0,0,0,.6),  0 12px 40px rgba(0,0,0,.5),  0 32px 80px rgba(0,0,0,.3);
+  --d3: 0 4px 16px rgba(0,0,0,.65),0 20px 60px rgba(0,0,0,.55), 0 56px 120px rgba(0,0,0,.35);
+  --gld: 0 0 20px rgba(245,168,0,.32), 0 0 60px rgba(245,168,0,.12);
+  --tel: 0 0 18px rgba(45,212,191,.25), 0 0 50px rgba(45,212,191,.08);
+  --ge: rgba(255,255,255,.12);   /* glass edge */
+  --gt: rgba(255,255,255,.26);   /* glass top */
+  --gi: rgba(255,255,255,.042);  /* glass interior */
+  --r-xl: 20px; --r-lg: 14px; --r-md: 10px;
 }
 
-@keyframes forge-shimmer {
-  0%   { transform: translateX(-120%) skewX(-8deg); opacity: 0; }
-  15%  { opacity: 1; }
-  85%  { opacity: 1; }
-  100% { transform: translateX(120%) skewX(-8deg); opacity: 0; }
+/* ── Keyframes ───────────────────────────────────────────────────── */
+@keyframes _shimmer {
+  0%   { transform: translateX(-120%) skewX(-8deg); opacity:0; }
+  10%  { opacity:1; }
+  90%  { opacity:1; }
+  100% { transform: translateX(120%) skewX(-8deg); opacity:0; }
 }
-@keyframes forge-fade-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes forge-pop {
-  0%   { opacity: 0; transform: scale(.88) translateY(4px); }
-  65%  { transform: scale(1.025) translateY(-1px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); }
-}
-@keyframes forge-led {
-  0%, 100% { opacity: .45; box-shadow: 0 0 6px #34D9C3, 0 0 14px rgba(45,212,191,.35); }
-  50%       { opacity: 1;   box-shadow: 0 0 10px #34D9C3, 0 0 28px rgba(45,212,191,.55); }
-}
-@keyframes forge-number-tick {
-  from { opacity: 0; transform: translateY(5px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+@keyframes _fadeUp   { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes forge-fade-up { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
 
-/* ── KPI pseudo-elements ────────────────────────────────────────────────── */
+@keyframes _pop      { 0%{opacity:0;transform:scale(.86) translateY(6px);} 65%{transform:scale(1.03);} 100%{opacity:1;transform:scale(1);} }
+@keyframes _gldPulse { 0%,100%{box-shadow:var(--d1);} 50%{box-shadow:var(--d1),var(--gld);} }
+@keyframes _led      { 0%,100%{opacity:.4;box-shadow:0 0 6px #34D9C3;} 50%{opacity:1;box-shadow:0 0 12px #34D9C3,0 0 28px rgba(45,212,191,.5);} }
+@keyframes _numTick  { from{opacity:0;transform:translateY(5px);} to{opacity:1;transform:translateY(0);} }
+@keyframes _barRise  { from{transform:scaleY(0);transform-origin:bottom;opacity:0;} to{transform:scaleY(1);opacity:1;} }
+
+/* ── KPI cards — luxury glass ────────────────────────────────────── */
+.kpi {
+  position:relative; overflow:hidden;
+  background: linear-gradient(148deg,
+    rgba(255,255,255,.055) 0%,
+    rgba(255,255,255,.02)  45%,
+    rgba(255,255,255,.005) 100%);
+  border:1px solid var(--ge); border-top:1.5px solid var(--gt);
+  border-radius:var(--r-xl); padding:var(--sp3) var(--sp4);
+  backdrop-filter:blur(20px) saturate(180%) brightness(1.06);
+  -webkit-backdrop-filter:blur(20px) saturate(180%) brightness(1.06);
+  box-shadow:var(--d1), inset 0 1px 0 rgba(255,255,255,.1);
+  transition:box-shadow .3s, transform .22s, border-color .2s;
+  animation:_pop .45s cubic-bezier(.16,1,.3,1) both;
+}
 .kpi::before {
-  content: '';
-  position: absolute; inset: 0;
+  content:''; position:absolute; inset:0; pointer-events:none;
   background:
-    radial-gradient(ellipse at 12% 0%, rgba(255,255,255,.09) 0%, transparent 52%),
-    radial-gradient(ellipse at 88% 100%, rgba(255,255,255,.03) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
+    radial-gradient(ellipse at 15% -10%, rgba(255,255,255,.1) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 110%, rgba(255,255,255,.04) 0%, transparent 50%);
 }
 .kpi::after {
-  content: '';
-  position: absolute;
-  top: 0; left: -80%; width: 50%; height: 100%;
-  background: linear-gradient(90deg,
-    transparent 0%, rgba(255,255,255,.06) 40%,
-    rgba(255,255,255,.16) 50%, rgba(255,255,255,.06) 60%, transparent 100%);
-  animation: forge-shimmer 6s ease-in-out 1s infinite;
-  pointer-events: none;
-  z-index: 1;
+  content:''; position:absolute;
+  top:0; left:-80%; width:50%; height:100%;
+  background:linear-gradient(90deg,
+    transparent 0%,rgba(255,255,255,.07) 40%,
+    rgba(255,255,255,.18) 50%,rgba(255,255,255,.07) 60%,transparent 100%);
+  animation:_shimmer 7s ease-in-out 0.5s infinite;
+  pointer-events:none;
 }
-.kpi-label { position: relative; z-index: 2; }
-.kpi-val   { position: relative; z-index: 2; text-shadow: 0 2px 12px rgba(0,0,0,.55); animation: forge-number-tick .35s ease both; }
-.kpi-val.positive { color: #34D9C3; text-shadow: 0 0 28px rgba(45,212,191,.3), 0 2px 12px rgba(0,0,0,.5); }
-.kpi-val.negative { color: #F87171; text-shadow: 0 0 24px rgba(248,113,113,.25), 0 2px 12px rgba(0,0,0,.5); }
-.kpi-val.gold     { color: #F5A800; text-shadow: 0 0 16px rgba(245,168,0,.28), 0 0 56px rgba(245,168,0,.1), 0 2px 12px rgba(0,0,0,.5); }
-.kpi-sub { position: relative; z-index: 2; }
+.kpi:hover {
+  border-top-color:rgba(255,255,255,.44);
+  border-color:rgba(255,255,255,.18);
+  box-shadow:var(--d2), 0 0 0 1px rgba(255,255,255,.06), inset 0 1px 0 rgba(255,255,255,.16);
+  transform:translateY(-3px);
+}
+.kpi-val { animation:_numTick .35s ease both; text-shadow:0 2px 14px rgba(0,0,0,.6); position:relative;z-index:2; }
+.kpi-val.positive { color:#34D9C3; text-shadow:var(--tel),0 2px 14px rgba(0,0,0,.5); }
+.kpi-val.negative { color:#F87171; text-shadow:0 0 22px rgba(248,113,113,.28),0 2px 14px rgba(0,0,0,.5); }
+.kpi-val.gold     { color:#F5A800; text-shadow:var(--gld),0 2px 14px rgba(0,0,0,.5); }
+.kpi-label,.kpi-sub { position:relative;z-index:2; }
 
-/* ── Chart card pseudo-elements ─────────────────────────────────────────── */
+/* ── Chart cards ─────────────────────────────────────────────────── */
+.chart-card {
+  position:relative; overflow:hidden;
+  background:linear-gradient(148deg,
+    rgba(255,255,255,.04) 0%,
+    rgba(255,255,255,.01) 55%,
+    rgba(255,255,255,.002) 100%);
+  border:1px solid var(--ge); border-top:1.5px solid rgba(255,255,255,.22);
+  border-radius:var(--r-xl); padding:var(--sp4);
+  backdrop-filter:blur(12px) saturate(150%);
+  -webkit-backdrop-filter:blur(12px) saturate(150%);
+  box-shadow:var(--d1), inset 0 1px 0 rgba(255,255,255,.08);
+  transition:box-shadow .3s, transform .22s, border-color .2s;
+  animation:_fadeUp .4s cubic-bezier(.16,1,.3,1) both;
+}
+.chart-card:hover {
+  border-top-color:rgba(255,255,255,.36);
+  border-color:rgba(255,255,255,.15);
+  box-shadow:var(--d2), inset 0 1px 0 rgba(255,255,255,.12);
+  transform:translateY(-2px);
+}
 .chart-card::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%, rgba(255,255,255,.18) 30%,
-    rgba(255,255,255,.32) 50%, rgba(255,255,255,.18) 70%, transparent 100%);
-  pointer-events: none;
+  content:''; position:absolute; top:0; left:0; right:0; height:1px; pointer-events:none;
+  background:linear-gradient(90deg,
+    transparent 0%,rgba(255,255,255,.22) 25%,rgba(255,255,255,.38) 50%,rgba(255,255,255,.22) 75%,transparent 100%);
 }
-.chart-title { display: flex; align-items: center; gap: 9px; }
+.chart-title { display:flex; align-items:center; gap:9px; }
 .chart-title::before {
-  content: '';
-  display: block; width: 3px; height: 15px; flex-shrink: 0;
-  background: linear-gradient(180deg, #F5A800 0%, rgba(245,168,0,.15) 100%);
-  border-radius: 2px;
-  box-shadow: 0 0 10px rgba(245,168,0,.45);
+  content:''; display:block; width:3px; height:16px; flex-shrink:0; border-radius:2px;
+  background:linear-gradient(180deg,#F5A800 0%,rgba(245,168,0,.18) 100%);
+  box-shadow:0 0 12px rgba(245,168,0,.5), 0 0 28px rgba(245,168,0,.2);
 }
 
-/* ── Tooltip ─────────────────────────────────────────────────────────────── */
+/* ── Premium tooltip ─────────────────────────────────────────────── */
+#chartTip {
+  position:fixed; pointer-events:none; z-index:9999; display:none;
+  min-width:160px; max-width:320px;
+  background:linear-gradient(148deg,rgba(14,14,24,.98) 0%,rgba(8,8,16,.99) 100%);
+  backdrop-filter:blur(40px) saturate(240%) brightness(1.1);
+  -webkit-backdrop-filter:blur(40px) saturate(240%) brightness(1.1);
+  border:1px solid rgba(255,255,255,.12); border-top:1px solid rgba(255,255,255,.36);
+  border-radius:14px; padding:12px 16px 11px;
+  box-shadow:0 0 0 1px rgba(255,255,255,.06),0 8px 32px rgba(0,0,0,.85),0 24px 64px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.14);
+  animation:_pop .16s cubic-bezier(.16,1,.3,1) both;
+}
 #chartTip::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 12px; right: 12px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(245,168,0,.5), transparent);
+  content:''; position:absolute; top:0; left:14px; right:14px; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(245,168,0,.6),transparent);
 }
 
-/* ── Nav enhancements ────────────────────────────────────────────────────── */
-.nav-item { transition: color .15s, background .18s, border-color .18s, transform .12s; }
-.nav-item:hover { transform: translateX(2px); }
-.nav-item.active > svg { filter: drop-shadow(0 0 5px rgba(245,168,0,.5)); }
+/* ── Header ──────────────────────────────────────────────────────── */
+header {
+  backdrop-filter:blur(32px) saturate(200%) brightness(1.04);
+  -webkit-backdrop-filter:blur(32px) saturate(200%) brightness(1.04);
+  box-shadow:0 1px 0 rgba(255,255,255,.06), 0 4px 32px rgba(0,0,0,.5);
+}
 
-/* ── Range tab active ────────────────────────────────────────────────────── */
+/* ── Navigation ──────────────────────────────────────────────────── */
+nav {
+  backdrop-filter:blur(24px) saturate(160%);
+  -webkit-backdrop-filter:blur(24px) saturate(160%);
+}
+.nav-item { transition:color .15s, background .18s, border-color .18s, transform .12s; }
+.nav-item:hover { transform:translateX(2px); }
+.nav-item.active {
+  background:linear-gradient(90deg,rgba(245,168,0,.12) 0%,rgba(245,168,0,.02) 100%);
+  border-left-color:#F5A800; font-weight:600;
+  box-shadow:inset 0 0 28px rgba(245,168,0,.05);
+}
+.nav-item.active > svg { filter:drop-shadow(0 0 6px rgba(245,168,0,.55)); }
+.nav-item:hover > svg  { opacity:.8; }
+
+/* ── Range tabs ──────────────────────────────────────────────────── */
+.rtab { transition:all .18s cubic-bezier(.16,1,.3,1); position:relative; overflow:hidden; }
 .rtab.active {
-  background: linear-gradient(135deg, #F5A800 0%, #D08800 100%);
-  border-color: transparent; color: #000; font-weight: 800;
-  box-shadow: 0 2px 14px rgba(245,168,0,.45), 0 0 0 1px rgba(245,168,0,.28),
-              inset 0 1px 0 rgba(255,255,255,.35);
-  text-shadow: 0 1px 2px rgba(0,0,0,.2);
+  background:linear-gradient(135deg,#F5A800 0%,#C88000 100%);
+  border-color:transparent; color:#000; font-weight:800;
+  box-shadow:0 2px 16px rgba(245,168,0,.48), 0 0 0 1px rgba(245,168,0,.32), inset 0 1px 0 rgba(255,255,255,.4);
+  text-shadow:0 1px 2px rgba(0,0,0,.22);
 }
 
-/* ── Btn gold ────────────────────────────────────────────────────────────── */
-.btn-gold {
-  background: linear-gradient(135deg, #F5A800 0%, #D08800 100%) !important;
-  box-shadow: 0 2px 12px rgba(245,168,0,.38), inset 0 1px 0 rgba(255,255,255,.3) !important;
-  transition: box-shadow .2s, transform .15s !important;
-}
-.btn-gold:hover {
-  box-shadow: 0 4px 20px rgba(245,168,0,.55), inset 0 1px 0 rgba(255,255,255,.35) !important;
-  transform: translateY(-1px);
-}
+/* ── Page entry animation ────────────────────────────────────────── */
+.page.active { animation:_fadeUp .3s cubic-bezier(.16,1,.3,1) both; }
 
-/* ── Table hover ─────────────────────────────────────────────────────────── */
-tbody tr { transition: background .1s; }
-tbody tr:hover td { background: rgba(255,255,255,.028); }
-tbody tr:hover td:first-child { border-left: 2px solid rgba(245,168,0,.45); padding-left: 14px; }
-
-/* ── Page title gradient ──────────────────────────────────────────────────── */
+/* ── Page title gradient ─────────────────────────────────────────── */
 .page-title {
-  background: linear-gradient(160deg, #FFFFFF 0%, #E8E3DA 42%, #B8B3AA 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  background:linear-gradient(160deg,#FFFFFF 0%,#E8E3DA 42%,#B8B3AA 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
 }
 
-/* ── LED dot ─────────────────────────────────────────────────────────────── */
-.forge-led {
-  display: inline-block;
-  width: 6px; height: 6px; border-radius: 50%;
-  background: #34D9C3;
-  box-shadow: 0 0 8px #34D9C3, 0 0 20px rgba(45,212,191,.4);
-  animation: forge-led 2s ease-in-out infinite;
-  flex-shrink: 0; vertical-align: middle;
+/* ── Projection strip ────────────────────────────────────────────── */
+#projStrip {
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  box-shadow:0 1px 0 rgba(255,255,255,.05), 0 6px 28px rgba(0,0,0,.55);
 }
 
-/* ── Data freshness banners ──────────────────────────────────────────────── */
-.forge-import-banner {
-  display: flex; flex-wrap: wrap; gap: 6px;
-  padding: 10px 14px;
-  background: rgba(255,255,255,.025);
-  border: 1px solid rgba(255,255,255,.07);
-  border-left: 3px solid rgba(245,168,0,.5);
-  border-radius: var(--r-lg);
-  margin-bottom: 14px;
-  font-size: 11px;
-}
-.forge-import-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
-  border-radius: 20px; padding: 3px 10px;
-  font-size: 11px; font-family: var(--fm); color: var(--ink2);
-  cursor: pointer; transition: all .15s; white-space: nowrap;
-  text-decoration: none;
-}
-.forge-import-chip:hover {
-  background: rgba(245,168,0,.1); border-color: rgba(245,168,0,.3);
-  color: #F5A800;
-}
-.forge-import-chip.stale {
-  background: rgba(245,168,0,.08); border-color: rgba(245,168,0,.25); color: #F5A800;
-}
-.forge-import-chip.fresh {
-  background: rgba(45,212,191,.07); border-color: rgba(45,212,191,.2); color: #34D9C3;
-}
+/* ── Tables ──────────────────────────────────────────────────────── */
+tbody tr { transition:background .1s; }
+tbody tr:hover td { background:rgba(255,255,255,.03); }
+tbody tr:hover td:first-child { border-left:2px solid rgba(245,168,0,.5); padding-left:14px; transition:padding .15s; }
+td.positive { color:#34D9C3; } td.negative { color:#F87171; }
 
-/* ── Scrollbar ───────────────────────────────────────────────────────────── */
-main::-webkit-scrollbar { width: 5px; }
-main::-webkit-scrollbar-track { background: transparent; }
-main::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 3px; }
-main::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); }
+/* ── Scrollbar ───────────────────────────────────────────────────── */
+main { scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.1) transparent; }
+main::-webkit-scrollbar { width:5px; }
+main::-webkit-scrollbar-track { background:transparent; }
+main::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1); border-radius:3px; }
+main::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,.22); }
 
+/* ── Badges ──────────────────────────────────────────────────────── */
+.forge-badge { display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:100px;font-size:9px;font-weight:700;font-family:var(--fm);letter-spacing:.08em;text-transform:uppercase; }
+.forge-badge.positive { background:rgba(45,212,191,.1);color:#34D9C3;border:1px solid rgba(45,212,191,.24); }
+.forge-badge.negative { background:rgba(248,113,113,.1);color:#F87171;border:1px solid rgba(248,113,113,.24); }
+.forge-badge.gold     { background:rgba(245,168,0,.1);color:#F5A800;border:1px solid rgba(245,168,0,.3);box-shadow:0 0 8px rgba(245,168,0,.16); }
 
-/* ════════════════════════════════════════════════════════════════════════════
-   FORGE GLASS MODE — iOS liquid glass aesthetic
-   Toggle with .forge-glass on <body>
-   ════════════════════════════════════════════════════════════════════════════ */
-
-body.forge-glass {
-  background: radial-gradient(ellipse at 20% 10%, #1a1408 0%, #080808 50%, #060a10 100%);
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.btn-gold {
+  background:linear-gradient(135deg,#F5A800 0%,#C88000 100%) !important;
+  box-shadow:0 2px 14px rgba(245,168,0,.42), inset 0 1px 0 rgba(255,255,255,.32) !important;
+  transition:box-shadow .2s, transform .15s !important;
 }
-body.forge-glass::before {
-  content: '';
-  position: fixed; inset: 0; pointer-events: none;
-  background:
-    radial-gradient(ellipse at 15% 0%,   rgba(245,168,0,.06)  0%, transparent 40%),
-    radial-gradient(ellipse at 85% 100%, rgba(45,212,191,.04) 0%, transparent 40%),
-    radial-gradient(ellipse at 50% 50%,  rgba(96,165,250,.02) 0%, transparent 60%);
-  z-index: 0;
-}
+.btn-gold:hover { box-shadow:0 4px 22px rgba(245,168,0,.58),inset 0 1px 0 rgba(255,255,255,.38) !important; transform:translateY(-1px); }
 
-/* Glass KPI cards */
+/* ── LED dot ─────────────────────────────────────────────────────── */
+.forge-led { display:inline-block;width:6px;height:6px;border-radius:50%;background:#34D9C3;box-shadow:0 0 8px #34D9C3,0 0 20px rgba(45,212,191,.45);animation:_led 2s ease-in-out infinite;flex-shrink:0;vertical-align:middle; }
+
+/* ── Glass toggle ────────────────────────────────────────────────── */
+.forge-glass-toggle { display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:20px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.055);color:rgba(255,255,255,.45);font-size:10.5px;font-family:var(--fm);font-weight:600;letter-spacing:.04em;cursor:pointer;transition:all .2s;user-select:none; }
+.forge-glass-toggle:hover { background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.24);color:rgba(255,255,255,.75); }
+.forge-glass-toggle.active { background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.32);color:#fff; }
+.forge-glass-toggle .fgt-dot { width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.28);transition:background .2s,box-shadow .2s; }
+.forge-glass-toggle.active .fgt-dot { background:#34D9C3;box-shadow:0 0 8px rgba(45,212,191,.65); }
+
+/* ── Import freshness chips ──────────────────────────────────────── */
+.forge-import-banner { display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.07);border-left:3px solid rgba(245,168,0,.45);border-radius:var(--r-lg);margin-bottom:12px;font-size:11px; }
+.forge-import-chip { display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.048);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:3px 10px;font-size:10.5px;font-family:var(--fm);color:rgba(255,255,255,.6);cursor:pointer;transition:all .15s;white-space:nowrap;text-decoration:none; }
+.forge-import-chip:hover { background:rgba(245,168,0,.1);border-color:rgba(245,168,0,.28);color:#F5A800; }
+.forge-import-chip.fresh { background:rgba(45,212,191,.07);border-color:rgba(45,212,191,.2);color:#34D9C3; }
+.forge-import-chip.stale { background:rgba(245,168,0,.08);border-color:rgba(245,168,0,.22);color:#F5A800; }
+
+/* ── IS drill rows ───────────────────────────────────────────────── */
+.is-bk-row { transition:background .12s; }
+.is-mg-row { transition:background .12s; }
+
+/* ── Glass mode ──────────────────────────────────────────────────── */
+body.forge-glass { background:radial-gradient(ellipse at 20% 10%,#1a1408 0%,#080808 50%,#060a10 100%); }
+body.forge-glass::before { content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse at 15% 0%,rgba(245,168,0,.07) 0%,transparent 40%),
+             radial-gradient(ellipse at 85% 100%,rgba(45,212,191,.05) 0%,transparent 40%); }
 body.forge-glass .kpi {
-  background:
-    linear-gradient(135deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,.06) 40%, rgba(255,255,255,.02) 100%);
-  border: 1px solid rgba(255,255,255,.25);
-  border-top: 1.5px solid rgba(255,255,255,.5);
-  backdrop-filter: blur(32px) saturate(200%) brightness(1.15);
-  -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(1.15);
-  box-shadow:
-    0 2px 4px rgba(0,0,0,.3),
-    0 8px 24px rgba(0,0,0,.25),
-    inset 0 1px 0 rgba(255,255,255,.35),
-    inset 0 -1px 0 rgba(255,255,255,.08);
+  background:linear-gradient(148deg,rgba(255,255,255,.2) 0%,rgba(255,255,255,.08) 40%,rgba(255,255,255,.02) 100%);
+  border:1px solid rgba(255,255,255,.28); border-top:1.5px solid rgba(255,255,255,.55);
+  backdrop-filter:blur(40px) saturate(220%) brightness(1.18);
+  -webkit-backdrop-filter:blur(40px) saturate(220%) brightness(1.18);
+  box-shadow:0 2px 4px rgba(0,0,0,.28),0 8px 28px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.42),inset 0 -1px 0 rgba(255,255,255,.1);
 }
-body.forge-glass .kpi::before {
-  background:
-    radial-gradient(ellipse at 20% -20%, rgba(255,255,255,.25) 0%, transparent 55%),
-    linear-gradient(160deg, rgba(255,255,255,.12) 0%, transparent 50%);
-}
-body.forge-glass .kpi:hover {
-  background:
-    linear-gradient(135deg, rgba(255,255,255,.24) 0%, rgba(255,255,255,.1) 40%, rgba(255,255,255,.04) 100%);
-  border-top-color: rgba(255,255,255,.6);
-  box-shadow:
-    0 4px 12px rgba(0,0,0,.25),
-    0 16px 48px rgba(0,0,0,.2),
-    inset 0 1px 0 rgba(255,255,255,.5),
-    inset 0 -1px 0 rgba(255,255,255,.12),
-    0 0 0 1px rgba(255,255,255,.1);
-}
-
-/* Glass chart cards */
+body.forge-glass .kpi:hover { border-top-color:rgba(255,255,255,.68);box-shadow:0 4px 16px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.56); }
 body.forge-glass .chart-card {
-  background:
-    linear-gradient(135deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,.04) 40%, rgba(255,255,255,.01) 100%);
-  border: 1px solid rgba(255,255,255,.2);
-  border-top: 1.5px solid rgba(255,255,255,.45);
-  backdrop-filter: blur(24px) saturate(180%) brightness(1.12);
-  -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.12);
-  box-shadow:
-    0 2px 4px rgba(0,0,0,.25),
-    0 8px 24px rgba(0,0,0,.2),
-    inset 0 1px 0 rgba(255,255,255,.3),
-    inset 0 -1px 0 rgba(255,255,255,.06);
+  background:linear-gradient(148deg,rgba(255,255,255,.15) 0%,rgba(255,255,255,.05) 40%,rgba(255,255,255,.01) 100%);
+  border:1px solid rgba(255,255,255,.22); border-top:1.5px solid rgba(255,255,255,.5);
+  backdrop-filter:blur(28px) saturate(190%) brightness(1.14);
+  -webkit-backdrop-filter:blur(28px) saturate(190%) brightness(1.14);
+  box-shadow:0 2px 4px rgba(0,0,0,.22),0 8px 24px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.35);
 }
-body.forge-glass .chart-card:hover {
-  border-top-color: rgba(255,255,255,.6);
-  box-shadow:
-    0 4px 12px rgba(0,0,0,.22),
-    0 16px 40px rgba(0,0,0,.18),
-    inset 0 1px 0 rgba(255,255,255,.45);
-}
-
-/* Glass nav */
-body.forge-glass nav {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.09) 0%, rgba(255,255,255,.04) 100%);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border-right-color: rgba(255,255,255,.15);
-}
-body.forge-glass .nav-item.active {
-  background:
-    linear-gradient(90deg, rgba(245,168,0,.18) 0%, rgba(245,168,0,.04) 100%);
-  border-left-color: #F5A800;
-  box-shadow: inset 0 0 32px rgba(245,168,0,.08);
-}
-
-/* Glass header */
-body.forge-glass header {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.1) 0%, rgba(255,255,255,.04) 100%);
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  border-bottom-color: rgba(255,255,255,.18);
-}
-
-/* Glass projection strip */
-body.forge-glass #projStrip {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.09) 0%, rgba(255,255,255,.04) 100%);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
-  border-bottom-color: rgba(255,255,255,.15);
-}
-
-/* Glass tooltip */
-body.forge-glass #chartTip {
-  background:
-    linear-gradient(160deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.1) 100%);
-  border: 1px solid rgba(255,255,255,.35);
-  border-top-color: rgba(255,255,255,.6);
-  color: #fff;
-  backdrop-filter: blur(48px) saturate(240%) brightness(1.2);
-  -webkit-backdrop-filter: blur(48px) saturate(240%) brightness(1.2);
-}
-
-/* Glass range tabs */
-body.forge-glass .rtab {
-  background: rgba(255,255,255,.1);
-  border-color: rgba(255,255,255,.2);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-body.forge-glass .rtab:hover {
-  background: rgba(255,255,255,.16);
-}
-body.forge-glass .rtab.active {
-  background: linear-gradient(135deg, rgba(245,168,0,.9) 0%, rgba(200,130,0,.9) 100%);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 2px 16px rgba(245,168,0,.5), inset 0 1px 0 rgba(255,255,255,.4);
-}
-
-/* Glass import banner */
-body.forge-glass .forge-import-banner {
-  background: rgba(255,255,255,.06);
-  border-color: rgba(255,255,255,.14);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-body.forge-glass .forge-import-chip {
-  background: rgba(255,255,255,.1);
-  border-color: rgba(255,255,255,.22);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-/* Glass toggle button */
-.forge-glass-toggle {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 12px 4px 8px;
-  border-radius: 20px;
-  border: 1px solid rgba(255,255,255,.15);
-  background: rgba(255,255,255,.06);
-  color: rgba(255,255,255,.5);
-  font-size: 10.5px; font-family: var(--fm); font-weight: 600;
-  letter-spacing: .04em; cursor: pointer;
-  transition: all .2s;
-  user-select: none;
-}
-.forge-glass-toggle:hover {
-  background: rgba(255,255,255,.1);
-  border-color: rgba(255,255,255,.25);
-  color: rgba(255,255,255,.75);
-}
-.forge-glass-toggle.active {
-  background: rgba(255,255,255,.14);
-  border-color: rgba(255,255,255,.35);
-  color: #fff;
-}
-.forge-glass-toggle .fgt-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: rgba(255,255,255,.3);
-  transition: background .2s, box-shadow .2s;
-}
-.forge-glass-toggle.active .fgt-dot {
-  background: #34D9C3;
-  box-shadow: 0 0 8px rgba(45,212,191,.6);
-}
+body.forge-glass nav { background:linear-gradient(180deg,rgba(255,255,255,.1) 0%,rgba(255,255,255,.04) 100%);backdrop-filter:blur(48px) saturate(200%);-webkit-backdrop-filter:blur(48px) saturate(200%);border-right-color:rgba(255,255,255,.18); }
+body.forge-glass header { background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,.05) 100%);backdrop-filter:blur(48px) saturate(220%);-webkit-backdrop-filter:blur(48px) saturate(220%);border-bottom-color:rgba(255,255,255,.2); }
+body.forge-glass #projStrip { background:linear-gradient(180deg,rgba(255,255,255,.1) 0%,rgba(255,255,255,.04) 100%);backdrop-filter:blur(40px) saturate(200%);-webkit-backdrop-filter:blur(40px) saturate(200%); }
+body.forge-glass #chartTip { background:linear-gradient(148deg,rgba(255,255,255,.25) 0%,rgba(255,255,255,.12) 100%);border:1px solid rgba(255,255,255,.4);border-top-color:rgba(255,255,255,.65);color:#fff;backdrop-filter:blur(56px) saturate(260%) brightness(1.22);-webkit-backdrop-filter:blur(56px) saturate(260%) brightness(1.22); }
+body.forge-glass .rtab { background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px); }
+body.forge-glass .rtab.active { background:linear-gradient(135deg,rgba(245,168,0,.92) 0%,rgba(200,130,0,.92) 100%);box-shadow:0 2px 18px rgba(245,168,0,.55),inset 0 1px 0 rgba(255,255,255,.42); }
+body.forge-glass .nav-item.active { background:linear-gradient(90deg,rgba(245,168,0,.2) 0%,rgba(245,168,0,.05) 100%);box-shadow:inset 0 0 36px rgba(245,168,0,.08); }
+body.forge-glass .forge-import-banner { background:rgba(255,255,255,.06);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px); }
+body.forge-glass .forge-import-chip { background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.24); }
 </style>
 </head>
 <body>
@@ -1681,7 +1580,9 @@ body.forge-glass .forge-import-chip {
       <button class="btn btn-ghost" onclick="suggestBudget()" style="font-size:11px;padding:6px 12px;">✨ Suggest Budget</button>
     </div>
   </div>
-  <div id="budgetContent"></div>
+  <div id="budgetPressureContent" style="margin-top:16px;"></div>
+    <select id="pressureMonth" onchange="if(typeof renderBudgetPressure==='function')renderBudgetPressure()" style="display:none;"></select>
+    <div id="budgetContent"></div>
 </div>
 
 <!-- ══ BILL CALENDAR ══ -->
@@ -5098,6 +4999,152 @@ function normPayeeKey(raw) {
   const sig = tokens.filter(w => w.length > 0 && !PAYEE_NOISE.has(w));
   // Fallback: if ALL words were noise (shouldn't happen), use original
   return sig.join(' ') || (raw||'').toLowerCase().trim();
+}
+
+function renderBudgetPressure() {
+  const el = document.getElementById('budgetPressureContent');
+  if (!el) return;
+  if (!txns.length) {
+    el.innerHTML = '<div style="padding:60px;text-align:center;color:rgba(255,255,255,.3);font-size:13px;">Import data to view spending pressure.</div>';
+    return;
+  }
+  const moSel = document.getElementById('pressureMonth');
+  const sp    = operatingSpendable(txns);
+  const months = [...new Set(sp.map(t => t.date.slice(0,7)))].sort().reverse();
+  if (moSel) {
+    moSel.style.display = '';
+    if (!moSel.options.length) {
+      months.forEach(m => {
+        const [y,mo] = m.split('-');
+        const o = document.createElement('option');
+        o.value = m;
+        o.textContent = new Date(+y,+mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+        moSel.appendChild(o);
+      });
+    }
+  }
+  const sel = (moSel && moSel.value) || months[0];
+  if (!sel) return;
+  const [y, mo] = sel.split('-');
+  const monthName = new Date(+y,+mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const dIM = new Date(+y,+mo,0).getDate();
+  const now  = new Date();
+  const isCur= sel === now.toISOString().slice(0,7);
+  const done = isCur ? now.getDate() : dIM;
+  const pct  = done / dIM;
+  const budgets = (typeof settings!=='undefined' && settings.budgets) || {};
+  const BM = (typeof BUCKET_META!=='undefined') ? BUCKET_META : {};
+
+  const selSp = sp.filter(t => t.date.startsWith(sel));
+  const actuals = {};
+  selSp.forEach(t => {
+    if (t.amount < 0) {
+      const bk = classifyTxn(t);
+      actuals[bk] = (actuals[bk]||0) + Math.abs(t.amount);
+    }
+  });
+
+  const EXPENSE_BKS = [
+    'mortgage','car','insurance','education','childcare',
+    'electric','gas_util','water','internet','cell','subscriptions',
+    'groceries','gas_car','transit','healthcare','restaurants',
+    'entertainment','household','personal','clothing','travel','gifts','other'
+  ];
+
+  const rows = [];
+  EXPENSE_BKS.forEach(bk => {
+    const actual  = actuals[bk] || 0;
+    const budget  = budgets[bk] || 0;
+    const meta    = BM[bk] || { label: bk, icon: '•' };
+    if (actual < 0.5 && budget < 0.5) return;
+    const pctUsed = budget > 0 ? actual / budget : null;
+    const status  = pctUsed === null ? 'track' : pctUsed > 1 ? 'over' : pctUsed > 0.85 ? 'warn' : 'track';
+    const pace    = isCur && budget > 0 ? (actual / Math.max(pct,0.01)) / budget : null;
+    rows.push({ bk, label: meta.label||bk, icon: meta.icon||'•', actual, budget, pctUsed, status, pace });
+  });
+
+  rows.sort((a,b) => {
+    const rank = { over:0, warn:1, track:2 };
+    const dr   = (rank[a.status]||2) - (rank[b.status]||2);
+    return dr !== 0 ? dr : (b.actual+b.budget) - (a.actual+a.budget);
+  });
+
+  const maxV = Math.max(...rows.map(r => Math.max(r.actual, r.budget||r.actual, 1)), 1);
+  const totA = rows.reduce((s,r)=>s+r.actual,0);
+  const totB = rows.reduce((s,r)=>s+(r.budget||0),0);
+
+  function k$(v) { const a=Math.abs(v); return '$'+(a>=1000?(a/1000).toFixed(1).replace(/\.0$/,'')+'K':Math.round(a)); }
+
+  const cols = { over:'#F87171', warn:'#F5A800', track:'#34D9C3' };
+
+  let html = '';
+
+  // Summary strip
+  html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">`;
+  [[`${monthName}${isCur?' (in-flight)':''}`, 'var(--ink2)', '10px'],
+   [`${k$(totA)} spent${isCur?` · ${Math.round(pct*100)}% through month`:''}`, '#F87171', '13px'],
+   [totB>0?`${k$(totB)} budgeted`:'No budgets set', totB>0?'#34D9C3':'rgba(255,255,255,.3)', '13px']
+  ].forEach(([v,c,fs]) => {
+    html += `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:10px 12px;">
+      <div style="font-size:${fs};font-weight:600;color:${c};">${v}</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // Alert rows for over/warn
+  const alerts = rows.filter(r => r.status !== 'track');
+  if (alerts.length) {
+    html += `<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">`;
+    alerts.forEach(r => {
+      const col = cols[r.status];
+      const paceNote = r.pace && r.pace > 1.1 ? ` · pace ${Math.round(r.pace*100)}% of budget` : '';
+      html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;
+        background:${r.status==='over'?'rgba(248,113,113,.07)':'rgba(245,168,0,.06)'};
+        border:1px solid ${col}33;border-left:3px solid ${col};border-radius:10px;">
+        <span style="font-size:15px;">${r.icon}</span>
+        <div style="flex:1;font-size:12px;font-weight:600;color:${col};">${r.label}</div>
+        <div style="font-size:12px;font-family:var(--fm);color:${col};">${k$(r.actual)}${r.budget>0?' / '+k$(r.budget):''}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // Pressure bar chart
+  html += `<div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:14px;overflow:hidden;">`;
+  html += `<div style="padding:8px 14px 6px;border-bottom:1px solid rgba(255,255,255,.06);">
+    <span style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);">
+      Spending Pressure — ${monthName}${isCur?' · pace line shows '+Math.round(pct*100)+'% through month':''}
+    </span>
+  </div>`;
+
+  rows.forEach(r => {
+    if (r.actual < 0.5 && r.budget < 0.5) return;
+    const col    = cols[r.status];
+    const actW   = Math.max((r.actual/maxV)*100, 0.5).toFixed(1);
+    const budW   = r.budget > 0 ? ((r.budget/maxV)*100).toFixed(1) : null;
+    const paceW  = budW && isCur ? (pct*(r.budget/maxV)*100).toFixed(1) : null;
+    const pctLbl = r.pctUsed !== null ? Math.round(r.pctUsed*100)+'%' : '—';
+
+    html += `<div style="display:grid;grid-template-columns:22px minmax(100px,160px) 1fr 64px 44px;
+      gap:6px;align-items:center;padding:7px 14px;border-bottom:1px solid rgba(255,255,255,.04);">
+      <div style="font-size:14px;text-align:center;">${r.icon}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.label}</div>
+      <div style="position:relative;height:22px;">
+        ${budW ? `<div style="position:absolute;left:0;top:5px;bottom:5px;width:${budW}%;background:rgba(255,255,255,.06);border-radius:3px;"></div>` : ''}
+        ${paceW ? `<div style="position:absolute;left:${paceW}%;top:1px;bottom:1px;width:1.5px;background:rgba(255,255,255,.25);border-radius:1px;"></div>` : ''}
+        <div style="position:absolute;left:0;top:5px;bottom:5px;width:${actW}%;background:${col};border-radius:3px;opacity:.85;"></div>
+      </div>
+      <div style="font-size:12px;font-family:var(--fm);color:${col};text-align:right;">${k$(r.actual)}</div>
+      <div style="font-size:11px;color:${r.status==='over'?'#F87171':r.status==='warn'?'#F5A800':'rgba(255,255,255,.3)'};text-align:right;">${pctLbl}</div>
+    </div>`;
+  });
+
+  if (!rows.length) {
+    html += '<div style="padding:40px;text-align:center;color:rgba(255,255,255,.3);">No spending data for '+monthName+'</div>';
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
 }
 
 function showPage(name) {
@@ -11792,16 +11839,55 @@ function renderIncomeStatement() {
     }
   }
 
-  const deployable = Math.max(totalIncome - totalAutoSave, 0);
+  const deployable = Math.max(totalIncome - totalAutoSave, 0); // used by budget pressure bar only
+  // Note: IS display uses D_deploy = G_gross - S_save (defined after normalization)
 
-  // ── Gross display amounts ───────────────────────────────────────────────
-  const grossPayChk  = (bkt.paycheck||[]).filter(t=>detectAcctType(t.account||'')=='checking').reduce((s,t)=>s+t.amount,0);
-  const savDepAmt    = (bkt.paycheck||[]).filter(t=>detectAcctType(t.account||'')=='savings').reduce((s,t)=>s+t.amount,0);
-  const projGross    = normData ? Object.values(normData.employerBreakdown||{}).reduce((s,e)=>s+(e.projectedAmount||0),0) : 0;
-  const projSav      = normData ? Object.values(normData.employerBreakdown||{}).reduce((s,e)=>s+(e.projectedSavings||0),0) : 0;
-  const displayGross = (earlyMonthIS && normData) ? normPaycheck : grossPayChk + projGross;
-  const preSaveTotal = savDepAmt + totalAutoSave;
-  const displaySave  = preSaveTotal + projSav;
+  // ════════════════════════════════════════════════════════════════════
+  // DISPLAY MODEL — single source of truth, guaranteed G - S = D
+  //
+  // G (Total Net Pay shown) = checking paycheck deposits received
+  //                         + projected remaining checks (mid-month)
+  //                         = normPaycheck when earlyMonth (history estimate)
+  //
+  // S (Pre-committed Savings) = checking→savings transfers (Pattern A)
+  //                           + employer savings-account splits received
+  //                           + projected savings from outstanding checks
+  //   NOTE: these three are non-overlapping by construction:
+  //     totalAutoSave  = Pattern A transfers (checking→savings, near payday)
+  //     savDepAmt      = employer splits landing in savings accounts
+  //     projSav        = expected future savings from undelivered checks
+  //
+  // D (Deployable) = G - S   ← enforced, never calculated independently
+  // ════════════════════════════════════════════════════════════════════
+  const grossPayChk = (bkt.paycheck||[])
+    .filter(t => detectAcctType(t.account||'') === 'checking')
+    .reduce((s,t) => s + t.amount, 0);
+  const savDepAmt   = (bkt.paycheck||[])
+    .filter(t => detectAcctType(t.account||'') === 'savings')
+    .reduce((s,t) => s + t.amount, 0);
+  const projGross   = normData
+    ? Object.values(normData.employerBreakdown||{}).reduce((s,e) => s+(e.projectedAmount||0), 0)
+    : 0;
+  const projSav     = normData
+    ? Object.values(normData.employerBreakdown||{}).reduce((s,e) => s+(e.projectedSavings||0), 0)
+    : 0;
+
+  // G: what we will take home this month (checking deposits only)
+  const G_gross = earlyMonthIS && normPaycheck > 0
+    ? normPaycheck                    // early: no deposits yet, use history
+    : grossPayChk + projGross;        // normal: received + projected remaining
+
+  // S: pre-committed savings (three non-overlapping components)
+  const S_save  = savDepAmt            // employer→savings direct
+                + totalAutoSave        // checking→savings transfers
+                + projSav;             // projected future savings splits
+
+  // D: deployable = what's left to spend after savings come off the top
+  const D_deploy = Math.max(0, G_gross - S_save);
+
+  // Legacy aliases (used in old output code — now used only in new IS output)
+  const displayGross = G_gross;
+  const displaySave  = S_save;
   const empBreakdown = (normData && normData.employerBreakdown) ? normData.employerBreakdown : {};
 
   // Payee normalization helper (mirrors buildAccrualEngine)
@@ -12099,10 +12185,8 @@ function renderIncomeStatement() {
   try {
 
   // ── Arithmetic source of truth ────────────────────────────────────────
-  const G   = (earlyMonthIS && normData)
-                  ? normPaycheck
-                  : grossPayChk + projGross;               // Total Net Pay
-  const S   = preSaveTotal + projSav;                       // Pre-committed Savings
+  const G   = G_gross;    // Total Net Pay — G_gross = received + projected (or history estimate)
+  const S   = S_save;     // Pre-committed Savings — savDepAmt + totalAutoSave + projSav (no overlap)
   const D   = Math.max(0, G - S);                          // Deployable
   const FX  = fixedRows.reduce((s,g)=>s+g.actual+g.proj,0);// Fixed total
   const VA  = varRows.reduce((s,g)=>s+g.actual+g.proj,0);  // Variable total
