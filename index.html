@@ -10651,7 +10651,7 @@ function buildAccrualEngine(selMonth, sp) {
     // Per-employer savings deposit history (for showing pre-committed savings per employer)
     const bySavPayee = {};
     incSavTxns.forEach(t => {
-      const p = normPayeeKey((t.payee||'UNKNOWN').toLowerCase().trim());
+      const p = (t.payee||'UNKNOWN').toLowerCase().trim();
       if (!bySavPayee[p]) bySavPayee[p] = { amounts: [] };
       if (!t.date.startsWith(curMonthStr)) bySavPayee[p].amounts.push(t.amount);
     });
@@ -11833,14 +11833,14 @@ function renderIncomeStatement() {
     : grossPayChk + projGross;        // normal: received + projected remaining
 
   // S: pre-committed savings (three non-overlapping components)
-  // empSavingsReceived: use accrual engine as authoritative source.
-  // savDepAmt misses employer splits tagged as transfers in Quicken.
-  // normalizeIncome() uses sp directly (no isTransfer gate) so it's complete.
+  // empSavingsReceived: accrual engine is authoritative for employer savings splits.
+  // savDepAmt misses splits tagged as transfers in Quicken (isTransfer gate in IS pipeline).
+  // normalizeIncome() reads sp directly with no isTransfer gate → sees all savings deposits.
   const empSavingsReceived = normData
     ? Object.values(normData.employerBreakdown||{}).reduce((s,e)=>s+(e.savingsReceived||0),0)
     : savDepAmt;
-  const S_save = empSavingsReceived   // employer→savings (complete)
-               + totalAutoSave        // checking→savings transfers
+  const S_save = empSavingsReceived   // employer→savings splits (complete, from accrual engine)
+               + totalAutoSave        // checking→savings transfers (Pattern A)
                + projSav;             // projected future savings splits
 
   // D: deployable = what's left to spend after savings come off the top
@@ -12176,16 +12176,13 @@ function renderIncomeStatement() {
     <div style="font-size:11px;color:${DIM};">Savings ${pp(S,G)} of take-home · Deployable ${$k(D)}${normNote?` · <span style="color:${RIV};">${normNote}</span>`:''}</div></div>
     <div style="font-family:var(--fm);font-size:26px;font-weight:700;color:${sc};">${NET>=0?'+':'-'}${$k(Math.abs(NET))}</div></div>`;
   out+=`<div style="background:var(--float);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-lg);overflow:hidden;margin-bottom:2px;">`;
-  // TOTAL NET PAY
-  {const gpId='gp-'+selMonth,gpKeys=Object.keys(empBreakdown||{});
-  let drill='';
+  {const gpId='gp-'+selMonth,gpKeys=Object.keys(empBreakdown||{});let drill='';
   if(gpKeys.length){gpKeys.sort().forEach(k=>{const e=empBreakdown[k],rx=e.received||0,pr=e.projectedAmount||0;drill+=R(e.payee||k,'+'+$f(rx+pr),{indent:1,color:POS});if(rx>0&&pr>0.5)drill+=R('','',{indent:2,dim:true,note:'received '+$f(rx)+' · '+$f(pr)+' est.'});});}
   else{Object.values(_paycheckByEmp||{}).filter(e=>detectAcctType(e.txns[0]?.account||'')==='checking').sort((a,b)=>b.total-a.total).forEach(e=>drill+=R(e.payee,'+'+$f(e.total),{indent:1,color:POS,note:e.txns.length+' checks'}));}
   out+=`<div style="display:flex;align-items:center;padding:9px 14px;cursor:pointer;" onclick="(function(el){var x=document.getElementById('${gpId}');if(!x)return;var o=x.style.display!=='none';x.style.display=o?'none':'block';el.querySelector('.cv').textContent=o?'\u203a':'\u2304';})(this)"><div style="flex:1;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:${POS};">Total Net Pay</div><div style="font-family:var(--fm);font-size:15px;font-weight:700;color:${POS};">+${$k(G)}</div><span class="cv" style="font-size:12px;color:${DIM};margin-left:8px;">\u203a</span></div><div id="${gpId}" style="display:none;border-top:1px solid rgba(255,255,255,.05);">${drill}</div>`;}
-  // PRE-COMMITTED SAVINGS
   if(S>0.5){const svId='sv-'+selMonth;let drill='';
-  Object.keys(empBreakdown||{}).sort().forEach(k=>{const e=empBreakdown[k],rx=e.savingsReceived||0,pr=e.projectedSavings||0,tot=rx+pr;if(tot<0.5)return;drill+=R((e.payee||k)+' → savings',$f(tot),{indent:1,color:RIV,note:pr>0.5?'received '+$f(rx)+' · '+$f(pr)+' est.':''});});
-  (autoSaveTxns||[]).forEach(t=>drill+=R('→ '+(t._xferTo||'Savings'),$f(Math.abs(t.amount)),{indent:1,color:RIV,note:t.date.slice(5)}));
+  Object.keys(empBreakdown||{}).sort().forEach(k=>{const e=empBreakdown[k],rx=e.savingsReceived||0,pr=e.projectedSavings||0,tot=rx+pr;if(tot<0.5)return;drill+=R((e.payee||k)+' \u2192 savings',$f(tot),{indent:1,color:RIV,note:pr>0.5?'received '+$f(rx)+' \xb7 '+$f(pr)+' est.':''});});
+  (autoSaveTxns||[]).forEach(t=>drill+=R('\u2192 '+(t._xferTo||'Savings'),$f(Math.abs(t.amount)),{indent:1,color:RIV,note:t.date.slice(5)}));
   out+=`<div style="border-top:1px solid rgba(255,255,255,.05);display:flex;align-items:center;padding:9px 14px;cursor:pointer;" onclick="(function(el){var x=document.getElementById('${svId}');if(!x)return;var o=x.style.display!=='none';x.style.display=o?'none':'block';el.querySelector('.cv').textContent=o?'\u203a':'\u2304';})(this)"><div style="flex:1;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:${RIV};">Pre-Committed Savings</div><div style="font-family:var(--fm);font-size:15px;font-weight:700;color:${RIV};">\u2212${$k(S)}</div><span class="cv" style="font-size:12px;color:${DIM};margin-left:8px;">\u203a</span></div><div id="${svId}" style="display:none;border-top:1px solid rgba(255,255,255,.05);">${drill}</div>`;}
   out+=H('= Deployable','+'+$k(D),POS);
   if(fixedRows.length){out+=`<div style="display:flex;align-items:center;padding:6px 14px 4px;border-top:1px solid rgba(255,255,255,.06);"><div style="flex:1;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:${DIM};">Fixed</div><div style="font-family:var(--fm);font-size:14px;font-weight:700;color:${NEG};">\u2212${$k(FX)}</div><div style="font-size:10px;color:${DIM};margin-left:8px;min-width:36px;text-align:right;">${pp(FX,D)}</div></div>`;fixedRows.forEach(g=>{out+=BK(g,D,NEG);});}
@@ -12200,7 +12197,6 @@ function renderIncomeStatement() {
   if(topV)out+=`<div style="display:flex;gap:10px;padding:8px 14px;border-top:1px solid rgba(255,255,255,.04);"><span>${topV.icon}</span><div><div style="font-size:12px;font-weight:600;color:${INK};">${topV.label} \u2014 ${$k(topV.actual)}</div><div style="font-size:11px;color:${DIM};margin-top:1px;">+${$k(Math.round(topV.actual/Math.max(daysElapsed,1)*daysRemaining))} projected.</div></div></div>`;
   if(stAmt>0)out+=`<div style="display:flex;gap:10px;padding:8px 14px;border-top:1px solid rgba(255,255,255,.04);"><span>${S>=stAmt?'\ud83c\udfc6':'\ud83c\udfaf'}</span><div><div style="font-size:12px;font-weight:600;color:${S>=stAmt?POS:GLD};">Savings ${stTgt}% \u2014 ${S>=stAmt?'on track':$k(stAmt-S)+' short'}</div></div></div>`;
   out+='</div>';}
-  // Reconciliation
   {const rId='rc-'+selMonth,RTYPES=new Set(['checking','savings','credit']),ra={};
   (txns||[]).forEach(t=>{const tp=detectAcctType(t.account||'');if(!RTYPES.has(tp)||t.itemDetail||['apple_card','amazon_orders','home_depot','venmo'].includes(t._source||''))return;if(!ra[t.account])ra[t.account]={name:t.account,type:tp,open:0,inc:0,out:0};if(t.date<selMonth+'-01')ra[t.account].open+=t.amount;else if(t.date<=selMonth+'-31'){if(t.amount>0)ra[t.account].inc+=t.amount;else ra[t.account].out+=Math.abs(t.amount);}});
   const rg={checking:[],savings:[],credit:[]};Object.values(ra).forEach(a=>{if(rg[a.type])rg[a.type].push(a);});
@@ -12210,3 +12206,1124 @@ function renderIncomeStatement() {
   el.innerHTML=out;
   }catch(err){el.innerHTML='<div style="padding:40px;text-align:center;color:rgba(255,255,255,.3);">\u26a0\ufe0f '+err.message+'</div>';}
 }
+
+
+
+function renderCreditFlow() {
+  try {
+
+  const el = document.getElementById('creditFlowContent');
+  if (!el) return;
+
+  const projections = getCCProjections();
+  if (!projections.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">No credit card accounts detected.<br><span style="font-size:12px;">Import Quicken data that includes credit card accounts (Chase Sapphire, Amex, etc.)</span></div>';
+    return;
+  }
+
+  const now    = new Date();
+  const mo     = now.getMonth();
+  const yr     = now.getFullYear();
+  const daysIn = new Date(yr,mo+1,0).getDate();
+  const today  = now.getDate();
+  const daysLeft = daysIn - today;
+
+  let out = '';
+
+  // Explainer
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:16px;">';
+  out += '<div style="font-size:12px;color:var(--ink3);line-height:1.8;">';
+  out += '<strong style="color:var(--ink2);">How to use this view:</strong> Your credit card charges are captured as actual expenses on the Income Statement (by purchase date). ';
+  out += 'This page shows the <em>cash flow reality</em> — when you need to have money ready in checking to pay each bill, and how much to expect based on your recent spending velocity.';
+  out += '</div></div>';
+
+  // Summary row
+  const totalVel30 = projections.reduce((s,p)=>s+p.vel30,0);
+  const totalEst   = projections.reduce((s,p)=>s+p.estBalance,0);
+  out += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">';
+  out += '<div class="kpi"><div class="kpi-label">30-Day CC Spend</div><div class="kpi-val" style="color:var(--gold);">'+fmt(totalVel30)+'</div><div class="kpi-sub">across all cards</div></div>';
+  out += '<div class="kpi"><div class="kpi-label">Avg Daily Spend</div><div class="kpi-val">'+fmt(totalVel30/30)+'</div><div class="kpi-sub">'+fmt(totalVel30/30*daysLeft)+' projected remaining month</div></div>';
+  out += '<div class="kpi"><div class="kpi-label">Est. Total Bills Due</div><div class="kpi-val" style="color:var(--neg);">'+fmt(totalEst)+'</div><div class="kpi-sub">estimated open balances</div></div>';
+  out += '</div>';
+
+  // Per-card cards
+  projections.forEach((p, idx) => {
+    const projRemaining = p.vel30/30*daysLeft;
+    const projBill      = p.vel30 + projRemaining;  // rough: last 30 days + projected rest of month
+    const color = COLORS[idx % COLORS.length];
+
+    out += '<div style="background:var(--float);border:1px solid var(--line);border-left:3px solid '+color+';border-radius:var(--r-lg);padding:20px 22px;margin-bottom:12px;">';
+
+    // Card header
+    out += '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;">';
+    out += '<div><div style="font-size:14px;font-weight:600;color:var(--ink);">'+p.acct+'</div>';
+    out += '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">'+p.chargeCount+' charges in last 30 days</div></div>';
+    out += '<div style="text-align:right;"><div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:2px;">30-Day Velocity</div>';
+    out += '<div style="font-size:32px;font-weight:300;font-family:var(--font-d);letter-spacing:-.025em;color:'+color+';">'+fmt(p.vel30)+'</div></div>';
+    out += '</div>';
+
+    // Projection details
+    out += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">';
+    out += '<div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;">';
+    out += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">Avg/Day</div>';
+    out += '<div style="font-size:16px;font-weight:600;color:var(--ink);">'+fmt(p.vel30/30)+'</div></div>';
+
+    out += '<div style="background:var(--lift);border-radius:var(--r-sm);padding:10px 12px;">';
+    out += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;">'+daysLeft+'d Left in Month</div>';
+    out += '<div style="font-size:16px;font-weight:600;color:var(--gold);">+'+fmt(projRemaining)+' est.</div></div>';
+
+    out += '<div style="background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.15);border-radius:var(--r-sm);padding:10px 12px;">';
+    out += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--neg);margin-bottom:4px;">Have Ready to Pay</div>';
+    out += '<div style="font-size:16px;font-weight:700;color:var(--neg);">~'+fmt(p.vel30)+'</div></div>';
+    out += '</div>';
+
+    // Top categories on this card
+    if (p.topCats.length) {
+      out += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;">Where you&#39;re spending on this card</div>';
+      out += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+      p.topCats.forEach(([cat,amt]) => {
+        out += '<div style="background:var(--lift);border:1px solid var(--line);border-radius:4px;padding:4px 10px;font-size:11px;color:var(--ink3);">'+cat+' <strong style="color:var(--ink2);">'+fmt(amt)+'</strong></div>';
+      });
+      out += '</div>';
+    }
+
+    // Cash flow guidance
+    out += '<div style="margin-top:14px;padding:10px 14px;background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.12);border-radius:var(--r-sm);font-size:11px;color:var(--ink3);">';
+    out += '💡 <strong style="color:var(--river);">Cash flow tip:</strong> Based on last 30 days, have approximately <strong style="color:var(--pos);">'+fmt(p.vel30)+'</strong> ready in checking when this bill is due. ';
+    out += 'At your current pace, you&#39;ll spend roughly <strong>'+fmt(projRemaining)+'</strong> more on this card before month end.';
+    out += '</div>';
+    out += '</div>';
+  });
+
+  // Month spending timeline
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px 22px;margin-top:8px;">';
+  out += '<div style="font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:4px;">📅 This Month at a Glance</div>';
+  out += '<div style="font-size:11px;color:var(--ink4);margin-bottom:14px;">Day '+today+' of '+daysIn+' · '+daysLeft+' days remaining</div>';
+
+  // Build daily spend chart for current month
+  const thisMonth = yr+'-'+String(mo+1).padStart(2,'0');
+  const dailySpend = {};
+  spendable(txns).filter(t=>t.date.startsWith(thisMonth)&&t.amount<0).forEach(t=>{
+    const d=parseInt(t.date.slice(8,10));
+    dailySpend[d]=(dailySpend[d]||0)+Math.abs(t.amount);
+  });
+  const days = Array.from({length:daysIn},(_,i)=>i+1);
+  const dayVals = days.map(d=>dailySpend[d]||0);
+  const maxDay  = Math.max(...dayVals,1);
+  const barW    = Math.max(2, Math.floor(100/daysIn)-1);
+
+  out += '<div style="display:flex;align-items:flex-end;gap:1px;height:60px;margin-bottom:6px;">';
+  days.forEach((d,i) => {
+    const v   = dayVals[i];
+    const h   = v>0 ? Math.max(4,v/maxDay*56) : 0;
+    const isFuture = d > today;
+    const isToday  = d === today;
+    const color = isFuture ? 'var(--lift)' : isToday ? 'var(--gold)' : 'rgba(96,165,250,.6)';
+    out += '<div style="flex:1;height:'+h+'px;background:'+color+';border-radius:2px 2px 0 0;min-width:'+barW+'px;" title="Day '+d+': '+fmt(v)+'"></div>';
+  });
+  out += '</div>';
+  out += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--ink4);font-family:var(--fm);">';
+  out += '<span>Day 1</span><span>Today (Day '+today+')</span><span>Day '+daysIn+'</span>';
+  out += '</div></div>';
+
+  el.innerHTML = out;
+
+  } catch(e) {
+    console.error('[Forge] renderCreditFlow error:', e);
+    const _el = document.getElementById('creditFlowContent');
+  renderMasterRecon('recon-creditflow', (operatingSpendable(txns).map(t=>t.date.slice(0,7)).sort().reverse()[0] || new Date().toISOString().slice(0,7)), {isData:null});
+  }
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// BALANCE SHEET
+// Computed from Quicken account transaction history.
+// Each account's balance = sum of all transactions in that account.
+// This mirrors Quicken's register balance exactly.
+// ════════════════════════════════════════════════════════════════
+
+// Account classification for balance sheet
+const BS_ACCOUNTS = {
+  // CURRENT ASSETS (liquid, <12 months)
+  'Checking - PNC':         { class:'asset', sub:'current',    label:'PNC Checking',          icon:'🏦', assetType:'Cash & Equivalents' },
+  'Savings - PNC':          { class:'asset', sub:'current',    label:'PNC Savings',            icon:'💰', assetType:'Cash & Equivalents' },
+  'Savings - Sam':          { class:'asset', sub:'current',    label:'Savings — Sam',          icon:'💰', assetType:'Cash & Equivalents' },
+  'Savings - Whit':         { class:'asset', sub:'current',    label:'Savings — Whitney',      icon:'💰', assetType:'Cash & Equivalents' },
+  'Savings - Will':         { class:'asset', sub:'current',    label:'Savings — Will',         icon:'💰', assetType:'Cash & Equivalents' },
+  // NON-CURRENT ASSETS (long-term)
+  '529 - Sam':              { class:'asset', sub:'education',  label:"529 Plan — Sam",         icon:'🎓', assetType:'Education Accounts' },
+  '529 - Whit':             { class:'asset', sub:'education',  label:"529 Plan — Whitney",     icon:'🎓', assetType:'Education Accounts' },
+  '529 - Will':             { class:'asset', sub:'education',  label:"529 Plan — Will",        icon:'🎓', assetType:'Education Accounts' },
+  'Investing - NR':         { class:'asset', sub:'investment', label:'Investment — NR',        icon:'📈', assetType:'Investment Accounts' },
+  'Investing - Sam NR':     { class:'asset', sub:'investment', label:'Investment — Sam NR',    icon:'📈', assetType:'Investment Accounts' },
+  'Investing - Whit NR':    { class:'asset', sub:'investment', label:'Investment — Whit NR',   icon:'📈', assetType:'Investment Accounts' },
+  'Investing - Will NR':    { class:'asset', sub:'investment', label:'Investment — Will NR',   icon:'📈', assetType:'Investment Accounts' },
+  'Investing - C&K':        { class:'asset', sub:'investment', label:'Investment — C&K',       icon:'📈', assetType:'Investment Accounts' },
+  'Retirement - Chris HH':  { class:'asset', sub:'retirement', label:'401(k) — Chris (HH)',    icon:'🔒', assetType:'Retirement Accounts' },
+  'Retirement - NR IRA':    { class:'asset', sub:'retirement', label:'IRA — NR',               icon:'🔒', assetType:'Retirement Accounts' },
+  'Retirement - NR Roth':   { class:'asset', sub:'retirement', label:'Roth IRA — NR',          icon:'🔒', assetType:'Retirement Accounts' },
+  'House':                  { class:'asset', sub:'property',   label:'Primary Residence',      icon:'🏠', assetType:'Real Estate', note:'Value in Quicken may reflect equity or purchase price — confirm FMV' },
+  // LIABILITIES
+  'House Loan':             { class:'liability', sub:'mortgage',  label:'Mortgage (Rocket)',   icon:'🏠', liabType:'Long-Term Debt' },
+  'Palisade Loan':          { class:'liability', sub:'auto',      label:'Auto Loan (Palisade)',icon:'🚗', liabType:'Long-Term Debt' },
+  'Credit - Allegiant4':    { class:'liability', sub:'current',   label:'Allegiant CC',        icon:'💳', liabType:'Credit Cards' },
+  'Credit - Amazon17':      { class:'liability', sub:'current',   label:'Amazon CC',           icon:'💳', liabType:'Credit Cards' },
+  'Credit - ChPNC1':        { class:'liability', sub:'current',   label:'Chase PNC CC',        icon:'💳', liabType:'Credit Cards' },
+  'Credit - Flag17':        { class:'liability', sub:'current',   label:'Flag CC',             icon:'💳', liabType:'Credit Cards' },
+  'Credit - KiPNC28':       { class:'liability', sub:'current',   label:'Kira PNC CC',         icon:'💳', liabType:'Credit Cards' },
+  'Credit - Kohls27':       { class:'liability', sub:'current',   label:"Kohl's CC",           icon:'💳', liabType:'Credit Cards' },
+  'Credit - Old Navy4':     { class:'liability', sub:'current',   label:'Old Navy CC',         icon:'💳', liabType:'Credit Cards' },
+  'Credit - Quick19':       { class:'liability', sub:'current',   label:'Quick CC',            icon:'💳', liabType:'Credit Cards' },
+};
+
+// Items NOT in Quicken that are needed for a complete balance sheet
+const BS_MISSING = [
+  { category:'Assets', item:'Home Fair Market Value', note:'Quicken shows $159,500 — this likely reflects equity or purchase price. Pull current Zillow/Redfin estimate and enter as Home FMV; subtract from Quicken House account.', severity:'high' },
+  { category:'Assets', item:'Vehicle Values', note:'Palisade (2025) and any other vehicles owned — current market value (Kelley Blue Book). Add as Asset, the auto loan is already in Quicken as a liability.', severity:'high' },
+  { category:'Assets', item:'Personal Property', note:'High-value items: jewelry, art, collectibles, boats, recreational equipment. Typically insured value or appraisal.', severity:'low' },
+  { category:'Assets', item:'HSA Balance', note:'Health Savings Account not found in Quicken export. If you have an HSA, add current balance.', severity:'medium' },
+  { category:'Assets', item:'Life Insurance Cash Value', note:'If you hold whole or universal life policies, the cash surrender value is an asset.', severity:'low' },
+  { category:'Assets', item:'Business Equity', note:'Any ownership stake in a business (Highmark ESOP, stock options, etc.).', severity:'medium' },
+  { category:'Liabilities', item:'Current Tax Liability', note:'Estimated tax owed above withholding for current tax year. Run a quick estimate.', severity:'medium' },
+  { category:'Liabilities', item:'Other Loans / Informal Debt', note:'Family loans, HELOCs, personal guarantees not tracked in Quicken.', severity:'low' },
+];
+
+function computeBSFromTxns() {
+  // Sum transactions per account to get register balance.
+  // Exclude detail-file transactions (Apple Card CSV, Amazon, etc.) from BS —
+  // they don't represent real account ledger entries; only Quicken-sourced
+  // transactions produce accurate register balances.
+  const DETAIL_SOURCES = new Set(['apple_card','amazon_orders','home_depot','venmo','amazon']);
+  const balances = {};
+  const lastDate  = {};
+  txns.forEach(t => {
+    if (DETAIL_SOURCES.has(t._source)) return; // skip detail-file rows
+    balances[t.account] = (balances[t.account] || 0) + t.amount;
+    if (!lastDate[t.account] || t.date > lastDate[t.account]) lastDate[t.account] = t.date;
+  });
+  return { balances, lastDate };
+}
+
+// Fuzzy account name resolver — maps Quicken account names to BS_ACCOUNTS keys
+// Normalizes: lowercase, remove dashes/spaces/dots, numeric suffixes
+function normAcct(name) {
+  return (name || '').toLowerCase()
+    .replace(/[^a-z0-9]/g, '')   // strip all non-alphanumeric
+    .replace(/([0-9]+)$/, '');   // strip trailing digits (card last-4)
+}
+
+function buildBSAccountMap(balances) {
+  // Returns { bsKey: actualQuickenName } for all matched accounts
+  const map = {};
+  const bsKeys = Object.keys(BS_ACCOUNTS);
+  const actualAccts = Object.keys(balances);
+
+  // 1. Exact match
+  bsKeys.forEach(bk => {
+    if (balances[bk] !== undefined) { map[bk] = bk; }
+  });
+
+  // 2. Fuzzy match for unmatched BS keys
+  bsKeys.forEach(bk => {
+    if (map[bk]) return;
+    const normBk = normAcct(bk);
+    for (const a of actualAccts) {
+      if (normAcct(a) === normBk) { map[bk] = a; return; }
+    }
+    // Partial: BS key contains actual or vice versa
+    for (const a of actualAccts) {
+      const na = normAcct(a);
+      if (na.includes(normBk) || normBk.includes(na)) { map[bk] = a; return; }
+    }
+  });
+
+  // 3. Discover unmapped accounts from transactions → classify dynamically
+  //    Skip accounts that are clearly detail-file artifacts (long date-range names)
+  const mappedActuals = new Set(Object.values(map));
+  actualAccts.forEach(a => {
+    if (mappedActuals.has(a)) return;
+    // Skip Apple Card CSV account names (contain date range patterns)
+    if (/apple card transactions|jan \d{2} \d{4}|transactions jan/i.test(a)) return;
+    // Skip any account with < $1 in computed balance (likely zero-balance artifact)
+    const type = detectAcctType(a);
+    const isCredit = type === 'credit';
+    const isInvest = type === 'investment';
+    const isSavings = type === 'savings';
+    // Add to BS_ACCOUNTS dynamically
+    if (!BS_ACCOUNTS[a]) {
+      if (isCredit) {
+        BS_ACCOUNTS[a] = { class:'liability', sub:'current', label:a, icon:'💳', liabType:'Credit Cards', _dynamic:true };
+      } else if (isInvest) {
+        BS_ACCOUNTS[a] = { class:'asset', sub:'investment', label:a, icon:'📈', assetType:'Investment Accounts', _dynamic:true };
+      } else if (isSavings) {
+        BS_ACCOUNTS[a] = { class:'asset', sub:'current', label:a, icon:'💰', assetType:'Cash & Equivalents', _dynamic:true };
+      } else {
+        BS_ACCOUNTS[a] = { class:'asset', sub:'current', label:a, icon:'🏦', assetType:'Cash & Equivalents', _dynamic:true };
+      }
+    }
+    map[a] = a;
+  });
+
+  return map;
+}
+
+
+// Rebuild the Balance Sheet comparison dropdown dynamically from stored snapshots + named periods
+function buildBSCompareDropdown() {
+  const sel = document.getElementById('bsCompare');
+  if (!sel) return;
+  const prev = sel.value;
+
+  // Named periods: fixed calendar anchors
+  const today = new Date();
+  const curYear = today.getFullYear();
+  const named = [
+    { value:'none',  label:'— None —' },
+    { value:'ye'+String(curYear-2).slice(-2),   label:'YE '+(curYear-2) },
+    { value:'ye'+String(curYear-1).slice(-2),   label:'YE '+(curYear-1) },
+    { value:'q1'+String(curYear-1).slice(-2),   label:'Q1 '+(curYear-1) },
+    { value:'q2'+String(curYear-1).slice(-2),   label:'Q2 '+(curYear-1) },
+    { value:'q3'+String(curYear-1).slice(-2),   label:'Q3 '+(curYear-1) },
+  ];
+
+  // Add current year quarters if we're past them
+  const mo = today.getMonth() + 1; // 1-based
+  if (mo > 3)  named.push({ value:'q1'+String(curYear).slice(-2), label:'Q1 '+curYear });
+  if (mo > 6)  named.push({ value:'q2'+String(curYear).slice(-2), label:'Q2 '+curYear });
+  if (mo > 9)  named.push({ value:'q3'+String(curYear).slice(-2), label:'Q3 '+curYear });
+
+  // Dynamic: all stored nwHistory snapshot dates — add any not already covered by named
+  const namedDates = new Set([
+    // Map named values to their target dates for dedup
+    (curYear-2)+'-12-31', (curYear-1)+'-12-31',
+    (curYear-1)+'-03-31', (curYear-1)+'-06-30', (curYear-1)+'-09-30',
+    curYear+'-03-31', curYear+'-06-30', curYear+'-09-30',
+  ]);
+
+  const snapDates = Object.keys(nwHistory).sort().reverse();
+  const extraSnaps = snapDates.filter(d => {
+    // Only add if not already covered by a named period
+    return !namedDates.has(d);
+  });
+  if (extraSnaps.length) {
+    named.push({ value:'_sep_', label:'── Snapshots ──', disabled:true });
+    extraSnaps.forEach(d => {
+      const dt = new Date(d+'T12:00:00');
+      const label = dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      named.push({ value:'snap_'+d, label:label });
+    });
+  }
+
+  sel.innerHTML = named.map(o =>
+    o.disabled ? `<option disabled>${o.label}</option>`
+               : `<option value="${o.value}">${o.label}</option>`
+  ).join('');
+
+  // Restore previous selection if still valid, else default to ye[curYear-1]
+  const prevStillValid = [...sel.options].some(o => o.value === prev);
+  sel.value = prevStillValid ? prev : 'ye'+String(curYear-1).slice(-2);
+}
+
+function renderBalanceSheet() {
+  const el = document.getElementById('balanceSheetContent');
+  if (!el) return;
+
+  // Always reload NW overrides fresh
+  const freshNW = loadNetWorthOverrides();
+  if (Object.keys(freshNW).length > 0) netWorthOverrides = freshNW;
+
+  if (!txns.length && Object.keys(netWorthOverrides).length === 0) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink4);">No data loaded. Import your Quicken files first.</div>';
+    return;
+  }
+
+  // ── Determine comparison period ─────────────────────────────────
+  // Rebuild dropdown from nwHistory before reading value
+  buildBSCompareDropdown();
+  const compareSel = document.getElementById('bsCompare');
+  const compareMode = compareSel ? compareSel.value : '';
+  const today = new Date().toISOString().slice(0,10);
+  const curYear = parseInt(today.slice(0,4));
+
+  // Dynamic date resolution — handles named periods AND snap_YYYY-MM-DD values
+  function resolveCompareDate(mode) {
+    if (!mode || mode === 'none' || mode === '_sep_') return null;
+    if (mode.startsWith('snap_')) return mode.slice(5);  // 'snap_2025-12-31' → '2025-12-31'
+    // Named periods — ye25 = YE 2025, q125 = Q1 2025, etc.
+    const m = mode.match(/^(ye|q[1-4])(\d{2})$/);
+    if (!m) return null;
+    const y = 2000 + parseInt(m[2]);
+    if (m[1] === 'ye')  return y+'-12-31';
+    if (m[1] === 'q1')  return y+'-03-31';
+    if (m[1] === 'q2')  return y+'-06-30';
+    if (m[1] === 'q3')  return y+'-09-30';
+    if (m[1] === 'q4')  return y+'-12-31';
+    return null;
+  }
+  let compareDate = resolveCompareDate(compareMode);
+
+  // Build label for comparison column header
+  function buildCompareLabel(mode, date) {
+    if (!date) return '';
+    if (mode.startsWith('snap_')) {
+      const dt = new Date(date+'T12:00:00');
+      return 'vs. '+dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    }
+    const m = mode.match(/^(ye|q[1-4])(\d{2})$/);
+    if (!m) return 'vs. '+date;
+    const y = 2000 + parseInt(m[2]);
+    if (m[1] === 'ye')  return 'vs. YE '+y;
+    if (m[1] === 'q1')  return 'vs. Q1 '+y;
+    if (m[1] === 'q2')  return 'vs. Q2 '+y;
+    if (m[1] === 'q3')  return 'vs. Q3 '+y;
+    if (m[1] === 'q4')  return 'vs. Q4 '+y;
+    return 'vs. '+date;
+  }
+  const compareLabel = buildCompareLabel(compareMode, compareDate);
+  const showCompare = !!compareDate;
+
+  const { balances, lastDate } = computeBSFromTxns();
+  const acctMap = buildBSAccountMap(balances); // fuzzy + dynamic mapping
+  const hasCompare = showCompare;
+
+  // Resolve balance for a BS key using fuzzy map
+  function getRawBalance(bsKey) {
+    const actualKey = acctMap[bsKey];
+    if (actualKey && balances[actualKey] !== undefined) return balances[actualKey];
+    if (balances[bsKey] !== undefined) return balances[bsKey];
+    return 0;
+  }
+
+  // ── Account value resolution ────────────────────────────────────
+  function getCurrentValue(acct, meta) {
+    const nwOv = netWorthOverrides[acct];
+    if (nwOv) return { value: meta.class === 'liability' ? Math.abs(nwOv.value) : nwOv.value, source: nwOv.source === 'quicken-invperf' ? 'inv-perf' : 'net-worth' };
+    const raw = getRawBalance(acct);
+    return { value: meta.class === 'liability' ? Math.abs(raw) : raw, source: 'transactions' };
+  }
+
+  function getPriorValue(acct, meta) {
+    if (!compareDate) return null;
+    // Check nwHistory for the comparison date
+    const snapDates = Object.keys(nwHistory).filter(d => d <= compareDate).sort();
+    if (snapDates.length > 0) {
+      const snap = nwHistory[snapDates[snapDates.length - 1]];
+      if (snap[acct] !== undefined) {
+        const v = meta.class === 'liability' ? Math.abs(snap[acct]) : snap[acct];
+        return { value: v, source: 'snapshot' };
+      }
+    }
+    // Fall back: transaction-computed balance as of compareDate
+    const bal = txns.filter(t => t.account === acct && t.date <= compareDate)
+                    .reduce((s, t) => s + t.amount, 0);
+    const v = meta.class === 'liability' ? Math.abs(bal) : bal;
+    return { value: v, source: 'transactions' };
+  }
+
+  // ── Build account lists ─────────────────────────────────────────
+  const assetGroups = {}, liabGroups = {};
+  let totalAssets = 0, totalLiabs = 0;
+  let totalPriorAssets = 0, totalPriorLiabs = 0;
+
+  Object.entries(BS_ACCOUNTS).forEach(([acct, meta]) => {
+    const cur = getCurrentValue(acct, meta);
+    const prior = hasCompare ? getPriorValue(acct, meta) : null;
+    const amt = cur.value;
+    if (amt === 0 && meta.sub === 'current' && meta.class === 'liability' && !netWorthOverrides[acct]) return;
+
+    const last = netWorthOverrides[acct] ? netWorthOverrides[acct].date : (lastDate[acct] || '');
+    const monthsOld = last ? Math.floor((new Date(today) - new Date(last)) / (1000*60*60*24*30)) : 999;
+    const stale = !netWorthOverrides[acct] && monthsOld > 3;
+    const flags = [];
+    if (cur.source !== 'transactions') flags.push({ type:'ok', text: cur.source === 'inv-perf' ? '📈 inv. report' : '✓ NW report' });
+    if (stale) flags.push({ type:'stale', text:'⚠ '+monthsOld+'mo old' });
+
+    const change = (prior && prior.value !== 0) ? amt - prior.value : null;
+    const changePct = (change !== null && prior.value !== 0) ? (change / prior.value * 100) : null;
+
+    const entry = { acct, meta, amt, prior: prior?.value ?? null, priorSrc: prior?.source, change, changePct, flags, last };
+
+    if (meta.class === 'asset') {
+      if (!assetGroups[meta.sub]) assetGroups[meta.sub] = [];
+      assetGroups[meta.sub].push(entry);
+      totalAssets += amt;
+      totalPriorAssets += prior?.value ?? 0;
+    } else {
+      if (!liabGroups[meta.sub]) liabGroups[meta.sub] = [];
+      liabGroups[meta.sub].push(entry);
+      totalLiabs += amt;
+      totalPriorLiabs += prior?.value ?? 0;
+    }
+  });
+
+  // Extra NW accounts not in BS_ACCOUNTS — auto-classify by name pattern
+  const bsNames = new Set(Object.keys(BS_ACCOUNTS));
+  function _guessSub(name) {
+    const n = name.toLowerCase();
+    if (/401k|403b|ira|roth|retirement|pension|empower|fidelity ret|vanguard ret|principl|401\(k\)/i.test(name)) return { sub:'retirement', icon:'🔒', label:name };
+    if (/529|college|education/i.test(name)) return { sub:'education', icon:'🎓', label:name };
+    if (/hsa|health saving/i.test(name)) return { sub:'savings', icon:'💊', label:name };
+    if (/brokerage|invest|stock|schwab|etrade|robinhood|vanguard|fidelity|merrill/i.test(name)) return { sub:'investment', icon:'📈', label:name };
+    if (/savings|save|marcus|ally|high.?yield|money.?market/i.test(name)) return { sub:'savings', icon:'🏦', label:name };
+    if (/mortgage|home loan|house/i.test(name)) return { sub:'mortgage', icon:'🏠', label:name };
+    if (/property|real estate|house|home/i.test(name)) return { sub:'property', icon:'🏠', label:name };
+    if (/car|auto|vehicle|truck/i.test(name)) return { sub:'auto', icon:'🚗', label:name };
+    return { sub:'Other', icon:'📋', label:name };
+  }
+  Object.entries(netWorthOverrides).filter(([n]) => !bsNames.has(n)).forEach(([name, nw]) => {
+    if (nw.value > 0) {
+      const guess = _guessSub(name);
+      if (!assetGroups[guess.sub]) assetGroups[guess.sub] = [];
+      assetGroups[guess.sub].push({ acct:name, meta:{icon:guess.icon, label:name, sub:guess.sub, class:'asset'}, amt:nw.value, prior:null, change:null, changePct:null, flags:[{type:'ok',text:'✓ NW report'}], last:nw.date });
+      totalAssets += nw.value;
+    }
+  });
+
+  const netWorth = totalAssets - totalLiabs;
+  const priorNetWorth = totalPriorAssets - totalPriorLiabs;
+  const nwChange = hasCompare ? netWorth - priorNetWorth : null;
+  const nwChangePct = (nwChange !== null && priorNetWorth !== 0) ? (nwChange / priorNetWorth * 100) : null;
+  const nwLoaded = Object.keys(netWorthOverrides).length;
+
+  // ── Column helper ───────────────────────────────────────────────
+  const cols = hasCompare ? '1fr 110px 100px 90px 90px' : '1fr 130px 110px';
+
+  function hdrRow() {
+    let r = '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:7px 20px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--line);">';
+    r += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);">Account</div>';
+    r += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);text-align:right;">Balance</div>';
+    if (hasCompare) {
+      r += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">'+compareLabel.replace('vs. ','')+'</div>';
+      r += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Change</div>';
+      r += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">%</div>';
+    } else {
+      r += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:right;">Source</div>';
+    }
+    return r + '</div>';
+  }
+
+  function acctRow(e) {
+    // For assets: increase = good (green), decrease = bad (red)
+    // For liabilities: increase = bad (red), decrease = good (green)
+    const isLiab = e.meta && e.meta.class === 'liability';
+    const changeColor = e.change === null ? 'var(--ink4)'
+      : isLiab
+        ? (e.change <= 0 ? 'var(--pos)' : 'var(--neg)')  // liability down = good
+        : (e.change >= 0 ? 'var(--pos)' : 'var(--neg)'); // asset up = good
+    let r = '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:9px 20px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;" class="bs-row">';
+    // Name + flags
+    r += '<div style="display:flex;align-items:center;gap:7px;min-width:0;">';
+    r += '<span style="font-size:14px;flex-shrink:0;">'+(e.meta.icon||'·')+'</span>';
+    r += '<div style="min-width:0;"><div style="font-size:12px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+e.meta.label+'</div>';
+    if (e.flags.length) {
+      r += '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:1px;">';
+      e.flags.forEach(f => {
+        const fc = f.type==='ok'?'rgba(45,212,191,.2)':f.type==='stale'?'rgba(245,168,0,.2)':'rgba(248,113,113,.2)';
+        const tc = f.type==='ok'?'var(--pos)':f.type==='stale'?'var(--gold)':'var(--neg)';
+        r += '<span style="font-size:8px;background:'+fc+';color:'+tc+';padding:1px 5px;border-radius:3px;font-family:var(--fm);">'+f.text+'</span>';
+      });
+      r += '</div>';
+    }
+    r += '</div></div>';
+    // Current value
+    r += '<div style="text-align:right;font-family:var(--fm);font-size:13px;font-weight:600;color:var(--ink);">'+fmt(e.amt)+'</div>';
+    if (hasCompare) {
+      r += '<div style="text-align:right;font-family:var(--fm);font-size:12px;color:var(--ink4);">'+(e.prior !== null ? fmt(e.prior) : '—')+'</div>';
+      r += '<div style="text-align:right;font-family:var(--fm);font-size:12px;font-weight:600;color:'+changeColor+';">'+(e.change !== null ? (e.change >= 0 ? '+' : '')+fmt(e.change) : '—')+'</div>';
+      r += '<div style="text-align:right;font-family:var(--fm);font-size:11px;color:'+changeColor+';">'+(e.changePct !== null ? (e.changePct >= 0?'+':'')+e.changePct.toFixed(1)+'%' : '—')+'</div>';
+    } else {
+      r += '<div style="text-align:right;font-size:10px;color:var(--ink4);">'+(e.flags.find(f=>f.type==='ok')?.text||'txn register')+'</div>';
+    }
+    return r + '</div>';
+  }
+
+  function groupRow(label, total, priorTotal, labelColor) {
+    const change = hasCompare && priorTotal ? total - priorTotal : null;
+    const changeColor = change === null ? 'var(--ink4)' : change >= 0 ? 'var(--pos)' : 'var(--neg)';
+    const lc = labelColor || 'var(--ink3)';
+    let r = '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:8px 16px;background:rgba(255,255,255,.025);border-bottom:1px solid var(--line);">';
+    r += '<div style="font-size:10px;font-weight:600;color:'+lc+';letter-spacing:.05em;">'+label+'</div>';
+    r += '<div style="text-align:right;font-family:var(--fm);font-size:12px;font-weight:600;color:'+lc+';">'+fmt(total)+'</div>';
+    if (hasCompare) {
+      r += '<div style="text-align:right;font-family:var(--fm);font-size:11px;color:var(--ink4);">'+fmt(priorTotal)+'</div>';
+      r += '<div style="text-align:right;font-family:var(--fm);font-size:12px;font-weight:700;color:'+changeColor+';">'+(change!==null?(change>=0?'+':'')+fmt(change):'—')+'</div>';
+      r += '<div></div>';
+    } else {
+      r += '<div></div>';
+    }
+    return r + '</div>';
+  }
+
+  const GROUP_LABELS = {
+    current:'Cash & Checking', savings:'Savings', investment:'Brokerage & Non-Retirement',
+    property:'Real Property', retirement:'Retirement Accounts', education:'Education (529)',
+    mortgage:'Mortgage', auto:'Auto Loan', student:'Student Loans', Other:'Other Assets'
+  };
+
+  // ── Render ──────────────────────────────────────────────────────
+  let out = '';
+
+  // NW status banner
+  if (nwLoaded > 0) {
+    const nwDateSet  = [...new Set(Object.values(netWorthOverrides).map(v=>v.date))];
+    const snapCount  = Object.keys(nwHistory).length;
+    const dateChips  = nwDateSet.slice(0,3).map(d =>
+      `<span style="font-size:9px;padding:1px 7px;border-radius:10px;background:rgba(45,212,191,.12);border:1px solid rgba(45,212,191,.25);color:var(--pos);font-family:var(--fm);">${d}</span>`
+    ).join(' ') + (nwDateSet.length > 3 ? ` <span style="font-size:10px;color:var(--ink4);">+${nwDateSet.length-3} more</span>` : '');
+    out += '<div style="background:rgba(45,212,191,.06);border:1px solid rgba(45,212,191,.2);border-radius:var(--r-md);padding:10px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">';
+    out += '<div style="font-size:12px;color:var(--ink3);">✓ <strong style="color:var(--pos);">'+nwLoaded+' account values loaded</strong>';
+    if (snapCount > 1) out += ' · '+snapCount+' historical snapshots';
+    out += '</div>';
+    out += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' + dateChips + '</div>';
+    out += '</div>';
+  } else {
+    out += '<div style="background:rgba(245,168,0,.05);border:1px solid rgba(245,168,0,.15);border-radius:var(--r-md);padding:10px 16px;margin-bottom:8px;font-size:12px;color:var(--ink4);">';
+    out += '⚠ No Net Worth snapshot loaded. Upload a Quicken Net Worth report for accurate investment and property values.';
+    out += '</div>';
+  }
+
+  // KPI summary row
+  const dti = totalLiabs > 0 && totalAssets > 0 ? (totalLiabs/totalAssets*100).toFixed(1) : 0;
+  const mortgageKey = Object.entries(BS_ACCOUNTS).find(([,v])=>v.sub==='mortgage')?.[0];
+  const mortgageBal = mortgageKey ? getCurrentValue(mortgageKey, BS_ACCOUNTS[mortgageKey]).value : 0;
+  const houseKey = Object.entries(BS_ACCOUNTS).find(([,v])=>v.sub==='property')?.[0];
+  const houseBal = houseKey ? getCurrentValue(houseKey, BS_ACCOUNTS[houseKey]).value : 0;
+  const homeEquity = houseBal - mortgageBal;
+
+  out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;">';
+  const kpis = [
+    ['Net Worth', fmt(netWorth), netWorth>=0?'var(--pos)':'var(--neg)',
+      hasCompare && nwChange!==null ? (nwChange>=0?'↑ ':'↓ ')+fmt(Math.abs(nwChange))+(nwChangePct!==null?' ('+nwChangePct.toFixed(1)+'%)':'')+' '+compareLabel : 'assets minus liabilities'],
+    ['Total Assets', fmt(totalAssets), 'var(--ink)', hasCompare && totalPriorAssets ? 'prior: '+fmt(totalPriorAssets) : 'all owned assets'],
+    ['Total Liabilities', fmt(totalLiabs), 'var(--neg)', hasCompare && totalPriorLiabs ? ((totalLiabs <= totalPriorLiabs ? '↓ good · ' : '↑ bad · ') + 'prior: '+fmt(totalPriorLiabs)) : 'all outstanding debt'],
+    ['Home Equity', fmt(homeEquity), homeEquity>=0?'var(--river)':'var(--neg)', 'property minus mortgage'],
+  ];
+  kpis.forEach(([l,v,c,s], ki) => {
+    const accentColors = ['rgba(45,212,191,.06)','rgba(255,255,255,.02)','rgba(248,113,113,.05)','rgba(96,165,250,.05)'];
+    const accentBorder = ['rgba(45,212,191,.2)','var(--line)','rgba(248,113,113,.2)','rgba(96,165,250,.2)'];
+    out += '<div style="background:var(--float);border:1px solid '+accentBorder[ki]+';border-radius:var(--r-lg);padding:18px 20px;position:relative;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.05);">';
+    out += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:'+c+';border-radius:var(--r-lg) var(--r-lg) 0 0;"></div>';
+    out += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:7px;font-weight:600;">'+l+'</div>';
+    out += '<div style="font-size:28px;font-weight:700;color:'+c+';letter-spacing:-.02em;line-height:1;font-family:var(--font-d);text-shadow:0 1px 8px '+c+'44;">'+v+'</div>';
+    out += '<div style="font-size:12px;color:var(--ink4);margin-top:6px;font-family:var(--font-ui);">'+s+'</div></div>';
+  });
+  out += '</div>';
+
+  // ── Second KPI row: operating ratios ───────────────────────────
+  const currentAssets = Object.entries(BS_ACCOUNTS)
+    .filter(([,v])=>v.class==='asset'&&(v.sub==='current'||v.sub==='savings'))
+    .reduce((s,[a,v])=>s+getCurrentValue(a,v).value, 0);
+  const currentLiabs = Object.entries(BS_ACCOUNTS)
+    .filter(([,v])=>v.class==='liability'&&v.sub==='current')
+    .reduce((s,[a,v])=>s+getCurrentValue(a,v).value, 0);
+  const longTermDebt = Object.entries(BS_ACCOUNTS)
+    .filter(([,v])=>v.class==='liability'&&(v.sub==='mortgage'||v.sub==='auto'||v.sub==='student'||v.sub==='long_term'))
+    .reduce((s,[a,v])=>s+getCurrentValue(a,v).value, 0);
+  const totalDebt = currentLiabs + longTermDebt;
+  const currentRatio = currentLiabs > 0 ? (currentAssets/currentLiabs) : null;
+  const debtRatio    = totalAssets > 0 ? (totalLiabs/totalAssets*100) : 0;
+  const monthlyInc   = recurringIncomeAvg(12);
+  const dtiRatio     = monthlyInc > 0 ? (totalDebt/(monthlyInc*12)*100) : null;
+  const liquidMonths = monthlyInc > 0 ? currentAssets/monthlyInc : null;
+
+  out += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;">';
+  const kpis2 = [
+    ['Current Assets',  fmt(currentAssets),  'var(--pos)',  'cash + savings · liquid within 12mo'],
+    ['Current Liabilities', fmt(currentLiabs), 'var(--neg)', 'CC balances due this cycle'],
+    ['Current Ratio',   currentRatio!==null ? currentRatio.toFixed(2)+'×' : '—',
+      currentRatio===null?'var(--ink4)':currentRatio>=2?'var(--pos)':currentRatio>=1?'var(--gold)':'var(--neg)',
+      'current assets ÷ current liabilities · target ≥2×'],
+  ];
+  kpis2.forEach(([l,v,c,s]) => {
+    out += '<div style="background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.25);">';
+    out += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;font-weight:600;">'+l+'</div>';
+    out += '<div style="font-size:30px;font-weight:400;font-family:var(--font-d);letter-spacing:-.02em;color:'+c+';">'+v+'</div>';
+    out += '<div style="font-size:11px;color:var(--ink4);margin-top:3px;">'+s+'</div></div>';
+  });
+  out += '</div>';
+
+  out += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;">';
+  const kpis3 = [
+    ['Debt-to-Asset Ratio', debtRatio.toFixed(1)+'%',
+      debtRatio<30?'var(--pos)':debtRatio<50?'var(--gold)':'var(--neg)',
+      'total liabilities ÷ total assets · target <30%'],
+    ['Debt-to-Income', dtiRatio!==null ? dtiRatio.toFixed(1)+'%' : '—',
+      dtiRatio===null?'var(--ink4)':dtiRatio<36?'var(--pos)':dtiRatio<50?'var(--gold)':'var(--neg)',
+      'total debt ÷ annual income · target <36%'],
+    ['Liquid Coverage', liquidMonths!==null ? liquidMonths.toFixed(1)+' mo' : '—',
+      liquidMonths===null?'var(--ink4)':liquidMonths>=6?'var(--pos)':liquidMonths>=3?'var(--gold)':'var(--neg)',
+      'current assets ÷ monthly income · target ≥6mo'],
+  ];
+  kpis3.forEach(([l,v,c,s]) => {
+    out += '<div style="background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.25);">';
+    out += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;font-weight:600;">'+l+'</div>';
+    out += '<div style="font-size:30px;font-weight:400;font-family:var(--font-d);letter-spacing:-.02em;color:'+c+';">'+v+'</div>';
+    out += '<div style="font-size:11px;color:var(--ink4);margin-top:3px;">'+s+'</div></div>';
+  });
+  out += '</div>';
+
+  // Assets table
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">';
+  out += '<div style="padding:10px 16px;background:var(--lift);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">';
+  out += '<div style="font-size:22px;font-weight:400;font-family:var(--font-d);letter-spacing:-.015em;color:var(--pos);">ASSETS</div>';
+  if (hasCompare) out += '<div style="font-size:11px;color:var(--ink4);">'+compareLabel+'</div>';
+  out += '</div>';
+  out += hdrRow();
+
+  const assetSubOrder = ['current','savings','investment','retirement','education','property','Other'];
+  let prevAssets = 0;
+  assetSubOrder.forEach(sub => {
+    const entries = assetGroups[sub];
+    if (!entries || !entries.length) return;
+    const subTotal = entries.reduce((s,e)=>s+e.amt,0);
+    const priorSubTotal = entries.reduce((s,e)=>s+(e.prior||0),0);
+    prevAssets += priorSubTotal;
+    const subLabel = GROUP_LABELS[sub] || sub;
+    out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">'+subLabel+'</div>';
+    entries.sort((a,b)=>b.amt-a.amt).forEach(e => { out += acctRow(e); });
+    out += groupRow('Subtotal', subTotal, priorSubTotal);
+  });
+
+  out += '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:11px 16px;background:rgba(45,212,191,.04);border-top:2px solid rgba(45,212,191,.2);">';
+  out += '<div style="font-size:14px;font-weight:700;font-family:var(--fm);color:var(--pos);">TOTAL ASSETS</div>';
+  out += '<div style="text-align:right;font-family:var(--fm);font-size:14px;font-weight:700;color:var(--pos);">'+fmt(totalAssets)+'</div>';
+  if (hasCompare) {
+    const chg = totalAssets - totalPriorAssets;
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:12px;color:var(--ink4);">'+fmt(totalPriorAssets)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:13px;font-weight:700;color:'+(chg>=0?'var(--pos)':'var(--neg)')+'">'+( chg>=0?'+':'')+fmt(chg)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:11px;color:'+(chg>=0?'var(--pos)':'var(--neg)')+';">'+( totalPriorAssets ? (chg/totalPriorAssets*100).toFixed(1)+'%' : '—')+'</div>';
+  } else { out += '<div></div>'; }
+  out += '</div></div>';
+
+  // Liabilities table
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:8px;">';
+  out += '<div style="padding:10px 16px;background:var(--lift);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">';
+  out += '<div style="font-size:22px;font-weight:400;font-family:var(--font-d);letter-spacing:-.015em;color:var(--neg);">LIABILITIES</div>';
+  if (hasCompare) out += '<div style="font-size:11px;color:var(--ink4);">'+compareLabel+'</div>';
+  out += '</div>';
+  out += hdrRow();
+
+  const liabSubOrder = ['current','mortgage','auto','student','long_term','other'];
+  liabSubOrder.forEach(sub => {
+    const entries = liabGroups[sub];
+    if (!entries || !entries.length) return;
+    const subLabel = GROUP_LABELS[sub] || sub;
+
+    if (sub === 'current') {
+      // Split current liabilities into Credit Cards subtotal + Other current
+      const ccEntries    = entries.filter(e => (e.meta.liabType||'') === 'Credit Cards' || e.meta.icon === '💳');
+      const otherEntries = entries.filter(e => !ccEntries.includes(e));
+
+      if (ccEntries.length > 0) {
+        const ccTotal      = ccEntries.reduce((s,e)=>s+e.amt,0);
+        const ccPriorTotal = ccEntries.reduce((s,e)=>s+(e.prior||0),0);
+        out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">Credit Cards</div>';
+        ccEntries.sort((a,b)=>b.amt-a.amt).forEach(e => { out += acctRow(e); });
+        out += groupRow('Credit Card Total', ccTotal, ccPriorTotal, 'var(--neg)');
+      }
+      if (otherEntries.length > 0) {
+        const otherTotal      = otherEntries.reduce((s,e)=>s+e.amt,0);
+        const otherPriorTotal = otherEntries.reduce((s,e)=>s+(e.prior||0),0);
+        out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">Other Current Liabilities</div>';
+        otherEntries.sort((a,b)=>b.amt-a.amt).forEach(e => { out += acctRow(e); });
+        if (otherEntries.length > 1) out += groupRow('Subtotal', otherTotal, otherPriorTotal);
+      }
+    } else {
+      const subTotal = entries.reduce((s,e)=>s+e.amt,0);
+      const priorSub = entries.reduce((s,e)=>s+(e.prior||0),0);
+      out += '<div style="padding:7px 20px;font-size:9px;font-family:var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.65;background:rgba(255,255,255,.015);border-bottom:1px solid rgba(255,255,255,.04);">'+subLabel+'</div>';
+      entries.sort((a,b)=>b.amt-a.amt).forEach(e => { out += acctRow(e); });
+      out += groupRow('Subtotal', subTotal, priorSub);
+    }
+  });
+
+  out += '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:11px 16px;background:rgba(248,113,113,.04);border-top:2px solid rgba(248,113,113,.2);">';
+  out += '<div style="font-size:14px;font-weight:700;font-family:var(--fm);color:var(--neg);">TOTAL LIABILITIES</div>';
+  out += '<div style="text-align:right;font-family:var(--fm);font-size:14px;font-weight:700;color:var(--neg);">'+fmt(totalLiabs)+'</div>';
+  if (hasCompare) {
+    const chg = totalLiabs - totalPriorLiabs;
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:12px;color:var(--ink4);">'+fmt(totalPriorLiabs)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:13px;font-weight:700;color:'+(chg<=0?'var(--pos)':'var(--neg)')+';">'+(chg>=0?'+':'')+fmt(chg)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:11px;color:'+(chg<=0?'var(--pos)':'var(--neg)')+';">'+( totalPriorLiabs ? (chg/totalPriorLiabs*100).toFixed(1)+'%' : '—')+'</div>';
+  } else { out += '<div></div>'; }
+  out += '</div></div>';
+
+  // Net Worth summary
+  const nwColor = netWorth >= 0 ? 'var(--pos)' : 'var(--neg)';
+  out += '<div style="background:var(--float);border:1px solid '+(netWorth>=0?'rgba(45,212,191,.3)':'rgba(248,113,113,.3)')+';border-radius:var(--r-lg);overflow:hidden;">';
+  out += '<div style="display:grid;grid-template-columns:'+cols+';gap:0;padding:14px 16px;background:'+(netWorth>=0?'rgba(45,212,191,.06)':'rgba(248,113,113,.06)')+'">';
+  out += '<div style="font-size:14px;font-weight:700;color:'+nwColor+';">NET WORTH</div>';
+  out += '<div style="text-align:right;font-family:var(--fm);font-size:16px;font-weight:700;color:'+nwColor+';">'+fmt(netWorth)+'</div>';
+  if (hasCompare) {
+    const nwChg = nwChange || 0;
+    const nwChgColor = nwChg >= 0 ? 'var(--pos)' : 'var(--neg)';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:13px;color:var(--ink4);">'+fmt(priorNetWorth)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:14px;font-weight:700;color:'+nwChgColor+';">'+(nwChg>=0?'+':'')+fmt(nwChg)+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:12px;color:'+nwChgColor+';">'+(nwChangePct!==null?(nwChangePct>=0?'+':'')+nwChangePct.toFixed(1)+'%':'—')+'</div>';
+  } else { out += '<div></div>'; }
+  out += '</div>';
+  if (hasCompare && nwChange !== null) {
+    out += '<div style="padding:8px 16px;border-top:1px solid rgba(255,255,255,.06);font-size:11px;color:var(--ink4);">';
+    out += 'Net worth '+(nwChange>=0?'<strong style="color:var(--pos);">grew '+fmt(Math.abs(nwChange))+'</strong>':'<strong style="color:var(--neg);">declined '+fmt(Math.abs(nwChange))+'</strong>')+' '+compareLabel+'. ';
+    out += 'Note: comparison uses '+(Object.keys(nwHistory).length > 1 ? 'stored NW snapshots' : 'transaction-computed balances for prior period — upload a historical Net Worth CSV for accuracy')+'.';
+    out += '</div>';
+  }
+  out += '</div>';
+
+  el.innerHTML = out;
+}
+
+// ════════════════════════════════════════════════
+// BUDGET VS ACTUAL
+// ════════════════════════════════════════════════
+
+function suggestBudget() {
+  const sp = spendable(txns);
+  const thisMonth = new Date().getMonth();
+  const bm = {};
+  sp.filter(t => t.amount < 0).forEach(t => {
+    const b = classifyTxn(t), d = new Date(t.date);
+    const k = d.getFullYear()+'-'+String(d.getMonth()).padStart(2,'0');
+    if (!bm[b]) bm[b] = {};
+    bm[b][k] = (bm[b][k]||0) + Math.abs(t.amount);
+  });
+  const nt = {};
+  Object.entries(bm).forEach(([b, months]) => {
+    const vals = Object.values(months);
+    if (!vals.length) return;
+    const avg = vals.reduce((a,c)=>a+c,0)/vals.length;
+    const same = Object.entries(months).filter(([k])=>parseInt(k.split('-')[1])===thisMonth).map(([,v])=>v);
+    nt[b] = Math.round((same.length ? avg*0.6+(same.reduce((a,c)=>a+c,0)/same.length)*0.4 : avg)/25)*25;
+  });
+  budgetTargets = nt;
+  saveSettings();
+  renderBudget();
+  toast('✓ Budget suggested from trailing 12-month run rate with seasonality adjustment');
+}
+
+function renderBudget() {
+  const el = document.getElementById('budgetContent');
+  if (!el) return;
+  if (!txns.length) { el.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink4);">No data loaded.</div>'; return; }
+  const moSel = document.getElementById('budgetMonth');
+  const sp    = spendable(txns);
+  const months = [...new Set(sp.map(t=>t.date.slice(0,7)))].sort().reverse();
+  if (moSel && moSel.options.length === 0) {
+    months.forEach(m => {
+      const [yr,mo] = m.split('-');
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = new Date(yr,parseInt(mo)-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      moSel.appendChild(opt);
+    });
+  }
+  const sel = (moSel&&moSel.value)||months[0];
+  if (!sel) return;
+  const [yr,mo] = sel.split('-');
+  const dIM = new Date(yr,parseInt(mo),0).getDate();
+  const today = new Date();
+  const isCur = sel === today.toISOString().slice(0,7);
+  const daysDone = isCur ? today.getDate() : dIM;
+  const pct = daysDone/dIM;
+  const act = {};
+  sp.filter(t=>t.date.startsWith(sel)&&t.amount<0).forEach(t=>{
+    const b=classifyTxn(t); act[b]=(act[b]||0)+Math.abs(t.amount);
+  });
+  const incR = sp.filter(t=>t.date.startsWith(sel)&&t.amount>0&&!nonRecurringIds.has(txnKey(t))).reduce((s,t)=>s+t.amount,0);
+  const incNR= sp.filter(t=>t.date.startsWith(sel)&&t.amount>0&&nonRecurringIds.has(txnKey(t))).reduce((s,t)=>s+t.amount,0);
+  const totB = Object.values(budgetTargets).reduce((a,b)=>a+b,0);
+  const totA = Object.values(act).reduce((a,b)=>a+b,0);
+  const proj = isCur&&pct>0 ? totA/pct : totA;
+  let out = '';
+  out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;">';
+  [['Recurring Income',fmt(incR),'var(--pos)',incNR>0?'+ '+fmt(incNR)+' one-time':''],
+   ['Spent So Far',fmt(totA),'var(--gold)',daysDone+' of '+dIM+' days'],
+   ['Projected Total',fmt(proj),proj>totB?'var(--neg)':'var(--ink)','at current pace'],
+   ['Budget Remaining',fmt(Math.max(0,totB-totA)),'var(--ink)',totB?'of '+fmt(totB):'click Suggest'],
+  ].forEach(([l,v,c,s])=>{
+    out += '<div style="background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.25);">';
+    out += '<div style="font-size:10px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;font-weight:600;">'+l+'</div>';
+    out += '<div style="font-size:30px;font-weight:400;font-family:var(--font-d);letter-spacing:-.02em;color:'+c+';">'+v+'</div>';
+    out += '<div style="font-size:11px;color:var(--ink4);margin-top:3px;">'+s+'</div></div>';
+  });
+  out += '</div>';
+  if (isCur&&totB>0) {
+    const ok=totA<=totB*pct, diff=Math.abs(totA-totB*pct);
+    out += '<div style="background:'+(ok?'rgba(45,212,191,.05)':'rgba(248,113,113,.05)')+';border:1px solid '+(ok?'rgba(45,212,191,.15)':'rgba(248,113,113,.15)')+';border-radius:var(--r-md);padding:10px 16px;margin-bottom:10px;font-size:12px;color:var(--ink3);">';
+    out += (ok?'✓ On pace — ':'⚠ Running hot — ')+'Day '+daysDone+' of '+dIM+' · '+fmt(totA)+' of '+fmt(totB)+'. ';
+    out += ok?'<strong style="color:var(--pos);">'+fmt(diff)+'</strong> under pace.':'<strong style="color:var(--neg);">'+fmt(diff)+'</strong> over pace.';
+    out += '</div>';
+  }
+  out += '<div style="background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
+  out += '<div style="display:grid;grid-template-columns:160px 1fr 90px 90px 90px 90px;gap:0;padding:9px 16px;background:var(--lift);border-bottom:1px solid var(--line);">';
+  ['Category','Progress','Budget','Spent','Projected','Status'].forEach((h,i)=>{
+    out += '<div style="font-size:9px;font-family:var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);'+(i>1?'text-align:right;':'')+'">'+h+'</div>';
+  });
+  out += '</div>';
+  ['auto_save','mortgage','car','education','insurance','childcare','electric','gas_util','water','internet','cell',
+   'groceries','gas_car','transit','healthcare','restaurants','entertainment','household','personal','clothing','travel','subscriptions','gifts','other'].forEach(bk=>{
+    const b=budgetTargets[bk]||0, a=act[bk]||0;
+    if(!b&&!a) return;
+    const meta=BUCKET_META[bk]||{label:bk,icon:'·'};
+    const pr=isCur&&pct>0?a/pct:a, pc=b>0?Math.min(a/b,1):0;
+    const over=b>0&&a>b, near=b>0&&a>b*0.85&&!over;
+    const st=!b?'-':over?'Over':near?'Near':'OK';
+    const sc=!b?'var(--ink4)':over?'var(--neg)':near?'var(--gold)':'var(--pos)';
+    out += '<div style="display:grid;grid-template-columns:160px 1fr 90px 90px 90px 90px;gap:0;padding:9px 20px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;">';
+    out += '<div style="display:flex;align-items:center;gap:6px;font-size:12px;"><span>'+meta.icon+'</span><span>'+meta.label+'</span></div>';
+    out += '<div style="padding:0 12px;">';
+    if (b>0) {
+      out += '<div style="height:6px;background:var(--lift);border-radius:3px;overflow:hidden;"><div style="height:100%;width:'+Math.min(pc*100,100).toFixed(1)+'%;background:'+(over?'var(--neg)':near?'var(--gold)':'var(--gold)')+';border-radius:3px;"></div></div>';
+      out += '<div style="font-size:9px;color:var(--ink4);margin-top:2px;">'+Math.round(pc*100)+'%</div>';
+    } else out += '<div style="font-size:10px;color:var(--ink4);">no target</div>';
+    out += '</div>';
+    out += '<div style="text-align:right;"><input type="number" value="'+(b||'')+'" placeholder="—" min="0" step="25" data-bucket="'+bk+'" style="width:75px;background:var(--lift);border:1px solid var(--line);border-radius:4px;padding:3px 6px;font-family:var(--fm);font-size:11px;color:var(--ink);text-align:right;" onchange="budgetTargets[this.dataset.bucket]=parseFloat(this.value)||0;saveSettings();renderBudget();"></div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:12px;">'+(a>0?fmt(a):'—')+'</div>';
+    out += '<div style="text-align:right;font-family:var(--fm);font-size:11px;color:var(--ink4);">'+(isCur&&a>0?fmt(pr):'—')+'</div>';
+    out += '<div style="text-align:right;font-size:11px;font-weight:600;color:'+sc+';">'+st+'</div></div>';
+  });
+  out += '<div style="display:grid;grid-template-columns:160px 1fr 90px 90px 90px 90px;gap:0;padding:10px 16px;background:var(--lift);border-top:2px solid var(--line);">';
+  out += '<div style="font-size:12px;font-weight:700;">Total</div><div></div>';
+  out += '<div style="text-align:right;font-family:var(--fm);font-size:12px;font-weight:700;">'+fmt(totB)+'</div>';
+  out += '<div style="text-align:right;font-family:var(--fm);font-size:12px;font-weight:700;color:'+(totA>totB&&totB>0?'var(--neg)':'var(--ink)')+';">'+fmt(totA)+'</div>';
+  out += '<div style="text-align:right;font-family:var(--fm);font-size:11px;color:var(--ink4);">'+(isCur&&totA>0?fmt(proj):'—')+'</div>';
+  out += '<div></div></div></div>';
+  const allInc = sp.filter(t=>t.date.startsWith(sel)&&t.amount>0);
+  if (allInc.length) {
+    out += '<div style="margin-top:10px;background:var(--float);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;">';
+    out += '<div style="padding:10px 16px;background:var(--lift);border-bottom:1px solid var(--line);font-size:12px;font-weight:600;">Income This Month · click ⭐ to flag non-recurring</div>';
+    allInc.sort((a,b)=>b.amount-a.amount).forEach(t=>{
+      const key=txnKey(t),isNR=nonRecurringIds.has(key);
+      const sk=(key||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+      out += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid rgba(255,255,255,.04);">';
+      out += '<div style="display:flex;align-items:center;gap:10px;">';
+      out += '<button class="nr-toggle-btn" data-nrkey="'+sk+'" style="background:none;border:none;cursor:pointer;font-size:14px;opacity:'+(isNR?'1':'.35')+';">'+(isNR?'⭐':'☆')+'</button>';
+      out += '<div><div style="font-size:12px;color:var(--ink2);">'+t.payee+'</div>';
+      out += '<div style="font-size:10px;color:var(--ink4);">'+t.date+' · '+t.category+'</div></div></div>';
+      out += '<div style="font-family:var(--fm);font-size:13px;font-weight:600;color:'+(isNR?'var(--river)':'var(--pos)')+';">+'+fmt(t.amount)+'</div></div>';
+    });
+    out += '<div style="padding:8px 16px;font-size:11px;color:var(--ink4);">⭐ Non-recurring excluded from run-rate calculations.</div></div>';
+  }
+  el.innerHTML = out;
+  if (!el.dataset.nrBound) {
+    el.dataset.nrBound = '1';
+    el.addEventListener('click', function(e) {
+      const btn = e.target.closest('.nr-toggle-btn');
+      if (btn) { const key=btn.dataset.nrkey.replace(/&amp;/g,'&').replace(/&quot;/g,'"'); toggleNonRecurring(key); }
+    });
+  }
+}
+
+// ════════════════════════════════════════════════
+// RECURRING DETECTION + BILL CALENDAR
+// ════════════════════════════════════════════════
+
+function detectRecurring() {
+  const sp = spendable(txns);
+  const by = {};
+  sp.filter(t=>t.amount<0).forEach(t=>{ const k=t.payee+'|'+t.account; if(!by[k])by[k]=[]; by[k].push(t); });
+  const rec = [];
+  Object.entries(by).forEach(([,list])=>{
+    if(list.length<2) return;
+    list.sort((a,b)=>a.date.localeCompare(b.date));
+    const gaps=[];
+    for(let i=1;i<list.length;i++) gaps.push(Math.round((new Date(list[i].date)-new Date(list[i-1].date))/(864e5)));
+    const avg=gaps.reduce((a,b)=>a+b,0)/gaps.length;
+    const std=Math.sqrt(gaps.map(g=>(g-avg)**2).reduce((a,b)=>a+b,0)/gaps.length);
+    const freq=avg>=25&&avg<=40&&std<8?'monthly':avg>=6&&avg<=9&&std<3?'weekly':avg>=83&&avg<=97&&std<10?'quarterly':avg>=355&&avg<=375?'annual':null;
+    if(!freq) return;
+    const amts=list.map(t=>Math.abs(t.amount)), avgA=amts.reduce((a,b)=>a+b,0)/amts.length;
+    if(amts.some(a=>Math.abs(a-avgA)/avgA>0.25)&&freq!=='monthly') return;
+    const nd=new Date(list[list.length-1].date);
+    if(freq==='monthly')nd.setDate(nd.getDate()+Math.round(avg));
+    else if(freq==='weekly')nd.setDate(nd.getDate()+7);
+    else if(freq==='quarterly')nd.setDate(nd.getDate()+91);
+    else nd.setDate(nd.getDate()+365);
+    rec.push({payee:list[0].payee,account:list[0].account,freq,avgAmt:avgA,
+      lastDate:list[list.length-1].date,nextDate:nd.toISOString().slice(0,10),count:list.length});
+  });
+  return rec.sort((a,b)=>a.nextDate.localeCompare(b.nextDate));
+}
+
+
+function updateCCSetting(input) {
+  const a=input.dataset.acct, f=input.dataset.field, v=parseInt(input.value)||1;
+  if(!ccSettings[a])ccSettings[a]={closeDay:1,dueDay:25};
+  ccSettings[a][f]=Math.min(Math.max(v,1),31);
+  saveSettings();
+}
+
+// ════════════════════════════════════════════════
+// NON-RECURRING INCOME HELPERS
+// ════════════════════════════════════════════════
+
+function autoDetectNonRecurring() {
+  const sp=spendable(txns), inc=sp.filter(t=>t.amount>0);
+  if(!inc.length) return 0;
+  const bm={};
+  inc.forEach(t=>{const k=t.date.slice(0,7);bm[k]=(bm[k]||0)+t.amount;});
+  const med=Object.values(bm).sort((a,b)=>a-b)[Math.floor(Object.keys(bm).length/2)]||1;
+  const pf={};
+  inc.forEach(t=>{pf[t.payee]=(pf[t.payee]||0)+1;});
+  let n=0;
+  inc.forEach(t=>{
+    const k=txnKey(t);
+    if(nonRecurringIds.has(k)) return;
+    if((t.amount>med*0.6&&pf[t.payee]<=2)||/bonus|gift|award|settlement|refund|inheritance|tax ref/i.test(t.payee+t.category)){
+      nonRecurringIds.add(k);n++;
+    }
+  });
+  if(n>0)saveSettings();
+  return n;
+}
+
+function recurringIncomeAvg(months) {
+  const sp=spendable(txns), c=new Date();c.setMonth(c.getMonth()-(months||12));
+  const f=sp.filter(t=>t.amount>0&&new Date(t.date)>=c&&!nonRecurringIds.has(txnKey(t)));
+  const bm={};f.forEach(t=>{const k=t.date.slice(0,7);bm[k]=(bm[k]||0)+t.amount;});
+  const v=Object.values(bm);return v.length?v.reduce((a,b)=>a+b,0)/v.length:0;
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// FORGE LOCK CONTROLLER
+// ════════════════════════════════════════════════════════════════════════════
+function _lockShow() { const e=document.getElementById('forge-lock'); if(e)e.style.display='flex'; }
+function _lockHide() { const e=document.getElementById('forge-lock'); if(e)e.style.display='none'; }
+function _lockSpinner(show,label) {
+  const sp=document.getElementById('lock-spinner'),lbl=document.getElementById('lock-spinner-lbl');
+  if(sp)sp.style.display=show?'block':'none';
+  if(lbl&&label)lbl.textContent=label;
+}
+
+async function forgeInitAuth() {
+  _lockShow();
+  const setup=document.getElementById('lock-setup'), unlock=document.getElementById('lock-unlock');
+  if (!FORGE_AUTH.isSetup()) {
+    if(setup)setup.style.display='block';
+    if(unlock)unlock.style.display='none';
+    return;
+  }
+  if(setup)setup.style.display='none';
+  if(unlock)unlock.style.display='block';
+  if (FORGE_AUTH.hasWebAuthn()) {
+    const bioBtn=document.getElementById('lock-bio-btn');
+    if(bioBtn)bioBtn.style.display='block';
+    const biometric=await FORGE_AUTH.isBiometricAvailable();
+    if(biometric) setTimeout(async()=>{ const ok=await FORGE_AUTH.unlockWithBiometric(); if(ok)forgePostUnlock(); },300);
+  }
+  setTimeout(()=>{ const p=document.getElementById('lock-pass'); if(p)p.focus(); },100);
+}
+
+async function forgeSetupPIN() {
+  const p1=document.getElementById('lock-pass-new')?.value||'';
+  const p2=document.getElementById('lock-pass-confirm')?.value||'';
+  const err=document.getElementById('lock-setup-err');
+  if(p1.length<4){if(err)err.textContent='Minimum 4 characters.';return;}
+  if(p1!==p2){if(err)err.textContent='Passphrases do not match.';return;}
+  if(err)err.textContent='';
+  _lockSpinner(true,'Encrypting your data\u2026');
+  try {
+    await FORGE_AUTH.setup(p1);
+    const biometric=await FORGE_AUTH.isBiometricAvailable();
+    if(biometric&&!FORGE_AUTH.hasWebAuthn()){
+      _lockSpinner(false);
+      if(confirm('Register Face ID / Touch ID for fast unlock?')){
+        _lockSpinner(true,'Registering biometric\u2026');
+        await FORGE_AUTH.registerBiometric(p1);
+      }
+    }
+    _lockSpinner(false);
+    forgePostUnlock();
+  } catch(e){ _lockSpinner(false); if(err)err.textContent='Setup failed: '+e.message; }
+}
+
+async function forgeUnlock() {
+  const passEl=document.getElementById('lock-pass'),errEl=document.getElementById('lock-err'),btnEl=document.getElementById('lock-btn');
+  const p=passEl?.value||'';
+  if(!p){if(errEl)errEl.textContent='Enter your passphrase.';return;}
+  if(errEl)errEl.textContent='';
+  if(btnEl){btnEl.disabled=true;btnEl.textContent='Checking\u2026';}
+  _lockSpinner(true,'Decrypting\u2026');
+  const ok=await FORGE_AUTH.unlock(p);
+  _lockSpinner(false);
+  if(btnEl){btnEl.disabled=false;btnEl.textContent='Unlock Forge';}
+  if(ok){ forgePostUnlock(); }
+  else{ if(errEl)errEl.textContent='Incorrect passphrase.'; if(passEl){passEl.value='';passEl.focus();} }
+}
+
+async function forgeUnlockBio() {
+  _lockSpinner(true,'Waiting for biometric\u2026');
+  const ok=await FORGE_AUTH.unlockWithBiometric();
+  _lockSpinner(false);
+  if(ok){ forgePostUnlock(); }
+  else{ const e=document.getElementById('lock-err'); if(e)e.textContent='Biometric failed \u2014 use passphrase.'; }
+}
+
+function forgeForgotPIN() {
+  const msg='FORGE: Forgot Passphrase Recovery\n\n1. Clear local data from this browser.\n2. Re-pull from Cloudflare sync.\n3. Set a new passphrase.\n\nNo data is lost if you have Cloudflare sync.\n\nClear local data now?';
+  if(confirm(msg)){
+    ['forge_prod_v1','ledger_v3','forge_settings_v2','forge_settings_v1','forge_lean_v1','forge_file_registry'].forEach(k=>localStorage.removeItem(k));
+    FORGE_AUTH.clearAuth();
+    location.reload();
+  }
+}
+
+async function forgePostUnlock() {
+  _lockSpinner(true,'Loading\u2026');
+  window._forgeDecrypted=window._forgeDecrypted||{};
+  const dataKeys=['forge_prod_v1','ledger_v3','forge_settings_v2','forge_settings_v1'];
+  for(const k of dataKeys){
+    try{ const dec=await FORGE_AUTH.get(k); if(dec)window._forgeDecrypted[k]=dec; }catch(e){}
+  }
+  _patchLocalStorage();
+  _lockSpinner(false);
+  _lockHide();
+  if(typeof forgeAppInit==='function') forgeAppInit();
+}
+
+function _patchLocalStorage(){
+  if(window._lsPatchApplied)return;
+  window._lsPatchApplied=true;
+  const dec=window._forgeDecrypted||{};
+  const og=Storage.prototype.getItem, os=Storage.prototype.setItem, or2=Storage.prototype.removeItem;
+  // Expose original setter globally so FORGE_AUTH.set can write without re-entering the patch
+  window._forgeOrigSetItem = function(k,v){ os.call(localStorage,k,v); };
+  Storage.prototype.getItem=function(k){ if(this===localStorage&&dec[k]!==undefined)return dec[k]; return og.call(this,k); };
+  Storage.prototype.setItem=function(k,v){
+    if(this===localStorage&&FORGE_AUTH.isUnlocked()&&!window._forgeWriting){
+      dec[k]=v;
+      FORGE_AUTH.set(k,v).catch(()=>{});
+      return;
+    }
+    os.call(this,k,v);
+  };
+  Storage.prototype.removeItem=function(k){ if(this===localStorage)delete dec[k]; or2.call(this,k); };
+}
+
+// ════════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Auth gate — all init deferred until forgePostUnlock() calls forgeAppInit()
+  window.forgeAppInit = async function () {
+  netWorthOverrides = loadNetWorthOverrides();
+  if (loadData(false) && txns.length) {
+    autoDetectNonRecurring();
+    updateHeader();
+    showPage('cashflow');
+  } else {
+    showPage('upload');
+  }
+  };
+
+  initGlass(); // Restore glass mode preference before anything renders
+  // Start auth flow — will call forgeAppInit() after successful unlock
+  forgeInitAuth();
+});
+</script>
+
+<div id="projStrip" style="display:none;position:fixed;top:50px;left:0;right:0;z-index:150;background:rgba(12,13,18,.97);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.09);padding:8px 28px;align-items:center;gap:10px;font-size:12.5px;font-family:var(--fm);color:var(--ink4);"><span id="projStripText"></span></div>
+</body>
+</html>
