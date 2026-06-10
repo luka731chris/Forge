@@ -10651,7 +10651,8 @@ function buildAccrualEngine(selMonth, sp) {
     // Per-employer savings deposit history (for showing pre-committed savings per employer)
     const bySavPayee = {};
     incSavTxns.forEach(t => {
-      const p = (t.payee||'UNKNOWN').toLowerCase().trim();
+      const _bRaw = (t.payee||'UNKNOWN').toLowerCase().trim();
+      const p = normPayeeKey(_bRaw);
       if (!bySavPayee[p]) bySavPayee[p] = { amounts: [] };
       if (!t.date.startsWith(curMonthStr)) bySavPayee[p].amounts.push(t.amount);
     });
