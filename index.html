@@ -1683,16 +1683,26 @@ body.forge-glass .forge-import-chip {
   <div class="page-hdr">
     <div>
       <div class="page-title">Budget vs. Actual</div>
-      <div class="page-sub">Monthly targets, trailing run rate, and where you stand right now</div>
+      <div class="page-sub">Monthly targets · trailing run rate · where you stand now</div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <select id="budgetMonth" onchange="renderBudget()" style="font-size:12px;padding:5px 10px;"></select>
-      <button class="btn btn-ghost" onclick="suggestBudget()" style="font-size:11px;padding:6px 12px;">✨ Suggest Budget</button>
+      <select id="pressureMonth" onchange="if(typeof renderBudgetPressure==='function')renderBudgetPressure()" style="font-size:12px;padding:5px 10px;"></select>
+      <button class="btn btn-ghost" onclick="suggestBudget()" style="font-size:11px;padding:6px 12px;">✨ Suggest</button>
     </div>
   </div>
-  <div id="budgetPressureContent" style="margin-top:16px;"></div>
-    <select id="pressureMonth" onchange="if(typeof renderBudgetPressure==='function')renderBudgetPressure()" style="display:none;"></select>
-    <div id="budgetContent"></div>
+  <!-- Analytics toggle bar -->
+  <div id="budgetAnalyticsBar" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+    <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);align-self:center;margin-right:4px;">View:</span>
+    <button id="bva-none"     onclick="setBudgetView('none')"     style="padding:4px 14px;border-radius:20px;font-size:11px;font-family:var(--fm);border:1px solid rgba(255,255,255,.18);background:rgba(245,168,0,.18);color:#F5A800;font-weight:700;cursor:pointer;transition:all .15s;">Budget Table</button>
+    <button id="bva-pressure" onclick="setBudgetView('pressure')" style="padding:4px 14px;border-radius:20px;font-size:11px;font-family:var(--fm);border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;">Pressure Bar</button>
+    <button id="bva-masked"   onclick="setBudgetView('masked')"   style="padding:4px 14px;border-radius:20px;font-size:11px;font-family:var(--fm);border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;">🔍 Unmasked Spend</button>
+    <button id="bva-trends"   onclick="setBudgetView('trends')"   style="padding:4px 14px;border-radius:20px;font-size:11px;font-family:var(--fm);border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;">📉 Spend Trends</button>
+  </div>
+  <div id="budgetPressureContent" style="display:none;margin-bottom:14px;"></div>
+  <div id="budgetMaskedContent"   style="display:none;margin-bottom:14px;"></div>
+  <div id="budgetTrendsContent"   style="display:none;margin-bottom:14px;"></div>
+  <div id="budgetContent"></div>
 </div>
 
 <!-- ══ BILL CALENDAR ══ -->
@@ -1882,7 +1892,9 @@ body.forge-glass .forge-import-chip {
 
 <div class="toast" id="toast"></div>
 
-<script>
+<script>// ── Transaction date filter state (must be first — used before other state) ──
+let txnDateRange = { preset: 'all', from: '', to: '' };
+
 // ════════════════════════════════════════════════════════════════════════════
 // FORGE AUTH — AES-GCM encryption + WebAuthn (Pulse) + PIN
 // All financial data at rest is encrypted. Key lives only in memory.
@@ -3892,7 +3904,7 @@ let isTrendType = 'pressure'; // 'pressure' | 'stack' | 'trellis' | 'slope' | 'w
 let isSort      = { field: 'date', dir: 'desc' };  // Income Statement sort state
 let txnSort     = { field: 'date', dir: 'desc' };  // Transactions sort state
 let txnDrillCat = null;  // { bucket, label } — set by IS drill-through, sticky until cleared
-let txnPage  = 0;
+let txnPage      = 0;
 const PAGE_SZ = 100;
 let pendingFiles = [];
 let donutDash = null;
@@ -5276,20 +5288,23 @@ function applyDateFilter(arr, state) {
   return arr.filter(t => (!from || t.date >= from) && (!to || t.date <= to));
 }
 
+function _highlightTxnDate(preset) {
+  // Only updates button styles — does NOT call renderTxns
+  document.querySelectorAll('[id^="txnPre-"]').forEach(function(btn) {
+    const active = btn.id === 'txnPre-'+preset;
+    btn.style.background  = active ? 'rgba(245,168,0,.18)' : 'rgba(255,255,255,.05)';
+    btn.style.borderColor = active ? 'rgba(245,168,0,.45)' : 'rgba(255,255,255,.12)';
+    btn.style.color       = active ? '#F5A800' : 'rgba(255,255,255,.6)';
+    btn.style.fontWeight  = active ? '700' : '400';
+  });
+}
 function setTxnDate(preset) {
   txnDateRange.preset = preset;
   if (preset === 'custom') {
     txnDateRange.from = document.getElementById('txnFrom')?.value || '';
     txnDateRange.to   = document.getElementById('txnTo')?.value   || '';
   }
-  // Update button styles
-  document.querySelectorAll('[id^="txnPre-"]').forEach(btn => {
-    const active = btn.id === 'txnPre-'+preset;
-    btn.style.background = active ? 'rgba(245,168,0,.18)' : 'rgba(255,255,255,.05)';
-    btn.style.borderColor = active ? 'rgba(245,168,0,.45)' : 'rgba(255,255,255,.12)';
-    btn.style.color       = active ? '#F5A800' : 'rgba(255,255,255,.6)';
-    btn.style.fontWeight  = active ? '700' : '400';
-  });
+  _highlightTxnDate(preset);
   txnPage = 0;
   renderTxns();
 }
@@ -5319,6 +5334,254 @@ function chartRangeFrom() {
   return d.toISOString().slice(0,7);
 }
 
+// ── Budget analytics view controller ────────────────────────────────────────
+let _budgetView = 'none';
+function setBudgetView(v) {
+  _budgetView = v;
+  // Toggle visibility
+  document.getElementById('budgetPressureContent').style.display = v==='pressure' ? '' : 'none';
+  document.getElementById('budgetMaskedContent').style.display   = v==='masked'   ? '' : 'none';
+  document.getElementById('budgetTrendsContent').style.display   = v==='trends'   ? '' : 'none';
+  document.getElementById('budgetContent').style.display         = v==='none'     ? '' : 'none';
+  // Highlight active button
+  ['none','pressure','masked','trends'].forEach(function(k) {
+    const btn = document.getElementById('bva-'+k);
+    if (!btn) return;
+    const active = k === v;
+    btn.style.background  = active ? 'rgba(245,168,0,.18)' : 'rgba(255,255,255,.05)';
+    btn.style.borderColor = active ? 'rgba(245,168,0,.45)' : 'rgba(255,255,255,.1)';
+    btn.style.color       = active ? '#F5A800' : 'rgba(255,255,255,.55)';
+    btn.style.fontWeight  = active ? '700' : '400';
+  });
+  // Render selected view
+  if (v==='pressure') renderBudgetPressure();
+  if (v==='masked')   renderMaskedSpend();
+  if (v==='trends')   renderSpendTrends();
+}
+
+// ── Unmasked Spend: Amazon, Apple Card, Nordstrom, Home Depot, Lowes etc. ───
+function renderMaskedSpend() {
+  const el = document.getElementById('budgetMaskedContent');
+  if (!el) return;
+  if (!txns||!txns.length) { el.innerHTML='<div style="padding:40px;text-align:center;color:rgba(255,255,255,.3);">No data.</div>'; return; }
+
+  const SOURCES = [
+    { key:'amazon_orders', label:'Amazon Orders',  icon:'📦', color:'#F5A800' },
+    { key:'apple_card',    label:'Apple Card',      icon:'💳', color:'#34D9C3' },
+    { key:'venmo',         label:'Venmo',           icon:'💸', color:'#60A5FA' },
+    { key:'home_depot',    label:'Home Depot',      icon:'🏠', color:'#F87171' },
+    { key:'lowes',         label:"Lowe's",          icon:'🔧', color:'#A78BFA' },
+    { key:'nordstrom',     label:'Nordstrom',       icon:'👔', color:'#F472B6' },
+    { key:'target',        label:'Target',          icon:'🎯', color:'#FB923C' },
+    { key:'costco',        label:'Costco',          icon:'🏪', color:'#34D9C3' },
+  ];
+
+  // Quicken "masked" = lump-sum charges that detail sources unmask
+  const now    = new Date();
+  const mo6ago = new Date(now.getFullYear(), now.getMonth()-5, 1).toISOString().slice(0,7);
+  const months = [...new Set(txns.map(t=>t.date.slice(0,7)))].filter(m=>m>=mo6ago).sort();
+
+  // Per-source totals and items
+  const $k = v => { const a=Math.abs(v); return '$'+(a>=1000?(a/1000).toFixed(1).replace(/\.0$/,'')+'K':Math.round(a).toLocaleString()); };
+  const DIM = 'rgba(255,255,255,.35)';
+  const INK = 'rgba(255,255,255,.82)';
+
+  let html = '';
+
+  // Summary: unmasked vs total spend
+  const detailItems = txns.filter(t=>t.itemDetail&&t.amount<0);
+  const totalDetail = detailItems.reduce((s,t)=>s+Math.abs(t.amount),0);
+  const totalAll    = txns.filter(t=>t.amount<0&&!t.itemDetail).reduce((s,t)=>s+Math.abs(t.amount),0);
+
+  html += `<div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 16px;margin-bottom:12px;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${DIM};margin-bottom:10px;">Unmasked Spend — Last 6 Months</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+      <div><div style="font-size:20px;font-weight:700;color:#F5A800;font-family:var(--fm);">${$k(totalDetail)}</div><div style="font-size:11px;color:${DIM};">from detail sources</div></div>
+      <div><div style="font-size:20px;font-weight:700;color:rgba(255,255,255,.6);font-family:var(--fm);">${$k(totalAll)}</div><div style="font-size:11px;color:${DIM};">total outflows</div></div>
+      <div><div style="font-size:20px;font-weight:700;color:#34D9C3;font-family:var(--fm);">${totalAll>0?Math.round(totalDetail/totalAll*100):0}%</div><div style="font-size:11px;color:${DIM};">transactions unmasked</div></div>
+    </div>
+  </div>`;
+
+  SOURCES.forEach(function(src) {
+    const items = txns.filter(t=>t.itemDetail&&t.amount<0&&(t._source||t._ftype||'')=== src.key);
+    if (!items.length) return;
+    const total = items.reduce((s,t)=>s+Math.abs(t.amount),0);
+
+    // Group by category
+    const byCat = {};
+    items.forEach(t=>{ const c=t.category||'Other'; byCat[c]=(byCat[c]||0)+Math.abs(t.amount); });
+    const cats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const maxC = cats[0]?.[1]||1;
+
+    // Monthly trend
+    const byMo = {};
+    months.forEach(m=>byMo[m]=0);
+    items.forEach(t=>{ const m=t.date.slice(0,7); if(byMo[m]!==undefined) byMo[m]+=Math.abs(t.amount); });
+    const moVals = months.map(m=>byMo[m]||0);
+    const maxM   = Math.max(...moVals,1);
+
+    // Recent top items
+    const recent = items.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+
+    const srcId = 'ms-'+src.key;
+    html += `<div style="background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.07);border-radius:14px;margin-bottom:8px;overflow:hidden;">`;
+    // Header
+    html += `<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;"
+      onclick="(function(el){var x=document.getElementById('${srcId}');if(!x)return;var o=x.style.display!=='none';x.style.display=o?'none':'block';el.querySelector('.cv').textContent=o?'›':'⌄';})(this)">
+      <span style="font-size:18px;">${src.icon}</span>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:600;color:${INK};">${src.label}</div>
+        <div style="font-size:11px;color:${DIM};">${items.length} transactions · ${months.length}mo avg ${$k(total/months.length)}/mo</div>
+      </div>
+      <div style="font-family:var(--fm);font-size:18px;font-weight:700;color:${src.color};">${$k(total)}</div>
+      <span class="cv" style="font-size:12px;color:${DIM};margin-left:6px;">›</span>
+    </div>`;
+    // Mini bar trend
+    html += `<div style="display:flex;align-items:flex-end;gap:3px;height:28px;padding:0 16px 8px;border-bottom:1px solid rgba(255,255,255,.05);">`;
+    months.forEach(function(m,i) {
+      const h = maxM>0 ? Math.max((byMo[m]||0)/maxM*22,1).toFixed(1) : 1;
+      html += `<div title="${m}: ${$k(byMo[m]||0)}" style="flex:1;height:${h}px;background:${src.color};border-radius:2px 2px 0 0;opacity:.7;transition:opacity .15s;cursor:default;"
+        onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='.7'"></div>`;
+    });
+    html += `</div>`;
+    // Drill: categories + recent
+    html += `<div id="${srcId}" style="display:none;padding:12px 16px;">`;
+    html += `<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${DIM};margin-bottom:8px;">Top Categories</div>`;
+    cats.forEach(function([cat,amt]) {
+      const w = (amt/maxC*100).toFixed(1);
+      html += `<div style="display:grid;grid-template-columns:130px 1fr 60px;gap:8px;align-items:center;margin-bottom:5px;">
+        <div style="font-size:12px;color:${INK};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cat}</div>
+        <div style="height:6px;background:rgba(255,255,255,.07);border-radius:3px;"><div style="height:100%;width:${w}%;background:${src.color};border-radius:3px;opacity:.8;"></div></div>
+        <div style="font-size:12px;font-family:var(--fm);color:${src.color};text-align:right;">${$k(amt)}</div>
+      </div>`;
+    });
+    html += `<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${DIM};margin:12px 0 8px;">Recent Transactions</div>`;
+    recent.forEach(function(t) {
+      html += `<div style="display:flex;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+        <div style="font-size:10px;font-family:var(--fm);color:${DIM};width:70px;flex-shrink:0;">${t.date.slice(5)}</div>
+        <div style="flex:1;font-size:12px;color:${INK};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.payee||t.title||'—'}</div>
+        <div style="font-size:12px;font-family:var(--fm);color:#F87171;white-space:nowrap;padding-left:12px;">−$${Math.round(Math.abs(t.amount)).toLocaleString()}</div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  if (!html.includes('ms-')) {
+    html += '<div style="padding:32px;text-align:center;color:rgba(255,255,255,.3);">No detail source data imported yet.<br><small>Import Amazon Orders, Apple Card, or other detail files to unmask transactions.</small></div>';
+  }
+
+  el.innerHTML = html;
+}
+
+// ── Spend Trends: actionable 3-month trend analysis ─────────────────────────
+function renderSpendTrends() {
+  const el = document.getElementById('budgetTrendsContent');
+  if (!el) return;
+  if (!txns||!txns.length) { el.innerHTML='<div style="padding:40px;text-align:center;color:rgba(255,255,255,.3);">No data.</div>'; return; }
+
+  const now  = new Date();
+  const sp   = typeof operatingSpendable==='function' ? operatingSpendable(txns) : txns.filter(t=>t.amount<0);
+  const $k   = v => { const a=Math.abs(v); return '$'+(a>=1000?(a/1000).toFixed(1).replace(/\.0$/,'')+'K':Math.round(a).toLocaleString()); };
+  const DIM  = 'rgba(255,255,255,.35)';
+  const INK  = 'rgba(255,255,255,.82)';
+
+  // Build 6-month window
+  const months = [];
+  for (let i=5; i>=0; i--) {
+    const d2 = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    months.push(d2.toISOString().slice(0,7));
+  }
+  const cur3 = months.slice(3);  // last 3
+  const pre3 = months.slice(0,3); // prior 3
+
+  const BM = (typeof BUCKET_META!=='undefined') ? BUCKET_META : {};
+  const EXP = ['groceries','restaurants','entertainment','personal','clothing',
+                'household','healthcare','travel','gas_car','subscriptions',
+                'gifts','education','other'];
+
+  const catTotals = {};
+  sp.forEach(function(t) {
+    if (t.amount>=0) return;
+    const mo = t.date.slice(0,7);
+    if (!months.includes(mo)) return;
+    const bk = typeof classifyTxn==='function' ? classifyTxn(t) : 'other';
+    if (!catTotals[bk]) catTotals[bk]={cur:0,pre:0,months:{}};
+    catTotals[bk].months[mo] = (catTotals[bk].months[mo]||0)+Math.abs(t.amount);
+    if (cur3.includes(mo)) catTotals[bk].cur+=Math.abs(t.amount);
+    if (pre3.includes(mo)) catTotals[bk].pre+=Math.abs(t.amount);
+  });
+
+  // Rank by trend (biggest increase %)
+  const rows = EXP.map(function(bk) {
+    const d2 = catTotals[bk]||{cur:0,pre:0,months:{}};
+    const pct = d2.pre>10 ? ((d2.cur-d2.pre)/d2.pre*100) : null;
+    const meta= BM[bk]||{label:bk,icon:'·'};
+    return { bk, label:meta.label, icon:meta.icon, cur:d2.cur/3, pre:d2.pre/3, pct, months:d2.months };
+  }).filter(r=>r.cur>10||r.pre>10).sort((a,b)=>(b.pct||0)-(a.pct||0));
+
+  // Top savings opportunity
+  const topOpp = rows.filter(r=>r.pct!==null&&r.pct>5).slice(0,3);
+
+  let html = '';
+
+  // Action cards
+  if (topOpp.length) {
+    html += `<div style="margin-bottom:12px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${DIM};margin-bottom:8px;">⚡ Fastest Path to Savings</div>`;
+    topOpp.forEach(function(r) {
+      const savings = Math.round((r.cur-r.pre)*3); // quarterly impact
+      const daily   = (r.cur/30).toFixed(0);
+      html += `<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-left:3px solid #F87171;border-radius:12px;margin-bottom:6px;">
+        <span style="font-size:18px;flex-shrink:0;">${r.icon}</span>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;color:#F87171;">${r.label} up ${Math.round(r.pct)}% vs prior 3 months</div>
+          <div style="font-size:11px;color:${DIM};margin-top:3px;">Averaging ${$k(r.cur)}/mo now vs ${$k(r.pre)}/mo before. Cut back ${$k(r.cur-r.pre)}/mo to recover ${$k(savings)} this quarter.</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:2px;">Current pace: $${daily}/day</div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // Full trend table
+  html += `<div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:14px;overflow:hidden;">
+    <div style="display:grid;grid-template-columns:22px minmax(90px,1fr) repeat(6,44px) 54px 46px;gap:4px;padding:6px 14px;background:rgba(255,255,255,.02);">
+      <div></div><div style="font-size:9px;font-weight:700;color:${DIM};">Category</div>`;
+  months.forEach(function(m,i) {
+    const isNew = i>=3;
+    html += `<div style="font-size:9px;font-weight:700;color:${isNew?'rgba(255,255,255,.55)':DIM};text-align:right;">${m.slice(5)}</div>`;
+  });
+  html += `<div style="font-size:9px;font-weight:700;color:${DIM};text-align:right;">Avg/mo</div>
+    <div style="font-size:9px;font-weight:700;color:${DIM};text-align:right;">Trend</div>
+  </div>`;
+
+  rows.forEach(function(r) {
+    const rising  = r.pct!==null && r.pct > 5;
+    const falling = r.pct!==null && r.pct < -5;
+    const tCol    = rising?'#F87171':falling?'#34D9C3':'rgba(255,255,255,.35)';
+    const tLbl    = r.pct===null ? '—' : (r.pct>0?'+':'')+Math.round(r.pct)+'%';
+    const maxMoV  = Math.max(...months.map(m=>r.months[m]||0),1);
+    html += `<div style="display:grid;grid-template-columns:22px minmax(90px,1fr) repeat(6,44px) 54px 46px;gap:4px;align-items:center;padding:5px 14px;border-top:1px solid rgba(255,255,255,.04);">
+      <div style="font-size:13px;text-align:center;">${r.icon}</div>
+      <div style="font-size:12px;color:${INK};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.label}</div>`;
+    months.forEach(function(m,i) {
+      const v = r.months[m]||0;
+      const barH = maxMoV>0 ? Math.round(v/maxMoV*14) : 0;
+      const isNew= i>=3;
+      html += `<div style="text-align:right;">
+        <div style="font-size:10px;font-family:var(--fm);color:${isNew?(rising?'#F87171':INK):DIM};">${v>0?'$'+Math.round(v/1000*10)/10+'K':''}</div>
+        ${barH>0?`<div style="height:${barH}px;background:${isNew?(rising?'rgba(248,113,113,.6)':'rgba(45,212,191,.5)'):'rgba(255,255,255,.15)'};border-radius:2px;margin-top:2px;"></div>`:''}
+      </div>`;
+    });
+    html += `<div style="font-size:12px;font-family:var(--fm);color:${INK};text-align:right;">${$k(r.cur)}</div>
+      <div style="font-size:12px;font-weight:700;color:${tCol};text-align:right;">${tLbl}</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
 function showPage(name) {
   if (typeof renderProjStrip === 'function') renderProjStrip();
   document.querySelectorAll('.page').forEach(p => {
@@ -5339,7 +5602,7 @@ function showPage(name) {
     if (pageName === 'income'       && txns.length) renderIncomeStatement();
     if (pageName === 'creditflow'   && txns.length) renderCreditFlow();
     if (pageName === 'validate')    renderValidation();
-    if (pageName === 'budget') { renderBudget(); if (typeof renderBudgetPressure==='function') renderBudgetPressure(); }
+    if (pageName === 'budget') { renderBudget(); setBudgetView(_budgetView||'none'); if (typeof renderBudgetPressure==='function') renderBudgetPressure(); }
     if (pageName === 'balancesheet') renderBalanceSheet();
     if (pageName === 'financials')  renderFinancials();
     if (pageName === 'upload')      renderUploadStatus();
@@ -7426,7 +7689,7 @@ function renderTxns() {
     if (ti && !ti.value && txnDateRange.to)   ti.value = txnDateRange.to;
   }
   // Highlight active preset button on render
-  if (txnDateRange.preset !== 'custom') setTxnDate(txnDateRange.preset);
+  _highlightTxnDate(txnDateRange.preset); // update button styles only, no re-render
 
   if (acctF !== 'all') src = src.filter(t=>t.account===acctF);
 
