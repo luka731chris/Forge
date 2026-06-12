@@ -257,7 +257,7 @@ main::-webkit-scrollbar-thumb:hover { background: var(--line3); }
 }
 .kpi {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   background: linear-gradient(160deg,
     rgba(255,255,255,.052) 0%,
     rgba(255,255,255,.018) 40%,
@@ -1551,7 +1551,7 @@ body.forge-glass .forge-import-chip {
   <div id="cfImportBanner" style="margin-bottom:12px;"></div>
     <div class="chart-card" style="margin-bottom:16px;">
     <div class="chart-title">Income vs Expenses — Monthly</div>
-    <div class="chart-area" id="cfBarWrap" style="height:200px;"></div>
+    <div class="chart-area" id="cfBarWrap" style="height:240px;min-height:240px;overflow:visible;"></div>
   </div>
 
   <!-- ── Banking & Draw — core savings discipline panel ── -->
@@ -1675,6 +1675,7 @@ body.forge-glass .forge-import-chip {
       <button class="btn btn-ghost" onclick="if(confirm('Clear all stored Net Worth snapshots? This cannot be undone.')){clearNetWorthOverrides();renderBalanceSheet();}" style="font-size:11px;padding:6px 12px;color:var(--neg);">✕ Clear NW History</button>
     </div>
   </div>
+  <div id="nwImportBanner" style="margin-bottom:12px;"></div>
   <div id="balanceSheetContent"></div>
 </div>
 
@@ -1714,6 +1715,7 @@ body.forge-glass .forge-import-chip {
       <div class="page-sub">Accrual basis &nbsp;&middot;&nbsp; income when earned &nbsp;&middot;&nbsp; expenses when incurred &nbsp;&middot;&nbsp; CFP-accurate</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <select id="isMonth" onchange="renderIncomeStatement()" style="font-size:12px;padding:5px 10px;"></select>
       <!-- Chart type selector with tooltip -->
       <div style="position:relative;display:inline-flex;align-items:center;gap:6px;">
         <div class="is-chart-type-tooltip" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:300px;background:rgba(12,12,14,.97);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:14px;z-index:200;pointer-events:none;box-shadow:0 12px 40px rgba(0,0,0,.6);">
@@ -4203,10 +4205,20 @@ function svgBar(elId, labels, datasets, opts) {
   var _pIdx = (opts && opts.projectedIdx >= 0) ? opts.projectedIdx : -1;
   const el = document.getElementById(elId);
   if (!el) { console.warn('[Forge] svgBar: element not found:', elId); return; }
-  const _rawW = el.offsetWidth || el.getBoundingClientRect().width;
-  console.log('[Forge] svgBar', elId, 'W=' + _rawW + ' labels=' + labels.length);
-  const W = Math.max(_rawW || 860, 300);
-  const H = Math.max(el.offsetHeight || 0, 200);
+  // Measure width: walk up ancestors until we find a laid-out container
+  let _rawW = el.offsetWidth || el.getBoundingClientRect().width;
+  if (!_rawW || _rawW < 10) {
+    let _anc = el.parentElement;
+    while (_anc && (!_anc.offsetWidth || _anc.offsetWidth < 10)) _anc = _anc.parentElement;
+    _rawW = _anc ? _anc.offsetWidth : 0;
+  }
+  if (!_rawW || _rawW < 10) {
+    const _main = document.querySelector('main') || document.body;
+    _rawW = (_main ? _main.offsetWidth : 0) - 32;
+  }
+  const W = Math.max(_rawW, 300);
+  const H = Math.max(el.offsetHeight || 200, 200);
+  console.log('[Forge] svgBar resolved W=' + W + ' H=' + H + ' for #' + elId);
   if (!labels.length) {
     el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;">No data</div>';
     return;
@@ -5338,11 +5350,16 @@ function chartRangeFrom() {
 let _budgetView = 'none';
 function setBudgetView(v) {
   _budgetView = v;
-  // Toggle visibility
-  document.getElementById('budgetPressureContent').style.display = v==='pressure' ? '' : 'none';
-  document.getElementById('budgetMaskedContent').style.display   = v==='masked'   ? '' : 'none';
-  document.getElementById('budgetTrendsContent').style.display   = v==='trends'   ? '' : 'none';
-  document.getElementById('budgetContent').style.display         = v==='none'     ? '' : 'none';
+  var pc  = document.getElementById('budgetPressureContent');
+  var mc  = document.getElementById('budgetMaskedContent');
+  var tc  = document.getElementById('budgetTrendsContent');
+  var bc  = document.getElementById('budgetContent');
+  var pmo = document.getElementById('pressureMonth');
+  if (pc)  pc.style.display  = v==='pressure' ? '' : 'none';
+  if (mc)  mc.style.display  = v==='masked'   ? '' : 'none';
+  if (tc)  tc.style.display  = v==='trends'   ? '' : 'none';
+  if (bc)  bc.style.display  = v==='none'     ? '' : 'none';
+  if (pmo) pmo.style.display = v==='pressure' ? '' : 'none';
   // Highlight active button
   ['none','pressure','masked','trends'].forEach(function(k) {
     const btn = document.getElementById('bva-'+k);
@@ -5591,6 +5608,16 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const pg = document.getElementById('page-'+name);
   if (pg) { pg.classList.add('active'); pg.style.display = 'block'; }
+  // Observe layout: if charts rendered at W=0, re-render on first real width
+  if (typeof ResizeObserver !== 'undefined') {
+    var _roName = name;
+    var _ro = new ResizeObserver(function(entries) {
+      _ro.disconnect();
+      var _w = entries[0] && entries[0].contentRect.width;
+      if (_w > 10) { requestAnimationFrame(function(){ _doRender(_roName); }); }
+    });
+    if (pg) _ro.observe(pg);
+  }
   const nv = document.getElementById('nav-'+name);
   if (nv) nv.classList.add('active');
 
@@ -5624,7 +5651,12 @@ function showPage(name) {
       if (!_activePg || _activePg.style.display === 'none') return;
       var _wraps = _activePg.querySelectorAll('[id$="Wrap"],[id$="wrap"]');
       var _anyEmpty = Array.prototype.some.call(_wraps, function(w) {
-        return w.offsetWidth > 10 && !w.querySelector('svg') && !w.querySelector('canvas') && !w.textContent.trim();
+        // Also retry if SVG was rendered at W=0 (viewBox width < 50)
+        var _svg = w.querySelector('svg');
+        var _svgW = _svg ? parseInt(_svg.getAttribute('width')||'0') : 0;
+        var _svgVisible = _svg && _svg.clientWidth > 10;
+        return w.offsetWidth > 10 && (!_svg || !_svgVisible || _svgW < 50);
+        //return w.offsetWidth > 10 && !w.querySelector('svg') && !w.querySelector('canvas') && !w.textContent.trim();
       });
       if (_anyEmpty) {
         // Render import banners
@@ -7492,7 +7524,13 @@ function renderCashFlow() {
   // ── Show placeholder while rendering ─────────────────────────────────────
   const _bw = document.getElementById('cfBarWrap');
   if (_bw) {
-    console.log('[Forge] cfBarWrap W=' + _bw.offsetWidth + ' H=' + _bw.offsetHeight);
+    // Use ancestor width if container not yet laid out
+    let _bwW = _bw.offsetWidth;
+    if (!_bwW || _bwW < 10) {
+      let _a = _bw.parentElement;
+      while (_a && (!_a.offsetWidth || _a.offsetWidth < 10)) _a = _a.parentElement;
+      _bwW = _a ? _a.offsetWidth : (document.querySelector('main')||document.body).offsetWidth - 32;
+    }
     _bw.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,.3);font-size:11px;font-family:var(--fm);">Rendering chart…</div>';
   }
 
@@ -9229,7 +9267,9 @@ function parseCSV(text, fname) {
   const acctName = fname.replace(/\.[^.]+$/, '');
 
   // ── Merchant-specific fast paths ────────────────────────────────
-  const cleanText = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  // Strip BOM, normalize line endings, handle sep= Excel prefix
+  let cleanText = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  if (cleanText.startsWith('sep=')) cleanText = cleanText.slice(cleanText.indexOf('\n')+1);
   const firstLine = cleanText.split('\n').filter(l=>l.trim()).slice(0,3).join(' ').toLowerCase();
 
   // Apple Card CSV: "Transaction Date,Clearing Date,Description,Merchant,Category,Type,Amount (USD)"
@@ -13800,6 +13840,7 @@ function _patchLocalStorage(){
 document.addEventListener('DOMContentLoaded', () => {
   // Auth gate — all init deferred until forgePostUnlock() calls forgeAppInit()
   window.forgeAppInit = async function () {
+  if (typeof _highlightTxnDate === 'function' && typeof txnDateRange !== 'undefined') _highlightTxnDate(txnDateRange.preset);
   netWorthOverrides = loadNetWorthOverrides();
   if (loadData(false) && txns.length) {
     autoDetectNonRecurring();
