@@ -46,13 +46,10 @@
 
 | Type | Regex Pattern | IS Scope |
 |------|---------------|----------|
-| `checking` | savings\|save\|marcus\|ally\|high.yield | ✓ Operating |
-| `savings` | savings\|save\|marcus\|ally\|high.yield | ✓ Operating |
-| `credit` | credit\|visa\|mastercard\|amex\|discover\|sapphire | ✓ Operating |
-| `investment` | 401k\|403b\|ira\|roth\|brokerage\|fidelity\|vanguard\|schwab | ✗ Excluded |
-| `retirement` | retirement\|pension | ✗ Excluded |
-| `hsa` | hsa\|health.saving | ✗ Excluded |
-| `529` | 529\|college | ✗ Excluded |
+| `credit` | credit\|visa\|mastercard\|amex\|american express\|discover\|card\|cc\|sapphire\|freedom\|venture\|cash back\|rewards\|platinum | ✓ Operating |
+| `savings` | savings\|save\|marcus\|ally\|high.yield\|money.market | ✓ Operating |
+| `investment` | 401k\|403b\|ira\|roth\|brokerage\|fidelity\|vanguard\|schwab\|investment\|retirement\|hsa | ✗ Excluded |
+| `checking` | (default — any account not matched above) | ✓ Operating |
 
 The Income Statement, buildMonthSummary, and the Reconciliation section all filter to `OPER_TYPES = new Set(['checking','savings','credit'])`.
 
