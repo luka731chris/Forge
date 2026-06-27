@@ -5,118 +5,147 @@ Forge is a personal family finance platform built and maintained by Chris,
 for the Luka family. Reads Quicken exports, unmasks lump-sum card charges
 into item-level detail, and tracks cash flow / net worth / budget pressure.
 
-**Confirmed directly from `forge.html` source (uploaded and inspected):**
-- Build/data version: **`lean_4.0`** — i.e. **v4.0 "lean"**. This is the
-  literal `BUILD` constant used for localStorage cache-busting and the
-  `version` field in JSON export. This is the version to treat as canonical.
-- Separately, a CSS comment block labels the *visual design system* as
-  **"FORGE DESIGN SYSTEM v6.0 — Pittsburgh Black & Gold"**. This is a
-  different version track from the app build (v4.0 lean) — don't conflate
-  the two. If asked "what version is Forge," the answer is v4.0 (lean); the
-  design system version is a separate, more cosmetic counter.
-- Page title: "Forge · Family Finance". Branding footer: "LUKALAB · AI
-  Creative · Est. 2026".
-
-⚠️ **This contradicts earlier documentation** (a previous session's audit
-pinned the codebase at v3.12 with a 397KB forge.html, dual Cloudflare Workers
-for an "$id" AI chat assistant + "Smart Scan" import feature, and a
-forge-pulse.html companion). The v4.0 "lean" rebuild looks like a deliberate,
-substantial rewrite — see "What changed in the lean rebuild" below. Treat any
-notes referencing v3.x, $id, $kenes, Smart Scan, or forge_worker_v2.js as
-**stale until reconfirmed against the actual repo**.
+**Current version: v4.0.0 (May 2026).** The main app files are `index.html`
+(Forge Desktop) and `forge-pulse.html` (Forge Pulse mobile PWA). An earlier
+Claude session inspected a file called `forge.html` (an older intermediate
+build); treat any notes from that session referencing `lean_4.0`, `forge_prod_v1`,
+or `forge_demo_v1` as stale — those storage keys no longer exist.
 
 ## Stack & deployment
-- **Frontend:** Single-file vanilla JavaScript (`forge.html`), no framework,
-  no build step, no npm. Charts: a mix of hand-rolled SVG renderers (bar,
-  line, waterfall, horizontal bar) plus Chart.js 4.4.1 (loaded from
-  cdnjs.cloudflare.com) for the category donut.
-- **Backend/API:** Cloudflare Worker, used only for **cross-device sync**
-  (`WORKER_URL + '/sync/push'` and `/sync/pull'`, auth via `X-Sync-Token`
-  header). The `WORKER_URL` constant ships **empty** in source — must be set
-  per deployment.
-- **Hosting:** GitHub Pages (static frontend) + Cloudflare Workers (sync API).
-- No build step — edit `forge.html` directly and reload to preview. Don't
-  introduce a bundler/transpiler unless explicitly asked.
+- **Forge Desktop:** `index.html` — single-file vanilla JS, ~563KB, no framework,
+  no build step, no npm.
+- **Forge Pulse:** `forge-pulse.html` — mobile PWA, ~288KB. Has its own copy of
+  all shared functions (buildMonthSummary, classifyTxn, isTransfer, etc.). Every
+  fix to a shared function must be applied to both files.
+- **Worker:** `forge_worker_v2.js` deployed to Cloudflare Workers. Handles AI chat
+  proxy, Smart Scan, and cloud sync. `wrangler.jsonc` is the deployment config.
+- **Hosting:** GitHub Pages (static) + Cloudflare Workers (API). Changes to main
+  branch go live immediately — treat it as prod.
+- Charts: hand-rolled SVG renderers for all IS/analytics charts; Chart.js 4.4.1
+  (cdnjs) for the dashboard category donut only.
+- No build step — edit HTML files directly. Do not introduce a bundler.
 
-## What changed in the lean rebuild (v4.0)
-Based on what's actually in the uploaded source vs. what older docs describe:
-- **Added: client-side encryption.** A `FORGE_AUTH` module wraps all
-  localStorage reads/writes in AES-GCM encryption (PBKDF2, 310k iterations),
-  gated by a PIN/passphrase lock screen on load, with optional WebAuthn
-  (Face ID / Touch ID) unlock. This is a significant new feature not present
-  in earlier documentation.
-- **Not found in this file:** the previously-documented "$id" / "$kenes" AI
-  chat assistant, the "Smart Scan" AI-powered import feature, or any
-  Anthropic API key handling. Either these were removed in the lean rebuild,
-  or they live exclusively in `forge-pulse.html` (not part of this upload —
-  unconfirmed either way).
-- **Sync is simpler:** just push/pull of the full ledger JSON via one
-  Cloudflare Worker, token-authed. No `/scan` endpoint, no dual worker files.
-- Storage keys actually used in source (don't assume the names from older
-  docs are still accurate):
-  - `forge_prod_v1` — real imported data
-  - `forge_demo_v1` — demo dataset (never touches prod)
-  - `forge_lean_v1` — legacy key, auto-migrated to `forge_prod_v1` on load
-  - `forge_settings_v2` — settings (note: **v2**, not v1)
-  - `forge_networth` / `forge_networth_hist` — net worth snapshots (history
-    survives "Clear Data")
-  - `forge_file_registry` — import history per source file
-  - `forge_hierarchy_overrides` — custom keyword overrides for categorization
-  - `forge_is_comments` — per-month notes on the Income Statement
-  - Auth-related: `forge_auth_salt`, `forge_auth_check`, `forge_auth_webauthn`
+## Worker endpoints (`forge_worker_v2.js`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/chat` | $id chat proxy → Claude Sonnet (Pulse: Ask $id tab) |
+| POST | `/scan` | Smart Scan → Claude Vision + CSV parse (Desktop: Upload page) |
+| POST | `/sync/push` | Push full ledger JSON to Cloudflare KV |
+| GET | `/sync/pull` | Pull ledger JSON from Cloudflare KV |
+
+Both `SID_PROXY_URL` (in `forge-pulse.html`) and `WORKER_URL` (in `index.html`)
+point to the same deployed worker. Both constants ship **empty** in source — must
+be set per deployment. Never hardcode or commit a real worker URL.
+
+## AI features
+- **$id** — AI chat assistant in the "Ask $id" tab of Forge Pulse. Routes through
+  `/chat` endpoint. Sends full financial context + user message to Claude Sonnet.
+  Three communication modes: Data-first, Story-first, Confluence.
+- **Smart Scan** — AI file reader on the Desktop Upload page. Accepts photos,
+  PDFs, W-2s, unknown CSVs. Routes through `/scan` endpoint (Claude Vision).
+
+## File structure
+```
+/
+├── index.html                   — Forge Desktop (single-file app, ~563KB)
+├── forge-pulse.html             — Forge Pulse (mobile PWA, ~288KB)
+├── forge_worker_v2.js           — Cloudflare Worker (AI proxy + sync)
+├── wrangler.jsonc               — Worker deployment config
+├── index-test-v4.0.html         — Test desktop (synthetic data pre-loaded)
+├── forge-pulse-test-v4.0.html   — Test mobile (synthetic data pre-loaded)
+├── Forge-Backlog-v4.0.0.xlsx    — Bug/feature tracker + session protocol
+├── CLAUDE.md
+├── CHANGELOG.md
+├── README.md
+├── TECHNICAL.md
+├── TESTING.md
+├── IMPORT-GUIDE.md
+├── QUICK-START.md
+├── SID-SETUP.md
+└── CONTRIBUTING.md
+```
+
+## localStorage keys (v4.0.0)
+| Key | Content |
+|-----|---------|
+| `ledger_v3` | `{ txns[], accounts[], amzItems[], isDemoMode, savedAt }` |
+| `forge_settings_v2` | Family profile, targets, account owners, category budgets |
+| `forge_file_registry` | Per-type last import + `_files[]` full upload history |
+| `forge_is_comments` | IS section notes per month: `{ YYYY-MM: { section: text } }` |
+| `forge_sync_token` | Cloudflare sync token (never hardcoded) |
+| `forge_hierarchy_overrides` | User category reassignments |
+
+Auth-related keys: `forge_auth_salt`, `forge_auth_check`, `forge_auth_webauthn`.
+Note: keys `forge_prod_v1`, `forge_demo_v1`, `forge_lean_v1` are from an older
+build and no longer exist in v4.0.0.
 
 ## Data model conventions
-Real family names are used as identifiers throughout the data model and UI —
-**do not refactor these into generic labels** unless explicitly asked:
-- Default family profile in source: `Chris` 🧢, `Kira` 💛 (parents),
-  `Sam` ⚾, `Whitney` 🎨, `Will` 🎮 (kids). Household label: "The Luka Family".
+Real family names are used as identifiers throughout — **do not refactor these
+into generic labels** unless explicitly asked:
+- Default family profile: `Chris` 🧢, `Kira` 💛 (parents), `Sam` ⚾,
+  `Whitney` 🎨, `Will` 🎮 (kids). Household label: "The Luka Family".
+- Demo dataset uses synthetic data ("The Henderson Family, North Hills, PA").
 
-## Core features (confirmed from source)
-- Monthly cash flow, budget-vs-actual, accrual-based Income Statement with
-  an in-flight-month projection engine (per-bucket accrual logic: fixed
-  bills, utilities, discretionary daily-rate projection, with outlier
-  removal and per-employer paycheck normalization for 3-pay months/bonuses).
-- Net Worth / Balance Sheet with period-over-period comparison.
-- **Crosswalk / Category Mapper** — finds uncategorized transactions and
-  recommends Forge buckets + the matching Quicken category to fix at the
-  source, with bulk-accept and CSV export.
-- **Detail Lens** — unmasks lump-sum Quicken charges (Amazon, Apple Card,
-  Home Depot, Venmo) into item-level detail when a matching detail CSV has
-  been imported for that merchant/month.
-- **Scenario Planner** — guided questionnaire that turns a goal (trip, home
-  project, etc.) into a monthly savings plan with concrete spending cuts.
-- **Master Reconciliation** engine + **CFP Balance Sheet Proof** — ties the
-  Income Statement, account registers, and net liquid position together so
-  every number can be traced back to Quicken.
-- iOS "Glass Mode" visual toggle (liquid-glass aesthetic, persisted in
-  localStorage, independent of the base Pittsburgh Black & Gold theme).
-- Built-in synthetic demo dataset ("The Henderson Family," North Hills, PA)
-  for testing without real financial data.
+## Test suite
+Three test files exist (predate v4.0 — need update per backlog item #9):
+| File | Tests | Coverage |
+|------|-------|----------|
+| `forge_tests.js` | 149 | Core parsers, formatters, dedup |
+| `forge_tests_v2.js` | 325 | Apple Card, analytics, purchaser, CSV edge cases |
+| `forge_sid_tests.js` | 98 | $id AI chat layer |
+| **Total** | **572** | 100% pass required before commit |
+
+Run with Node. All 572 must pass before any commit. The suites predate the
+v4.0 IS rebuild, Pattern A auto-save fix, and classifyTxn prefix-match rewrite.
+
+## Structural checks (required before every upload)
+```bash
+node --check index.html          # must exit 0
+node --check forge-pulse.html    # must exit 0
+
+grep -c '<div\b' index.html      # must equal:
+grep -c '</div>' index.html      # baseline 261/261
+
+grep -c '<div\b' forge-pulse.html   # baseline 93/93
+grep -c '</div>' forge-pulse.html
+```
+CSS brace balance: 184/184 (Desktop), 178/178 (Pulse).
+No duplicate function definitions — `renderThermometer`, `buildMonthSummary`,
+`classifyTxn` must each appear exactly once per file.
+
+## Versioning
+| Type | Increment | When |
+|------|-----------|------|
+| PATCH | x.x.+1 | Bug fix, style tweak, copy change, dead code removal |
+| MINOR | x.+1.0 | New feature, new chart, new file format, logic change affecting numbers |
+| MAJOR | +1.0.0 | localStorage key structure changes, auth change, core data model change |
 
 ## Working agreements
-- Cloudflare Worker secrets/env vars live in the Cloudflare dashboard, not in
-  this repo — never hardcode or print them. `WORKER_URL` itself is also
-  meant to be filled in per deployment, not committed with a real value.
-- Match existing vanilla-JS patterns already in the codebase (e.g. the
-  hand-rolled SVG chart functions, the `card()`/`sr()`/`seg()` settings-UI
-  helpers) rather than introducing new libraries or frameworks.
-- Don't touch the `FORGE_AUTH` encryption flow casually — it gates all of
-  localStorage. Any change there needs to preserve the unlock/migration path
-  for existing encrypted user data.
-- Keep changes deploy-safe: GitHub Pages serves whatever is committed, so
-  treat the main branch as effectively "live."
+- Match existing vanilla-JS patterns (hand-rolled SVG chart functions, the
+  `card()`/`sr()`/`seg()` settings-UI helpers) — do not introduce new libraries.
+- Both `index.html` and `forge-pulse.html` share many functions. Every fix to a
+  shared function (buildMonthSummary, renderThermometer, classifyTxn, isTransfer,
+  derivedThru) must be applied to both files.
+- Do not touch the `FORGE_AUTH` encryption flow casually — it gates all of
+  localStorage. Any change must preserve the unlock/migration path for existing
+  encrypted user data.
+- Cloudflare Worker secrets live in the Cloudflare dashboard only — never commit
+  API keys, worker URLs, or sync tokens.
+- Use the test package (`index-test-v4.0.html`) for experimental features before
+  touching production files. Never copy the test package over production.
+- After each session: update CHANGELOG.md, mark Backlog items done, run all
+  structural checks, then upload both HTML files to GitHub.
 
-## Still to fill in
-- Whether `forge-pulse.html` (mobile companion) still exists in the repo, and
-  whether it's where the AI chat ($id) / Smart Scan features moved to, or if
-  those were dropped entirely.
-- Actual repo file/folder structure beyond `forge.html` itself.
-- Test setup, if any survived the lean rebuild (older docs mentioned a
-  572-test Node harness — unconfirmed against this version).
-- Naming/commit conventions, linting rules.
-- The Cloudflare Worker's exact `/sync/push` and `/sync/pull` implementation.
-
-A good first prompt once Claude Code is pointed at the actual repo: *"Diff
-the current repo against this CLAUDE.md and update anything that's still
-wrong, especially the Forge Pulse relationship and whether the AI chat /
-Smart Scan features exist anywhere."*
+## Critical invariants (do not violate)
+- **No Pattern B.** Pre-committed savings uses Pattern A only (checking→savings
+  near payday). Pattern B caused double-counting and was removed in v4.0.0.
+- **No SVG gradients in the thermometer.** Gradient IDs collide when multiple
+  instances exist. The pressure bar uses CSS div segments only.
+- **`renderISTrend` always receives a month explicitly.** Reading `isMonth?.value`
+  inside the function fails on first load.
+- **`showPage` does not call `renderISTrend`.** `renderIncomeStatement` already
+  calls it. A duplicate call blanks the pressure bar.
+- **Transfers excluded from `spendable()`.** `operatingSpendable(txns)` filters
+  `isTransfer(t)`. Never add transfers back.
+- **Detail-file rows excluded from balance sheet.** Apple Card CSV, Amazon, Home
+  Depot, Venmo rows do not represent real account ledger entries.
